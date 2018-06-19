@@ -1,0 +1,65 @@
+﻿using Autofac;
+using GitObjectDb.Utils;
+using LibGit2Sharp;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace GitObjectDb.Models
+{
+    public static class InstanceLoader
+    {
+        internal const string DataFile = "data.json";
+
+        public static TInstance LoadFrom<TInstance>(IComponentContext context, Func<Repository> repositoryFactory, Func<Repository, Tree> tree) where TInstance : AbstractInstance
+        {
+            using (var repository = repositoryFactory())
+            {
+                var dataAccessorProvider = context.Resolve<IModelDataAccessorProvider>();
+                var currentTree = tree(repository);
+                var instance = (TInstance)LoadEntry(context, dataAccessorProvider, tree, currentTree[DataFile], "");
+                instance.SetRepositoryData(repositoryFactory, tree);
+                return instance;
+            }
+        }
+
+        static IMetadataObject LoadEntry(IComponentContext context, IModelDataAccessorProvider dataAccessorProvider, Func<Repository, Tree> tree, TreeEntry entry, string path)
+        {
+            var blob = entry.Target.Peel<Blob>();
+            ILazyChildren ResolveChildren(Type type, string propertyName)
+            {
+                var dataAccessor = dataAccessorProvider.Get(type);
+                var childProperty = dataAccessor.ChildProperties.FirstOrDefault(p => p.Matches(propertyName));
+                if (childProperty == null) throw new NotSupportedException($"Unable to find property details for '{propertyName}'.");
+                return LoadEntryChildren(context, dataAccessorProvider, tree, path, propertyName, childProperty);
+            }
+            var serializer = new JsonSerializer { TypeNameHandling = TypeNameHandling.Objects };
+            serializer.Converters.Add(new MetadataObjectJsonConverter(context, ResolveChildren));
+            var jobject = blob.GetContentStream().ToJson<JObject>(serializer);
+            var objectType = Type.GetType(jobject.Value<string>("$type"));
+            return (IMetadataObject)jobject.ToObject(objectType, serializer);
+        }
+
+        private static ILazyChildren LoadEntryChildren(IComponentContext context, IModelDataAccessorProvider dataAccessorProvider, Func<Repository, Tree> tree, string path, string propertyName, ChildPropertyInfo childProperty)
+        {
+            return LazyChildren.Create(childProperty, (parent, repository) =>
+            {
+                var childPath = string.IsNullOrEmpty(path) ? childProperty.Property.Name : $"{path}/{childProperty.Property.Name}";
+                var subTree = tree(repository)[childPath]?.Target.Peel<Tree>();
+                return (subTree?.Any() ?? false) ?
+
+                    from c in subTree
+                    where c.TargetType == TreeEntryTargetType.Tree
+                    let childTree = c.Target.Peel<Tree>()
+                    let data = childTree[DataFile]
+                    where data != null
+                    select LoadEntry(context, dataAccessorProvider, tree, data, $"{childPath}/{c.Name}") :
+
+                    Enumerable.Empty<IMetadataObject>();
+            });
+        }
+    }
+}
