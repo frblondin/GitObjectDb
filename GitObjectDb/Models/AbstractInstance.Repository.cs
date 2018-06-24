@@ -15,6 +15,7 @@ namespace GitObjectDb.Models
     {
         Func<Repository> _getRepository;
         internal Func<Repository, Tree> _getTree;
+        readonly StringBuilder _jsonBuffer = new StringBuilder();
 
         internal void SetRepositoryData(Func<Repository> getRepository, Func<Repository, Tree> getTree)
         {
@@ -57,7 +58,8 @@ namespace GitObjectDb.Models
             if (!string.IsNullOrEmpty(path)) path += "/";
             path += InstanceLoader.DataFile;
 
-            tree.Add(path, repository.CreateBlob(node.ToJson()), Mode.NonExecutableFile);
+            node.ToJson(_jsonBuffer);
+            tree.Add(path, repository.CreateBlob(_jsonBuffer), Mode.NonExecutableFile);
             AddNodeChildrenToCommit(repository, tree, stack, node);
         }
 

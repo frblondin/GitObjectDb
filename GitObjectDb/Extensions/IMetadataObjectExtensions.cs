@@ -1,11 +1,24 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 
 namespace GitObjectDb.Models
 {
     public static class IMetadataObjectExtensions
     {
+        readonly static JsonSerializer _jsonSerializer;
+
+        static IMetadataObjectExtensions()
+        {
+            _jsonSerializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Objects
+            });
+            _jsonSerializer.Formatting = Formatting.Indented;
+        }
+
         internal static IMetadataObject Root(this IMetadataObject node)
         {
             if (node == null) throw new ArgumentNullException(nameof(node));
@@ -36,10 +49,13 @@ namespace GitObjectDb.Models
             }
         }
 
-        internal static string ToJson(this IMetadataObject source) =>
-            JsonConvert.SerializeObject(source, Formatting.Indented, new JsonSerializerSettings
+        internal static void ToJson(this IMetadataObject source, StringBuilder stringBuilder)
+        {
+            stringBuilder.Clear();
+            using (var writer = new StringWriter(stringBuilder))
             {
-                TypeNameHandling = TypeNameHandling.Objects
-            });
+                _jsonSerializer.Serialize(writer, source);
+            }
+        }
     }
 }

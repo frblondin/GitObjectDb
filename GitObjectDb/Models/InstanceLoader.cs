@@ -2,6 +2,7 @@ using GitObjectDb.Utils;
 using LibGit2Sharp;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,8 @@ namespace GitObjectDb.Models
     public static class InstanceLoader
     {
         internal const string DataFile = "data.json";
+
+        static readonly IContractResolver _contractResolver = new DefaultContractResolver();
 
         public static TInstance LoadFrom<TInstance>(IServiceProvider serviceProvider, Func<Repository> repositoryFactory, Func<Repository, Tree> tree) where TInstance : AbstractInstance
         {
@@ -35,11 +38,21 @@ namespace GitObjectDb.Models
                     throw new NotSupportedException($"Unable to find property details for '{propertyName}'.");
                 return LoadEntryChildren(serviceProvider, dataAccessorProvider, tree, path, propertyName, childProperty);
             }
-            var serializer = new JsonSerializer { TypeNameHandling = TypeNameHandling.Objects };
-            serializer.Converters.Add(new MetadataObjectJsonConverter(serviceProvider, ResolveChildren));
+            var serializer = GetJsonSerializer(serviceProvider, dataAccessorProvider, tree, path, ResolveChildren);
             var jobject = blob.GetContentStream().ToJson<JObject>(serializer);
             var objectType = Type.GetType(jobject.Value<string>("$type"));
             return (IMetadataObject)jobject.ToObject(objectType, serializer);
+        }
+
+        static JsonSerializer GetJsonSerializer(IServiceProvider serviceProvider, IModelDataAccessorProvider dataAccessorProvider, Func<Repository, Tree> tree, string path, ChildrenResolver childrenResolver)
+        {
+            var serializer = new JsonSerializer { TypeNameHandling = TypeNameHandling.Objects };
+            serializer.Converters.Add(new MetadataObjectJsonConverter(serviceProvider, childrenResolver));
+
+            // Optimization: prevent reflection for each new object!
+            serializer.ContractResolver = _contractResolver;
+
+            return serializer;
         }
 
         static ILazyChildren LoadEntryChildren(IServiceProvider serviceProvider, IModelDataAccessorProvider dataAccessorProvider, Func<Repository, Tree> tree, string path, string propertyName, ChildPropertyInfo childProperty) =>

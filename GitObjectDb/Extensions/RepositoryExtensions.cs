@@ -1,3 +1,4 @@
+using GitObjectDb.IO;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -10,9 +11,9 @@ namespace LibGit2Sharp
 {
     public static class RepositoryExtensions
     {
-        public static Blob CreateBlob(this Repository repository, string content)
+        public static Blob CreateBlob(this Repository repository, StringBuilder content)
         {
-            using (var stream = new MemoryStream(Encoding.Default.GetBytes(content)))
+            using (var stream = new StringBuilderStream(content))
             {
                 return repository.ObjectDatabase.CreateBlob(stream);
             }

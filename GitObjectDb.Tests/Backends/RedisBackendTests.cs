@@ -1,4 +1,4 @@
-﻿using AutoFixture.NUnit3;
+using AutoFixture.NUnit3;
 using GitObjectDb.Backends;
 using LibGit2Sharp;
 using NUnit.Framework;
@@ -26,7 +26,7 @@ namespace GitObjectDb.Tests.Backends
 
 
                 repository.Commit(
-                    (r, d) => d.Add("somefile.txt", r.CreateBlob("foo"), Mode.NonExecutableFile),
+                    (r, d) => d.Add("somefile.txt", r.CreateBlob(new StringBuilder("foo")), Mode.NonExecutableFile),
                     message, signature, signature);
             }
         }

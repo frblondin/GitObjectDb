@@ -1,6 +1,7 @@
 using GitObjectDb.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -9,12 +10,14 @@ using System.Reflection;
 
 namespace GitObjectDb.Utils
 {
+    public delegate ILazyChildren ChildrenResolver(Type parentType, string propertyName);
+
     public class MetadataObjectJsonConverter : JsonConverter
     {
         readonly IServiceProvider _serviceProvider;
-        readonly Func<Type, string, ILazyChildren> _childResolver;
+        readonly ChildrenResolver _childResolver;
 
-        public MetadataObjectJsonConverter(IServiceProvider serviceProvider, Func<Type, string, ILazyChildren> childResolver)
+        public MetadataObjectJsonConverter(IServiceProvider serviceProvider, ChildrenResolver childResolver)
         {
             _serviceProvider = serviceProvider;
             _childResolver = childResolver;
@@ -29,7 +32,8 @@ namespace GitObjectDb.Utils
             if (reader.TokenType == JsonToken.Null) return null;
 
             var jObject = JObject.Load(reader);
-            var result = Create(objectType, jObject);
+            var contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(objectType);
+            var result = Create(objectType, jObject, contract);
 
             // Populate the object properties 
             serializer.Populate(jObject.CreateReader(), result);
@@ -37,30 +41,31 @@ namespace GitObjectDb.Utils
             return result;
         }
 
-        protected object Create(Type objectType, JObject jObject)
+        protected object Create(Type objectType, JObject jObject, JsonObjectContract contract)
         {
-            var constructor = objectType.GetConstructors().Single(); // TODO Use constructor strategy
-            var arguments = constructor.GetParameters().Select(p => ResolveParameter(p, objectType, jObject)).ToArray();
+            var arguments = contract.CreatorParameters.Select(p =>
+                ResolveParameter(p, objectType, jObject)).ToArray();
             return Activator.CreateInstance(objectType, arguments);
         }
 
-        protected object ResolveParameter(ParameterInfo parameter, Type objectType, JObject jObject) =>
-            ResolveChildren(parameter, objectType) ??
-            ResolveFromJsonToken(parameter, jObject) ??
-            ResolveFromServiceProvider(parameter);
+        protected object ResolveParameter(JsonProperty property, Type objectType, JObject jObject) =>
+            ResolveChildren(property, objectType) ??
+            ResolveFromJsonToken(property, jObject) ??
+            ResolveFromServiceProvider(property) ??
+            throw new NotImplementedException($"Unable to create parameter '{property.PropertyName}' of type '{property.PropertyType}'.");
 
-        object ResolveChildren(ParameterInfo parameter, Type objectType) =>
-            typeof(ILazyChildren).IsAssignableFrom(parameter.ParameterType) ?
-            _childResolver(objectType, parameter.Name) :
+        object ResolveChildren(JsonProperty property, Type objectType) =>
+            typeof(ILazyChildren).IsAssignableFrom(property.PropertyType) ?
+            _childResolver(objectType, property.PropertyName) :
             null;
 
-        static object ResolveFromJsonToken(ParameterInfo parameter, JObject jObject) =>
-            jObject.TryGetValue(parameter.Name, StringComparison.OrdinalIgnoreCase, out var token) ?
-            token.ToObject(parameter.ParameterType) :
+        static object ResolveFromJsonToken(JsonProperty property, JObject jObject) =>
+            jObject.TryGetValue(property.PropertyName, StringComparison.OrdinalIgnoreCase, out var token) ?
+            token.ToObject(property.PropertyType) :
             null;
 
-        object ResolveFromServiceProvider(ParameterInfo parameter) =>
-            _serviceProvider.GetService(parameter.ParameterType);
+        object ResolveFromServiceProvider(JsonProperty property) =>
+            _serviceProvider.GetService(property.PropertyType);
 
         public override bool CanWrite => false;
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) =>

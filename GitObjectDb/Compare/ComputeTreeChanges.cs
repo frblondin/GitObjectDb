@@ -14,6 +14,7 @@ namespace GitObjectDb.Compare
         readonly IServiceProvider _serviceProvider;
         readonly IModelDataAccessorProvider _modelDataProvider;
         readonly Func<Repository> _repositoryFactory;
+        readonly StringBuilder _jsonBuffer = new StringBuilder();
 
         public delegate ComputeTreeChanges Factory(Func<Repository> repositoryFactory);
         public ComputeTreeChanges(IServiceProvider serviceProvider, IModelDataAccessorProvider modelDataProvider, Func<Repository> repositoryFactory)
@@ -152,7 +153,7 @@ namespace GitObjectDb.Compare
             throw new NotSupportedException("Unexpected child changes.");
         }
 
-        static void UpdateNodeIfNeeded(IMetadataObject original, IMetadataObject @new, Repository repository, TreeDefinition definition, Stack<string> stack, IModelDataAccessor accessor, ref bool anyChange)
+        void UpdateNodeIfNeeded(IMetadataObject original, IMetadataObject @new, Repository repository, TreeDefinition definition, Stack<string> stack, IModelDataAccessor accessor, ref bool anyChange)
         {
             if (accessor.ModifiableProperties.Any(p => !p.AreSame(original, @new)))
             {
@@ -161,10 +162,11 @@ namespace GitObjectDb.Compare
             }
         }
 
-        static void AddOrUpdateNode(IMetadataObject node, Repository repository, TreeDefinition definition, Stack<string> stack)
+        void AddOrUpdateNode(IMetadataObject node, Repository repository, TreeDefinition definition, Stack<string> stack)
         {
             var path = GetDataPath(stack);
-            definition.Add(path, repository.CreateBlob(node.ToJson()), Mode.NonExecutableFile);
+            node.ToJson(_jsonBuffer);
+            definition.Add(path, repository.CreateBlob(_jsonBuffer), Mode.NonExecutableFile);
         }
 
         static void RemoveNode(IMetadataObject node, TreeDefinition definition, Stack<string> stack)
