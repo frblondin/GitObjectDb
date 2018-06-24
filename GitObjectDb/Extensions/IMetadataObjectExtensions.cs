@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
@@ -6,7 +6,7 @@ namespace GitObjectDb.Models
 {
     public static class IMetadataObjectExtensions
     {
-        public static IMetadataObject Root(this IMetadataObject node)
+        internal static IMetadataObject Root(this IMetadataObject node)
         {
             if (node == null) throw new ArgumentNullException(nameof(node));
 
@@ -24,7 +24,7 @@ namespace GitObjectDb.Models
             }
         }
 
-        public static IEnumerable<IMetadataObject> Flatten(this IMetadataObject source)
+        internal static IEnumerable<IMetadataObject> Flatten(this IMetadataObject source)
         {
             yield return source;
             foreach (var child in source.Children)
@@ -36,7 +36,7 @@ namespace GitObjectDb.Models
             }
         }
 
-        public static string ToJson(this IMetadataObject source) =>
+        internal static string ToJson(this IMetadataObject source) =>
             JsonConvert.SerializeObject(source, Formatting.Indented, new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.Objects

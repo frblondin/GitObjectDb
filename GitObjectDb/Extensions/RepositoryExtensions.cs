@@ -1,4 +1,4 @@
-﻿using LibGit2Sharp;
+using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -61,7 +61,7 @@ namespace LibGit2Sharp
 
         static string BuildCommitLogMessage(Commit commit, bool amendPreviousCommit, bool isHeadOrphaned, bool isMergeCommit)
         {
-            string kind = string.Empty;
+            var kind = string.Empty;
             if (isHeadOrphaned)
             {
                 kind = " (initial)";
@@ -75,12 +75,12 @@ namespace LibGit2Sharp
                 kind = " (merge)";
             }
 
-            return string.Format(CultureInfo.InvariantCulture, "commit{0}: {1}", kind, commit.MessageShort);
+            return $"commit{kind}: {commit.MessageShort}";
         }
 
         static void UpdateHeadAndTerminalReference(Repository repository, Commit commit, string reflogMessage)
         {
-            Reference reference = repository.Refs.Head;
+            var reference = repository.Refs.Head;
 
             while (true) //TODO: Implement max nesting level
             {

@@ -1,22 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
-using Autofac;
 
 namespace GitObjectDb.Utils
 {
-    public class ModelDataAccessorProviderModule : Autofac.Module
-    {
-        protected override void Load(ContainerBuilder builder)
-        {
-            builder.RegisterType<ModelDataAccessorProvider>().Named<IModelDataAccessorProvider>("handler");
-            builder.RegisterDecorator<IModelDataAccessorProvider>(
-                inner => new CachedModelDataAccessorProvider(inner),
-                fromKey: "handler");
-        }
-    }
-
     public interface IModelDataAccessorProvider
     {
         IModelDataAccessor Get(Type type);

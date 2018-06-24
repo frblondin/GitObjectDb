@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 
 namespace GitObjectDb.Models
 {
-    public interface IMetadataObject : IComparable
+    public interface IMetadataObject
     {
         IInstance Instance { get; }
         IMetadataObject Parent { get; }

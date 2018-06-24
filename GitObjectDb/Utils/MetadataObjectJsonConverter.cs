@@ -1,5 +1,3 @@
-﻿using Autofac;
-using Autofac.Core;
 using GitObjectDb.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -13,32 +11,30 @@ namespace GitObjectDb.Utils
 {
     public class MetadataObjectJsonConverter : JsonConverter
     {
-        readonly IComponentContext _context;
+        readonly IServiceProvider _serviceProvider;
         readonly Func<Type, string, ILazyChildren> _childResolver;
 
-        public MetadataObjectJsonConverter(IComponentContext componentContext, Func<Type, string, ILazyChildren> childResolver)
+        public MetadataObjectJsonConverter(IServiceProvider serviceProvider, Func<Type, string, ILazyChildren> childResolver)
         {
-            _context = componentContext;
+            _serviceProvider = serviceProvider;
             _childResolver = childResolver;
         }
 
-        public override bool CanConvert(Type objectType) => typeof(IMetadataObject).IsAssignableFrom(objectType);
+        public override bool CanConvert(Type objectType) =>
+            typeof(IMetadataObject).IsAssignableFrom(objectType);
 
         public override bool CanRead => true;
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             if (reader.TokenType == JsonToken.Null) return null;
 
-            // Load JObject from stream 
             var jObject = JObject.Load(reader);
-
-            // Create target object based on JObject 
-            var target = Create(objectType, jObject);
+            var result = Create(objectType, jObject);
 
             // Populate the object properties 
-            serializer.Populate(jObject.CreateReader(), target);
+            serializer.Populate(jObject.CreateReader(), result);
 
-            return target;
+            return result;
         }
 
         protected object Create(Type objectType, JObject jObject)
@@ -48,24 +44,26 @@ namespace GitObjectDb.Utils
             return Activator.CreateInstance(objectType, arguments);
         }
 
-        protected object ResolveParameter(ParameterInfo parameter, Type objectType, JObject jObject)
-        {
-            if (_context.ComponentRegistry.TryGetRegistration(new TypedService(parameter.ParameterType), out var registration))
-            {
-                return _context.ResolveComponent(registration, new Parameter[0]);
-            }
-            if (parameter.ParameterType.IsAssignableTo<ILazyChildren>())
-            {
-                return _childResolver(objectType, parameter.Name);
-            }
-            if (jObject.TryGetValue(parameter.Name, StringComparison.OrdinalIgnoreCase, out var token))
-            {
-                return token.ToObject(parameter.ParameterType);
-            }
-            return null;
-        }
+        protected object ResolveParameter(ParameterInfo parameter, Type objectType, JObject jObject) =>
+            ResolveChildren(parameter, objectType) ??
+            ResolveFromJsonToken(parameter, jObject) ??
+            ResolveFromServiceProvider(parameter);
+
+        object ResolveChildren(ParameterInfo parameter, Type objectType) =>
+            typeof(ILazyChildren).IsAssignableFrom(parameter.ParameterType) ?
+            _childResolver(objectType, parameter.Name) :
+            null;
+
+        static object ResolveFromJsonToken(ParameterInfo parameter, JObject jObject) =>
+            jObject.TryGetValue(parameter.Name, StringComparison.OrdinalIgnoreCase, out var token) ?
+            token.ToObject(parameter.ParameterType) :
+            null;
+
+        object ResolveFromServiceProvider(ParameterInfo parameter) =>
+            _serviceProvider.GetService(parameter.ParameterType);
 
         public override bool CanWrite => false;
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) => throw new NotImplementedException();
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) =>
+            throw new NotImplementedException();
     }
 }

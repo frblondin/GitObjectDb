@@ -1,4 +1,4 @@
-﻿using Autofac;
+using Autofac;
 using GitObjectDb.Compare;
 using GitObjectDb.Models;
 using GitObjectDb.Utils;
@@ -24,10 +24,10 @@ namespace GitObjectDb.Tests.Assets.Models
         protected Factory _factory { get; }
 
         public delegate Instance Factory(Guid id, string name, LazyChildren<Application> applications);
-        public Instance(IComponentContext context, IModelDataAccessorProvider dataAccessorProvider, ComputeTreeChanges.Factory computeTreeChangesFactory, Guid id, string name, LazyChildren<Application> applications) :
-            base(context, dataAccessorProvider, computeTreeChangesFactory, id, name)
+        public Instance(IServiceProvider serviceProvider, IModelDataAccessorProvider dataAccessorProvider, ComputeTreeChanges.Factory computeTreeChangesFactory, Guid id, string name, LazyChildren<Application> applications) :
+            base(serviceProvider, dataAccessorProvider, computeTreeChangesFactory, id, name)
         {
-            _factory = context?.Resolve<Factory>() ?? throw new ArgumentNullException(nameof(context));
+            _factory = (Factory)serviceProvider.GetService(typeof(Factory)) ?? throw new ArgumentNullException(nameof(serviceProvider));
             _applications = applications ?? throw new ArgumentNullException(nameof(applications));
         }
 

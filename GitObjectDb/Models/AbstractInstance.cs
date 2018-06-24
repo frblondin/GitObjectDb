@@ -1,4 +1,3 @@
-﻿using Autofac;
 using LibGit2Sharp;
 using GitObjectDb.Attributes;
 using GitObjectDb.Compare;
@@ -21,14 +20,14 @@ namespace GitObjectDb.Models
     [DataContract]
     public abstract partial class AbstractInstance : AbstractModel
     {
-        readonly IComponentContext _context;
+        readonly IServiceProvider _serviceProvider;
         readonly IModelDataAccessorProvider _dataAccessorProvider;
         readonly ComputeTreeChanges.Factory _computeTreeChangesFactory;
 
         [JsonConstructor]
-        public AbstractInstance(IComponentContext context, IModelDataAccessorProvider dataAccessorProvider, ComputeTreeChanges.Factory computeTreeChangesFactory, Guid id, string name) : base(id, name)
+        public AbstractInstance(IServiceProvider serviceProvider, IModelDataAccessorProvider dataAccessorProvider, ComputeTreeChanges.Factory computeTreeChangesFactory, Guid id, string name) : base(id, name)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _dataAccessorProvider = dataAccessorProvider ?? throw new ArgumentNullException(nameof(dataAccessorProvider));
             _computeTreeChangesFactory = computeTreeChangesFactory;
         }

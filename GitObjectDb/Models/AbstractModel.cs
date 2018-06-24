@@ -1,4 +1,4 @@
-﻿using GitObjectDb.Attributes;
+using GitObjectDb.Attributes;
 using GitObjectDb.Utils;
 using System;
 using System.Collections.Generic;
@@ -43,8 +43,6 @@ namespace GitObjectDb.Models
             if (Parent != null && Parent != parent) throw new NotSupportedException("A single metadata object cannot be attached to two different parents.");
             Parent = parent;
         }
-
-        int IComparable.CompareTo(object other) => Id.CompareTo((other as IMetadataObject)?.Id);
 
         internal IMetadataObject With(Expression predicate = null)
         {

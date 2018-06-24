@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\GitObjectDb.Autofac\GitObjectDb.Autofac.csproj" />
     <ProjectReference Include="..\GitObjectDb\GitObjectDb.csproj" />
   </ItemGroup>
 

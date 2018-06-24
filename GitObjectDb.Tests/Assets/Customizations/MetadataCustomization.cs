@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 using GitObjectDb.Models;
 using System;
 using System.Collections.Immutable;
@@ -24,9 +24,9 @@ namespace GitObjectDb.Tests.Assets.Customizations
                             new Page(Guid.NewGuid(), $"Page {p}", new LazyChildren<Field>(
                                 Enumerable.Range(1, FieldPerPageCount).Select(f =>
                                     new Field(Guid.NewGuid(), $"Field {f}"))
-                                .Order().ToImmutableList())))
-                        .Order().ToImmutableList())))
-                .Order().ToImmutableList()));
+                                .ToImmutableList())))
+                        .ToImmutableList())))
+                .ToImmutableList()));
             fixture.Inject(module);
 
             var random = new Random();

@@ -83,8 +83,8 @@ namespace GitObjectDb.Backends
             {
                 private readonly IList<byte[]> _chunks;
                 private readonly long _length;
-                private int currentChunk = 0;
-                private int currentPos = 0;
+                private int _currentChunk = 0;
+                private int _currentPos = 0;
 
                 public FakeStream(IList<byte[]> chunks, long length)
                 {
@@ -113,23 +113,23 @@ namespace GitObjectDb.Backends
 
                     while (totalCopied < count)
                     {
-                        if (currentChunk > _chunks.Count - 1)
+                        if (_currentChunk > _chunks.Count - 1)
                         {
                             return totalCopied;
                         }
 
-                        var toBeCopied = Math.Min(_chunks[currentChunk].Length - currentPos, count - totalCopied);
+                        var toBeCopied = Math.Min(_chunks[_currentChunk].Length - _currentPos, count - totalCopied);
 
-                        Buffer.BlockCopy(_chunks[currentChunk], currentPos, buffer, offset + totalCopied, toBeCopied);
-                        currentPos += toBeCopied;
+                        Buffer.BlockCopy(_chunks[_currentChunk], _currentPos, buffer, offset + totalCopied, toBeCopied);
+                        _currentPos += toBeCopied;
                         totalCopied += toBeCopied;
 
-                        Debug.Assert(currentPos <= _chunks[currentChunk].Length);
+                        Debug.Assert(_currentPos <= _chunks[_currentChunk].Length);
 
-                        if (currentPos == _chunks[currentChunk].Length)
+                        if (_currentPos == _chunks[_currentChunk].Length)
                         {
-                            currentPos = 0;
-                            currentChunk++;
+                            _currentPos = 0;
+                            _currentChunk++;
                         }
                     }
 

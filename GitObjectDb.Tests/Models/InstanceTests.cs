@@ -1,4 +1,4 @@
-﻿using Autofac;
+using Autofac;
 using LibGit2Sharp;
 using GitObjectDb.Compare;
 using GitObjectDb.Models;
@@ -20,15 +20,15 @@ namespace GitObjectDb.Tests.Models
     public class InstanceTests
     {
         [Test, AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void CreateAndLoadRepository(IComponentContext context, Instance sut, Signature signature, string message, InMemoryBackend inMemoryBackend)
+        public void CreateAndLoadRepository(IServiceProvider serviceProvider, Instance sut, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Act
             sut.SaveInNewRepository(signature, message, _path, () => GetRepository(inMemoryBackend));
-            var loaded = InstanceLoader.LoadFrom<Instance>(context, () => GetRepository(inMemoryBackend), r => r.Head.Tip.Tree);
+            var loaded = InstanceLoader.LoadFrom<Instance>(serviceProvider, () => GetRepository(inMemoryBackend), r => r.Head.Tip.Tree);
 
             // Assert
             PAssert.IsTrue(AreFunctionnally.Equivalent<Module>(() => sut == loaded));
-            foreach (var apps in sut.Applications.Zip(loaded.Applications, (a, b) => new { source = a, desctination = b }))
+            foreach (var apps in sut.Applications.OrderBy(v => v.Id).Zip(loaded.Applications.OrderBy(v => v.Id), (a, b) => new { source = a, desctination = b }))
             {
                 PAssert.IsTrue(AreFunctionnally.Equivalent<Application>(() => apps.source == apps.desctination));
             }

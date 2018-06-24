@@ -1,4 +1,4 @@
-﻿using LibGit2Sharp;
+using LibGit2Sharp;
 using GitObjectDb.Utils;
 using System;
 using System.Collections;
@@ -75,7 +75,7 @@ namespace GitObjectDb.Models
             {
                 return (_factoryWithRepo(parent, repository) ?? throw new NullReferenceException(NullReturnedValueExceptionMessage))
                     .Cast<TChild>()
-                    .Order()
+                    .OrderBy(v => v.Id)
                     .ToImmutableList();
             }
         }

@@ -1,4 +1,3 @@
-﻿using Autofac;
 using LibGit2Sharp;
 using GitObjectDb.Models;
 using GitObjectDb.Utils;
