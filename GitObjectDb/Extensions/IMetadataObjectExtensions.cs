@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq.Expressions;
 using System.Text;
 
 namespace GitObjectDb.Models
@@ -17,6 +18,11 @@ namespace GitObjectDb.Models
                 TypeNameHandling = TypeNameHandling.Objects
             });
             _jsonSerializer.Formatting = Formatting.Indented;
+        }
+
+        public static TModel With<TModel>(this TModel source, Expression<Predicate<TModel>> predicate = null) where TModel : IMetadataObject
+        {
+            return (TModel)source.With(predicate);
         }
 
         internal static IMetadataObject Root(this IMetadataObject node)

@@ -1,11 +1,11 @@
 using LibGit2Sharp;
-using GitObjectDb.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using GitObjectDb.Models;
+using GitObjectDb.Reflection;
 
 namespace GitObjectDb.Compare
 {
@@ -17,10 +17,10 @@ namespace GitObjectDb.Compare
         readonly StringBuilder _jsonBuffer = new StringBuilder();
 
         public delegate ComputeTreeChanges Factory(Func<Repository> repositoryFactory);
-        public ComputeTreeChanges(IServiceProvider serviceProvider, IModelDataAccessorProvider modelDataProvider, Func<Repository> repositoryFactory)
+        public ComputeTreeChanges(IServiceProvider serviceProvider, Func<Repository> repositoryFactory)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _modelDataProvider = modelDataProvider ?? throw new ArgumentNullException(nameof(modelDataProvider));
+            _modelDataProvider = serviceProvider.GetService<IModelDataAccessorProvider>();
             _repositoryFactory = repositoryFactory;
         }
 
@@ -115,8 +115,8 @@ namespace GitObjectDb.Compare
         {
             var anyChange = false;
             using (var enumerator = new TwoSequenceEnumerator<IMetadataObject>(
-                childProperty.Accessor(original).Cast<IMetadataObject>(),
-                childProperty.Accessor(@new).Cast<IMetadataObject>()))
+                childProperty.Accessor(original),
+                childProperty.Accessor(@new)))
             {
                 while (!enumerator.BothCompleted)
                 {

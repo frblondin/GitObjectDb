@@ -3,19 +3,26 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 
-namespace GitObjectDb.Utils
+namespace GitObjectDb.Reflection
 {
     public interface IModelDataAccessorProvider
     {
         IModelDataAccessor Get(Type type);
     }
 
-    public class ModelDataAccessorProvider : IModelDataAccessorProvider
+    internal class ModelDataAccessorProvider : IModelDataAccessorProvider
     {
-        public IModelDataAccessor Get(Type type) => new ModelDataAccessor(type);
+        private readonly IServiceProvider _serviceProvider;
+
+        public ModelDataAccessorProvider(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider;
+        }
+
+        public IModelDataAccessor Get(Type type) => new ModelDataAccessor(_serviceProvider, type);
     }
 
-    public class CachedModelDataAccessorProvider : IModelDataAccessorProvider
+    internal class CachedModelDataAccessorProvider : IModelDataAccessorProvider
     {
         readonly IModelDataAccessorProvider _inner;
         readonly ConcurrentDictionary<Type, IModelDataAccessor> _cache = new ConcurrentDictionary<Type, IModelDataAccessor>();

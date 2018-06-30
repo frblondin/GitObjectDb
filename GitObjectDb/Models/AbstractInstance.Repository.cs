@@ -1,9 +1,4 @@
 using LibGit2Sharp;
-using GitObjectDb.Models;
-using GitObjectDb.Utils;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -65,10 +60,10 @@ namespace GitObjectDb.Models
 
         void AddNodeChildrenToCommit(Repository repository, TreeDefinition tree, Stack<string> stack, IMetadataObject node)
         {
-            var dataAccessor = _dataAccessorProvider.Get(node.GetType());
+            var dataAccessor = DataAccessorProvider.Get(node.GetType());
             foreach (var childProperty in dataAccessor.ChildProperties)
             {
-                var children = childProperty.Accessor(node).Cast<IMetadataObject>();
+                var children = childProperty.Accessor(node);
                 stack.Push(childProperty.Property.Name);
                 foreach (var child in children)
                 {
@@ -88,13 +83,13 @@ namespace GitObjectDb.Models
             IMetadataObject result = this;
             for (int i = 0; i < chunks.Length && result != null; i++)
             {
-                var propertyInfo = _dataAccessorProvider.Get(result.GetType()).ChildProperties.FirstOrDefault(p =>
+                var propertyInfo = DataAccessorProvider.Get(result.GetType()).ChildProperties.FirstOrDefault(p =>
                     p.Property.Name.Equals(chunks[i], StringComparison.OrdinalIgnoreCase));
                 if (propertyInfo == null || ++i >= chunks.Length) return null;
 
                 var children = propertyInfo.Accessor(result);
                 var guid = Guid.Parse(chunks[i]);
-                result = children.Cast<IMetadataObject>().FirstOrDefault(c => c.Id == guid);
+                result = children.FirstOrDefault(c => c.Id == guid);
             }
             return result;
         }

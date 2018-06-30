@@ -8,11 +8,11 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 
-namespace GitObjectDb.Utils
+namespace GitObjectDb.JsonConverters
 {
-    public delegate ILazyChildren ChildrenResolver(Type parentType, string propertyName);
+    internal delegate ILazyChildren ChildrenResolver(Type parentType, string propertyName);
 
-    public class MetadataObjectJsonConverter : JsonConverter
+    internal class MetadataObjectJsonConverter : JsonConverter
     {
         readonly IServiceProvider _serviceProvider;
         readonly ChildrenResolver _childResolver;

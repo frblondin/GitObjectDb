@@ -1,5 +1,5 @@
 using GitObjectDb.Attributes;
-using GitObjectDb.Utils;
+using GitObjectDb.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -17,12 +17,17 @@ namespace GitObjectDb.Models
     {
         internal const string DebuggerDisplay = "Name = {Name}, Id = {Id}";
 
+        protected IModelDataAccessorProvider DataAccessorProvider { get; }
+        readonly IModelDataAccessor _dataAccessor;
+
         [DataMember]
         public Guid Id { get; }
         [DataMember, Modifiable]
         public string Name { get; }
 
-        public abstract IEnumerable<IMetadataObject> Children { get; }
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        public IEnumerable<IMetadataObject> Children => _dataAccessor.ChildProperties.SelectMany(p => p.Accessor(this));
+
         public IMetadataObject Parent { get; private set; }
 
         public AbstractInstance Instance =>
@@ -30,8 +35,12 @@ namespace GitObjectDb.Models
             throw new NullReferenceException("No parent instance has been set.");
         IInstance IMetadataObject.Instance => Instance;
 
-        public AbstractModel(Guid id, string name)
+        public AbstractModel(IServiceProvider serviceProvider, Guid id, string name)
         {
+            if (serviceProvider == null) throw new ArgumentNullException(nameof(serviceProvider));
+
+            DataAccessorProvider = serviceProvider.GetService<IModelDataAccessorProvider>();
+            _dataAccessor = DataAccessorProvider.Get(GetType());
             if (id == Guid.Empty) throw new ArgumentNullException(nameof(id));
             Id = id;
             Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -44,16 +53,7 @@ namespace GitObjectDb.Models
             Parent = parent;
         }
 
-        internal IMetadataObject With(Expression predicate = null)
-        {
-            var result = CloneSubTree(predicate);
-            CreateNewParent(result);
-            return result;
-        }
-
-        protected abstract void CreateNewParent(IMetadataObject @new);
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public abstract IMetadataObject CloneSubTree(Expression predicate = null);
+        IMetadataObject IMetadataObject.With(Expression predicate) =>
+            _dataAccessor.With(this, predicate);
     }
 }

@@ -2,7 +2,6 @@ using LibGit2Sharp;
 using GitObjectDb.Attributes;
 using GitObjectDb.Compare;
 using GitObjectDb.Models;
-using GitObjectDb.Utils;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -13,6 +12,7 @@ using System.Linq.Expressions;
 using System.Runtime.Serialization;
 using System.Text;
 using System.ComponentModel;
+using GitObjectDb.Reflection;
 
 namespace GitObjectDb.Models
 {
@@ -20,18 +20,12 @@ namespace GitObjectDb.Models
     [DataContract]
     public abstract partial class AbstractInstance : AbstractModel
     {
-        readonly IServiceProvider _serviceProvider;
-        readonly IModelDataAccessorProvider _dataAccessorProvider;
         readonly ComputeTreeChanges.Factory _computeTreeChangesFactory;
 
         [JsonConstructor]
-        public AbstractInstance(IServiceProvider serviceProvider, IModelDataAccessorProvider dataAccessorProvider, ComputeTreeChanges.Factory computeTreeChangesFactory, Guid id, string name) : base(id, name)
+        public AbstractInstance(IServiceProvider serviceProvider, Guid id, string name) : base(serviceProvider, id, name)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _dataAccessorProvider = dataAccessorProvider ?? throw new ArgumentNullException(nameof(dataAccessorProvider));
-            _computeTreeChangesFactory = computeTreeChangesFactory;
+            _computeTreeChangesFactory = serviceProvider.GetService<ComputeTreeChanges.Factory>();
         }
-
-        protected override void CreateNewParent(IMetadataObject @new) { }
     }
 }

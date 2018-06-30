@@ -19,7 +19,7 @@ namespace GitObjectDb.Tests.Assets.Customizations
             IServiceProvider serviceProvider = null;
 
             var builder = new ContainerBuilder();
-            builder.RegisterAssemblyModules(typeof(GitObjectDb.Autofac.AutofacModule).Assembly);
+            builder.RegisterAssemblyModules(typeof(Autofac.AutofacModule).Assembly);
             builder.RegisterAssemblyModules(Assembly.GetExecutingAssembly());
             builder.Register(_ => serviceProvider);
             _container = builder.Build();

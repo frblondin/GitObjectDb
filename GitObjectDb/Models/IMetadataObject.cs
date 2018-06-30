@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Linq.Expressions;
 
 namespace GitObjectDb.Models
 {
@@ -14,7 +15,7 @@ namespace GitObjectDb.Models
         string Name { get; }
         IEnumerable<IMetadataObject> Children { get; }
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        void AttachToParent(IMetadataObject parent);
+        [EditorBrowsable(EditorBrowsableState.Never)] void AttachToParent(IMetadataObject parent);
+        [EditorBrowsable(EditorBrowsableState.Never)] IMetadataObject With(Expression predicate);
     }
 }

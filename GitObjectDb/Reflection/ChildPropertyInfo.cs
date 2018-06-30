@@ -1,17 +1,17 @@
-﻿using GitObjectDb.Models;
+using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace GitObjectDb.Utils
+namespace GitObjectDb.Reflection
 {
     public class ChildPropertyInfo
     {
         public PropertyInfo Property { get; }
         public Type ItemType { get; }
-        public Func<IMetadataObject, System.Collections.IList> Accessor { get; }
+        public Func<IMetadataObject, IEnumerable<IMetadataObject>> Accessor { get; }
         public Func<IMetadataObject, bool> ShouldVisitChildren { get; }
 
         public ChildPropertyInfo(PropertyInfo property, Type itemType)
@@ -22,36 +22,28 @@ namespace GitObjectDb.Utils
             ShouldVisitChildren = GetShouldVisitChildrenGetter(property).Compile();
         }
 
-        Expression<Func<IMetadataObject, System.Collections.IList>> CreateGetter(PropertyInfo property)
+        Expression<Func<IMetadataObject, IEnumerable<IMetadataObject>>> CreateGetter(PropertyInfo property)
         {
             var instanceParam = Expression.Parameter(typeof(IMetadataObject), "instance");
-            return Expression.Lambda<Func<IMetadataObject, System.Collections.IList>>(
+            return Expression.Lambda<Func<IMetadataObject, IEnumerable<IMetadataObject>>>(
                 Expression.Convert(
                     Expression.Property(
                         Expression.Convert(instanceParam, property.DeclaringType),
                         property),
-                    typeof(System.Collections.IList)),
+                    typeof(IEnumerable<IMetadataObject>)),
                 instanceParam);
         }
 
         Expression<Func<IMetadataObject, bool>> GetShouldVisitChildrenGetter(PropertyInfo property)
         {
             var instanceParam = Expression.Parameter(typeof(IMetadataObject), "instance");
-            var expectedFieldName = $"_{property.Name}";
-            var field = property.DeclaringType
-                .GetFields(BindingFlags.Instance | BindingFlags.NonPublic)
-                .FirstOrDefault(f => f.Name.Equals(expectedFieldName, StringComparison.OrdinalIgnoreCase)) ??
-                throw new NotSupportedException($"Field named '{expectedFieldName}' expected.");
-            var lazyChildrenVar = Expression.Variable(typeof(ILazyChildren), "lazyChildren");
+            var lazyChildren = Expression.Convert(
+                Expression.Property(Expression.Convert(instanceParam, property.DeclaringType), property),
+                typeof(ILazyChildren));
             return Expression.Lambda<Func<IMetadataObject, bool>>(
-                Expression.Block(
-                    new[] { lazyChildrenVar },
-                    Expression.Assign(
-                        lazyChildrenVar,
-                        Expression.Field(Expression.Convert(instanceParam, property.DeclaringType), field)),
-                    Expression.OrElse(
-                        Expression.Property(lazyChildrenVar, nameof(ILazyChildren.AreChildrenLoaded)),
-                        Expression.Property(lazyChildrenVar, nameof(ILazyChildren.ForceVisit)))),
+                Expression.OrElse(
+                    Expression.Property(lazyChildren, nameof(ILazyChildren.AreChildrenLoaded)),
+                    Expression.Property(lazyChildren, nameof(ILazyChildren.ForceVisit))),
                 instanceParam);
         }
 

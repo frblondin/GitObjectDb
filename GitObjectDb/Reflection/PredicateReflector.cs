@@ -1,34 +1,41 @@
-﻿using GitObjectDb.Attributes;
+using GitObjectDb.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
-namespace GitObjectDb.Utils
+namespace GitObjectDb.Reflection
 {
-    public class PredicateReflector<T>
+    internal class PredicateReflector
     {
-        public Expression<Predicate<T>> Predicate { get; }
+        public static PredicateReflector Empty { get; } = new PredicateReflector();
+
+        public Expression Predicate { get; }
         readonly PredicateVisitor _visitor;
 
-        public PredicateReflector(Expression<Predicate<T>> predicate = null)
+        public PredicateReflector(Expression predicate = null)
         {
             Predicate = predicate;
             _visitor = predicate != null ? CreateVisitor(predicate) : null;
         }
 
-        PredicateVisitor CreateVisitor(Expression<Predicate<T>> predicate)
+        PredicateVisitor CreateVisitor(Expression predicate)
         {
             var visitor = new PredicateVisitor();
             visitor.Visit(predicate);
             return visitor;
         }
 
+        static internal MethodInfo ProcessArgumentMethod { get; } = typeof(PredicateReflector).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Single(m => m.Name == nameof(ProcessArgument));
         public TValue ProcessArgument<TValue>(string name, TValue fallback) =>
-            _visitor != null && _visitor.Values.TryGetValue(name, out var value) ? (TValue)value: fallback;
+            _visitor != null && _visitor.Values.TryGetValue(name, out var value) ?
+            (TValue)value :
+            fallback;
 
+        #region PredicateVisitor
         class PredicateVisitor : ExpressionVisitor
         {
             public IDictionary<string, object> Values { get; } = new SortedDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -75,5 +82,6 @@ namespace GitObjectDb.Utils
                 }
             }
         }
+        #endregion
     }
 }

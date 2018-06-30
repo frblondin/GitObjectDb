@@ -8,7 +8,6 @@ using AutoFixture.Kernel;
 using AutoFixture.NUnit3;
 using GitObjectDb.IO;
 using GitObjectDb.Tests.Assets.Utils;
-using GitObjectDb.Utils;
 using NUnit.Framework;
 
 namespace GitObjectDb.Tests.IO

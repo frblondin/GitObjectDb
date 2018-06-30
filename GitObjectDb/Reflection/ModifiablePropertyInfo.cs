@@ -1,10 +1,10 @@
-﻿using GitObjectDb.Models;
+using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace GitObjectDb.Utils
+namespace GitObjectDb.Reflection
 {
     public class ModifiablePropertyInfo
     {

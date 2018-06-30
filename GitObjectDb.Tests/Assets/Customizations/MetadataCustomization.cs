@@ -10,29 +10,32 @@ namespace GitObjectDb.Tests.Assets.Customizations
 {
     public class MetadataCustomization : ICustomization
     {
-        int ApplicationCount = 10;
-        int PagePerApplicationCount = 5;
-        int FieldPerPageCount = 20;
+        int _applicationCount = 10;
+        int _pagePerApplicationCount = 5;
+        int _fieldPerPageCount = 20;
 
         public void Customize(IFixture fixture)
         {
-            var factory = fixture.Create<Instance.Factory>();
-            var module = factory(Guid.NewGuid(), "Some module", new LazyChildren<Application>(
-                Enumerable.Range(1, ApplicationCount).Select(a =>
-                    new Application(Guid.NewGuid(), $"Application {a}", new LazyChildren<Page>(
-                        Enumerable.Range(1, PagePerApplicationCount).Select(p =>
-                            new Page(Guid.NewGuid(), $"Page {p}", new LazyChildren<Field>(
-                                Enumerable.Range(1, FieldPerPageCount).Select(f =>
-                                    new Field(Guid.NewGuid(), $"Field {f}"))
+            var instanceFactory = fixture.Create<Instance.Factory>();
+            var applicationFactory = fixture.Create<Application.Factory>();
+            var pageFactory = fixture.Create<Page.Factory>();
+            var fieldFactory = fixture.Create<Field.Factory>();
+            var module = instanceFactory(Guid.NewGuid(), "Some module", new LazyChildren<Application>(
+                Enumerable.Range(1, _applicationCount).Select(a =>
+                    applicationFactory(Guid.NewGuid(), $"Application {a}", new LazyChildren<Page>(
+                        Enumerable.Range(1, _pagePerApplicationCount).Select(p =>
+                            pageFactory(Guid.NewGuid(), $"Page {p}", new LazyChildren<Field>(
+                                Enumerable.Range(1, _fieldPerPageCount).Select(f =>
+                                    fieldFactory(Guid.NewGuid(), $"Field {f}"))
                                 .ToImmutableList())))
                         .ToImmutableList())))
                 .ToImmutableList()));
             fixture.Inject(module);
 
             var random = new Random();
-            fixture.Register(() => module.Applications[random.Next(ApplicationCount)]);
-            fixture.Register(() => fixture.Create<Application>().Pages[random.Next(PagePerApplicationCount)]);
-            fixture.Register(() => fixture.Create<Page>().Fields[random.Next(FieldPerPageCount)]);
+            fixture.Register(() => module.Applications[random.Next(_applicationCount)]);
+            fixture.Register(() => fixture.Create<Application>().Pages[random.Next(_pagePerApplicationCount)]);
+            fixture.Register(() => fixture.Create<Page>().Fields[random.Next(_fieldPerPageCount)]);
         }
     }
 }
