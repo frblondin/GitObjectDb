@@ -14,7 +14,8 @@ namespace GitObjectDb.Tests.Backends
 {
     public class InMemoryBackendTests
     {
-        [Test, AutoData]
+        [Test]
+        [AutoData]
         public void InMemoryBackend(InMemoryBackend sut, Signature signature, string message)
         {
             var path = GetTempPath();
@@ -31,6 +32,5 @@ namespace GitObjectDb.Tests.Backends
 
         static string GetTempPath() =>
             Path.Combine(Path.GetTempPath(), "Repos", Guid.NewGuid().ToString());
-
     }
 }

@@ -1,4 +1,4 @@
-﻿using LibGit2Sharp;
+using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,6 +25,7 @@ namespace GitObjectDb.Backends
             }
 
             public override bool CanRead => false;
+
             public override bool CanWrite => true;
 
             public override int Write(Stream dataStream, long length)
@@ -39,13 +40,12 @@ namespace GitObjectDb.Backends
                     toRead -= offset;
                     bytesRead = dataStream.Read(buffer, offset, toRead);
                     offset += bytesRead;
-                } while (bytesRead != 0);
+                }
+                while (bytesRead != 0);
 
                 if (offset != (int)length)
                 {
-                    throw new InvalidOperationException(
-                        string.Format("Too short buffer. {0} bytes were expected. {1} have been successfully read.",
-                            length, bytesRead));
+                    throw new InvalidOperationException($"Too short buffer. {length} bytes were expected. {bytesRead} have been successfully read.");
                 }
 
                 _chunks.Add(buffer);
@@ -53,22 +53,20 @@ namespace GitObjectDb.Backends
                 return (int)ReturnCode.GIT_OK;
             }
 
-            public override int FinalizeWrite(ObjectId oid)
+            public override int FinalizeWrite(ObjectId id)
             {
-                //TODO: Drop the check of the size when libgit2 #1837 is merged
+                // TODO: Drop the check of the size when libgit2 #1837 is merged
                 long totalLength = _chunks.Sum(chunk => chunk.Length);
 
                 if (totalLength != _length)
                 {
                     throw new InvalidOperationException(
-                        string.Format("Invalid object length. {0} was expected. The "
-                                      + "total size of the received chunks amounts to {1}.",
-                                      _length, totalLength));
+                        $"Invalid object length. {_length} was expected. The total size of the received chunks amounts to {totalLength}.");
                 }
 
                 using (Stream stream = new FakeStream(_chunks, _length))
                 {
-                    Backend.Write(oid, stream, _length, _type);
+                    Backend.Write(id, stream, _length, _type);
                 }
 
                 return (int)ReturnCode.GIT_OK;
@@ -90,6 +88,20 @@ namespace GitObjectDb.Backends
                 {
                     _chunks = chunks;
                     _length = length;
+                }
+
+                public override bool CanRead => true;
+
+                public override bool CanSeek => throw new NotImplementedException();
+
+                public override bool CanWrite => throw new NotImplementedException();
+
+                public override long Length => _length;
+
+                public override long Position
+                {
+                    get { throw new NotImplementedException(); }
+                    set { throw new NotImplementedException(); }
                 }
 
                 public override void Flush()
@@ -124,7 +136,7 @@ namespace GitObjectDb.Backends
                         _currentPos += toBeCopied;
                         totalCopied += toBeCopied;
 
-                        Debug.Assert(_currentPos <= _chunks[_currentChunk].Length);
+                        Debug.Assert(_currentPos <= _chunks[_currentChunk].Length, "Unexpected position in current chunk.");
 
                         if (_currentPos == _chunks[_currentChunk].Length)
                         {
@@ -139,18 +151,6 @@ namespace GitObjectDb.Backends
                 public override void Write(byte[] buffer, int offset, int count)
                 {
                     throw new NotImplementedException();
-                }
-
-                public override bool CanRead => true;
-                public override bool CanSeek => throw new NotImplementedException();
-                public override bool CanWrite => throw new NotImplementedException();
-
-                public override long Length => _length;
-
-                public override long Position
-                {
-                    get { throw new NotImplementedException(); }
-                    set { throw new NotImplementedException(); }
                 }
             }
         }

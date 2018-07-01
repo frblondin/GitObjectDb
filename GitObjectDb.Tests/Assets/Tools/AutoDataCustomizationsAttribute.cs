@@ -1,11 +1,19 @@
-﻿using AutoFixture;
+using AutoFixture;
 using AutoFixture.NUnit3;
 using System;
 
 namespace GitObjectDb.Tests.Assets.Utils
 {
-    public class AutoDataCustomizationsAttribute : AutoDataAttribute
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class AutoDataCustomizationsAttribute : AutoDataAttribute
     {
+        public AutoDataCustomizationsAttribute(params Type[] customizationTypes)
+            : base(() => CreateFixture(customizationTypes))
+        {
+        }
+
+        public Type[] CustomizationTypes { get; }
+
         static IFixture CreateFixture(params Type[] customizationTypes)
         {
             var result = new Fixture();
@@ -15,11 +23,6 @@ namespace GitObjectDb.Tests.Assets.Utils
                 result.Customize(customization);
             }
             return result;
-        }
-
-        public AutoDataCustomizationsAttribute(params Type[] customizationTypes) :
-            base(() => CreateFixture(customizationTypes))
-        {
         }
     }
 }

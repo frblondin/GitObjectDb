@@ -1,18 +1,18 @@
 using AutoFixture;
 using GitObjectDb.Models;
-using System;
-using System.Collections.Immutable;
-using System.Collections.Generic;
-using System.Linq;
 using GitObjectDb.Tests.Assets.Models;
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 
 namespace GitObjectDb.Tests.Assets.Customizations
 {
     public class MetadataCustomization : ICustomization
     {
-        int _applicationCount = 10;
-        int _pagePerApplicationCount = 5;
-        int _fieldPerPageCount = 20;
+        readonly int _applicationCount = 10;
+        readonly int _pagePerApplicationCount = 5;
+        readonly int _fieldPerPageCount = 20;
 
         public void Customize(IFixture fixture)
         {

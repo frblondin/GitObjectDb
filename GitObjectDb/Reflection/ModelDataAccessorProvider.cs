@@ -1,35 +1,24 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 
 namespace GitObjectDb.Reflection
 {
-    public interface IModelDataAccessorProvider
-    {
-        IModelDataAccessor Get(Type type);
-    }
-
+    /// <inheritdoc />
     internal class ModelDataAccessorProvider : IModelDataAccessorProvider
     {
-        private readonly IServiceProvider _serviceProvider;
+        readonly IServiceProvider _serviceProvider;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ModelDataAccessorProvider"/> class.
+        /// </summary>
+        /// <param name="serviceProvider">The service provider.</param>
         public ModelDataAccessorProvider(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
         }
 
+        /// <inheritdoc />
         public IModelDataAccessor Get(Type type) => new ModelDataAccessor(_serviceProvider, type);
-    }
-
-    internal class CachedModelDataAccessorProvider : IModelDataAccessorProvider
-    {
-        readonly IModelDataAccessorProvider _inner;
-        readonly ConcurrentDictionary<Type, IModelDataAccessor> _cache = new ConcurrentDictionary<Type, IModelDataAccessor>();
-
-        public CachedModelDataAccessorProvider(IModelDataAccessorProvider inner) =>
-            _inner = inner ?? throw new ArgumentNullException(nameof(inner));
-
-        public IModelDataAccessor Get(Type type) => _cache.GetOrAdd(type, _inner.Get);
     }
 }

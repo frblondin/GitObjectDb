@@ -15,14 +15,17 @@ namespace GitObjectDb.Tests.Assets.Models
     [DataContract]
     public class Page : AbstractModel
     {
-        public Application Application => (Application)Parent ?? throw new NullReferenceException("No parent has been set.");
-
-        public ILazyChildren<Field> Fields { get; }
-
-        public delegate Page Factory(Guid id, string name, LazyChildren<Field> fields);
-        public Page(IServiceProvider serviceProvider, Guid id, string name, ILazyChildren<Field> fields) : base(serviceProvider, id, name)
+        public Page(IServiceProvider serviceProvider, Guid id, string name, ILazyChildren<Field> fields)
+            : base(serviceProvider, id, name)
         {
             Fields = (fields ?? throw new ArgumentNullException(nameof(fields))).AttachToParent(this);
         }
+
+        public delegate Page Factory(Guid id, string name, LazyChildren<Field> fields);
+
+        public Application Application =>
+            (Application)Parent ?? throw new NotSupportedException("No parent has been set.");
+
+        public ILazyChildren<Field> Fields { get; }
     }
 }

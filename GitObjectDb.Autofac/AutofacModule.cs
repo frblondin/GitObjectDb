@@ -1,20 +1,23 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Autofac;
 using Autofac.Builder;
 using Autofac.Core;
 using Autofac.Core.Activators.Delegate;
 using Autofac.Core.Lifetime;
-using GitObjectDb.Compare;
-using GitObjectDb.Reflection;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace GitObjectDb.Autofac
 {
+    /// <summary>
+    /// Module providing all types necessary to run GitObjectDb using Autofac.
+    /// </summary>
+    /// <seealso cref="Module" />
     public class AutofacModule : Module
     {
         const string HandlerKeyName = "handler";
 
+        /// <inheritdoc />
         protected override void Load(ContainerBuilder builder)
         {
             RegisterComponents(builder);
@@ -23,20 +26,20 @@ namespace GitObjectDb.Autofac
 
         static void RegisterComponents(ContainerBuilder builder)
         {
-            foreach (var implementation in DefaultInterfaceMapping.Implementations)
+            foreach (var (type, interfaceType) in DefaultServiceMapping.Implementations)
             {
-                var registration = builder.RegisterType(implementation.Type);
-                if (implementation.InterfaceType != null)
+                var registration = builder.RegisterType(type);
+                if (interfaceType != null)
                 {
-                    registration.As(implementation.InterfaceType);
-                    RegisterAsHandlerIfOneDecoratorExists(implementation.InterfaceType, registration);
+                    registration.As(interfaceType);
+                    RegisterAsHandlerIfOneDecoratorExists(interfaceType, registration);
                 }
             }
         }
 
         static void RegisterAsHandlerIfOneDecoratorExists(Type @interface, IRegistrationBuilder<object, ConcreteReflectionActivatorData, SingleRegistrationStyle> registration)
         {
-            if (DefaultInterfaceMapping.Decorators.Any(d => d.InterfaceType == @interface))
+            if (DefaultServiceMapping.Decorators.Any(d => d.InterfaceType == @interface))
             {
                 registration.Named(HandlerKeyName, @interface);
             }
@@ -44,21 +47,21 @@ namespace GitObjectDb.Autofac
 
         static void RegisterDecorators(ContainerBuilder builder)
         {
-            foreach (var decorator in DefaultInterfaceMapping.Decorators)
+            foreach (var (interfaceType, adapter, singleInstance) in DefaultServiceMapping.Decorators)
             {
                 // Activator calls the adapter and passes the inner component
-                object Activate(IComponentContext context, IEnumerable<Parameter> _) =>
-                    decorator.Adapter(context.ResolveKeyed(HandlerKeyName, decorator.InterfaceType));
+                object Activate(IComponentContext context, IEnumerable<Parameter> parameters) =>
+                    adapter(context.ResolveKeyed(HandlerKeyName, interfaceType));
 
                 var registration = RegistrationBuilder.CreateRegistration(
                     Guid.NewGuid(),
-                    new RegistrationData(new KeyedService(HandlerKeyName, decorator.InterfaceType))
+                    new RegistrationData(new KeyedService(HandlerKeyName, interfaceType))
                     {
-                        Sharing = decorator.SingleInstance ? InstanceSharing.Shared : InstanceSharing.None,
-                        Lifetime = decorator.SingleInstance ? (IComponentLifetime)new RootScopeLifetime() : new CurrentScopeLifetime()
+                        Sharing = singleInstance ? InstanceSharing.Shared : InstanceSharing.None,
+                        Lifetime = singleInstance ? (IComponentLifetime)new RootScopeLifetime() : new CurrentScopeLifetime()
                     },
-                    new DelegateActivator(decorator.InterfaceType, Activate),
-                    new[] { new TypedService(decorator.InterfaceType) });
+                    new DelegateActivator(interfaceType, Activate),
+                    new[] { new TypedService(interfaceType) });
                 builder.RegisterComponent(registration);
             }
         }

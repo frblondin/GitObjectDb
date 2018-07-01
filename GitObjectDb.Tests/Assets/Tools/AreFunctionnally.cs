@@ -1,4 +1,4 @@
-﻿using GitObjectDb.Attributes;
+using GitObjectDb.Attributes;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
@@ -8,34 +8,6 @@ namespace GitObjectDb.Tests.Assets.Utils
 {
     public static class AreFunctionnally
     {
-        #region ValuesExtractor
-        class ValuesExtractor : ExpressionVisitor
-        {
-            public static (Expression A, Expression B) Extract(Expression expression)
-            {
-                var extractor = new ValuesExtractor();
-                extractor.Visit(expression);
-                if (extractor.A == null || extractor.B == null) throw new NotSupportedException("Could not extract values from expression.");
-                return (extractor.A, extractor.B);
-            }
-
-            Expression A;
-            Expression B;
-
-            private ValuesExtractor() { }
-
-            protected override Expression VisitBinary(BinaryExpression node)
-            {
-                if (node.NodeType == ExpressionType.Equal)
-                {
-                    A = node.Left;
-                    B = node.Right;
-                }
-                return base.VisitBinary(node);
-            }
-        }
-        #endregion
-
         public static Expression<Func<bool>> Equivalent<TValue>(Expression<Func<bool>> values, params string[] excludedProperties)
         {
             var extracted = ValuesExtractor.Extract(values);
@@ -45,10 +17,10 @@ namespace GitObjectDb.Tests.Assets.Utils
         public static Expression<Func<bool>> Equivalent(Type type, Expression value, Expression expected, params string[] excludedProperties) =>
             Expression.Lambda<Func<bool>>(
                 Expression.AndAlso(
-                    ReferenceNotEqual(type, value, expected),
+                    ReferenceNotEqual(value, expected),
                     PropertiesAreEquivalent(type, value, expected, excludedProperties)));
 
-        static BinaryExpression ReferenceNotEqual(Type type, Expression value, Expression expected) =>
+        static BinaryExpression ReferenceNotEqual(Expression value, Expression expected) =>
             Expression.ReferenceNotEqual(value, expected);
 
         static Expression PropertiesAreEquivalent(Type type, Expression value, Expression expected, params string[] excludedProperties)
@@ -92,11 +64,45 @@ namespace GitObjectDb.Tests.Assets.Utils
                     Expression.Property(expectedChildren, countProperty));
 
                 result = result == null ? sameCount : Expression.AndAlso(result, sameCount);
-
-                //var allMethod = typeof(Enumerable).GetMethod("All`");
-                //var expression = Expression.Equal(Expression.Property(value, p), Expression.Property(expected, p));
-                //result = result == null ? expression : Expression.AndAlso(result, result);
             }
         }
+
+        #region ValuesExtractor
+        class ValuesExtractor : ExpressionVisitor
+        {
+#pragma warning disable IDE1006 // Naming Styles
+#pragma warning disable SA1306 // Field names must begin with lower-case letter
+            Expression A;
+            Expression B;
+#pragma warning restore SA1306 // Field names must begin with lower-case letter
+#pragma warning restore IDE1006 // Naming Styles
+
+            ValuesExtractor()
+            {
+            }
+
+            public static (Expression A, Expression B) Extract(Expression expression)
+            {
+                var extractor = new ValuesExtractor();
+                extractor.Visit(expression);
+                if (extractor.A == null || extractor.B == null)
+                {
+                    throw new NotSupportedException("Could not extract values from expression.");
+                }
+
+                return (extractor.A, extractor.B);
+            }
+
+            protected override Expression VisitBinary(BinaryExpression node)
+            {
+                if (node.NodeType == ExpressionType.Equal)
+                {
+                    A = node.Left;
+                    B = node.Right;
+                }
+                return base.VisitBinary(node);
+            }
+        }
+        #endregion
     }
 }

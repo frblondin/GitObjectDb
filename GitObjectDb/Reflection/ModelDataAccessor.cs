@@ -11,33 +11,31 @@ using System.Text;
 
 namespace GitObjectDb.Reflection
 {
-    public interface IModelDataAccessor
-    {
-        ImmutableList<ChildPropertyInfo> ChildProperties { get; }
-        ImmutableList<ModifiablePropertyInfo> ModifiableProperties { get; }
-        ConstructorParameterBinding ConstructorParameterBinding { get; }
-        IMetadataObject With(IMetadataObject @object, Expression predicate = null);
-    }
-
+    /// <inheritdoc />
     internal class ModelDataAccessor : IModelDataAccessor
     {
-        public Type Type { get; }
         readonly IServiceProvider _serviceProvider;
         readonly IModelDataAccessorProvider _dataAccessorProvider;
-
         readonly Lazy<ImmutableList<ChildPropertyInfo>> _childProperties;
-        public ImmutableList<ChildPropertyInfo> ChildProperties => _childProperties.Value;
-
         readonly Lazy<ImmutableList<ModifiablePropertyInfo>> _modifiableProperties;
-        public ImmutableList<ModifiablePropertyInfo> ModifiableProperties => _modifiableProperties.Value;
-
         readonly Lazy<ConstructorParameterBinding> _constructorBinding;
-        public ConstructorParameterBinding ConstructorParameterBinding => _constructorBinding.Value;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ModelDataAccessor"/> class.
+        /// </summary>
+        /// <param name="serviceProvider">The service provider.</param>
+        /// <param name="type">The type.</param>
+        /// <exception cref="ArgumentNullException">
+        /// serviceProvider
+        /// or
+        /// IModelDataAccessorProvider
+        /// or
+        /// type
+        /// </exception>
         internal ModelDataAccessor(IServiceProvider serviceProvider, Type type)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _dataAccessorProvider = _serviceProvider.GetService<IModelDataAccessorProvider>() ?? throw new ArgumentNullException(nameof(IModelDataAccessorProvider));
+            _dataAccessorProvider = _serviceProvider.GetService<IModelDataAccessorProvider>();
             Type = type ?? throw new ArgumentNullException(nameof(type));
             _childProperties = new Lazy<ImmutableList<ChildPropertyInfo>>(GetChildProperties);
             _modifiableProperties = new Lazy<ImmutableList<ModifiablePropertyInfo>>(GetModifiableProperties);
@@ -49,9 +47,21 @@ namespace GitObjectDb.Reflection
             });
         }
 
+        /// <inheritdoc />
+        public Type Type { get; }
+
+        /// <inheritdoc />
+        public ImmutableList<ChildPropertyInfo> ChildProperties => _childProperties.Value;
+
+        /// <inheritdoc />
+        public ImmutableList<ModifiablePropertyInfo> ModifiableProperties => _modifiableProperties.Value;
+
+        /// <inheritdoc />
+        public ConstructorParameterBinding ConstructorParameterBinding => _constructorBinding.Value;
+
         ImmutableList<ChildPropertyInfo> GetChildProperties() =>
             (from p in Type.GetProperties()
-             let lazyChildrenType = LazyChildren.TryGetLazyChildrenInterface(p.PropertyType)
+             let lazyChildrenType = LazyChildrenHelper.TryGetLazyChildrenInterface(p.PropertyType)
              where lazyChildrenType != null
              select new ChildPropertyInfo(p, lazyChildrenType.GetGenericArguments()[0])).ToImmutableList();
 
@@ -62,7 +72,10 @@ namespace GitObjectDb.Reflection
 
         IMetadataObject CloneSubTree(IMetadataObject @object, Expression predicate = null)
         {
-            if (@object == null) throw new ArgumentNullException(nameof(@object));
+            if (@object == null)
+            {
+                throw new ArgumentNullException(nameof(@object));
+            }
 
             var reflector = new PredicateReflector(predicate);
             return ConstructorParameterBinding.Cloner(
@@ -81,11 +94,22 @@ namespace GitObjectDb.Reflection
 
         void CreateNewParentTree(IMetadataObject old, IMetadataObject @new)
         {
-            if (old is AbstractInstance) return;
-
-            if (old == null) throw new ArgumentNullException(nameof(old));
-            if (@new == null) throw new ArgumentNullException(nameof(@new));
-            if (old.Parent == null) throw new NullReferenceException($"Object '{old}' does not have any parent.");
+            if (old is AbstractInstance)
+            {
+                return;
+            }
+            if (old == null)
+            {
+                throw new ArgumentNullException(nameof(old));
+            }
+            if (@new == null)
+            {
+                throw new ArgumentNullException(nameof(@new));
+            }
+            if (old.Parent == null)
+            {
+                throw new NotSupportedException($"Object '{old}' does not have any parent.");
+            }
 
             var parentDataAccessor = _dataAccessorProvider.Get(old.Parent.GetType());
             var newParent = parentDataAccessor.ConstructorParameterBinding.Cloner(
@@ -101,10 +125,11 @@ namespace GitObjectDb.Reflection
             CreateNewParentTree(old.Parent, newParent);
         }
 
-        public IMetadataObject With(IMetadataObject @object, Expression predicate = null)
+        /// <inheritdoc />
+        public IMetadataObject With(IMetadataObject source, Expression predicate = null)
         {
-            var result = CloneSubTree(@object, predicate);
-            CreateNewParentTree(@object, result);
+            var result = CloneSubTree(source, predicate);
+            CreateNewParentTree(source, result);
             return result;
         }
     }

@@ -7,13 +7,21 @@ using System.Reflection;
 
 namespace GitObjectDb.Reflection
 {
+    /// <summary>
+    /// Provides information to manage child properties.
+    /// </summary>
     public class ChildPropertyInfo
     {
-        public PropertyInfo Property { get; }
-        public Type ItemType { get; }
-        public Func<IMetadataObject, IEnumerable<IMetadataObject>> Accessor { get; }
-        public Func<IMetadataObject, bool> ShouldVisitChildren { get; }
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ChildPropertyInfo"/> class.
+        /// </summary>
+        /// <param name="property">The property.</param>
+        /// <param name="itemType">Type of the item.</param>
+        /// <exception cref="ArgumentNullException">
+        /// property
+        /// or
+        /// itemType
+        /// </exception>
         public ChildPropertyInfo(PropertyInfo property, Type itemType)
         {
             Property = property ?? throw new ArgumentNullException(nameof(property));
@@ -22,7 +30,27 @@ namespace GitObjectDb.Reflection
             ShouldVisitChildren = GetShouldVisitChildrenGetter(property).Compile();
         }
 
-        Expression<Func<IMetadataObject, IEnumerable<IMetadataObject>>> CreateGetter(PropertyInfo property)
+        /// <summary>
+        /// Gets the property.
+        /// </summary>
+        public PropertyInfo Property { get; }
+
+        /// <summary>
+        /// Gets the type of the children.
+        /// </summary>
+        public Type ItemType { get; }
+
+        /// <summary>
+        /// Gets the children accessor.
+        /// </summary>
+        public Func<IMetadataObject, IEnumerable<IMetadataObject>> Accessor { get; }
+
+        /// <summary>
+        /// Gets whether children should be visited.
+        /// </summary>
+        public Func<IMetadataObject, bool> ShouldVisitChildren { get; }
+
+        static Expression<Func<IMetadataObject, IEnumerable<IMetadataObject>>> CreateGetter(PropertyInfo property)
         {
             var instanceParam = Expression.Parameter(typeof(IMetadataObject), "instance");
             return Expression.Lambda<Func<IMetadataObject, IEnumerable<IMetadataObject>>>(
@@ -34,7 +62,7 @@ namespace GitObjectDb.Reflection
                 instanceParam);
         }
 
-        Expression<Func<IMetadataObject, bool>> GetShouldVisitChildrenGetter(PropertyInfo property)
+        static Expression<Func<IMetadataObject, bool>> GetShouldVisitChildrenGetter(PropertyInfo property)
         {
             var instanceParam = Expression.Parameter(typeof(IMetadataObject), "instance");
             var lazyChildren = Expression.Convert(
@@ -47,6 +75,12 @@ namespace GitObjectDb.Reflection
                 instanceParam);
         }
 
-        public bool Matches(string name) => Property.Name.Equals(name, StringComparison.OrdinalIgnoreCase);
+        /// <summary>
+        /// Gets whether this instance has the same case insensitive name.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns><code>true</code> is the names are matching.</returns>
+        public bool Matches(string name) =>
+            Property.Name.Equals(name, StringComparison.OrdinalIgnoreCase);
     }
 }

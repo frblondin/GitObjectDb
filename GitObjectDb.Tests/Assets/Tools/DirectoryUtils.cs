@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -9,7 +9,10 @@ namespace GitObjectDb.Tests.Assets.Tools
     {
         public static void Delete(string targetDir)
         {
-            if (!Directory.Exists(targetDir)) return;
+            if (!Directory.Exists(targetDir))
+            {
+                return;
+            }
 
             File.SetAttributes(targetDir, FileAttributes.Normal);
 

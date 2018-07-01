@@ -1,33 +1,64 @@
+using GitObjectDb.Models;
+using GitObjectDb.Reflection;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
-using GitObjectDb.Models;
-using GitObjectDb.Reflection;
 
 namespace GitObjectDb.Compare
 {
+    /// <summary>
+    /// Compares to commits and computes the differences (additions, deletions...).
+    /// </summary>
     public class ComputeTreeChanges
     {
         readonly IServiceProvider _serviceProvider;
         readonly IModelDataAccessorProvider _modelDataProvider;
+        readonly IInstanceLoader _instanceLoader;
         readonly Func<Repository> _repositoryFactory;
         readonly StringBuilder _jsonBuffer = new StringBuilder();
 
-        public delegate ComputeTreeChanges Factory(Func<Repository> repositoryFactory);
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ComputeTreeChanges"/> class.
+        /// </summary>
+        /// <param name="serviceProvider">The service provider.</param>
+        /// <param name="repositoryFactory">The repository factory.</param>
+        /// <exception cref="ArgumentNullException">serviceProvider</exception>
         public ComputeTreeChanges(IServiceProvider serviceProvider, Func<Repository> repositoryFactory)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _modelDataProvider = serviceProvider.GetService<IModelDataAccessorProvider>();
+            _instanceLoader = serviceProvider.GetService<IInstanceLoader>();
             _repositoryFactory = repositoryFactory;
         }
 
-        public MetadataTreeChanges Compare<TInstance>(Func<Repository, Tree> oldTreeGetter, Func<Repository, Tree> newTreeGetter) where TInstance : AbstractInstance
+        /// <summary>
+        /// Provides support for creazting <see cref="ComputeTreeChanges"/> objects.
+        /// </summary>
+        /// <param name="repositoryFactory">The repository factory.</param>
+        /// <returns>The <see cref="ComputeTreeChanges"/> instance.</returns>
+        public delegate ComputeTreeChanges Factory(Func<Repository> repositoryFactory);
+
+        static void RemoveNode(TreeDefinition definition, Stack<string> stack)
         {
-            var oldModule = InstanceLoader.LoadFrom<TInstance>(_serviceProvider, _repositoryFactory, oldTreeGetter);
-            var newModule = InstanceLoader.LoadFrom<TInstance>(_serviceProvider, _repositoryFactory, newTreeGetter);
+            var path = stack.ToDataPath();
+            definition.Remove(path);
+        }
+
+        /// <summary>
+        /// Compares the specified commits.
+        /// </summary>
+        /// <typeparam name="TInstance">The type of the instance.</typeparam>
+        /// <param name="oldTreeGetter">The old tree getter.</param>
+        /// <param name="newTreeGetter">The new tree getter.</param>
+        /// <returns>A <see cref="MetadataTreeChanges"/> containing all computed changes.</returns>
+        public MetadataTreeChanges Compare<TInstance>(Func<Repository, Tree> oldTreeGetter, Func<Repository, Tree> newTreeGetter)
+            where TInstance : AbstractInstance
+        {
+            var oldModule = _instanceLoader.LoadFrom<TInstance>(_repositoryFactory, oldTreeGetter);
+            var newModule = _instanceLoader.LoadFrom<TInstance>(_repositoryFactory, newTreeGetter);
 
             TreeChanges changes;
             using (var repository = _repositoryFactory())
@@ -41,7 +72,7 @@ namespace GitObjectDb.Compare
                 var modified = CollectModifiedNodes(oldModule, newModule, changes, oldTree);
                 var added = CollectAddedNodes(newModule, changes, newTree);
                 var deleted = CollectDeletedNodes(oldModule, changes, oldTree);
-                return new MetadataTreeChanges(modified, added, deleted);
+                return new MetadataTreeChanges(added, modified, deleted);
             }
         }
 
@@ -49,8 +80,8 @@ namespace GitObjectDb.Compare
             (from c in changes.Modified
              let oldEntry = oldTree[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
-             let oldNode = oldInstance.GetFromGitPath(c.Path.ParentPath())
-             let newNode = newInstance.GetFromGitPath(c.Path.ParentPath())
+             let oldNode = oldInstance.TryGetFromGitPath(c.Path.ParentPath())
+             let newNode = newInstance.TryGetFromGitPath(c.Path.ParentPath())
              select new MetadataTreeEntryChanges(oldNode, newNode))
             .ToImmutableList();
 
@@ -58,7 +89,7 @@ namespace GitObjectDb.Compare
             (from c in changes.Added
              let newEntry = newTree[c.Path]
              where newEntry.TargetType == TreeEntryTargetType.Blob
-             let newNode = newInstance.GetFromGitPath(c.Path.ParentPath())
+             let newNode = newInstance.TryGetFromGitPath(c.Path.ParentPath())
              select new MetadataTreeEntryChanges(null, newNode))
             .ToImmutableList();
 
@@ -66,22 +97,52 @@ namespace GitObjectDb.Compare
             (from c in changes.Deleted
              let oldEntry = oldTree[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
-             let oldNode = oldInstance.GetFromGitPath(c.Path.ParentPath())
+             let oldNode = oldInstance.TryGetFromGitPath(c.Path.ParentPath())
              select new MetadataTreeEntryChanges(oldNode, null))
             .ToImmutableList();
 
         static void ThrowIfNonSupportedChangeTypes(TreeChanges changes)
         {
-            if (changes.Conflicted.Any()) throw new NotSupportedException("Conflicting changes is not yet supported.");
-            if (changes.Copied.Any()) throw new NotSupportedException("Copied changes is not yet supported.");
-            if (changes.Renamed.Any()) throw new NotSupportedException("Renamed changes is not yet supported.");
-            if (changes.TypeChanged.Any()) throw new NotSupportedException("TypeChanged changes is not yet supported.");
+            if (changes.Conflicted.Any())
+            {
+                throw new NotSupportedException("Conflicting changes is not yet supported.");
+            }
+            if (changes.Copied.Any())
+            {
+                throw new NotSupportedException("Copied changes is not yet supported.");
+            }
+            if (changes.Renamed.Any())
+            {
+                throw new NotSupportedException("Renamed changes is not yet supported.");
+            }
+            if (changes.TypeChanged.Any())
+            {
+                throw new NotSupportedException("TypeChanged changes is not yet supported.");
+            }
         }
 
+        /// <summary>
+        /// Compares two <see cref="AbstractInstance"/> instances and generates a new <see cref="TreeDefinition"/> instance containing the tree changes to be committed.
+        /// </summary>
+        /// <param name="original">The original.</param>
+        /// <param name="new">The new.</param>
+        /// <param name="repository">The repository.</param>
+        /// <returns>The <see cref="TreeDefinition"/> and <code>true</code> is any change was detected between the two instances.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// original
+        /// or
+        /// new
+        /// </exception>
         internal (TreeDefinition NewTree, bool AnyChange) Compare(AbstractInstance original, AbstractInstance @new, Repository repository)
         {
-            if (original == null) throw new ArgumentNullException(nameof(original));
-            if (@new == null) throw new ArgumentNullException(nameof(@new));
+            if (original == null)
+            {
+                throw new ArgumentNullException(nameof(original));
+            }
+            if (@new == null)
+            {
+                throw new ArgumentNullException(nameof(@new));
+            }
 
             var tree = original._getTree(repository);
             var definition = TreeDefinition.From(tree);
@@ -146,7 +207,7 @@ namespace GitObjectDb.Compare
             }
             else if (enumerator.NodeHasBeenRemoved)
             {
-                RemoveNode(enumerator.Left, definition, stack);
+                RemoveNode(definition, stack);
                 enumerator.MoveNextLeft();
                 return true;
             }
@@ -164,23 +225,9 @@ namespace GitObjectDb.Compare
 
         void AddOrUpdateNode(IMetadataObject node, Repository repository, TreeDefinition definition, Stack<string> stack)
         {
-            var path = GetDataPath(stack);
+            var path = stack.ToDataPath();
             node.ToJson(_jsonBuffer);
             definition.Add(path, repository.CreateBlob(_jsonBuffer), Mode.NonExecutableFile);
-        }
-
-        static void RemoveNode(IMetadataObject node, TreeDefinition definition, Stack<string> stack)
-        {
-            var path = GetDataPath(stack);
-            definition.Remove(path);
-        }
-
-        static string GetDataPath(Stack<string> stack)
-        {
-            var path = stack.ToPath();
-            if (!string.IsNullOrEmpty(path)) path += "/";
-            path += InstanceLoader.DataFile;
-            return path;
         }
     }
 }

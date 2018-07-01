@@ -1,4 +1,4 @@
-﻿using LibGit2Sharp;
+using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,13 +7,18 @@ using System.Linq;
 
 namespace GitObjectDb.Backends
 {
+    /// <summary>
+    /// Testing backend storing all blobs to an in-memory dictionary.
+    /// </summary>
     public class InMemoryBackend : AbstractOdbBackend
     {
         readonly IDictionary<ObjectId, StoreItem> _store = new Dictionary<ObjectId, StoreItem>();
         (ObjectId Id, StoreItem Item)? _lastItem;
 
+        /// <inheritdoc />
         public override bool Exists(ObjectId id) => _store.ContainsKey(id);
 
+        /// <inheritdoc />
         public override int Read(ObjectId id, out UnmanagedMemoryStream data, out ObjectType objectType)
         {
             var lastItem = _lastItem; // Thread safety
@@ -27,6 +32,7 @@ namespace GitObjectDb.Backends
             return (int)ReturnCode.GIT_OK;
         }
 
+        /// <inheritdoc />
         public override int Write(ObjectId id, Stream dataStream, long length, ObjectType objectType)
         {
             var value = new StoreItem

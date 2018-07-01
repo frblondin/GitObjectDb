@@ -1,4 +1,4 @@
-﻿using GitObjectDb;
+using GitObjectDb;
 using GitObjectDb.Models;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
@@ -13,7 +13,8 @@ namespace GitObjectDb.Tests.Models
 {
     public class PageTests
     {
-        [Test, AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
         public void WithModifiesValue(Page page, string newName)
         {
             // Act
@@ -23,7 +24,8 @@ namespace GitObjectDb.Tests.Models
             Assert.That(modified.Name, Is.EqualTo(newName));
         }
 
-        [Test, AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
         public void WithDuplicatesImmutableMetadataTree(Page page, string newName)
         {
             // Act

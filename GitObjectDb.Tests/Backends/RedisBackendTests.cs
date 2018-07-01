@@ -14,7 +14,8 @@ namespace GitObjectDb.Tests.Backends
 {
     public class RedisBackendTests
     {
-        [Test, AutoData]
+        [Test]
+        [AutoData]
         public void RedisBackend(Signature signature, string message)
         {
             var path = GetTempPath();
@@ -24,7 +25,6 @@ namespace GitObjectDb.Tests.Backends
                 var sut = new RedisBackend("localhost");
                 repository.ObjectDatabase.AddBackend(sut, priority: 5);
 
-
                 repository.Commit(
                     (r, d) => d.Add("somefile.txt", r.CreateBlob(new StringBuilder("foo")), Mode.NonExecutableFile),
                     message, signature, signature);
@@ -33,6 +33,5 @@ namespace GitObjectDb.Tests.Backends
 
         static string GetTempPath() =>
             Path.Combine(Path.GetTempPath(), "Repos", Guid.NewGuid().ToString());
-
     }
 }

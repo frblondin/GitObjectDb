@@ -4,14 +4,22 @@ using System.Text;
 
 namespace System
 {
-    public class MissingDependencyException : Exception
-    {
-        public MissingDependencyException(Type type) : base($"The service '{type}' could not be found in current service provider.") { }
-    }
-
+    /// <summary>
+    /// A set of methods for instances of <see cref="IServiceProvider"/>.
+    /// </summary>
     internal static class IServiceProviderExtensions
     {
-        internal static TService GetService<TService>(this IServiceProvider serviceProvider) where TService : class =>
-            (TService)serviceProvider.GetService(typeof(TService)) ?? throw new MissingDependencyException(typeof(TService));
+        /// <summary>
+        /// Gets the service of the specified type.
+        /// </summary>
+        /// <typeparam name="TService">The type of the service.</typeparam>
+        /// <param name="serviceProvider">The service provider.</param>
+        /// <returns>A service of type <typeparamref name="TService"/>.</returns>
+        /// <exception cref="MissingDependencyException">Service could not be found.</exception>
+        internal static TService GetService<TService>(this IServiceProvider serviceProvider)
+            where TService : class
+        {
+            return (TService)serviceProvider.GetService(typeof(TService)) ?? throw new MissingDependencyException(typeof(TService));
+        }
     }
 }

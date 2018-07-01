@@ -14,13 +14,14 @@ namespace GitObjectDb.Tests.Assets.Models
 {
     public class Instance : AbstractInstance
     {
-        public ILazyChildren<Application> Applications { get; }
-
-        public delegate Instance Factory(Guid id, string name, LazyChildren<Application> applications);
-        public Instance(IServiceProvider serviceProvider, Guid id, string name, ILazyChildren<Application> applications) :
-            base(serviceProvider, id, name)
+        public Instance(IServiceProvider serviceProvider, Guid id, string name, ILazyChildren<Application> applications)
+            : base(serviceProvider, id, name)
         {
             Applications = (applications ?? throw new ArgumentNullException(nameof(applications))).AttachToParent(this);
         }
+
+        public delegate Instance Factory(Guid id, string name, LazyChildren<Application> applications);
+
+        public ILazyChildren<Application> Applications { get; }
     }
 }
