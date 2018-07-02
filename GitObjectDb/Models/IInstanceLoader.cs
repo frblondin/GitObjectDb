@@ -15,7 +15,7 @@ namespace GitObjectDb.Models
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <param name="tree">The tree.</param>
         /// <returns>The loaded instance.</returns>
-        TInstance LoadFrom<TInstance>(Func<Repository> repositoryFactory, Func<Repository, Tree> tree)
+        TInstance LoadFrom<TInstance>(Func<IRepository> repositoryFactory, Func<IRepository, Tree> tree)
             where TInstance : AbstractInstance;
     }
 }

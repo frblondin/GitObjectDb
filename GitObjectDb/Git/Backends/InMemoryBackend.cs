@@ -5,15 +5,15 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace GitObjectDb.Backends
+namespace GitObjectDb.Git.Backends
 {
     /// <summary>
     /// Testing backend storing all blobs to an in-memory dictionary.
     /// </summary>
     public class InMemoryBackend : AbstractOdbBackend
     {
-        readonly IDictionary<ObjectId, StoreItem> _store = new Dictionary<ObjectId, StoreItem>();
-        (ObjectId Id, StoreItem Item)? _lastItem;
+        private readonly IDictionary<ObjectId, StoreItem> _store = new Dictionary<ObjectId, StoreItem>();
+        private (ObjectId Id, StoreItem Item)? _lastItem;
 
         /// <inheritdoc />
         public override bool Exists(ObjectId id) => _store.ContainsKey(id);

@@ -18,7 +18,7 @@ namespace GitObjectDb.Models
         static readonly string _nullReturnedValueExceptionMessage =
             $"Value returned by {nameof(LazyChildren<TChild>)} was null.";
 
-        readonly Func<IMetadataObject, Repository, IEnumerable<IMetadataObject>> _factoryWithRepo;
+        readonly Func<IMetadataObject, IRepository, IEnumerable<IMetadataObject>> _factoryWithRepo;
         readonly Func<IMetadataObject, IEnumerable<TChild>> _factory;
         IImmutableList<TChild> _children;
         bool _parentAttachedInChildren;
@@ -28,7 +28,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="factory">The factory.</param>
         /// <exception cref="ArgumentNullException">factory</exception>
-        public LazyChildren(Func<IMetadataObject, Repository, IEnumerable<IMetadataObject>> factory)
+        public LazyChildren(Func<IMetadataObject, IRepository, IEnumerable<IMetadataObject>> factory)
         {
             _factoryWithRepo = factory ?? throw new ArgumentNullException(nameof(factory));
         }
@@ -116,13 +116,13 @@ namespace GitObjectDb.Models
             }
 
             var instance = (AbstractInstance)parent.Instance;
-            using (var repository = instance.GetRepository())
+            return instance.GetRepository.Do(repository =>
             {
                 var nodes = _factoryWithRepo(parent, repository) ?? throw new NotSupportedException(_nullReturnedValueExceptionMessage);
                 return nodes.Cast<TChild>()
                             .OrderBy(v => v.Id)
                             .ToImmutableList();
-            }
+            });
         }
 
         void AttachChildrenToParentIfNeeded(IMetadataObject parent)

@@ -5,11 +5,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace GitObjectDb.Backends
+namespace GitObjectDb.Git.Backends
 {
     public abstract partial class AbstractOdbBackend
     {
-        #region WriteOnlyStream
         private class WriteOnlyStream : OdbBackendStream
         {
             private readonly List<byte[]> _chunks = new List<byte[]>();
@@ -154,6 +153,5 @@ namespace GitObjectDb.Backends
                 }
             }
         }
-        #endregion
     }
 }

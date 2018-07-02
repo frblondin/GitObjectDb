@@ -33,6 +33,7 @@ namespace GitObjectDb.Models
             : base(serviceProvider, id, name)
         {
             _computeTreeChangesFactory = serviceProvider.GetService<ComputeTreeChanges.Factory>();
+            GetRepository = () => _getRepository?.Invoke() ?? throw new NotSupportedException("The module is not attached to a repository.");
         }
     }
 }

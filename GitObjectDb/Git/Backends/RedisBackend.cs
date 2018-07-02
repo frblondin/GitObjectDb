@@ -7,16 +7,16 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace GitObjectDb.Backends
+namespace GitObjectDb.Git.Backends
 {
     /// <summary>
     /// Backend storing blobs in a Redis database.
     /// </summary>
     public sealed class RedisBackend : AbstractOdbBackend, IDisposable
     {
-        readonly ConnectionMultiplexer _connection;
-        readonly IDatabase _store;
-        (ObjectId Id, StoreItem Item)? _lastItem;
+        private readonly ConnectionMultiplexer _connection;
+        private readonly IDatabase _store;
+        private (ObjectId Id, StoreItem Item)? _lastItem;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RedisBackend" /> class.

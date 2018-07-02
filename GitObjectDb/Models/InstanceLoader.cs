@@ -34,19 +34,17 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public TInstance LoadFrom<TInstance>(Func<Repository> repositoryFactory, Func<Repository, Tree> tree)
-            where TInstance : AbstractInstance
-        {
-            using (var repository = repositoryFactory())
+        public TInstance LoadFrom<TInstance>(Func<IRepository> repositoryFactory, Func<IRepository, Tree> tree)
+            where TInstance : AbstractInstance =>
+            repositoryFactory.Do(repository =>
             {
                 var currentTree = tree(repository);
                 var instance = (TInstance)LoadEntry(tree, currentTree[DataFile], string.Empty);
                 instance.SetRepositoryData(repositoryFactory, tree);
                 return instance;
-            }
-        }
+            });
 
-        IMetadataObject LoadEntry(Func<Repository, Tree> tree, TreeEntry entry, string path)
+        IMetadataObject LoadEntry(Func<IRepository, Tree> tree, TreeEntry entry, string path)
         {
             var blob = entry.Target.Peel<Blob>();
             ILazyChildren ResolveChildren(Type type, string propertyName)
@@ -73,7 +71,7 @@ namespace GitObjectDb.Models
             return serializer;
         }
 
-        ILazyChildren LoadEntryChildren(Func<Repository, Tree> tree, string path, ChildPropertyInfo childProperty) =>
+        ILazyChildren LoadEntryChildren(Func<IRepository, Tree> tree, string path, ChildPropertyInfo childProperty) =>
             LazyChildrenHelper.Create(childProperty, (parent, repository) =>
             {
                 var childPath = string.IsNullOrEmpty(path) ? childProperty.Property.Name : $"{path}/{childProperty.Property.Name}";

@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Backends
+namespace GitObjectDb.Git.Backends
 {
     /// <summary>
     /// Base abstract backend using to stream content to/from a custom storage system.
@@ -50,14 +50,17 @@ namespace GitObjectDb.Backends
         }
 
 #pragma warning disable SA1600 // Elements must be documented
+
         #region Utils
+
         internal static byte[] ReadStream(Stream stream, long length)
         {
             var result = (byte[])Array.CreateInstance(typeof(byte), length);
             stream.Read(result, 0, (int)length);
             return result;
         }
-        #endregion
+
+        #endregion Utils
 
         internal class StoreItem
         {
@@ -65,6 +68,7 @@ namespace GitObjectDb.Backends
 
             public ObjectType ObjectType { get; set; }
         }
+
 #pragma warning restore SA1600 // Elements must be documented
     }
 }

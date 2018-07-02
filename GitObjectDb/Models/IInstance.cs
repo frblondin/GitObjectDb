@@ -20,7 +20,7 @@ namespace GitObjectDb.Models
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <param name="isBare">if set to <c>true</c> a bare Git repository will be created.</param>
         /// <returns>The <see cref="Commit"/> of the new repository HEAD.</returns>
-        Commit SaveInNewRepository(Signature signature, string message, string path, Func<Repository> repositoryFactory, bool isBare = false);
+        Commit SaveInNewRepository(Signature signature, string message, string path, Func<IRepository> repositoryFactory, bool isBare = false);
 
         /// <summary>
         /// Commits all changes by comparing the current instance with a new one.

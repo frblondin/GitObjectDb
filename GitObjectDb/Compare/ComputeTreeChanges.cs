@@ -1,3 +1,4 @@
+using GitObjectDb.Git;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
@@ -14,10 +15,9 @@ namespace GitObjectDb.Compare
     /// </summary>
     public class ComputeTreeChanges
     {
-        readonly IServiceProvider _serviceProvider;
         readonly IModelDataAccessorProvider _modelDataProvider;
         readonly IInstanceLoader _instanceLoader;
-        readonly Func<Repository> _repositoryFactory;
+        readonly Func<IRepository> _repositoryFactory;
         readonly StringBuilder _jsonBuffer = new StringBuilder();
 
         /// <summary>
@@ -26,9 +26,8 @@ namespace GitObjectDb.Compare
         /// <param name="serviceProvider">The service provider.</param>
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <exception cref="ArgumentNullException">serviceProvider</exception>
-        public ComputeTreeChanges(IServiceProvider serviceProvider, Func<Repository> repositoryFactory)
+        public ComputeTreeChanges(IServiceProvider serviceProvider, Func<IRepository> repositoryFactory)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _modelDataProvider = serviceProvider.GetService<IModelDataAccessorProvider>();
             _instanceLoader = serviceProvider.GetService<IInstanceLoader>();
             _repositoryFactory = repositoryFactory;
@@ -39,7 +38,7 @@ namespace GitObjectDb.Compare
         /// </summary>
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <returns>The <see cref="ComputeTreeChanges"/> instance.</returns>
-        public delegate ComputeTreeChanges Factory(Func<Repository> repositoryFactory);
+        public delegate ComputeTreeChanges Factory(Func<IRepository> repositoryFactory);
 
         static void RemoveNode(TreeDefinition definition, Stack<string> stack)
         {
@@ -54,24 +53,23 @@ namespace GitObjectDb.Compare
         /// <param name="oldTreeGetter">The old tree getter.</param>
         /// <param name="newTreeGetter">The new tree getter.</param>
         /// <returns>A <see cref="MetadataTreeChanges"/> containing all computed changes.</returns>
-        public MetadataTreeChanges Compare<TInstance>(Func<Repository, Tree> oldTreeGetter, Func<Repository, Tree> newTreeGetter)
+        public MetadataTreeChanges Compare<TInstance>(Func<IRepository, Tree> oldTreeGetter, Func<IRepository, Tree> newTreeGetter)
             where TInstance : AbstractInstance
         {
-            var oldModule = _instanceLoader.LoadFrom<TInstance>(_repositoryFactory, oldTreeGetter);
-            var newModule = _instanceLoader.LoadFrom<TInstance>(_repositoryFactory, newTreeGetter);
-
-            TreeChanges changes;
-            using (var repository = _repositoryFactory())
+            using (var repository = SharedRepository.Start(_repositoryFactory))
             {
+                var oldInstance = _instanceLoader.LoadFrom<TInstance>(_repositoryFactory, oldTreeGetter);
+                var newInstance = _instanceLoader.LoadFrom<TInstance>(_repositoryFactory, newTreeGetter);
+
                 var oldTree = oldTreeGetter(repository);
                 var newTree = newTreeGetter(repository);
-                changes = repository.Diff.Compare<TreeChanges>(oldTree, newTree);
+                var changes = repository.Diff.Compare<TreeChanges>(oldTree, newTree);
 
                 ThrowIfNonSupportedChangeTypes(changes);
 
-                var modified = CollectModifiedNodes(oldModule, newModule, changes, oldTree);
-                var added = CollectAddedNodes(newModule, changes, newTree);
-                var deleted = CollectDeletedNodes(oldModule, changes, oldTree);
+                var modified = CollectModifiedNodes(oldInstance, newInstance, changes, oldTree);
+                var added = CollectAddedNodes(newInstance, changes, newTree);
+                var deleted = CollectDeletedNodes(oldInstance, changes, oldTree);
                 return new MetadataTreeChanges(added, modified, deleted);
             }
         }
@@ -133,7 +131,7 @@ namespace GitObjectDb.Compare
         /// or
         /// new
         /// </exception>
-        internal (TreeDefinition NewTree, bool AnyChange) Compare(AbstractInstance original, AbstractInstance @new, Repository repository)
+        internal (TreeDefinition NewTree, bool AnyChange) Compare(AbstractInstance original, AbstractInstance @new, IRepository repository)
         {
             if (original == null)
             {
@@ -151,7 +149,7 @@ namespace GitObjectDb.Compare
             return (definition, anyChange);
         }
 
-        bool CompareNode(IMetadataObject original, IMetadataObject @new, Repository repository, Tree tree, TreeDefinition definition, Stack<string> stack)
+        bool CompareNode(IMetadataObject original, IMetadataObject @new, IRepository repository, Tree tree, TreeDefinition definition, Stack<string> stack)
         {
             var anyChange = false;
             var accessor = _modelDataProvider.Get(original.GetType());
@@ -172,7 +170,7 @@ namespace GitObjectDb.Compare
             return anyChange;
         }
 
-        bool CompareNodeChildren(IMetadataObject original, IMetadataObject @new, Repository repository, Tree tree, TreeDefinition definition, Stack<string> stack, ChildPropertyInfo childProperty)
+        bool CompareNodeChildren(IMetadataObject original, IMetadataObject @new, IRepository repository, Tree tree, TreeDefinition definition, Stack<string> stack, ChildPropertyInfo childProperty)
         {
             var anyChange = false;
             using (var enumerator = new TwoSequenceEnumerator<IMetadataObject>(
@@ -187,7 +185,7 @@ namespace GitObjectDb.Compare
             return anyChange;
         }
 
-        bool CompareNodeChildren(Repository repository, Tree tree, TreeDefinition definition, Stack<string> stack, TwoSequenceEnumerator<IMetadataObject> enumerator)
+        bool CompareNodeChildren(IRepository repository, Tree tree, TreeDefinition definition, Stack<string> stack, TwoSequenceEnumerator<IMetadataObject> enumerator)
         {
             if (enumerator.NodeIsStillThere)
             {
@@ -214,7 +212,7 @@ namespace GitObjectDb.Compare
             throw new NotSupportedException("Unexpected child changes.");
         }
 
-        void UpdateNodeIfNeeded(IMetadataObject original, IMetadataObject @new, Repository repository, TreeDefinition definition, Stack<string> stack, IModelDataAccessor accessor, ref bool anyChange)
+        void UpdateNodeIfNeeded(IMetadataObject original, IMetadataObject @new, IRepository repository, TreeDefinition definition, Stack<string> stack, IModelDataAccessor accessor, ref bool anyChange)
         {
             if (accessor.ModifiableProperties.Any(p => !p.AreSame(original, @new)))
             {
@@ -223,7 +221,7 @@ namespace GitObjectDb.Compare
             }
         }
 
-        void AddOrUpdateNode(IMetadataObject node, Repository repository, TreeDefinition definition, Stack<string> stack)
+        void AddOrUpdateNode(IMetadataObject node, IRepository repository, TreeDefinition definition, Stack<string> stack)
         {
             var path = stack.ToDataPath();
             node.ToJson(_jsonBuffer);

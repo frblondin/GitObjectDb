@@ -13,30 +13,29 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Holds a <see cref="Tree"/> provider from a <see cref="Repository"/>.
         /// </summary>
-        internal Func<Repository, Tree> _getTree;
-        Func<Repository> _getRepository;
-
-        /// <summary>
-        /// Sets the repository data.
-        /// </summary>
-        /// <param name="getRepository">The repository getter.</param>
-        /// <param name="getTree">The tree getter.</param>
-        internal void SetRepositoryData(Func<Repository> getRepository, Func<Repository, Tree> getTree)
-        {
-            _getRepository = getRepository;
-            _getTree = getTree;
-        }
+        internal Func<IRepository, Tree> _getTree;
+        Func<IRepository> _getRepository;
 
         /// <summary>
         /// Gets the repository that must be disposed by the caller.
         /// </summary>
         /// <returns>A new <see cref="Repository"/> instance.</returns>
         /// <exception cref="NullReferenceException">The module is not attached to a repository.</exception>
-        internal Repository GetRepository() =>
-            _getRepository?.Invoke() ?? throw new NotSupportedException("The module is not attached to a repository.");
+        internal Func<IRepository> GetRepository { get; }
+
+        /// <summary>
+        /// Sets the repository data.
+        /// </summary>
+        /// <param name="getRepository">The repository getter.</param>
+        /// <param name="getTree">The tree getter.</param>
+        internal void SetRepositoryData(Func<IRepository> getRepository, Func<IRepository, Tree> getTree)
+        {
+            _getRepository = getRepository;
+            _getTree = getTree;
+        }
 
         /// <inheritdoc />
-        public Commit SaveInNewRepository(Signature signature, string message, string path, Func<Repository> repositoryFactory, bool isBare = false)
+        public Commit SaveInNewRepository(Signature signature, string message, string path, Func<IRepository> repositoryFactory, bool isBare = false)
         {
             Repository.Init(path, isBare);
             using (var repository = repositoryFactory())
@@ -48,22 +47,20 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public Commit Commit(AbstractInstance newInstance, Signature signature, string message, CommitOptions options = null)
-        {
-            using (var repository = GetRepository())
+        public Commit Commit(AbstractInstance newInstance, Signature signature, string message, CommitOptions options = null) =>
+            GetRepository.Do(repository =>
             {
                 var computeChanges = _computeTreeChangesFactory(GetRepository);
                 var changes = computeChanges.Compare(this, newInstance, repository);
                 return changes.AnyChange ?
                     repository.Commit(changes.NewTree, message, signature, signature, options) :
                     null;
-            }
-        }
+            });
 
-        void AddMetadataObjectToCommit(Repository repository, TreeDefinition tree) =>
+        void AddMetadataObjectToCommit(IRepository repository, TreeDefinition tree) =>
             AddNodeToCommit(repository, tree, new Stack<string>(), this);
 
-        void AddNodeToCommit(Repository repository, TreeDefinition tree, Stack<string> stack, IMetadataObject node)
+        void AddNodeToCommit(IRepository repository, TreeDefinition tree, Stack<string> stack, IMetadataObject node)
         {
             var path = stack.ToDataPath();
             node.ToJson(_jsonBuffer);
@@ -71,7 +68,7 @@ namespace GitObjectDb.Models
             AddNodeChildrenToCommit(repository, tree, stack, node);
         }
 
-        void AddNodeChildrenToCommit(Repository repository, TreeDefinition tree, Stack<string> stack, IMetadataObject node)
+        void AddNodeChildrenToCommit(IRepository repository, TreeDefinition tree, Stack<string> stack, IMetadataObject node)
         {
             var dataAccessor = DataAccessorProvider.Get(node.GetType());
             foreach (var childProperty in dataAccessor.ChildProperties)

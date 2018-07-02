@@ -1,3 +1,4 @@
+using GitObjectDb.Git;
 using GitObjectDb.IO;
 using LibGit2Sharp;
 using System;
@@ -10,9 +11,9 @@ using System.Text;
 namespace LibGit2Sharp
 {
     /// <summary>
-    /// A set of methods for instances of <see cref="Repository"/>.
+    /// A set of methods for instances of <see cref="IRepository"/>.
     /// </summary>
-    internal static class RepositoryExtensions
+    internal static partial class IRepositoryExtensions
     {
         /// <summary>
         /// Creates the Blob from a <see cref="StringBuilder"/>.
@@ -20,7 +21,7 @@ namespace LibGit2Sharp
         /// <param name="repository">The repository.</param>
         /// <param name="content">The content.</param>
         /// <returns>New newly created Blob.</returns>
-        internal static Blob CreateBlob(this Repository repository, StringBuilder content)
+        internal static Blob CreateBlob(this IRepository repository, StringBuilder content)
         {
             using (var stream = new StringBuilderStream(content))
             {
@@ -38,7 +39,7 @@ namespace LibGit2Sharp
         /// <param name="committer">The committer.</param>
         /// <param name="options">The options.</param>
         /// <returns>The created <see cref="LibGit2Sharp.Commit" />.</returns>
-        internal static Commit Commit(this Repository repository, Action<Repository, TreeDefinition> actions, string message, Signature author, Signature committer, CommitOptions options = null)
+        internal static Commit Commit(this IRepository repository, Action<IRepository, TreeDefinition> actions, string message, Signature author, Signature committer, CommitOptions options = null)
         {
             var treeDefinition = !repository.Info.IsHeadUnborn ? TreeDefinition.From(repository.Head.Tip.Tree) : new TreeDefinition();
             actions(repository, treeDefinition);
@@ -55,7 +56,7 @@ namespace LibGit2Sharp
         /// <param name="committer">The committer.</param>
         /// <param name="options">The options.</param>
         /// <returns>The created <see cref="LibGit2Sharp.Commit" />.</returns>
-        internal static Commit Commit(this Repository repository, TreeDefinition treeDefinition, string message, Signature author, Signature committer, CommitOptions options = null)
+        internal static Commit Commit(this IRepository repository, TreeDefinition treeDefinition, string message, Signature author, Signature committer, CommitOptions options = null)
         {
             if (options == null)
             {
@@ -70,7 +71,7 @@ namespace LibGit2Sharp
             return commit;
         }
 
-        static IEnumerable<Commit> RetrieveParentsOfTheCommitBeingCreated(Repository repository, bool amendPreviousCommit)
+        static IEnumerable<Commit> RetrieveParentsOfTheCommitBeingCreated(IRepository repository, bool amendPreviousCommit)
         {
             if (amendPreviousCommit)
             {
@@ -111,11 +112,10 @@ namespace LibGit2Sharp
             return $"commit{kind}: {commit.MessageShort}";
         }
 
-        static void UpdateHeadAndTerminalReference(Repository repository, Commit commit, string reflogMessage)
+        static void UpdateHeadAndTerminalReference(IRepository repository, Commit commit, string reflogMessage)
         {
             var reference = repository.Refs.Head;
 
-            // TODO: Implement max nesting level
             while (true)
             {
                 if (reference is DirectReference)
@@ -132,6 +132,29 @@ namespace LibGit2Sharp
                 {
                     repository.Refs.Add(symRef.TargetIdentifier, commit.Id, reflogMessage);
                     return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Executes the function using the shared repository (if set) or using the repository provider.
+        /// </summary>
+        /// <typeparam name="TResult">The result type.</typeparam>
+        /// <param name="source">The repository provider.</param>
+        /// <param name="function">The result provider using a repository.</param>
+        /// <returns>The result of the function call.</returns>
+        internal static TResult Do<TResult>(this Func<IRepository> source, Func<IRepository, TResult> function)
+        {
+            var shared = SharedRepository.Current;
+            if (shared != null)
+            {
+                return function(shared);
+            }
+            else
+            {
+                using (var repository = source())
+                {
+                    return function(repository);
                 }
             }
         }
