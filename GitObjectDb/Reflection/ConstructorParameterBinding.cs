@@ -14,8 +14,8 @@ namespace GitObjectDb.Reflection
     /// </summary>
     public class ConstructorParameterBinding
     {
-        static readonly MethodInfo _serviceProviderGetServiceMethod = typeof(IServiceProvider).GetMethod("GetService", BindingFlags.Instance | BindingFlags.Public);
-        static readonly MethodInfo _childProcessorInvokeMethod = typeof(ChildProcessor).GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public);
+        static readonly MethodInfo _serviceProviderGetServiceMethod = ExpressionReflector.GetMethod<IServiceProvider>(s => s.GetService(default));
+        static readonly MethodInfo _childProcessorInvokeMethod = ExpressionReflector.GetMethod<ChildProcessor>(p => p.Invoke(default, default, default, default));
 
         static readonly ParameterExpression _sourceObjectArg = Expression.Parameter(typeof(IMetadataObject), "sourceObject");
         static readonly ParameterExpression _predicateReflectorArg = Expression.Parameter(typeof(PredicateReflector), "predicateReflector");

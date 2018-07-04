@@ -34,7 +34,8 @@ namespace GitObjectDb.Reflection
         /// <summary>
         /// Gets the process argument method.
         /// </summary>
-        internal static MethodInfo ProcessArgumentMethod { get; } = typeof(PredicateReflector).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Single(m => m.Name == nameof(ProcessArgument));
+        internal static MethodInfo ProcessArgumentMethod { get; } =
+            ExpressionReflector.GetMethod<PredicateReflector>(r => r.ProcessArgument<string>(default, default), returnGenericDefinition: true);
 
         /// <summary>
         /// Gets the predicate.

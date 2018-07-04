@@ -1,3 +1,4 @@
+using GitObjectDb.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -180,7 +181,7 @@ namespace System.Text
         [StructLayout(LayoutKind.Sequential)]
         private struct ChunkData
         {
-            static readonly ConstructorInfo _constructor = typeof(ChunkData).GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Single();
+            static readonly ConstructorInfo _constructor = ExpressionReflector.GetConstructor(() => new ChunkData(default, default, default, default, default));
 
             static readonly FieldInfo _chunkCharsField = typeof(StringBuilder).GetField("m_ChunkChars", BindingFlags.Instance | BindingFlags.NonPublic);
             static readonly FieldInfo _chunkOffsetField = typeof(StringBuilder).GetField("m_ChunkOffset", BindingFlags.Instance | BindingFlags.NonPublic);
