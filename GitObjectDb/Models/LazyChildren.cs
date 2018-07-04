@@ -140,11 +140,11 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        ILazyChildren ILazyChildren.Clone(Func<IMetadataObject, IMetadataObject> update, bool forceVisit) =>
-            Clone(n => (TChild)update(n), forceVisit);
+        ILazyChildren ILazyChildren.Clone(Func<IMetadataObject, IMetadataObject> update, IEnumerable added, IEnumerable deleted, bool forceVisit) =>
+            Clone(n => (TChild)update(n), added?.Cast<TChild>(), deleted?.Cast<TChild>(), forceVisit);
 
         /// <inheritdoc />
-        public ILazyChildren<TChild> Clone(Func<TChild, TChild> update, bool forceVisit)
+        public ILazyChildren<TChild> Clone(Func<TChild, TChild> update, IEnumerable<TChild> added, IEnumerable<TChild> deleted, bool forceVisit)
         {
             if (update == null)
             {
@@ -152,7 +152,10 @@ namespace GitObjectDb.Models
             }
 
             return new LazyChildren<TChild>(parent =>
-                Children.Select(c => update.Invoke(c) ?? throw new NotSupportedException("No child returned while cloning children."))
+                Children
+                .Except(deleted ?? Enumerable.Empty<TChild>())
+                .Select(c => update.Invoke(c) ?? throw new NotSupportedException("No child returned while cloning children."))
+                .Union(added ?? Enumerable.Empty<TChild>())
                 .ToImmutableList())
             {
                 ForceVisit = ForceVisit || forceVisit
@@ -175,6 +178,14 @@ namespace GitObjectDb.Models
             Parent = parent;
             return this;
         }
+
+        /// <inheritdoc />
+        bool ILazyChildren.Add(IMetadataObject child) =>
+            throw new NotSupportedException($"The {nameof(ILazyChildren.Add)} method should never by called. Its purpose is to be used within a With(...) predicate.");
+
+        /// <inheritdoc />
+        bool ILazyChildren.Delete(IMetadataObject child) =>
+            throw new NotSupportedException($"The {nameof(ILazyChildren.Delete)} method should never by called. Its purpose is to be used within a With(...) predicate.");
 
         /// <inheritdoc />
         public IEnumerator<TChild> GetEnumerator() => Children.GetEnumerator();

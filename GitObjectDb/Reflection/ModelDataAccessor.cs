@@ -81,15 +81,23 @@ namespace GitObjectDb.Reflection
             return ConstructorParameterBinding.Cloner(
                 @object,
                 reflector,
-                (children, @new, childDataAccessor) =>
-                    children.Clone(n => n == @object ?
-                                        @new :
-                                        childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
-                                   forceVisit: false));
+                (name, children, @new, childDataAccessor) =>
+                {
+                    var childChanges = reflector.TryGetChildChanges(name);
+                    return children.Clone(
+                        n => n == @object ?
+                             @new :
+                             childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
+                        childChanges?.Where(c => c.Type == PredicateReflector.ChildChangeType.Add).Select(c => c.Child) ?? Enumerable.Empty<IMetadataObject>(),
+                        childChanges?.Where(c => c.Type == PredicateReflector.ChildChangeType.Delete).Select(c => c.Child) ?? Enumerable.Empty<IMetadataObject>(),
+                        forceVisit: false);
+                });
         }
 
-        ILazyChildren RecursiveClone(ILazyChildren children, IMetadataObject @new, IModelDataAccessor childDataAccessor) =>
-            children.Clone(n => childDataAccessor.ConstructorParameterBinding.Cloner(n, new PredicateReflector(), RecursiveClone),
+        ILazyChildren RecursiveClone(string name, ILazyChildren children, IMetadataObject @new, IModelDataAccessor childDataAccessor) =>
+            children.Clone(n => childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
+                           null,
+                           null,
                            forceVisit: false);
 
         void CreateNewParentTree(IMetadataObject old, IMetadataObject @new)
@@ -115,10 +123,12 @@ namespace GitObjectDb.Reflection
             var newParent = parentDataAccessor.ConstructorParameterBinding.Cloner(
                 old.Parent,
                 PredicateReflector.Empty,
-                (children, _, childDataAccessor) =>
+                (name, children, _, childDataAccessor) =>
                     children.Clone(n => n == old ?
                                         @new :
                                         childDataAccessor.ConstructorParameterBinding.Cloner(n, new PredicateReflector(), RecursiveClone),
+                                   null,
+                                   null,
                                    forceVisit: false));
             @new.AttachToParent(newParent);
 

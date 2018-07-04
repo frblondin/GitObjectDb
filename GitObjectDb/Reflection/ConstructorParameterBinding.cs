@@ -53,11 +53,12 @@ namespace GitObjectDb.Reflection
         /// <summary>
         /// Processes all children provided in <see cref="ILazyChildren"/>.
         /// </summary>
+        /// <param name="name">The name of the parameter/property.</param>
         /// <param name="children">The children.</param>
         /// <param name="new">The new.</param>
         /// <param name="dataAccessor">The data accessor.</param>
         /// <returns>The new <see cref="ILazyChildren"/>.</returns>
-        internal delegate ILazyChildren ChildProcessor(ILazyChildren children, IMetadataObject @new, IModelDataAccessor dataAccessor);
+        internal delegate ILazyChildren ChildProcessor(string name, ILazyChildren children, IMetadataObject @new, IModelDataAccessor dataAccessor);
 
         /// <summary>
         /// Clones an existing <see cref="IMetadataObject"/> into a new instance after applying the changes contained in a predicate.
@@ -141,6 +142,7 @@ namespace GitObjectDb.Reflection
                 Expression.Call(
                     _childProcessorArg,
                     _childProcessorInvokeMethod,
+                    Expression.Constant(parameter.Name),
                     Expression.Property(_typedSourceObjectVar, property),
                     _resultVar,
                     Expression.Constant(childDataProvider)),

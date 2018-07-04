@@ -1,4 +1,5 @@
 using GitObjectDb.Attributes;
+using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -12,8 +13,11 @@ namespace GitObjectDb.Reflection
     /// <summary>
     /// Analyzes the conditions of a predicate to collect property assignments to be made.
     /// </summary>
-    internal class PredicateReflector
+    internal partial class PredicateReflector
     {
+        static readonly MethodInfo _childrenAddMethod = ExpressionReflector.GetMethod<ILazyChildren>(c => c.Add(default));
+        static readonly MethodInfo _childrenDeleteMethod = ExpressionReflector.GetMethod<ILazyChildren>(c => c.Delete(default));
+
         readonly PredicateVisitor _visitor;
 
         /// <summary>
@@ -56,18 +60,27 @@ namespace GitObjectDb.Reflection
         /// <param name="name">The name of the parameter.</param>
         /// <param name="fallback">The fallback value.</param>
         /// <returns>The final value to be used for the parameter.</returns>
-        public TValue ProcessArgument<TValue>(string name, TValue fallback) =>
+        internal TValue ProcessArgument<TValue>(string name, TValue fallback) =>
             _visitor != null && _visitor.Values.TryGetValue(name, out var value) ?
             (TValue)value :
             fallback;
 
+        /// <summary>
+        /// Gets the child changes collected by the reflector.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>A list of changes.</returns>
+        internal IList<ChildChange> TryGetChildChanges(string name) =>
+            _visitor != null && _visitor.ChildChanges.TryGetValue(name, out var changes) ?
+            changes :
+            null;
+
         #region PredicateVisitor
         class PredicateVisitor : ExpressionVisitor
         {
-            /// <summary>
-            /// Gets the values.
-            /// </summary>
             public IDictionary<string, object> Values { get; } = new SortedDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+
+            public IDictionary<string, IList<ChildChange>> ChildChanges { get; } = new SortedDictionary<string, IList<ChildChange>>(StringComparer.OrdinalIgnoreCase);
 
             static MemberInfo ExtractMember(Expression node)
             {
@@ -125,6 +138,43 @@ namespace GitObjectDb.Reflection
                 return base.VisitBinary(node);
             }
 
+            protected override Expression VisitMethodCall(MethodCallExpression node)
+            {
+                if (node.Method == _childrenAddMethod)
+                {
+                    VisitAddOrDeleteMethodCall(node, ChildChangeType.Add);
+                }
+                else if (node.Method == _childrenDeleteMethod)
+                {
+                    VisitAddOrDeleteMethodCall(node, ChildChangeType.Delete);
+                }
+                else
+                {
+                    ThrowNotSupported(node.NodeType.ToString());
+                }
+                return base.VisitMethodCall(node);
+            }
+
+            void VisitAddOrDeleteMethodCall(MethodCallExpression node, ChildChangeType changeType)
+            {
+                var instance = node.Object as MemberExpression ??
+                    throw new NotSupportedException($"{changeType.ToString()} method is only supported when called on an object child property, eg. object.ChildProperty.{changeType.ToString()}(...).");
+                var value = ExtractValue(node.Arguments[0]) as IMetadataObject ??
+                    throw new NotSupportedException("The parameter provided for the Add method call could not be extracted as a non-nullable instance.");
+
+                var changes = GetChildChangeList(instance.Member.Name);
+                changes.Add(new ChildChange(value, changeType));
+            }
+
+            IList<ChildChange> GetChildChangeList(string memberName)
+            {
+                if (!ChildChanges.TryGetValue(memberName, out var result))
+                {
+                    ChildChanges[memberName] = result = new List<ChildChange>();
+                }
+                return result;
+            }
+
             public override Expression Visit(Expression node)
             {
                 switch (node)
@@ -136,7 +186,6 @@ namespace GitObjectDb.Reflection
                     case LabelExpression lab:
                     case LoopExpression loo:
                     case MemberInitExpression memberInit:
-                    case MethodCallExpression methodCall:
                     case NewArrayExpression newArr:
                     case NewExpression newExp:
                     case SwitchExpression switchExpr:

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq.Expressions;
 
 namespace GitObjectDb.Models
 {
@@ -26,9 +27,11 @@ namespace GitObjectDb.Models
         /// Clones this instance by applying an update to each child.
         /// </summary>
         /// <param name="update">The update.</param>
+        /// <param name="added">Nodes that must be added.</param>
+        /// <param name="deleted">Nodes that must be deleted.</param>
         /// <param name="forceVisit">if set to <c>true</c> [force visit].</param>
         /// <returns>The new <see cref="ILazyChildren{TChild}"/> instance containing the result of the transformations.</returns>
-        ILazyChildren<TChild> Clone(Func<TChild, TChild> update, bool forceVisit);
+        ILazyChildren<TChild> Clone(Func<TChild, TChild> update, IEnumerable<TChild> added, IEnumerable<TChild> deleted, bool forceVisit);
     }
 
     /// <summary>
@@ -55,8 +58,24 @@ namespace GitObjectDb.Models
         /// Clones this instance by applying an update to each child.
         /// </summary>
         /// <param name="update">The update.</param>
+        /// <param name="added">Nodes that must be added.</param>
+        /// <param name="deleted">Nodes that must be deleted.</param>
         /// <param name="forceVisit">if set to <c>true</c> [force visit].</param>
         /// <returns>The new <see cref="ILazyChildren"/> instance containing the result of the transformations.</returns>
-        ILazyChildren Clone(Func<IMetadataObject, IMetadataObject> update, bool forceVisit);
+        ILazyChildren Clone(Func<IMetadataObject, IMetadataObject> update, IEnumerable added, IEnumerable deleted, bool forceVisit);
+
+        /// <summary>
+        /// Adds the specified child. This method should only be used within <see cref="IMetadataObjectExtensions.With{TModel}(TModel, Expression{Predicate{TModel}})"/>.
+        /// </summary>
+        /// <param name="child">The child.</param>
+        /// <returns>Return type required to return a predicate.</returns>
+        bool Add(IMetadataObject child);
+
+        /// <summary>
+        /// Deletes the specified child. This method should only be used within <see cref="IMetadataObjectExtensions.With{TModel}(TModel, Expression{Predicate{TModel}})"/>.
+        /// </summary>
+        /// <param name="child">The child.</param>
+        /// <returns>Return type required to return a predicate.</returns>
+        bool Delete(IMetadataObject child);
     }
 }

@@ -73,6 +73,50 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        public void ResolveDiffsFieldAddition(Instance sut, Page page, Field.Factory fieldFactory, Signature signature, string message, Func<Func<IRepository>, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
+        {
+            // Arrange
+            sut.SaveInNewRepository(signature, message, _path, () => GetRepository(inMemoryBackend));
+            var field = fieldFactory(Guid.NewGuid(), "foo");
+            var modifiedPage = page.With(p => p.Fields.Add(field));
+            sut.Commit(modifiedPage.Instance, signature, message);
+
+            // Act
+            var changes = computeTreeChangesFactory(() => GetRepository(inMemoryBackend))
+                .Compare<Instance>(r => r.Head.Commits.Skip(1).First().Tree, r => r.Head.Tip.Tree);
+
+            // Assert
+            Assert.That(changes.Modified, Is.Empty);
+            Assert.That(changes.Deleted, Is.Empty);
+            Assert.That(changes.Added, Has.Count.EqualTo(1));
+            Assert.That(changes.Added[0].Old, Is.Null);
+            Assert.That(changes.Added[0].New.Name, Is.EqualTo(field.Name));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        public void ResolveDiffsFieldDeletion(Instance sut, Page page, Signature signature, string message, Func<Func<IRepository>, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
+        {
+            // Arrange
+            sut.SaveInNewRepository(signature, message, _path, () => GetRepository(inMemoryBackend));
+            var field = page.Fields[5];
+            var modifiedPage = page.With(p => p.Fields.Delete(field));
+            sut.Commit(modifiedPage.Instance, signature, message);
+
+            // Act
+            var changes = computeTreeChangesFactory(() => GetRepository(inMemoryBackend))
+                .Compare<Instance>(r => r.Head.Commits.Skip(1).First().Tree, r => r.Head.Tip.Tree);
+
+            // Assert
+            Assert.That(changes.Modified, Is.Empty);
+            Assert.That(changes.Added, Is.Empty);
+            Assert.That(changes.Deleted, Has.Count.EqualTo(1));
+            Assert.That(changes.Deleted[0].New, Is.Null);
+            Assert.That(changes.Deleted[0].Old.Name, Is.EqualTo(field.Name));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
         public void GetFromGitPath(Instance sut, Field field)
         {
             // Arrange
