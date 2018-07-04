@@ -1,4 +1,5 @@
 using GitObjectDb.Compare;
+using LibGit2Sharp;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -20,7 +21,7 @@ namespace GitObjectDb.Models
     [DataContract]
     public abstract partial class AbstractInstance : AbstractModel
     {
-        readonly ComputeTreeChanges.Factory _computeTreeChangesFactory;
+        readonly Func<Func<IRepository>, IComputeTreeChanges> _computeTreeChangesFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AbstractInstance"/> class.
@@ -32,7 +33,7 @@ namespace GitObjectDb.Models
         protected AbstractInstance(IServiceProvider serviceProvider, Guid id, string name)
             : base(serviceProvider, id, name)
         {
-            _computeTreeChangesFactory = serviceProvider.GetService<ComputeTreeChanges.Factory>();
+            _computeTreeChangesFactory = serviceProvider.GetService<Func<Func<IRepository>, IComputeTreeChanges>>();
             GetRepository = () => _getRepository?.Invoke() ?? throw new NotSupportedException("The module is not attached to a repository.");
         }
     }

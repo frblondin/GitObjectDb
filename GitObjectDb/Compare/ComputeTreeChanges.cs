@@ -10,10 +10,8 @@ using System.Text;
 
 namespace GitObjectDb.Compare
 {
-    /// <summary>
-    /// Compares to commits and computes the differences (additions, deletions...).
-    /// </summary>
-    public class ComputeTreeChanges
+    /// <inheritdoc/>
+    internal class ComputeTreeChanges : IComputeTreeChanges
     {
         readonly IModelDataAccessorProvider _modelDataProvider;
         readonly IInstanceLoader _instanceLoader;
@@ -33,26 +31,13 @@ namespace GitObjectDb.Compare
             _repositoryFactory = repositoryFactory;
         }
 
-        /// <summary>
-        /// Provides support for creazting <see cref="ComputeTreeChanges"/> objects.
-        /// </summary>
-        /// <param name="repositoryFactory">The repository factory.</param>
-        /// <returns>The <see cref="ComputeTreeChanges"/> instance.</returns>
-        public delegate ComputeTreeChanges Factory(Func<IRepository> repositoryFactory);
-
         static void RemoveNode(TreeDefinition definition, Stack<string> stack)
         {
             var path = stack.ToDataPath();
             definition.Remove(path);
         }
 
-        /// <summary>
-        /// Compares the specified commits.
-        /// </summary>
-        /// <typeparam name="TInstance">The type of the instance.</typeparam>
-        /// <param name="oldTreeGetter">The old tree getter.</param>
-        /// <param name="newTreeGetter">The new tree getter.</param>
-        /// <returns>A <see cref="MetadataTreeChanges"/> containing all computed changes.</returns>
+        /// <inheritdoc/>
         public MetadataTreeChanges Compare<TInstance>(Func<IRepository, Tree> oldTreeGetter, Func<IRepository, Tree> newTreeGetter)
             where TInstance : AbstractInstance
         {
@@ -119,33 +104,22 @@ namespace GitObjectDb.Compare
             }
         }
 
-        /// <summary>
-        /// Compares two <see cref="AbstractInstance"/> instances and generates a new <see cref="TreeDefinition"/> instance containing the tree changes to be committed.
-        /// </summary>
-        /// <param name="original">The original.</param>
-        /// <param name="new">The new.</param>
-        /// <param name="repository">The repository.</param>
-        /// <returns>The <see cref="TreeDefinition"/> and <code>true</code> is any change was detected between the two instances.</returns>
-        /// <exception cref="ArgumentNullException">
-        /// original
-        /// or
-        /// new
-        /// </exception>
-        internal (TreeDefinition NewTree, bool AnyChange) Compare(AbstractInstance original, AbstractInstance @new, IRepository repository)
+        /// <inheritdoc/>
+        public (TreeDefinition NewTree, bool AnyChange) Compare(AbstractInstance original, AbstractInstance newInstance, IRepository repository)
         {
             if (original == null)
             {
                 throw new ArgumentNullException(nameof(original));
             }
-            if (@new == null)
+            if (newInstance == null)
             {
-                throw new ArgumentNullException(nameof(@new));
+                throw new ArgumentNullException(nameof(newInstance));
             }
 
             var tree = original._getTree(repository);
             var definition = TreeDefinition.From(tree);
             var stack = new Stack<string>();
-            var anyChange = CompareNode(original, @new, repository, tree, definition, stack);
+            var anyChange = CompareNode(original, newInstance, repository, tree, definition, stack);
             return (definition, anyChange);
         }
 

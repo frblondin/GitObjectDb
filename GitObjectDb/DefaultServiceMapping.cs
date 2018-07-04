@@ -31,7 +31,7 @@ namespace GitObjectDb
             yield return (typeof(InstanceLoader), typeof(IInstanceLoader));
             yield return (typeof(ModelDataAccessorProvider), typeof(IModelDataAccessorProvider));
             yield return (typeof(MostParametersConstructorSelector), typeof(IConstructorSelector));
-            yield return (typeof(ComputeTreeChanges), null);
+            yield return (typeof(ComputeTreeChanges), typeof(IComputeTreeChanges));
         }
 
         static IEnumerable<(Type InterfaceType, Func<object, object> Adapter, bool SingleInstance)> GetDecorators()

@@ -52,7 +52,7 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void ResolveDiffsPageNameUpdate(Instance sut, Page page, Signature signature, string message, ComputeTreeChanges.Factory computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
+        public void ResolveDiffsPageNameUpdate(Instance sut, Page page, Signature signature, string message, Func<Func<IRepository>, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
             sut.SaveInNewRepository(signature, message, _path, () => GetRepository(inMemoryBackend));
