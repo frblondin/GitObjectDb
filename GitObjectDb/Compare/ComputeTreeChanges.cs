@@ -63,8 +63,9 @@ namespace GitObjectDb.Compare
             (from c in changes.Modified
              let oldEntry = oldTree[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
-             let oldNode = oldInstance.TryGetFromGitPath(c.Path.ParentPath())
-             let newNode = newInstance.TryGetFromGitPath(c.Path.ParentPath())
+             let path = c.Path.ParentPath()
+             let oldNode = oldInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in old instance.")
+             let newNode = newInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in new instance.")
              select new MetadataTreeEntryChanges(oldNode, newNode))
             .ToImmutableList();
 
@@ -72,7 +73,8 @@ namespace GitObjectDb.Compare
             (from c in changes.Added
              let newEntry = newTree[c.Path]
              where newEntry.TargetType == TreeEntryTargetType.Blob
-             let newNode = newInstance.TryGetFromGitPath(c.Path.ParentPath())
+             let path = c.Path.ParentPath()
+             let newNode = newInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in new instance.")
              select new MetadataTreeEntryChanges(null, newNode))
             .ToImmutableList();
 
@@ -80,7 +82,8 @@ namespace GitObjectDb.Compare
             (from c in changes.Deleted
              let oldEntry = oldTree[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
-             let oldNode = oldInstance.TryGetFromGitPath(c.Path.ParentPath())
+             let path = c.Path.ParentPath()
+             let oldNode = oldInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in old instance.")
              select new MetadataTreeEntryChanges(oldNode, null))
             .ToImmutableList();
 
@@ -173,13 +176,17 @@ namespace GitObjectDb.Compare
             }
             else if (enumerator.NodeHasBeenAdded)
             {
+                stack.Push(enumerator.Right.Id.ToString());
                 AddOrUpdateNode(enumerator.Right, repository, definition, stack);
+                stack.Pop();
                 enumerator.MoveNextRight();
                 return true;
             }
             else if (enumerator.NodeHasBeenRemoved)
             {
+                stack.Push(enumerator.Left.Id.ToString());
                 RemoveNode(definition, stack);
+                stack.Pop();
                 enumerator.MoveNextLeft();
                 return true;
             }
