@@ -1,4 +1,3 @@
-using Autofac;
 using GitObjectDb.Compare;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
@@ -19,8 +18,6 @@ namespace GitObjectDb.Tests.Assets.Models
         {
             Applications = (applications ?? throw new ArgumentNullException(nameof(applications))).AttachToParent(this);
         }
-
-        public delegate Instance Factory(Guid id, string name, LazyChildren<Application> applications);
 
         public ILazyChildren<Application> Applications { get; }
     }

@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb", "GitObjectDb\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb.Tests", "GitObjectDb.Tests\GitObjectDb.Tests.csproj", "{C54A3A42-3F29-4086-B09E-50513D49983C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb.Autofac", "GitObjectDb.Autofac\GitObjectDb.Autofac.csproj", "{2E4C30B4-7ED1-4A15-9BE1-8B23545B9220}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{BED345FF-9F06-43A5-A10A-B31F42CA5FCA}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -34,10 +32,6 @@ Global
 		{C54A3A42-3F29-4086-B09E-50513D49983C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C54A3A42-3F29-4086-B09E-50513D49983C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C54A3A42-3F29-4086-B09E-50513D49983C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2E4C30B4-7ED1-4A15-9BE1-8B23545B9220}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2E4C30B4-7ED1-4A15-9BE1-8B23545B9220}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2E4C30B4-7ED1-4A15-9BE1-8B23545B9220}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2E4C30B4-7ED1-4A15-9BE1-8B23545B9220}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

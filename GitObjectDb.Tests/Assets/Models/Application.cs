@@ -20,8 +20,6 @@ namespace GitObjectDb.Tests.Assets.Models
             Pages = (pages ?? throw new ArgumentNullException(nameof(pages))).AttachToParent(this);
         }
 
-        public delegate Application Factory(Guid id, string name, LazyChildren<Page> pages);
-
         public new Instance Instance => (Instance)base.Instance;
 
         public ILazyChildren<Page> Pages { get; }

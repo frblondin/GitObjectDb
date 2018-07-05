@@ -20,6 +20,5 @@ build:
 after_test:
 - ps: >-
     dotnet pack GitObjectDb --no-build /p:Version="$ENV:APPVEYOR_BUILD_VERSION" -o ..\Artifacts
-    dotnet pack GitObjectDb.Autofac --no-build /p:Version="$ENV:APPVEYOR_BUILD_VERSION" -o ..\Artifacts
 
     Get-ChildItem Artifacts\*.nupkg | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }

@@ -16,7 +16,7 @@ namespace System
         /// <param name="serviceProvider">The service provider.</param>
         /// <returns>A service of type <typeparamref name="TService"/>.</returns>
         /// <exception cref="MissingDependencyException">Service could not be found.</exception>
-        internal static TService GetService<TService>(this IServiceProvider serviceProvider)
+        internal static TService GetRequiredService<TService>(this IServiceProvider serviceProvider)
             where TService : class
         {
             return (TService)serviceProvider.GetService(typeof(TService)) ?? throw new MissingDependencyException(typeof(TService));

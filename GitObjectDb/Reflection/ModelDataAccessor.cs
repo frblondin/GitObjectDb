@@ -35,7 +35,7 @@ namespace GitObjectDb.Reflection
         internal ModelDataAccessor(IServiceProvider serviceProvider, Type type)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _dataAccessorProvider = _serviceProvider.GetService<IModelDataAccessorProvider>();
+            _dataAccessorProvider = _serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             Type = type ?? throw new ArgumentNullException(nameof(type));
             _childProperties = new Lazy<ImmutableList<ChildPropertyInfo>>(GetChildProperties);
             _modifiableProperties = new Lazy<ImmutableList<ModifiablePropertyInfo>>(GetModifiableProperties);
@@ -43,7 +43,7 @@ namespace GitObjectDb.Reflection
             {
                 var constructors = from c in Type.GetConstructors()
                                    select new ConstructorParameterBinding(_serviceProvider, c);
-                return serviceProvider.GetService<IConstructorSelector>().SelectConstructorBinding(Type, constructors.ToArray());
+                return serviceProvider.GetRequiredService<IConstructorSelector>().SelectConstructorBinding(Type, constructors.ToArray());
             });
         }
 

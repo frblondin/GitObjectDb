@@ -46,7 +46,7 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(serviceProvider));
             }
 
-            DataAccessorProvider = serviceProvider.GetService<IModelDataAccessorProvider>();
+            DataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             _dataAccessor = DataAccessorProvider.Get(GetType());
             if (id == Guid.Empty)
             {

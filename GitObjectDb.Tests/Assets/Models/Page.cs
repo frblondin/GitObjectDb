@@ -21,8 +21,6 @@ namespace GitObjectDb.Tests.Assets.Models
             Fields = (fields ?? throw new ArgumentNullException(nameof(fields))).AttachToParent(this);
         }
 
-        public delegate Page Factory(Guid id, string name, LazyChildren<Field> fields);
-
         public Application Application =>
             (Application)Parent ?? throw new NotSupportedException("No parent has been set.");
 

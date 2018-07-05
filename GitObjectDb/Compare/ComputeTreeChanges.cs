@@ -15,20 +15,22 @@ namespace GitObjectDb.Compare
     {
         readonly IModelDataAccessorProvider _modelDataProvider;
         readonly IInstanceLoader _instanceLoader;
-        readonly Func<IRepository> _repositoryFactory;
+        readonly IRepositoryProvider _repositoryProvider;
+        readonly RepositoryDescription _repositoryDescription;
         readonly StringBuilder _jsonBuffer = new StringBuilder();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeTreeChanges"/> class.
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
-        /// <param name="repositoryFactory">The repository factory.</param>
+        /// <param name="repositoryDescription">The repository description.</param>
         /// <exception cref="ArgumentNullException">serviceProvider</exception>
-        public ComputeTreeChanges(IServiceProvider serviceProvider, Func<IRepository> repositoryFactory)
+        public ComputeTreeChanges(IServiceProvider serviceProvider, RepositoryDescription repositoryDescription)
         {
-            _modelDataProvider = serviceProvider.GetService<IModelDataAccessorProvider>();
-            _instanceLoader = serviceProvider.GetService<IInstanceLoader>();
-            _repositoryFactory = repositoryFactory;
+            _modelDataProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
+            _instanceLoader = serviceProvider.GetRequiredService<IInstanceLoader>();
+            _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
+            _repositoryDescription = repositoryDescription;
         }
 
         static void RemoveNode(TreeDefinition definition, Stack<string> stack)
@@ -41,10 +43,10 @@ namespace GitObjectDb.Compare
         public MetadataTreeChanges Compare<TInstance>(Func<IRepository, Tree> oldTreeGetter, Func<IRepository, Tree> newTreeGetter)
             where TInstance : AbstractInstance
         {
-            using (var repository = SharedRepository.Start(_repositoryFactory))
+            return _repositoryProvider.Execute(_repositoryDescription, repository =>
             {
-                var oldInstance = _instanceLoader.LoadFrom<TInstance>(_repositoryFactory, oldTreeGetter);
-                var newInstance = _instanceLoader.LoadFrom<TInstance>(_repositoryFactory, newTreeGetter);
+                var oldInstance = _instanceLoader.LoadFrom<TInstance>(_repositoryDescription, oldTreeGetter);
+                var newInstance = _instanceLoader.LoadFrom<TInstance>(_repositoryDescription, newTreeGetter);
 
                 var oldTree = oldTreeGetter(repository);
                 var newTree = newTreeGetter(repository);
@@ -56,7 +58,7 @@ namespace GitObjectDb.Compare
                 var added = CollectAddedNodes(newInstance, changes, newTree);
                 var deleted = CollectDeletedNodes(oldInstance, changes, oldTree);
                 return new MetadataTreeChanges(added, modified, deleted);
-            }
+            });
         }
 
         static IImmutableList<MetadataTreeEntryChanges> CollectModifiedNodes(AbstractInstance oldInstance, AbstractInstance newInstance, TreeChanges changes, Tree oldTree) =>

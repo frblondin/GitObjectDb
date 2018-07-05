@@ -1,3 +1,4 @@
+using GitObjectDb.Git;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -11,46 +12,49 @@ namespace GitObjectDb.Models
         readonly StringBuilder _jsonBuffer = new StringBuilder();
 
         /// <summary>
+        /// The repository provider.
+        /// </summary>
+        internal readonly IRepositoryProvider _repositoryProvider;
+
+        /// <summary>
         /// Holds a <see cref="Tree"/> provider from a <see cref="Repository"/>.
         /// </summary>
         internal Func<IRepository, Tree> _getTree;
-        Func<IRepository> _getRepository;
 
         /// <summary>
-        /// Gets the repository that must be disposed by the caller.
+        /// The repository description.
         /// </summary>
-        /// <returns>A new <see cref="Repository"/> instance.</returns>
-        /// <exception cref="NullReferenceException">The module is not attached to a repository.</exception>
-        internal Func<IRepository> GetRepository { get; }
+        internal RepositoryDescription _repositoryDescription;
 
         /// <summary>
         /// Sets the repository data.
         /// </summary>
-        /// <param name="getRepository">The repository getter.</param>
+        /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="getTree">The tree getter.</param>
-        internal void SetRepositoryData(Func<IRepository> getRepository, Func<IRepository, Tree> getTree)
+        internal void SetRepositoryData(RepositoryDescription repositoryDescription, Func<IRepository, Tree> getTree)
         {
-            _getRepository = getRepository;
+            _repositoryDescription = repositoryDescription;
             _getTree = getTree;
         }
 
         /// <inheritdoc />
-        public Commit SaveInNewRepository(Signature signature, string message, string path, Func<IRepository> repositoryFactory, bool isBare = false)
+        public Commit SaveInNewRepository(Signature signature, string message, string path, RepositoryDescription repositoryDescription, bool isBare = false)
         {
             Repository.Init(path, isBare);
-            using (var repository = repositoryFactory())
+
+            return _repositoryProvider.Execute(repositoryDescription, repository =>
             {
                 var result = repository.Commit(AddMetadataObjectToCommit, message, signature, signature);
-                SetRepositoryData(repositoryFactory, r => r.Head.Tip.Tree);
+                SetRepositoryData(repositoryDescription, r => r.Head.Tip.Tree);
                 return result;
-            }
+            });
         }
 
         /// <inheritdoc />
         public Commit Commit(AbstractInstance newInstance, Signature signature, string message, CommitOptions options = null) =>
-            GetRepository.Do(repository =>
+            _repositoryProvider.Execute(_repositoryDescription, repository =>
             {
-                var computeChanges = _computeTreeChangesFactory(GetRepository);
+                var computeChanges = _computeTreeChangesFactory(_repositoryDescription);
                 var changes = computeChanges.Compare(this, newInstance, repository);
                 return changes.AnyChange ?
                     repository.Commit(changes.NewTree, message, signature, signature, options) :

@@ -16,17 +16,14 @@ namespace GitObjectDb.Tests.Assets.Customizations
 
         public void Customize(IFixture fixture)
         {
-            var instanceFactory = fixture.Create<Instance.Factory>();
-            var applicationFactory = fixture.Create<Application.Factory>();
-            var pageFactory = fixture.Create<Page.Factory>();
-            var fieldFactory = fixture.Create<Field.Factory>();
-            var module = instanceFactory(Guid.NewGuid(), "Some module", new LazyChildren<Application>(
+            var serviceProvider = fixture.Create<IServiceProvider>();
+            var module = new Instance(serviceProvider, Guid.NewGuid(), "Some module", new LazyChildren<Application>(
                 Enumerable.Range(1, _applicationCount).Select(a =>
-                    applicationFactory(Guid.NewGuid(), $"Application {a}", new LazyChildren<Page>(
+                    new Application(serviceProvider, Guid.NewGuid(), $"Application {a}", new LazyChildren<Page>(
                         Enumerable.Range(1, _pagePerApplicationCount).Select(p =>
-                            pageFactory(Guid.NewGuid(), $"Page {p}", new LazyChildren<Field>(
+                            new Page(serviceProvider, Guid.NewGuid(), $"Page {p}", new LazyChildren<Field>(
                                 Enumerable.Range(1, _fieldPerPageCount).Select(f =>
-                                    fieldFactory(Guid.NewGuid(), $"Field {f}"))
+                                    new Field(serviceProvider, Guid.NewGuid(), $"Field {f}"))
                                 .ToImmutableList())))
                         .ToImmutableList())))
                 .ToImmutableList()));

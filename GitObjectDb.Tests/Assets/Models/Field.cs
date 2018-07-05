@@ -18,8 +18,6 @@ namespace GitObjectDb.Tests.Assets.Models
         {
         }
 
-        public delegate Field Factory(Guid id, string name);
-
         public Page Page => (Page)Parent ?? throw new NotSupportedException("No parent has been set.");
     }
 }

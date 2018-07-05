@@ -1,8 +1,6 @@
-using Autofac;
-using Autofac.Extensions.DependencyInjection;
 using AutoFixture;
 using AutoFixture.Kernel;
-using GitObjectDb.Models;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -12,20 +10,13 @@ namespace GitObjectDb.Tests.Assets.Customizations
 {
     public class DefaultMetadataContainerCustomization : ICustomization, ISpecimenBuilder
     {
-        readonly IContainer _container;
+        readonly IServiceProvider _serviceProvider;
 
         public DefaultMetadataContainerCustomization()
         {
-            IServiceProvider serviceProvider = null;
-
-            var builder = new ContainerBuilder();
-            builder.RegisterAssemblyModules(typeof(Autofac.AutofacModule).Assembly);
-            builder.RegisterAssemblyModules(Assembly.GetExecutingAssembly());
-            builder.Register(_ => serviceProvider);
-            _container = builder.Build();
-
-            // Update captured variable returned by container
-            serviceProvider = new AutofacServiceProvider(_container);
+            var services = new ServiceCollection();
+            services.AddGitObjectDb();
+            _serviceProvider = services.BuildServiceProvider();
         }
 
         public void Customize(IFixture fixture)
@@ -34,7 +25,7 @@ namespace GitObjectDb.Tests.Assets.Customizations
         }
 
         public object Create(object request, ISpecimenContext context) =>
-            (request is Type t ? _container.ResolveOptional(t) : null) ??
+            (request is Type t ? _serviceProvider.GetService(t) : null) ??
             new NoSpecimen();
     }
 }

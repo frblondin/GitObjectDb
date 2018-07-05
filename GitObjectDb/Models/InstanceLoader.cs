@@ -1,3 +1,4 @@
+using GitObjectDb.Git;
 using GitObjectDb.JsonConverters;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
@@ -22,6 +23,7 @@ namespace GitObjectDb.Models
         readonly IContractResolver _contractResolver = new DefaultContractResolver();
         readonly IServiceProvider _serviceProvider;
         readonly IModelDataAccessorProvider _dataAccessorProvider;
+        readonly IRepositoryProvider _repositoryProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InstanceLoader"/> class.
@@ -30,17 +32,18 @@ namespace GitObjectDb.Models
         public InstanceLoader(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            _dataAccessorProvider = _serviceProvider.GetService<IModelDataAccessorProvider>();
+            _dataAccessorProvider = _serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
+            _repositoryProvider = _serviceProvider.GetRequiredService<IRepositoryProvider>();
         }
 
         /// <inheritdoc />
-        public TInstance LoadFrom<TInstance>(Func<IRepository> repositoryFactory, Func<IRepository, Tree> tree)
+        public TInstance LoadFrom<TInstance>(RepositoryDescription repositoryDescription, Func<IRepository, Tree> tree)
             where TInstance : AbstractInstance =>
-            repositoryFactory.Do(repository =>
+            _repositoryProvider.Execute(repositoryDescription, repository =>
             {
                 var currentTree = tree(repository);
                 var instance = (TInstance)LoadEntry(tree, currentTree[DataFile], string.Empty);
-                instance.SetRepositoryData(repositoryFactory, tree);
+                instance.SetRepositoryData(repositoryDescription, tree);
                 return instance;
             });
 

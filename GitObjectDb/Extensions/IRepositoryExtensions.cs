@@ -135,28 +135,5 @@ namespace LibGit2Sharp
                 }
             }
         }
-
-        /// <summary>
-        /// Executes the function using the shared repository (if set) or using the repository provider.
-        /// </summary>
-        /// <typeparam name="TResult">The result type.</typeparam>
-        /// <param name="source">The repository provider.</param>
-        /// <param name="function">The result provider using a repository.</param>
-        /// <returns>The result of the function call.</returns>
-        internal static TResult Do<TResult>(this Func<IRepository> source, Func<IRepository, TResult> function)
-        {
-            var shared = SharedRepository.Current;
-            if (shared != null)
-            {
-                return function(shared);
-            }
-            else
-            {
-                using (var repository = source())
-                {
-                    return function(repository);
-                }
-            }
-        }
     }
 }

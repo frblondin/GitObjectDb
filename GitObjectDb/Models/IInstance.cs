@@ -1,3 +1,4 @@
+using GitObjectDb.Git;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -17,10 +18,10 @@ namespace GitObjectDb.Models
         /// <param name="signature">The signature.</param>
         /// <param name="message">The message.</param>
         /// <param name="path">The path.</param>
-        /// <param name="repositoryFactory">The repository factory.</param>
+        /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="isBare">if set to <c>true</c> a bare Git repository will be created.</param>
         /// <returns>The <see cref="Commit"/> of the new repository HEAD.</returns>
-        Commit SaveInNewRepository(Signature signature, string message, string path, Func<IRepository> repositoryFactory, bool isBare = false);
+        Commit SaveInNewRepository(Signature signature, string message, string path, RepositoryDescription repositoryDescription, bool isBare = false);
 
         /// <summary>
         /// Commits all changes by comparing the current instance with a new one.
