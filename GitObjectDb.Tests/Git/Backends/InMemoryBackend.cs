@@ -1,3 +1,4 @@
+using GitObjectDb.Attributes;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -5,11 +6,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace GitObjectDb.Git.Backends
+namespace GitObjectDb.Tests.Git.Backends
 {
     /// <summary>
     /// Testing backend storing all blobs to an in-memory dictionary.
     /// </summary>
+    [ExcludeFromGuardForNull]
     public class InMemoryBackend : AbstractOdbBackend
     {
         private readonly IDictionary<ObjectId, StoreItem> _store = new Dictionary<ObjectId, StoreItem>();

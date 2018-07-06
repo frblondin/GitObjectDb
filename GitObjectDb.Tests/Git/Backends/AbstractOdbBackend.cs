@@ -1,14 +1,16 @@
+using GitObjectDb.Attributes;
 using LibGit2Sharp;
 using System;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Git.Backends
+namespace GitObjectDb.Tests.Git.Backends
 {
     /// <summary>
     /// Base abstract backend using to stream content to/from a custom storage system.
     /// </summary>
+    [ExcludeFromGuardForNull]
     public abstract partial class AbstractOdbBackend : OdbBackend
     {
         /// <inheritdoc />

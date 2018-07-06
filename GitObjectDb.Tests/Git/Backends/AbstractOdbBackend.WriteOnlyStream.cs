@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace GitObjectDb.Git.Backends
+namespace GitObjectDb.Tests.Git.Backends
 {
     public abstract partial class AbstractOdbBackend
     {

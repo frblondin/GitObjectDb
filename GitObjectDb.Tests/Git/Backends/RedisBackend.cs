@@ -1,3 +1,4 @@
+using GitObjectDb.Attributes;
 using LibGit2Sharp;
 using Newtonsoft.Json;
 using StackExchange.Redis;
@@ -7,11 +8,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace GitObjectDb.Git.Backends
+namespace GitObjectDb.Tests.Git.Backends
 {
     /// <summary>
     /// Backend storing blobs in a Redis database.
     /// </summary>
+    [ExcludeFromGuardForNull]
     public sealed class RedisBackend : AbstractOdbBackend, IDisposable
     {
         private readonly ConnectionMultiplexer _connection;

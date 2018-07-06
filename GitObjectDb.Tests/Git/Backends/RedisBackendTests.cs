@@ -1,5 +1,4 @@
 using AutoFixture.NUnit3;
-using GitObjectDb.Git.Backends;
 using LibGit2Sharp;
 using NUnit.Framework;
 using StackExchange.Redis;

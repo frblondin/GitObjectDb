@@ -1,11 +1,11 @@
 using GitObjectDb.Compare;
 using GitObjectDb.Git;
-using GitObjectDb.Git.Backends;
 using GitObjectDb.Models;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Tools;
 using GitObjectDb.Tests.Assets.Utils;
+using GitObjectDb.Tests.Git.Backends;
 using LibGit2Sharp;
 using NUnit.Framework;
 using PowerAssert;
