@@ -8,6 +8,7 @@ namespace GitObjectDb.Attributes
     /// Instructs the GitToObjectDb engine that a property can be modified.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
+    [ExcludeFromGuardForNull]
     public sealed class ModifiableAttribute : Attribute
     {
     }

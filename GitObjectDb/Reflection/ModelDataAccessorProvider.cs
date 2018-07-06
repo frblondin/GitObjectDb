@@ -15,7 +15,7 @@ namespace GitObjectDb.Reflection
         /// <param name="serviceProvider">The service provider.</param>
         public ModelDataAccessorProvider(IServiceProvider serviceProvider)
         {
-            _serviceProvider = serviceProvider;
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         }
 
         /// <inheritdoc />

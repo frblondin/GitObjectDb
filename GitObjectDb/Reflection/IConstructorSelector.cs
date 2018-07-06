@@ -15,6 +15,6 @@ namespace GitObjectDb.Reflection
         /// <param name="type">The declaring type.</param>
         /// <param name="constructorBindings">Available constructors.</param>
         /// <returns>The best constructor.</returns>
-        ConstructorParameterBinding SelectConstructorBinding(Type type, ConstructorParameterBinding[] constructorBindings);
+        ConstructorParameterBinding SelectConstructorBinding(Type type, IEnumerable<ConstructorParameterBinding> constructorBindings);
     }
 }

@@ -18,6 +18,14 @@ namespace GitObjectDb.Reflection
             _inner = inner ?? throw new ArgumentNullException(nameof(inner));
 
         /// <inheritdoc />
-        public IModelDataAccessor Get(Type type) => _cache.GetOrAdd(type, _inner.Get);
+        public IModelDataAccessor Get(Type type)
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            return _cache.GetOrAdd(type, _inner.Get);
+        }
     }
 }

@@ -11,8 +11,12 @@ namespace GitObjectDb.Reflection
     internal class MostParametersConstructorSelector : IConstructorSelector
     {
         /// <inheritdoc />
-        public ConstructorParameterBinding SelectConstructorBinding(Type type, ConstructorParameterBinding[] constructorBindings)
+        public ConstructorParameterBinding SelectConstructorBinding(Type type, IEnumerable<ConstructorParameterBinding> constructorBindings)
         {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
             if (constructorBindings == null)
             {
                 throw new ArgumentNullException(nameof(constructorBindings));

@@ -40,6 +40,19 @@ namespace GitObjectDb.Models
         /// <inheritdoc />
         public Commit SaveInNewRepository(Signature signature, string message, string path, RepositoryDescription repositoryDescription, bool isBare = false)
         {
+            if (signature == null)
+            {
+                throw new ArgumentNullException(nameof(signature));
+            }
+            if (message == null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+            if (repositoryDescription == null)
+            {
+                throw new ArgumentNullException(nameof(repositoryDescription));
+            }
+
             Repository.Init(path, isBare);
 
             return _repositoryProvider.Execute(repositoryDescription, repository =>
@@ -51,8 +64,22 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public Commit Commit(AbstractInstance newInstance, Signature signature, string message, CommitOptions options = null) =>
-            _repositoryProvider.Execute(_repositoryDescription, repository =>
+        public Commit Commit(AbstractInstance newInstance, Signature signature, string message, CommitOptions options = null)
+        {
+            if (newInstance == null)
+            {
+                throw new ArgumentNullException(nameof(newInstance));
+            }
+            if (signature == null)
+            {
+                throw new ArgumentNullException(nameof(signature));
+            }
+            if (message == null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
+            return _repositoryProvider.Execute(_repositoryDescription, repository =>
             {
                 var computeChanges = _computeTreeChangesFactory(_repositoryDescription);
                 var changes = computeChanges.Compare(this, newInstance, repository);
@@ -60,6 +87,7 @@ namespace GitObjectDb.Models
                     repository.Commit(changes.NewTree, message, signature, signature, options) :
                     null;
             });
+        }
 
         void AddMetadataObjectToCommit(IRepository repository, TreeDefinition tree) =>
             AddNodeToCommit(repository, tree, new Stack<string>(), this);

@@ -1,3 +1,4 @@
+using GitObjectDb.Attributes;
 using GitObjectDb.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -26,8 +27,8 @@ namespace GitObjectDb.JsonConverters
         /// <param name="childResolver">The child resolver.</param>
         public MetadataObjectJsonConverter(IServiceProvider serviceProvider, ChildrenResolver childResolver)
         {
-            _serviceProvider = serviceProvider;
-            _childResolver = childResolver;
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _childResolver = childResolver ?? throw new ArgumentNullException(nameof(childResolver));
         }
 
         /// <summary>
@@ -50,12 +51,33 @@ namespace GitObjectDb.JsonConverters
             null;
 
         /// <inheritdoc />
-        public override bool CanConvert(Type objectType) =>
-            typeof(IMetadataObject).IsAssignableFrom(objectType);
+        public override bool CanConvert(Type objectType)
+        {
+            if (objectType == null)
+            {
+                throw new ArgumentNullException(nameof(objectType));
+            }
+
+            return typeof(IMetadataObject).IsAssignableFrom(objectType);
+        }
 
         /// <inheritdoc />
+        [ExcludeFromGuardForNull]
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
+            if (reader == null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+            if (objectType == null)
+            {
+                throw new ArgumentNullException(nameof(objectType));
+            }
+            if (serializer == null)
+            {
+                throw new ArgumentNullException(nameof(serializer));
+            }
+
             if (reader.TokenType == JsonToken.Null)
             {
                 return null;
@@ -93,7 +115,22 @@ namespace GitObjectDb.JsonConverters
             _serviceProvider.GetService(property.PropertyType);
 
         /// <inheritdoc />
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) =>
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+            if (serializer == null)
+            {
+                throw new ArgumentNullException(nameof(serializer));
+            }
+
             throw new NotImplementedException();
+        }
     }
 }

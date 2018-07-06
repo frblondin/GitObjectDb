@@ -16,7 +16,7 @@ namespace GitObjectDb.Compare
         /// <param name="old">The old value.</param>
         /// <param name="new">The new value.</param>
         /// <exception cref="ArgumentNullException">old</exception>
-        public MetadataTreeEntryChanges(IMetadataObject old, IMetadataObject @new)
+        public MetadataTreeEntryChanges(IMetadataObject old = null, IMetadataObject @new = null)
         {
             if (old == null && @new == null)
             {

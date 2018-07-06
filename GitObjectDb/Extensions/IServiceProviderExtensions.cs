@@ -19,6 +19,11 @@ namespace System
         internal static TService GetRequiredService<TService>(this IServiceProvider serviceProvider)
             where TService : class
         {
+            if (serviceProvider == null)
+            {
+                throw new ArgumentNullException(nameof(serviceProvider));
+            }
+
             return (TService)serviceProvider.GetService(typeof(TService)) ?? throw new MissingDependencyException(typeof(TService));
         }
     }

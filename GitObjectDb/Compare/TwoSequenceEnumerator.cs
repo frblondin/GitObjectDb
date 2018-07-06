@@ -9,7 +9,7 @@ namespace GitObjectDb.Compare
 {
 #pragma warning disable SA1600 // Elements must be documented
     internal sealed class TwoSequenceEnumerator<T> : IDisposable
-        where T : IMetadataObject
+        where T : class, IMetadataObject
     {
         readonly IEnumerator<T> _leftEnumerator;
         readonly IEnumerator<T> _rightEnumerator;
@@ -18,6 +18,15 @@ namespace GitObjectDb.Compare
 
         public TwoSequenceEnumerator(IEnumerable<T> leftElements, IEnumerable<T> rightElements)
         {
+            if (leftElements == null)
+            {
+                throw new ArgumentNullException(nameof(leftElements));
+            }
+            if (rightElements == null)
+            {
+                throw new ArgumentNullException(nameof(rightElements));
+            }
+
             _leftEnumerator = leftElements.OrderBy(v => v.Id).GetEnumerator();
             _rightEnumerator = rightElements.OrderBy(v => v.Id).GetEnumerator();
             MoveNextLeft();

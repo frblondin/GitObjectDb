@@ -1,3 +1,4 @@
+using GitObjectDb.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -36,6 +37,19 @@ namespace GitObjectDb.Reflection
             return found.Constructor;
         }
 
+        /// <summary>
+        /// Extracts the <see cref="PropertyInfo"/> out of the expression.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source.</typeparam>
+        /// <param name="expression">The expression.</param>
+        /// <returns>The <see cref="PropertyInfo"/>.</returns>
+        internal static PropertyInfo GetProperty<TSource>(Expression<Func<TSource, object>> expression)
+        {
+            var found = Visitor<MemberExpression>.Lookup(expression);
+            return (PropertyInfo)found.Member;
+        }
+
+        [ExcludeFromGuardForNull]
         class Visitor<TExpression> : ExpressionVisitor
             where TExpression : Expression
         {
@@ -51,6 +65,11 @@ namespace GitObjectDb.Reflection
 
             public override Expression Visit(Expression node)
             {
+                if (node == null)
+                {
+                    throw new ArgumentNullException(nameof(node));
+                }
+
                 if (node is TExpression found)
                 {
                     if (Result != null)

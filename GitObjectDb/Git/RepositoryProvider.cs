@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace GitObjectDb.Git
 {
     /// <inheritdoc/>
-    internal sealed class RepositoryProvider : IRepositoryProvider
+    internal sealed class RepositoryProvider : IRepositoryProvider, IDisposable
     {
         static readonly TimeSpan _expirationScanFrequency = TimeSpan.FromSeconds(2);
 
@@ -17,7 +17,7 @@ namespace GitObjectDb.Git
         readonly IDictionary<RepositoryDescription, CacheEntry> _dictionary = new Dictionary<RepositoryDescription, CacheEntry>();
         readonly IRepositoryFactory _repositoryFactory;
 
-        DateTimeOffset _lastExpirationScan = DateTimeOffset.UtcNow;
+        CancellationTokenSource _scanForExpiredItemsCancellationTokenSource;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RepositoryProvider"/> class.
@@ -44,6 +44,10 @@ namespace GitObjectDb.Git
             if (description == null)
             {
                 throw new ArgumentNullException(nameof(description));
+            }
+            if (function == null)
+            {
+                throw new ArgumentNullException(nameof(function));
             }
 
             var entry = GetEntry(description);
@@ -77,29 +81,35 @@ namespace GitObjectDb.Git
 
         void StartScanForExpiredItems()
         {
-            var utcNow = DateTimeOffset.UtcNow;
-            if (utcNow - _lastExpirationScan > _expirationScanFrequency)
+            _scanForExpiredItemsCancellationTokenSource?.Cancel();
+            _scanForExpiredItemsCancellationTokenSource = new CancellationTokenSource();
+
+            var delay = Task.Delay(_expirationScanFrequency, _scanForExpiredItemsCancellationTokenSource.Token);
+            delay.ContinueWith(ScanForExpiredItems, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
+        }
+
+        void ScanForExpiredItems(Task task)
+        {
+            lock (_syncLock)
             {
-                _lastExpirationScan = utcNow;
-                Task.Factory.StartNew(
-                    state => ScanForExpiredItems(),
-                    this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                var expiredItems = (from kvp in _dictionary
+                                    where kvp.Value.Counter == 0 && kvp.Value.ShouldBeEvicted
+                                    select kvp).ToList();
+                var collection = (ICollection<KeyValuePair<RepositoryDescription, CacheEntry>>)_dictionary;
+                foreach (var kvp in expiredItems)
+                {
+                    // By using the ICollection<KVP>.Remove overload, we additionally enforce that the exact value in the KVP is the one associated with the key.
+                    // this would prevent, for instance, removing an item if it got touched right after we enumerated it above.
+                    collection.Remove(kvp);
+                    kvp.Value.Evict();
+                }
             }
         }
 
-        void ScanForExpiredItems()
+        /// <inheritdoc/>
+        public void Dispose()
         {
-            var expiredItems = (from kvp in _dictionary
-                                where kvp.Value.Counter == 0 && kvp.Value.ShouldBeEvicted
-                                select kvp).ToList();
-            var collection = (ICollection<KeyValuePair<RepositoryDescription, CacheEntry>>)_dictionary;
-            foreach (var kvp in expiredItems)
-            {
-                // By using the ICollection<KVP>.Remove overload, we additionally enforce that the exact value in the KVP is the one associated with the key.
-                // this would prevent, for instance, removing an item if it got touched right after we enumerated it above.
-                collection.Remove(kvp);
-                kvp.Value.Evict();
-            }
+            _scanForExpiredItemsCancellationTokenSource?.Dispose();
         }
 
         class CacheEntry

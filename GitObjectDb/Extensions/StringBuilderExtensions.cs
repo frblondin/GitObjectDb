@@ -1,3 +1,4 @@
+using GitObjectDb.Attributes;
 using GitObjectDb.Reflection;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ namespace System.Text
     /// <summary>
     /// A set of methods for instances of <see cref="StringBuilder"/>.
     /// </summary>
+    [ExcludeFromGuardForNull]
     internal static class StringBuilderExtensions
     {
         /// <summary>
@@ -179,6 +181,7 @@ namespace System.Text
         #region Private structures
 #pragma warning disable SA1600 // Elements must be documented
         [StructLayout(LayoutKind.Sequential)]
+        [ExcludeFromGuardForNull]
         private struct ChunkData
         {
             static readonly ConstructorInfo _constructor = ExpressionReflector.GetConstructor(() => new ChunkData(default, default, default, default, default));
@@ -245,6 +248,7 @@ namespace System.Text
 
         [DebuggerDisplay("Data={Data.Chunk}")]
         [StructLayout(LayoutKind.Sequential)]
+        [ExcludeFromGuardForNull]
         private struct ManageSliceActionItem
         {
             public readonly ChunkData Data;
@@ -262,6 +266,7 @@ namespace System.Text
         /// <summary>
         /// Contains a slice of a <see cref="StringBuilder"/>.
         /// </summary>
+        [ExcludeFromGuardForNull]
         internal struct Slice
         {
             internal readonly char[] _values;

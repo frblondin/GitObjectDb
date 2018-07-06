@@ -20,13 +20,17 @@ namespace GitObjectDb.Reflection
 
         readonly PredicateVisitor _visitor;
 
+        private PredicateReflector()
+        {
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PredicateReflector"/> class.
         /// </summary>
         /// <param name="predicate">The predicate.</param>
-        public PredicateReflector(Expression predicate = null)
+        public PredicateReflector(Expression predicate)
         {
-            Predicate = predicate;
+            Predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
             _visitor = predicate != null ? CreateVisitor(predicate) : null;
         }
 
@@ -76,6 +80,7 @@ namespace GitObjectDb.Reflection
             null;
 
         #region PredicateVisitor
+        [ExcludeFromGuardForNull]
         class PredicateVisitor : ExpressionVisitor
         {
             public IDictionary<string, object> Values { get; } = new SortedDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -124,12 +129,15 @@ namespace GitObjectDb.Reflection
 
             protected override Expression VisitBinary(BinaryExpression node)
             {
+                if (node == null)
+                {
+                    throw new ArgumentNullException(nameof(node));
+                }
+
                 if (node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.TypeEqual)
                 {
                     var member = ExtractMember(node.Left);
-                    var value = ExtractValue(node.Right);
-
-                    Values[member.Name] = value;
+                    Values[member.Name] = ExtractValue(node.Right);
                 }
                 else
                 {
@@ -140,6 +148,11 @@ namespace GitObjectDb.Reflection
 
             protected override Expression VisitMethodCall(MethodCallExpression node)
             {
+                if (node == null)
+                {
+                    throw new ArgumentNullException(nameof(node));
+                }
+
                 if (node.Method == _childrenAddMethod)
                 {
                     VisitAddOrDeleteMethodCall(node, ChildChangeType.Add);

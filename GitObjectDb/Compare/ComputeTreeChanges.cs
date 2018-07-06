@@ -27,10 +27,16 @@ namespace GitObjectDb.Compare
         /// <exception cref="ArgumentNullException">serviceProvider</exception>
         public ComputeTreeChanges(IServiceProvider serviceProvider, RepositoryDescription repositoryDescription)
         {
+            if (serviceProvider == null)
+            {
+                throw new ArgumentNullException(nameof(serviceProvider));
+            }
+
             _modelDataProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             _instanceLoader = serviceProvider.GetRequiredService<IInstanceLoader>();
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
-            _repositoryDescription = repositoryDescription;
+
+            _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
         }
 
         static void RemoveNode(TreeDefinition definition, Stack<string> stack)
@@ -43,6 +49,15 @@ namespace GitObjectDb.Compare
         public MetadataTreeChanges Compare<TInstance>(Func<IRepository, Tree> oldTreeGetter, Func<IRepository, Tree> newTreeGetter)
             where TInstance : AbstractInstance
         {
+            if (oldTreeGetter == null)
+            {
+                throw new ArgumentNullException(nameof(oldTreeGetter));
+            }
+            if (newTreeGetter == null)
+            {
+                throw new ArgumentNullException(nameof(newTreeGetter));
+            }
+
             return _repositoryProvider.Execute(_repositoryDescription, repository =>
             {
                 var oldInstance = _instanceLoader.LoadFrom<TInstance>(_repositoryDescription, oldTreeGetter);
@@ -119,6 +134,10 @@ namespace GitObjectDb.Compare
             if (newInstance == null)
             {
                 throw new ArgumentNullException(nameof(newInstance));
+            }
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
             }
 
             var tree = original._getTree(repository);

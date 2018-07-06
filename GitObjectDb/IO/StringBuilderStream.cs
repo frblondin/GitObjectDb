@@ -1,3 +1,4 @@
+using GitObjectDb.Attributes;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,7 +13,8 @@ namespace GitObjectDb.IO
     /// <summary>
     /// Creates an in-memory stream out of a <see cref="StringBuilder"/> instance.
     /// </summary>
-    /// <seealso cref="System.IO.MemoryStream" />
+    /// <seealso cref="MemoryStream" />
+    [ExcludeFromGuardForNull]
     internal class StringBuilderStream : MemoryStream
     {
         readonly long _length;

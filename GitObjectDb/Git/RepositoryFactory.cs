@@ -11,6 +11,11 @@ namespace GitObjectDb.Git
         /// <inheritdoc/>
         public IRepository CreateRepository(RepositoryDescription description)
         {
+            if (description == null)
+            {
+                throw new ArgumentNullException(nameof(description));
+            }
+
             var repository = new Repository(description.Path);
             if (description.Backend != null)
             {

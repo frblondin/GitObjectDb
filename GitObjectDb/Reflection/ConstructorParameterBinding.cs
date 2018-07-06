@@ -40,8 +40,9 @@ namespace GitObjectDb.Reflection
         public ConstructorParameterBinding(IServiceProvider serviceProvider, ConstructorInfo constructor)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _dataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             Constructor = constructor ?? throw new ArgumentNullException(nameof(constructor));
+
+            _dataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             Parameters = constructor.GetParameters().ToImmutableList();
             _typedSourceObjectVar = Expression.Variable(Constructor.DeclaringType);
             _resultVar = Expression.Variable(Constructor.DeclaringType);

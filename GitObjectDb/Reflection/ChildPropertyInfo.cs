@@ -80,7 +80,14 @@ namespace GitObjectDb.Reflection
         /// </summary>
         /// <param name="name">The name.</param>
         /// <returns><code>true</code> is the names are matching.</returns>
-        public bool Matches(string name) =>
-            Property.Name.Equals(name, StringComparison.OrdinalIgnoreCase);
+        public bool Matches(string name)
+        {
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            return Property.Name.Equals(name, StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

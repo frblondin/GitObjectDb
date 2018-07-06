@@ -1,3 +1,4 @@
+using GitObjectDb.Attributes;
 using LibGit2Sharp;
 using System;
 using System.Collections;
@@ -140,11 +141,13 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        ILazyChildren ILazyChildren.Clone(Func<IMetadataObject, IMetadataObject> update, IEnumerable added, IEnumerable deleted, bool forceVisit) =>
-            Clone(n => (TChild)update(n), added?.Cast<TChild>(), deleted?.Cast<TChild>(), forceVisit);
+        [ExcludeFromGuardForNull]
+        public ILazyChildren Clone(bool forceVisit, Func<IMetadataObject, IMetadataObject> update, IEnumerable added = null, IEnumerable deleted = null) =>
+            Clone(forceVisit, n => (TChild)update(n), added?.Cast<TChild>(), deleted?.Cast<TChild>());
 
         /// <inheritdoc />
-        public ILazyChildren<TChild> Clone(Func<TChild, TChild> update, IEnumerable<TChild> added, IEnumerable<TChild> deleted, bool forceVisit)
+        [ExcludeFromGuardForNull]
+        public ILazyChildren<TChild> Clone(bool forceVisit, Func<TChild, TChild> update, IEnumerable<TChild> added = null, IEnumerable<TChild> deleted = null)
         {
             if (update == null)
             {

@@ -32,11 +32,12 @@ namespace GitObjectDb.Reflection
         /// or
         /// type
         /// </exception>
-        internal ModelDataAccessor(IServiceProvider serviceProvider, Type type)
+        public ModelDataAccessor(IServiceProvider serviceProvider, Type type)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _dataAccessorProvider = _serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             Type = type ?? throw new ArgumentNullException(nameof(type));
+
+            _dataAccessorProvider = _serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             _childProperties = new Lazy<ImmutableList<ChildPropertyInfo>>(GetChildProperties);
             _modifiableProperties = new Lazy<ImmutableList<ModifiablePropertyInfo>>(GetModifiableProperties);
             _constructorBinding = new Lazy<ConstructorParameterBinding>(() =>
@@ -85,20 +86,20 @@ namespace GitObjectDb.Reflection
                 {
                     var childChanges = reflector.TryGetChildChanges(name);
                     return children.Clone(
-                        n => n == @object ?
-                             @new :
-                             childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
-                        childChanges?.Where(c => c.Type == PredicateReflector.ChildChangeType.Add).Select(c => c.Child) ?? Enumerable.Empty<IMetadataObject>(),
-                        childChanges?.Where(c => c.Type == PredicateReflector.ChildChangeType.Delete).Select(c => c.Child) ?? Enumerable.Empty<IMetadataObject>(),
-                        forceVisit: false);
+                        forceVisit: false,
+                        update: n => n == @object ?
+                              @new :
+                              childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
+                        added: childChanges?.Where(c => c.Type == PredicateReflector.ChildChangeType.Add).Select(c => c.Child) ?? Enumerable.Empty<IMetadataObject>(),
+                        deleted: childChanges?.Where(c => c.Type == PredicateReflector.ChildChangeType.Delete).Select(c => c.Child) ?? Enumerable.Empty<IMetadataObject>());
                 });
         }
 
         ILazyChildren RecursiveClone(string name, ILazyChildren children, IMetadataObject @new, IModelDataAccessor childDataAccessor) =>
-            children.Clone(n => childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
-                           null,
-                           null,
-                           forceVisit: false);
+            children.Clone(forceVisit: false,
+                update: n => childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
+                added: null,
+                deleted: null);
 
         void CreateNewParentTree(IMetadataObject old, IMetadataObject @new)
         {
@@ -124,20 +125,29 @@ namespace GitObjectDb.Reflection
                 old.Parent,
                 PredicateReflector.Empty,
                 (name, children, _, childDataAccessor) =>
-                    children.Clone(n => n == old ?
-                                        @new :
-                                        childDataAccessor.ConstructorParameterBinding.Cloner(n, new PredicateReflector(), RecursiveClone),
-                                   null,
-                                   null,
-                                   forceVisit: false));
+                    children.Clone(forceVisit: false,
+                        update: n => n == old ?
+                                                                 @new :
+                                                                 childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
+                        added: null,
+                        deleted: null));
             @new.AttachToParent(newParent);
 
             CreateNewParentTree(old.Parent, newParent);
         }
 
         /// <inheritdoc />
-        public IMetadataObject With(IMetadataObject source, Expression predicate = null)
+        public IMetadataObject With(IMetadataObject source, Expression predicate)
         {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+            if (predicate == null)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
             var result = CloneSubTree(source, predicate);
             CreateNewParentTree(source, result);
             return result;

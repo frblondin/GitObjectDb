@@ -59,6 +59,16 @@ namespace GitObjectDb.Models
         /// <returns>All parent nodes from nearest to farest.</returns>
         public static IEnumerable<IMetadataObject> Parents(this IMetadataObject source)
         {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            return ParentsIterator(source);
+        }
+
+        static IEnumerable<IMetadataObject> ParentsIterator(IMetadataObject source)
+        {
             var node = source;
             while (node != null)
             {

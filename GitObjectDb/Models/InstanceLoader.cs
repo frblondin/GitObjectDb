@@ -31,21 +31,33 @@ namespace GitObjectDb.Models
         /// <param name="serviceProvider">The service provider.</param>
         public InstanceLoader(IServiceProvider serviceProvider)
         {
-            _serviceProvider = serviceProvider;
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+
             _dataAccessorProvider = _serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             _repositoryProvider = _serviceProvider.GetRequiredService<IRepositoryProvider>();
         }
 
         /// <inheritdoc />
         public TInstance LoadFrom<TInstance>(RepositoryDescription repositoryDescription, Func<IRepository, Tree> tree)
-            where TInstance : AbstractInstance =>
-            _repositoryProvider.Execute(repositoryDescription, repository =>
+            where TInstance : AbstractInstance
+        {
+            if (repositoryDescription == null)
+            {
+                throw new ArgumentNullException(nameof(repositoryDescription));
+            }
+            if (tree == null)
+            {
+                throw new ArgumentNullException(nameof(tree));
+            }
+
+            return _repositoryProvider.Execute(repositoryDescription, repository =>
             {
                 var currentTree = tree(repository);
                 var instance = (TInstance)LoadEntry(tree, currentTree[DataFile], string.Empty);
                 instance.SetRepositoryData(repositoryDescription, tree);
                 return instance;
             });
+        }
 
         IMetadataObject LoadEntry(Func<IRepository, Tree> tree, TreeEntry entry, string path)
         {
