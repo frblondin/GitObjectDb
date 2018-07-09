@@ -41,10 +41,22 @@ namespace GitObjectDb.Compare
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
         }
 
-        static void RemoveNode(TreeDefinition definition, Stack<string> stack)
+        void RemoveNode(IMetadataObject left, TreeDefinition definition, Stack<string> stack)
         {
             var path = stack.ToDataPath();
             definition.Remove(path);
+            var dataAccessor = _modelDataProvider.Get(left.GetType());
+            foreach (var childProperty in dataAccessor.ChildProperties)
+            {
+                stack.Push(childProperty.Name);
+                foreach (var child in left.Children)
+                {
+                    stack.Push(child.Id.ToString());
+                    RemoveNode(child, definition, stack);
+                    stack.Pop();
+                }
+                stack.Pop();
+            }
         }
 
         /// <inheritdoc/>
@@ -161,7 +173,7 @@ namespace GitObjectDb.Compare
                     continue;
                 }
 
-                stack.Push(childProperty.Property.Name);
+                stack.Push(childProperty.Name);
                 anyChange |= CompareNodeChildren(repository, original, @new, tree, definition, stack, childProperty);
                 stack.Pop();
             }
@@ -206,7 +218,7 @@ namespace GitObjectDb.Compare
             else if (enumerator.NodeHasBeenRemoved)
             {
                 stack.Push(enumerator.Left.Id.ToString());
-                RemoveNode(definition, stack);
+                RemoveNode(enumerator.Left, definition, stack);
                 stack.Pop();
                 enumerator.MoveNextLeft();
                 return true;

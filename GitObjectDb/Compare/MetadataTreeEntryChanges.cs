@@ -8,7 +8,7 @@ namespace GitObjectDb.Compare
     /// <summary>
     /// Holds the changes between two versions of a tree entry.
     /// </summary>
-    [DebuggerDisplay("Old = {Old.Id}, New = {New.Id}")]
+    [DebuggerDisplay("Status = {Status}, Old = {Old?.Id}, New = {New?.Id}")]
     public class MetadataTreeEntryChanges
     {
         private readonly PatchEntryChanges _entryChanges;

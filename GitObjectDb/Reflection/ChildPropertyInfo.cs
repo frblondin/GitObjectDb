@@ -50,6 +50,11 @@ namespace GitObjectDb.Reflection
         /// </summary>
         public Func<IMetadataObject, bool> ShouldVisitChildren { get; }
 
+        /// <summary>
+        /// Gets the name of the child property container.
+        /// </summary>
+        public string Name => Property.Name;
+
         static Expression<Func<IMetadataObject, IEnumerable<IMetadataObject>>> CreateGetter(PropertyInfo property)
         {
             var instanceParam = Expression.Parameter(typeof(IMetadataObject), "instance");
@@ -87,7 +92,7 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(name));
             }
 
-            return Property.Name.Equals(name, StringComparison.OrdinalIgnoreCase);
+            return Name.Equals(name, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

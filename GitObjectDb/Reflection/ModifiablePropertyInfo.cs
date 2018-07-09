@@ -33,6 +33,11 @@ namespace GitObjectDb.Reflection
         /// </summary>
         public Func<IMetadataObject, object> Accessor { get; }
 
+        /// <summary>
+        /// Gets the name of the property.
+        /// </summary>
+        public string Name => Property.Name;
+
         static Expression<Func<IMetadataObject, object>> CreateGetter(PropertyInfo property)
         {
             var instanceParam = Expression.Parameter(typeof(IMetadataObject), "instance");
@@ -84,7 +89,7 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(name));
             }
 
-            return Property.Name.Equals(name, StringComparison.OrdinalIgnoreCase);
+            return Name.Equals(name, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

@@ -101,7 +101,7 @@ namespace GitObjectDb.Models
         ILazyChildren LoadEntryChildren(ObjectId commitId, string path, ChildPropertyInfo childProperty) =>
             LazyChildrenHelper.Create(childProperty, (parent, repository) =>
             {
-                var childPath = string.IsNullOrEmpty(path) ? childProperty.Property.Name : $"{path}/{childProperty.Property.Name}";
+                var childPath = string.IsNullOrEmpty(path) ? childProperty.Name : $"{path}/{childProperty.Name}";
                 var commit = repository.Lookup<Commit>(commitId);
                 var subTree = commit[childPath]?.Target.Peel<Tree>();
                 return (subTree?.Any() ?? false) ?

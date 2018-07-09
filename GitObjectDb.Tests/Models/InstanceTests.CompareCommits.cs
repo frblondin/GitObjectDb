@@ -84,6 +84,28 @@ namespace GitObjectDb.Tests.Models
             Assert.That(changes.Deleted[0].Old.Name, Is.EqualTo(field.Name));
         }
 
-        // TODO: Remove container (ie. page) and make sure that all nested object deletion gets logged
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        public void ResolveDiffsPageDeletion(Instance sut, Application application, Signature signature, string message, Func<RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
+        {
+            // Arrange
+            var originalCommit = sut.SaveInNewRepository(signature, message, _path, GetRepositoryDescription(inMemoryBackend));
+            var page = application.Pages[1];
+            var modifiedApplication = application.With(p => p.Pages.Delete(page));
+            var commit = sut.Commit(modifiedApplication.Instance, signature, message);
+
+            // Act
+            var changes = computeTreeChangesFactory(GetRepositoryDescription(inMemoryBackend))
+                .Compare(typeof(Instance), originalCommit.Id, commit.Id);
+
+            // Assert
+            Assert.That(changes.Modified, Is.Empty);
+            Assert.That(changes.Added, Is.Empty);
+            Assert.That(changes.Deleted, Has.Count.EqualTo(MetadataCustomization.FieldPerPageCount + 1));
+            var pageDeletion = changes.Deleted.FirstOrDefault(o => o.Old is Page);
+            Assert.That(pageDeletion, Is.Not.Null);
+            Assert.That(pageDeletion.New, Is.Null);
+            Assert.That(pageDeletion.Old.Name, Is.EqualTo(page.Name));
+        }
     }
 }

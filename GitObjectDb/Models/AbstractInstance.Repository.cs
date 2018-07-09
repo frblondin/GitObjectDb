@@ -80,7 +80,7 @@ namespace GitObjectDb.Models
             foreach (var childProperty in dataAccessor.ChildProperties)
             {
                 var children = childProperty.Accessor(node);
-                stack.Push(childProperty.Property.Name);
+                stack.Push(childProperty.Name);
                 foreach (var child in children)
                 {
                     stack.Push(child.Id.ToString());
@@ -105,7 +105,7 @@ namespace GitObjectDb.Models
             for (int i = 0; i < chunks.Length && result != null; i++)
             {
                 var propertyInfo = DataAccessorProvider.Get(result.GetType()).ChildProperties.FirstOrDefault(p =>
-                    p.Property.Name.Equals(chunks[i], StringComparison.OrdinalIgnoreCase));
+                    p.Name.Equals(chunks[i], StringComparison.OrdinalIgnoreCase));
                 if (propertyInfo == null || ++i >= chunks.Length)
                 {
                     return null;
