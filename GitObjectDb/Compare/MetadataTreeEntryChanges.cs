@@ -1,4 +1,5 @@
 using GitObjectDb.Models;
+using LibGit2Sharp;
 using System;
 using System.Diagnostics;
 
@@ -10,14 +11,18 @@ namespace GitObjectDb.Compare
     [DebuggerDisplay("Old = {Old.Id}, New = {New.Id}")]
     public class MetadataTreeEntryChanges
     {
+        private readonly PatchEntryChanges _entryChanges;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MetadataTreeEntryChanges"/> class.
         /// </summary>
+        /// <param name="entryChanges">The entry changes.</param>
         /// <param name="old">The old value.</param>
         /// <param name="new">The new value.</param>
         /// <exception cref="ArgumentNullException">old</exception>
-        public MetadataTreeEntryChanges(IMetadataObject old = null, IMetadataObject @new = null)
+        public MetadataTreeEntryChanges(PatchEntryChanges entryChanges, IMetadataObject old = null, IMetadataObject @new = null)
         {
+            _entryChanges = entryChanges ?? throw new ArgumentNullException(nameof(entryChanges));
             if (old == null && @new == null)
             {
                 throw new ArgumentNullException($"{nameof(old)} and {nameof(@new)}");
@@ -36,5 +41,20 @@ namespace GitObjectDb.Compare
         /// Gets the new object.
         /// </summary>
         public IMetadataObject New { get; }
+
+        /// <summary>
+        /// Gets the patch corresponding to these changes.
+        /// </summary>
+        public string Patch => _entryChanges.Patch;
+
+        /// <summary>
+        /// Gets the new path.
+        /// </summary>
+        public string Path => _entryChanges.Path;
+
+        /// <summary>
+        /// Gets the type of change.
+        /// </summary>
+        public ChangeKind Status => _entryChanges.Status;
     }
 }

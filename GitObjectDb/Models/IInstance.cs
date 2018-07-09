@@ -1,3 +1,4 @@
+using GitObjectDb.Compare;
 using GitObjectDb.Git;
 using LibGit2Sharp;
 using System;
@@ -12,6 +13,11 @@ namespace GitObjectDb.Models
     /// <seealso cref="IMetadataObject" />
     public interface IInstance : IMetadataObject
     {
+        /// <summary>
+        /// Gets the <see cref="LibGit2Sharp.Commit"/> id this instance has been load from.
+        /// </summary>
+        ObjectId CommitId { get; }
+
         /// <summary>
         /// Stores the content of this instance and all its children in a new Git repository.
         /// </summary>
@@ -32,6 +38,27 @@ namespace GitObjectDb.Models
         /// <param name="options">The options.</param>
         /// <returns>The <see cref="Commit"/> of the new repository HEAD.</returns>
         Commit Commit(AbstractInstance newInstance, Signature signature, string message, CommitOptions options = null);
+
+        /// <summary>
+        /// Checkouts the specified branch name.
+        /// </summary>
+        /// <param name="branchName">Name of the branch.</param>
+        /// <returns>The <see cref="LibGit2Sharp.Branch"/>.</returns>
+        Branch Checkout(string branchName);
+
+        /// <summary>
+        /// Creates a branch with the specified name. This branch will point at the current commit.
+        /// </summary>
+        /// <param name="branchName">The name of the branch to create.</param>
+        /// <returns>The newly created <see cref="LibGit2Sharp.Branch"/>.</returns>
+        Branch Branch(string branchName);
+
+        /// <summary>
+        /// Merges changes from branch into the branch pointed at by HEAD..
+        /// </summary>
+        /// <param name="branchName">Name of the branch.</param>
+        /// <returns>The <see cref="IMetadataTreeMerge"/> instance used to apply the merge.</returns>
+        IMetadataTreeMerge Merge(string branchName);
 
         /// <summary>
         /// Tries getting a nested object from its Git path.

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace GitObjectDb.Models
 {
-    public partial class AbstractInstance : IInstance
+    public partial class AbstractInstance
     {
         readonly StringBuilder _jsonBuffer = new StringBuilder();
 
@@ -17,24 +17,24 @@ namespace GitObjectDb.Models
         internal readonly IRepositoryProvider _repositoryProvider;
 
         /// <summary>
-        /// Holds a <see cref="Tree"/> provider from a <see cref="Repository"/>.
-        /// </summary>
-        internal Func<IRepository, Tree> _getTree;
-
-        /// <summary>
         /// The repository description.
         /// </summary>
         internal RepositoryDescription _repositoryDescription;
+
+        readonly IInstanceLoader _instanceLoader;
+
+        /// <inheritdoc />
+        public ObjectId CommitId { get; private set; }
 
         /// <summary>
         /// Sets the repository data.
         /// </summary>
         /// <param name="repositoryDescription">The repository description.</param>
-        /// <param name="getTree">The tree getter.</param>
-        internal void SetRepositoryData(RepositoryDescription repositoryDescription, Func<IRepository, Tree> getTree)
+        /// <param name="commitId">The commit getter.</param>
+        internal void SetRepositoryData(RepositoryDescription repositoryDescription, ObjectId commitId)
         {
             _repositoryDescription = repositoryDescription;
-            _getTree = getTree;
+            CommitId = commitId;
         }
 
         /// <inheritdoc />
@@ -58,34 +58,8 @@ namespace GitObjectDb.Models
             return _repositoryProvider.Execute(repositoryDescription, repository =>
             {
                 var result = repository.Commit(AddMetadataObjectToCommit, message, signature, signature);
-                SetRepositoryData(repositoryDescription, r => r.Head.Tip.Tree);
+                SetRepositoryData(repositoryDescription, result.Id);
                 return result;
-            });
-        }
-
-        /// <inheritdoc />
-        public Commit Commit(AbstractInstance newInstance, Signature signature, string message, CommitOptions options = null)
-        {
-            if (newInstance == null)
-            {
-                throw new ArgumentNullException(nameof(newInstance));
-            }
-            if (signature == null)
-            {
-                throw new ArgumentNullException(nameof(signature));
-            }
-            if (message == null)
-            {
-                throw new ArgumentNullException(nameof(message));
-            }
-
-            return _repositoryProvider.Execute(_repositoryDescription, repository =>
-            {
-                var computeChanges = _computeTreeChangesFactory(_repositoryDescription);
-                var changes = computeChanges.Compare(this, newInstance, repository);
-                return changes.AnyChange ?
-                    repository.Commit(changes.NewTree, message, signature, signature, options) :
-                    null;
             });
         }
 

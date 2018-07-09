@@ -2,6 +2,7 @@ using GitObjectDb.Compare;
 using GitObjectDb.Git;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
+using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -12,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// A set of methods for instances of <see cref="IServiceCollection"/>.
     /// </summary>
-    public static class IServiceCollectionExtensions
+    public static class ServiceConfiguration
     {
         /// <summary>
         /// Adds access to GitObjectDb repositories.
@@ -26,6 +27,11 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(source));
             }
 
+            return ConfigureServices(source);
+        }
+
+        static IServiceCollection ConfigureServices(IServiceCollection source)
+        {
             source.AddSingleton<IInstanceLoader, InstanceLoader>();
             source.AddSingleton<IModelDataAccessorProvider, ModelDataAccessorProvider>();
             source.AddSingleton<IConstructorSelector, MostParametersConstructorSelector>();
@@ -35,6 +41,8 @@ namespace Microsoft.Extensions.DependencyInjection
             source.AddSingleton<IRepositoryProvider, RepositoryProvider>();
             source.AddSingleton<IModelDataAccessorProvider>(s =>
                 new CachedModelDataAccessorProvider(new ModelDataAccessorProvider(s)));
+            source.AddSingleton<Func<RepositoryDescription, ObjectId, string, IMetadataTreeMerge>>(s =>
+                (description, commitId, branchName) => new MetadataTreeMerge(s, description, commitId, branchName));
             return source;
         }
     }

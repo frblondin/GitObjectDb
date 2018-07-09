@@ -11,13 +11,15 @@ using NUnit.Framework;
 using PowerAssert;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 
 namespace GitObjectDb.Tests.Models
 {
-    public class InstanceTests
+    [DebuggerDisplay("{_path}")]
+    public partial class InstanceTests
     {
         string _path;
 
@@ -27,7 +29,7 @@ namespace GitObjectDb.Tests.Models
         {
             // Act
             sut.SaveInNewRepository(signature, message, _path, GetRepositoryDescription(inMemoryBackend));
-            var loaded = loader.LoadFrom<Instance>(GetRepositoryDescription(inMemoryBackend), r => r.Head.Tip.Tree);
+            var loaded = loader.LoadFrom<Instance>(GetRepositoryDescription(inMemoryBackend));
 
             // Assert
             PAssert.IsTrue(AreFunctionnally.Equivalent<Instance>(() => sut == loaded));
@@ -39,7 +41,7 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void CommitPageNameUpdate(Instance sut, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
+        public void MergePageNameUpdate(Instance sut, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Act
             sut.SaveInNewRepository(signature, message, _path, GetRepositoryDescription(inMemoryBackend));
@@ -48,71 +50,6 @@ namespace GitObjectDb.Tests.Models
 
             // Assert
             Assert.That(commit, Is.Not.Null);
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void ResolveDiffsPageNameUpdate(Instance sut, Page page, Signature signature, string message, Func<RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
-        {
-            // Arrange
-            sut.SaveInNewRepository(signature, message, _path, GetRepositoryDescription(inMemoryBackend));
-            var modifiedPage = page.With(p => p.Name == "modified");
-            sut.Commit(modifiedPage.Instance, signature, message);
-
-            // Act
-            var changes = computeTreeChangesFactory(GetRepositoryDescription(inMemoryBackend))
-                .Compare<Instance>(r => r.Head.Commits.Skip(1).First().Tree, r => r.Head.Tip.Tree);
-
-            // Assert
-            Assert.That(changes.Added, Is.Empty);
-            Assert.That(changes.Deleted, Is.Empty);
-            Assert.That(changes.Modified, Has.Count.EqualTo(1));
-            Assert.That(changes.Modified[0].Old.Name, Is.EqualTo(page.Name));
-            Assert.That(changes.Modified[0].New.Name, Is.EqualTo(modifiedPage.Name));
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void ResolveDiffsFieldAddition(IServiceProvider serviceProvider, Instance sut, Page page, Signature signature, string message, Func<RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
-        {
-            // Arrange
-            sut.SaveInNewRepository(signature, message, _path, GetRepositoryDescription(inMemoryBackend));
-            var field = new Field(serviceProvider, Guid.NewGuid(), "foo");
-            var modifiedPage = page.With(p => p.Fields.Add(field));
-            sut.Commit(modifiedPage.Instance, signature, message);
-
-            // Act
-            var changes = computeTreeChangesFactory(GetRepositoryDescription(inMemoryBackend))
-                .Compare<Instance>(r => r.Head.Commits.Skip(1).First().Tree, r => r.Head.Tip.Tree);
-
-            // Assert
-            Assert.That(changes.Modified, Is.Empty);
-            Assert.That(changes.Deleted, Is.Empty);
-            Assert.That(changes.Added, Has.Count.EqualTo(1));
-            Assert.That(changes.Added[0].Old, Is.Null);
-            Assert.That(changes.Added[0].New.Name, Is.EqualTo(field.Name));
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void ResolveDiffsFieldDeletion(Instance sut, Page page, Signature signature, string message, Func<RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
-        {
-            // Arrange
-            sut.SaveInNewRepository(signature, message, _path, GetRepositoryDescription(inMemoryBackend));
-            var field = page.Fields[5];
-            var modifiedPage = page.With(p => p.Fields.Delete(field));
-            sut.Commit(modifiedPage.Instance, signature, message);
-
-            // Act
-            var changes = computeTreeChangesFactory(GetRepositoryDescription(inMemoryBackend))
-                .Compare<Instance>(r => r.Head.Commits.Skip(1).First().Tree, r => r.Head.Tip.Tree);
-
-            // Assert
-            Assert.That(changes.Modified, Is.Empty);
-            Assert.That(changes.Added, Is.Empty);
-            Assert.That(changes.Deleted, Has.Count.EqualTo(1));
-            Assert.That(changes.Deleted[0].New, Is.Null);
-            Assert.That(changes.Deleted[0].Old.Name, Is.EqualTo(field.Name));
         }
 
         [Test]
@@ -130,7 +67,7 @@ namespace GitObjectDb.Tests.Models
             Assert.That(resolved, Is.SameAs(field));
         }
 
-        RepositoryDescription GetRepositoryDescription(OdbBackend backend) => new RepositoryDescription(_path, backend);
+        RepositoryDescription GetRepositoryDescription(OdbBackend backend = null) => new RepositoryDescription(_path, backend);
 
         [SetUp]
         public void GetTempPath() =>

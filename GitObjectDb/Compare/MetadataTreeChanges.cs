@@ -1,6 +1,9 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 
 namespace GitObjectDb.Compare
 {
@@ -8,7 +11,7 @@ namespace GitObjectDb.Compare
     /// Holds the result of a diff between two trees.
     /// </summary>
     [DebuggerDisplay("+{Added.Count} ~{Modified.Count} -{Deleted.Count}")]
-    public class MetadataTreeChanges
+    public class MetadataTreeChanges : IEnumerable<MetadataTreeEntryChanges>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MetadataTreeChanges"/> class.
@@ -44,5 +47,12 @@ namespace GitObjectDb.Compare
         /// Gets the list of <see cref="MetadataTreeEntryChanges" /> that have been been deleted.
         /// </summary>
         public IImmutableList<MetadataTreeEntryChanges> Deleted { get; }
+
+        /// <inheritdoc/>
+        public IEnumerator<MetadataTreeEntryChanges> GetEnumerator() =>
+            Added.Concat(Modified).Concat(Deleted).GetEnumerator();
+
+        /// <inheritdoc/>
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

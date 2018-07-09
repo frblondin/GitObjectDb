@@ -21,7 +21,7 @@ namespace GitObjectDb.Tests.Assets.Customizations
                 Enumerable.Range(1, _applicationCount).Select(a =>
                     new Application(serviceProvider, Guid.NewGuid(), $"Application {a}", new LazyChildren<Page>(
                         Enumerable.Range(1, _pagePerApplicationCount).Select(p =>
-                            new Page(serviceProvider, Guid.NewGuid(), $"Page {p}", new LazyChildren<Field>(
+                            new Page(serviceProvider, Guid.NewGuid(), $"Page {p}", $"Description for {p}", new LazyChildren<Field>(
                                 Enumerable.Range(1, _fieldPerPageCount).Select(f =>
                                     new Field(serviceProvider, Guid.NewGuid(), $"Field {f}"))
                                 .ToImmutableList())))

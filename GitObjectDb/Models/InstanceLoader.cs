@@ -38,28 +38,40 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public TInstance LoadFrom<TInstance>(RepositoryDescription repositoryDescription, Func<IRepository, Tree> tree)
-            where TInstance : AbstractInstance
+        public AbstractInstance LoadFrom(RepositoryDescription repositoryDescription, ObjectId commitId = null)
         {
             if (repositoryDescription == null)
             {
                 throw new ArgumentNullException(nameof(repositoryDescription));
             }
-            if (tree == null)
-            {
-                throw new ArgumentNullException(nameof(tree));
-            }
 
             return _repositoryProvider.Execute(repositoryDescription, repository =>
             {
-                var currentTree = tree(repository);
-                var instance = (TInstance)LoadEntry(tree, currentTree[DataFile], string.Empty);
-                instance.SetRepositoryData(repositoryDescription, tree);
+                Commit currentCommit;
+                if (commitId == null)
+                {
+                    currentCommit = repository.Head.Tip;
+                    commitId = currentCommit.Id;
+                }
+                else
+                {
+                    currentCommit = repository.Lookup<Commit>(commitId);
+                }
+
+                var instance = (AbstractInstance)LoadEntry(commitId, currentCommit[DataFile], string.Empty);
+                instance.SetRepositoryData(repositoryDescription, commitId);
                 return instance;
             });
         }
 
-        IMetadataObject LoadEntry(Func<IRepository, Tree> tree, TreeEntry entry, string path)
+        /// <inheritdoc />
+        public TInstance LoadFrom<TInstance>(RepositoryDescription repositoryDescription, ObjectId commitId = null)
+            where TInstance : AbstractInstance
+        {
+            return (TInstance)LoadFrom(repositoryDescription, commitId);
+        }
+
+        IMetadataObject LoadEntry(ObjectId commitId, TreeEntry entry, string path)
         {
             var blob = entry.Target.Peel<Blob>();
             ILazyChildren ResolveChildren(Type type, string propertyName)
@@ -67,7 +79,7 @@ namespace GitObjectDb.Models
                 var dataAccessor = _dataAccessorProvider.Get(type);
                 var childProperty = dataAccessor.ChildProperties.FirstOrDefault(p => p.Matches(propertyName)) ??
                     throw new NotSupportedException($"Unable to find property details for '{propertyName}'.");
-                return LoadEntryChildren(tree, path, childProperty);
+                return LoadEntryChildren(commitId, path, childProperty);
             }
             var serializer = GetJsonSerializer(ResolveChildren);
             var jobject = blob.GetContentStream().ToJson<JObject>(serializer);
@@ -86,11 +98,12 @@ namespace GitObjectDb.Models
             return serializer;
         }
 
-        ILazyChildren LoadEntryChildren(Func<IRepository, Tree> tree, string path, ChildPropertyInfo childProperty) =>
+        ILazyChildren LoadEntryChildren(ObjectId commitId, string path, ChildPropertyInfo childProperty) =>
             LazyChildrenHelper.Create(childProperty, (parent, repository) =>
             {
                 var childPath = string.IsNullOrEmpty(path) ? childProperty.Property.Name : $"{path}/{childProperty.Property.Name}";
-                var subTree = tree(repository)[childPath]?.Target.Peel<Tree>();
+                var commit = repository.Lookup<Commit>(commitId);
+                var subTree = commit[childPath]?.Target.Peel<Tree>();
                 return (subTree?.Any() ?? false) ?
 
                     from c in subTree
@@ -98,7 +111,7 @@ namespace GitObjectDb.Models
                     let childTree = c.Target.Peel<Tree>()
                     let data = childTree[DataFile]
                     where data != null
-                    select LoadEntry(tree, data, $"{childPath}/{c.Name}") :
+                    select LoadEntry(commitId, data, $"{childPath}/{c.Name}") :
 
                     Enumerable.Empty<IMetadataObject>();
             });

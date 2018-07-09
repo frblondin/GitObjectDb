@@ -20,9 +20,10 @@ namespace GitObjectDb.Models
     /// <seealso cref="IInstance" />
     [DebuggerDisplay(DebuggerDisplay + ", IsRepositoryAttached = {_getRepository != null}")]
     [DataContract]
-    public abstract partial class AbstractInstance : AbstractModel
+    public abstract partial class AbstractInstance : AbstractModel, IInstance
     {
         readonly Func<RepositoryDescription, IComputeTreeChanges> _computeTreeChangesFactory;
+        readonly Func<RepositoryDescription, ObjectId, string, IMetadataTreeMerge> _metadataTreeMergeFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AbstractInstance"/> class.
@@ -40,7 +41,9 @@ namespace GitObjectDb.Models
             }
 
             _computeTreeChangesFactory = serviceProvider.GetRequiredService<Func<RepositoryDescription, IComputeTreeChanges>>();
+            _metadataTreeMergeFactory = serviceProvider.GetRequiredService<Func<RepositoryDescription, ObjectId, string, IMetadataTreeMerge>>();
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
+            _instanceLoader = serviceProvider.GetRequiredService<IInstanceLoader>();
         }
     }
 }

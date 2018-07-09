@@ -1,7 +1,9 @@
+using GitObjectDb.Reflection;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -92,6 +94,38 @@ namespace GitObjectDb.Models
                     yield return flattened;
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the path to the data file for a node.
+        /// </summary>
+        /// <param name="source">The node.</param>
+        /// <param name="dataAccessorProvider">The data accessor provider.</param>
+        /// <returns>A <see cref="string"/> value containing the path to the data file.</returns>
+        internal static string ToDataPath(this IMetadataObject source, IModelDataAccessorProvider dataAccessorProvider)
+        {
+            var result = new StringBuilder();
+            ToDataPath(source, dataAccessorProvider, result);
+            if (result.Length > 0)
+            {
+                result.Append('/');
+            }
+            result.Append(InstanceLoader.DataFile);
+            return result.ToString();
+        }
+
+        static void ToDataPath(IMetadataObject node, IModelDataAccessorProvider dataAccessorProvider, StringBuilder builder)
+        {
+            if (node.Parent != null)
+            {
+                ToDataPath(node.Parent, dataAccessorProvider, builder);
+                var dataAccessor = dataAccessorProvider.Get(node.Parent.GetType());
+                var childProperty = dataAccessor.ChildProperties.Single(p => p.ItemType.IsInstanceOfType(node));
+                builder.Append('/');
+                builder.Append(childProperty.Property.Name);
+                builder.Append('/');
+            }
+            builder.Append(node.Id);
         }
 
         /// <summary>

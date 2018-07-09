@@ -30,6 +30,20 @@ namespace LibGit2Sharp
         }
 
         /// <summary>
+        /// Creates the Blob from a <see cref="StringBuilder"/>.
+        /// </summary>
+        /// <param name="repository">The repository.</param>
+        /// <param name="content">The content.</param>
+        /// <returns>New newly created Blob.</returns>
+        internal static Blob CreateBlob(this IRepository repository, string content)
+        {
+            using (var stream = new MemoryStream(Encoding.Default.GetBytes(content)))
+            {
+                return repository.ObjectDatabase.CreateBlob(stream);
+            }
+        }
+
+        /// <summary>
         /// Inserts a <see cref="LibGit2Sharp.Commit" /> into the object database by applying actions to a <see cref="TreeDefinition"/>.
         /// </summary>
         /// <param name="repository">The repository.</param>
@@ -55,15 +69,16 @@ namespace LibGit2Sharp
         /// <param name="author">The author.</param>
         /// <param name="committer">The committer.</param>
         /// <param name="options">The options.</param>
+        /// <param name="mergeParent">The parent commit for a merge.</param>
         /// <returns>The created <see cref="LibGit2Sharp.Commit" />.</returns>
-        internal static Commit Commit(this IRepository repository, TreeDefinition treeDefinition, string message, Signature author, Signature committer, CommitOptions options = null)
+        internal static Commit Commit(this IRepository repository, TreeDefinition treeDefinition, string message, Signature author, Signature committer, CommitOptions options = null, Commit mergeParent = null)
         {
             if (options == null)
             {
                 options = new CommitOptions();
             }
 
-            var parents = RetrieveParentsOfTheCommitBeingCreated(repository, options.AmendPreviousCommit).ToList();
+            var parents = RetrieveParentsOfTheCommitBeingCreated(repository, options.AmendPreviousCommit, mergeParent).ToList();
             var tree = repository.ObjectDatabase.CreateTree(treeDefinition);
             var commit = repository.ObjectDatabase.CreateCommit(author, committer, message, tree, parents, false);
             var logMessage = BuildCommitLogMessage(commit, options.AmendPreviousCommit, repository.Info.IsHeadUnborn, parents.Count > 1);
@@ -71,7 +86,7 @@ namespace LibGit2Sharp
             return commit;
         }
 
-        static IEnumerable<Commit> RetrieveParentsOfTheCommitBeingCreated(IRepository repository, bool amendPreviousCommit)
+        static IEnumerable<Commit> RetrieveParentsOfTheCommitBeingCreated(IRepository repository, bool amendPreviousCommit, Commit mergeParent = null)
         {
             if (amendPreviousCommit)
             {
@@ -84,6 +99,10 @@ namespace LibGit2Sharp
             }
 
             var parents = new List<Commit> { repository.Head.Tip };
+            if (mergeParent != null)
+            {
+                parents.Add(mergeParent);
+            }
 
             if (repository.Info.CurrentOperation == CurrentOperation.Merge)
             {
@@ -93,7 +112,15 @@ namespace LibGit2Sharp
             return parents;
         }
 
-        static string BuildCommitLogMessage(Commit commit, bool amendPreviousCommit, bool isHeadOrphaned, bool isMergeCommit)
+        /// <summary>
+        /// Builds the commit log message.
+        /// </summary>
+        /// <param name="commit">The commit.</param>
+        /// <param name="amendPreviousCommit">if set to <c>true</c> [amend previous commit].</param>
+        /// <param name="isHeadOrphaned">if set to <c>true</c> [is head orphaned].</param>
+        /// <param name="isMergeCommit">if set to <c>true</c> [is merge commit].</param>
+        /// <returns>The commit log message.</returns>
+        internal static string BuildCommitLogMessage(this Commit commit, bool amendPreviousCommit, bool isHeadOrphaned, bool isMergeCommit)
         {
             var kind = string.Empty;
             if (isHeadOrphaned)
@@ -112,7 +139,13 @@ namespace LibGit2Sharp
             return $"commit{kind}: {commit.MessageShort}";
         }
 
-        static void UpdateHeadAndTerminalReference(IRepository repository, Commit commit, string reflogMessage)
+        /// <summary>
+        /// Updates the head and terminal reference.
+        /// </summary>
+        /// <param name="repository">The repository.</param>
+        /// <param name="commit">The commit.</param>
+        /// <param name="reflogMessage">The reflog message.</param>
+        internal static void UpdateHeadAndTerminalReference(this IRepository repository, Commit commit, string reflogMessage)
         {
             var reference = repository.Refs.Head;
 

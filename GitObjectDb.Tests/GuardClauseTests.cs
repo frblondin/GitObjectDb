@@ -7,6 +7,7 @@ using GitObjectDb.Reflection;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Utils;
 using LibGit2Sharp;
+using NSubstitute;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -54,6 +55,8 @@ namespace GitObjectDb.Tests.Git
                 fixture.Inject<Func<IRepository, Tree>>(r => r.Head.Tip.Tree);
                 fixture.Inject<ConstructorParameterBinding.ChildProcessor>((name, children, @new, dataAccessor) => children);
                 fixture.Inject<ConstructorParameterBinding.Clone>((@object, predicateReflector, processor) => @object);
+                fixture.Inject(new ObjectId("2fa2540fecec8c4908fb0ccba825cdb903f09440"));
+                fixture.Inject(Substitute.For<PatchEntryChanges>());
             }
         }
 

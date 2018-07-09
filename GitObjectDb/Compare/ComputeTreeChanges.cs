@@ -1,3 +1,5 @@
+using DiffPatch;
+using DiffPatch.Data;
 using GitObjectDb.Git;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
@@ -46,86 +48,85 @@ namespace GitObjectDb.Compare
         }
 
         /// <inheritdoc/>
-        public MetadataTreeChanges Compare<TInstance>(Func<IRepository, Tree> oldTreeGetter, Func<IRepository, Tree> newTreeGetter)
-            where TInstance : AbstractInstance
+        public MetadataTreeChanges Compare(Type instanceType, ObjectId oldCommitId, ObjectId newCommitId)
         {
-            if (oldTreeGetter == null)
+            if (oldCommitId == null)
             {
-                throw new ArgumentNullException(nameof(oldTreeGetter));
+                throw new ArgumentNullException(nameof(oldCommitId));
             }
-            if (newTreeGetter == null)
+            if (newCommitId == null)
             {
-                throw new ArgumentNullException(nameof(newTreeGetter));
+                throw new ArgumentNullException(nameof(newCommitId));
             }
 
             return _repositoryProvider.Execute(_repositoryDescription, repository =>
             {
-                var oldInstance = _instanceLoader.LoadFrom<TInstance>(_repositoryDescription, oldTreeGetter);
-                var newInstance = _instanceLoader.LoadFrom<TInstance>(_repositoryDescription, newTreeGetter);
+                var oldInstance = _instanceLoader.LoadFrom(_repositoryDescription, oldCommitId);
+                var newInstance = _instanceLoader.LoadFrom(_repositoryDescription, newCommitId);
 
-                var oldTree = oldTreeGetter(repository);
-                var newTree = newTreeGetter(repository);
-                var changes = repository.Diff.Compare<TreeChanges>(oldTree, newTree);
+                var oldCommit = repository.Lookup<Commit>(oldCommitId);
+                var newCommit = repository.Lookup<Commit>(newCommitId);
+                var changes = repository.Diff.Compare<Patch>(oldCommit.Tree, newCommit.Tree);
 
                 ThrowIfNonSupportedChangeTypes(changes);
 
-                var modified = CollectModifiedNodes(oldInstance, newInstance, changes, oldTree);
-                var added = CollectAddedNodes(newInstance, changes, newTree);
-                var deleted = CollectDeletedNodes(oldInstance, changes, oldTree);
+                var modified = CollectModifiedNodes(oldInstance, newInstance, changes, oldCommit);
+                var added = CollectAddedNodes(newInstance, changes, newCommit);
+                var deleted = CollectDeletedNodes(oldInstance, changes, oldCommit);
                 return new MetadataTreeChanges(added, modified, deleted);
             });
         }
 
-        static IImmutableList<MetadataTreeEntryChanges> CollectModifiedNodes(AbstractInstance oldInstance, AbstractInstance newInstance, TreeChanges changes, Tree oldTree) =>
-            (from c in changes.Modified
-             let oldEntry = oldTree[c.Path]
+        static IImmutableList<MetadataTreeEntryChanges> CollectModifiedNodes(AbstractInstance oldInstance, AbstractInstance newInstance, Patch changes, Commit oldCommit) =>
+            (from c in changes.Where(c => c.Status == ChangeKind.Modified)
+             let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.ParentPath()
              let oldNode = oldInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in old instance.")
              let newNode = newInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in new instance.")
-             select new MetadataTreeEntryChanges(oldNode, newNode))
+             select new MetadataTreeEntryChanges(c, oldNode, newNode))
             .ToImmutableList();
 
-        static IImmutableList<MetadataTreeEntryChanges> CollectAddedNodes(AbstractInstance newInstance, TreeChanges changes, Tree newTree) =>
-            (from c in changes.Added
-             let newEntry = newTree[c.Path]
+        static IImmutableList<MetadataTreeEntryChanges> CollectAddedNodes(AbstractInstance newInstance, Patch changes, Commit newCommit) =>
+            (from c in changes.Where(c => c.Status == ChangeKind.Added)
+             let newEntry = newCommit[c.Path]
              where newEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.ParentPath()
              let newNode = newInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in new instance.")
-             select new MetadataTreeEntryChanges(null, newNode))
+             select new MetadataTreeEntryChanges(c, null, newNode))
             .ToImmutableList();
 
-        static IImmutableList<MetadataTreeEntryChanges> CollectDeletedNodes(AbstractInstance oldInstance, TreeChanges changes, Tree oldTree) =>
-            (from c in changes.Deleted
-             let oldEntry = oldTree[c.Path]
+        static IImmutableList<MetadataTreeEntryChanges> CollectDeletedNodes(AbstractInstance oldInstance, Patch changes, Commit oldCommit) =>
+            (from c in changes.Where(c => c.Status == ChangeKind.Deleted)
+             let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.ParentPath()
              let oldNode = oldInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in old instance.")
-             select new MetadataTreeEntryChanges(oldNode, null))
+             select new MetadataTreeEntryChanges(c, oldNode, null))
             .ToImmutableList();
 
-        static void ThrowIfNonSupportedChangeTypes(TreeChanges changes)
+        static void ThrowIfNonSupportedChangeTypes(Patch changes)
         {
-            if (changes.Conflicted.Any())
+            if (changes.Any(c => c.Status == ChangeKind.Conflicted))
             {
                 throw new NotSupportedException("Conflicting changes is not yet supported.");
             }
-            if (changes.Copied.Any())
+            if (changes.Any(c => c.Status == ChangeKind.Copied))
             {
                 throw new NotSupportedException("Copied changes is not yet supported.");
             }
-            if (changes.Renamed.Any())
+            if (changes.Any(c => c.Status == ChangeKind.Renamed))
             {
                 throw new NotSupportedException("Renamed changes is not yet supported.");
             }
-            if (changes.TypeChanged.Any())
+            if (changes.Any(c => c.Status == ChangeKind.TypeChanged))
             {
                 throw new NotSupportedException("TypeChanged changes is not yet supported.");
             }
         }
 
         /// <inheritdoc/>
-        public (TreeDefinition NewTree, bool AnyChange) Compare(AbstractInstance original, AbstractInstance newInstance, IRepository repository)
+        public (TreeDefinition NewTree, bool AnyChange) Compare(AbstractInstance original, AbstractInstance newInstance)
         {
             if (original == null)
             {
@@ -135,23 +136,22 @@ namespace GitObjectDb.Compare
             {
                 throw new ArgumentNullException(nameof(newInstance));
             }
-            if (repository == null)
-            {
-                throw new ArgumentNullException(nameof(repository));
-            }
 
-            var tree = original._getTree(repository);
-            var definition = TreeDefinition.From(tree);
-            var stack = new Stack<string>();
-            var anyChange = CompareNode(original, newInstance, repository, tree, definition, stack);
-            return (definition, anyChange);
+            return _repositoryProvider.Execute(_repositoryDescription, repository =>
+            {
+                var commit = repository.Lookup<Commit>(original.CommitId);
+                var definition = TreeDefinition.From(commit);
+                var stack = new Stack<string>();
+                var anyChange = CompareNode(repository, original, newInstance, commit.Tree, definition, stack);
+                return (definition, anyChange);
+            });
         }
 
-        bool CompareNode(IMetadataObject original, IMetadataObject @new, IRepository repository, Tree tree, TreeDefinition definition, Stack<string> stack)
+        bool CompareNode(IRepository repository, IMetadataObject original, IMetadataObject @new, Tree tree, TreeDefinition definition, Stack<string> stack)
         {
             var anyChange = false;
             var accessor = _modelDataProvider.Get(original.GetType());
-            UpdateNodeIfNeeded(original, @new, repository, definition, stack, accessor, ref anyChange);
+            UpdateNodeIfNeeded(repository, original, @new, definition, stack, accessor, ref anyChange);
             foreach (var childProperty in accessor.ChildProperties)
             {
                 if (!childProperty.ShouldVisitChildren(original) && !childProperty.ShouldVisitChildren(@new))
@@ -162,13 +162,13 @@ namespace GitObjectDb.Compare
                 }
 
                 stack.Push(childProperty.Property.Name);
-                anyChange |= CompareNodeChildren(original, @new, repository, tree, definition, stack, childProperty);
+                anyChange |= CompareNodeChildren(repository, original, @new, tree, definition, stack, childProperty);
                 stack.Pop();
             }
             return anyChange;
         }
 
-        bool CompareNodeChildren(IMetadataObject original, IMetadataObject @new, IRepository repository, Tree tree, TreeDefinition definition, Stack<string> stack, ChildPropertyInfo childProperty)
+        bool CompareNodeChildren(IRepository repository, IMetadataObject original, IMetadataObject @new, Tree tree, TreeDefinition definition, Stack<string> stack, ChildPropertyInfo childProperty)
         {
             var anyChange = false;
             using (var enumerator = new TwoSequenceEnumerator<IMetadataObject>(
@@ -188,7 +188,7 @@ namespace GitObjectDb.Compare
             if (enumerator.NodeIsStillThere)
             {
                 stack.Push(enumerator.Left.Id.ToString());
-                var anyChange = CompareNode(enumerator.Left, enumerator.Right, repository, tree, definition, stack);
+                var anyChange = CompareNode(repository, enumerator.Left, enumerator.Right, tree, definition, stack);
                 stack.Pop();
 
                 enumerator.MoveNextLeft();
@@ -198,7 +198,7 @@ namespace GitObjectDb.Compare
             else if (enumerator.NodeHasBeenAdded)
             {
                 stack.Push(enumerator.Right.Id.ToString());
-                AddOrUpdateNode(enumerator.Right, repository, definition, stack);
+                AddOrUpdateNode(repository, enumerator.Right, definition, stack);
                 stack.Pop();
                 enumerator.MoveNextRight();
                 return true;
@@ -214,16 +214,16 @@ namespace GitObjectDb.Compare
             throw new NotSupportedException("Unexpected child changes.");
         }
 
-        void UpdateNodeIfNeeded(IMetadataObject original, IMetadataObject @new, IRepository repository, TreeDefinition definition, Stack<string> stack, IModelDataAccessor accessor, ref bool anyChange)
+        void UpdateNodeIfNeeded(IRepository repository, IMetadataObject original, IMetadataObject @new, TreeDefinition definition, Stack<string> stack, IModelDataAccessor accessor, ref bool anyChange)
         {
             if (accessor.ModifiableProperties.Any(p => !p.AreSame(original, @new)))
             {
-                AddOrUpdateNode(@new, repository, definition, stack);
+                AddOrUpdateNode(repository, @new, definition, stack);
                 anyChange = true;
             }
         }
 
-        void AddOrUpdateNode(IMetadataObject node, IRepository repository, TreeDefinition definition, Stack<string> stack)
+        void AddOrUpdateNode(IRepository repository, IMetadataObject node, TreeDefinition definition, Stack<string> stack)
         {
             var path = stack.ToDataPath();
             node.ToJson(_jsonBuffer);
