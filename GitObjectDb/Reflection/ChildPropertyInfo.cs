@@ -1,3 +1,4 @@
+using GitObjectDb.Attributes;
 using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,8 @@ namespace GitObjectDb.Reflection
     /// </summary>
     public class ChildPropertyInfo
     {
+        readonly PropertyNameAttribute _childPropertyNameAttribute;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ChildPropertyInfo"/> class.
         /// </summary>
@@ -26,6 +29,7 @@ namespace GitObjectDb.Reflection
         {
             Property = property ?? throw new ArgumentNullException(nameof(property));
             ItemType = itemType ?? throw new ArgumentNullException(nameof(itemType));
+            _childPropertyNameAttribute = property.GetCustomAttribute<PropertyNameAttribute>(true);
             Accessor = CreateGetter(property).Compile();
             ShouldVisitChildren = GetShouldVisitChildrenGetter(property).Compile();
         }
@@ -55,6 +59,11 @@ namespace GitObjectDb.Reflection
         /// </summary>
         public string Name => Property.Name;
 
+        /// <summary>
+        /// Gets the name of the folder.
+        /// </summary>
+        public string FolderName => _childPropertyNameAttribute?.Name ?? Name;
+
         static Expression<Func<IMetadataObject, IEnumerable<IMetadataObject>>> CreateGetter(PropertyInfo property)
         {
             var instanceParam = Expression.Parameter(typeof(IMetadataObject), "instance");
@@ -78,21 +87,6 @@ namespace GitObjectDb.Reflection
                     Expression.Property(lazyChildren, nameof(ILazyChildren.AreChildrenLoaded)),
                     Expression.Property(lazyChildren, nameof(ILazyChildren.ForceVisit))),
                 instanceParam);
-        }
-
-        /// <summary>
-        /// Gets whether this instance has the same case insensitive name.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <returns><code>true</code> is the names are matching.</returns>
-        public bool Matches(string name)
-        {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            return Name.Equals(name, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

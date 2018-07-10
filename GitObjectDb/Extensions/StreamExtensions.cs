@@ -18,11 +18,11 @@ namespace Newtonsoft.Json
         /// <param name="stream">The stream.</param>
         /// <param name="serializer">The serializer.</param>
         /// <returns>The instance of <typeparamref name="T"/> being deserialized.</returns>
-        internal static T ToJson<T>(this Stream stream, JsonSerializer serializer = null)
+        internal static T ToJson<T>(this Stream stream, JsonSerializer serializer)
         {
             if (serializer == null)
             {
-                serializer = new JsonSerializer();
+                throw new ArgumentNullException(nameof(serializer));
             }
 
             using (var streamReader = new StreamReader(stream))

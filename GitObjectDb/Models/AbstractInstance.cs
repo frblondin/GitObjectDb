@@ -1,5 +1,7 @@
+using GitObjectDb.Attributes;
 using GitObjectDb.Compare;
 using GitObjectDb.Git;
+using GitObjectDb.Migrations;
 using LibGit2Sharp;
 using Newtonsoft.Json;
 using System;
@@ -18,10 +20,15 @@ namespace GitObjectDb.Models
     /// </summary>
     /// <seealso cref="AbstractModel" />
     /// <seealso cref="IInstance" />
-    [DebuggerDisplay(DebuggerDisplay + ", IsRepositoryAttached = {_getRepository != null}")]
+    [DebuggerDisplay(DebuggerDisplay + ", IsRepositoryAttached = {_repositoryDescription != null}")]
     [DataContract]
     public abstract partial class AbstractInstance : AbstractModel, IInstance
     {
+        /// <summary>
+        /// The migration folder.
+        /// </summary>
+        internal const string MigrationFolder = "$Migrations";
+
         readonly Func<RepositoryDescription, IComputeTreeChanges> _computeTreeChangesFactory;
         readonly Func<RepositoryDescription, ObjectId, string, IMetadataTreeMerge> _metadataTreeMergeFactory;
 
@@ -31,8 +38,9 @@ namespace GitObjectDb.Models
         /// <param name="serviceProvider">The service provider.</param>
         /// <param name="id">The identifier.</param>
         /// <param name="name">The name.</param>
+        /// <param name="migrations">The migrations.</param>
         [JsonConstructor]
-        protected AbstractInstance(IServiceProvider serviceProvider, Guid id, string name)
+        protected AbstractInstance(IServiceProvider serviceProvider, Guid id, string name, ILazyChildren<IMigration> migrations)
             : base(serviceProvider, id, name)
         {
             if (serviceProvider == null)
@@ -44,6 +52,13 @@ namespace GitObjectDb.Models
             _metadataTreeMergeFactory = serviceProvider.GetRequiredService<Func<RepositoryDescription, ObjectId, string, IMetadataTreeMerge>>();
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _instanceLoader = serviceProvider.GetRequiredService<IInstanceLoader>();
+            Migrations = (migrations ?? throw new ArgumentNullException(nameof(migrations))).AttachToParent(this);
         }
+
+        /// <summary>
+        /// Gets the migrations.
+        /// </summary>
+        [PropertyName(MigrationFolder)]
+        public ILazyChildren<IMigration> Migrations { get; }
     }
 }

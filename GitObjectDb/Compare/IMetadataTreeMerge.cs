@@ -1,4 +1,8 @@
+using GitObjectDb.Migrations;
+using GitObjectDb.Models;
+using GitObjectDb.Reflection;
 using LibGit2Sharp;
+using System.Collections.Generic;
 
 namespace GitObjectDb.Compare
 {
@@ -18,10 +22,40 @@ namespace GitObjectDb.Compare
         string BranchName { get; }
 
         /// <summary>
+        /// Gets the branch target.
+        /// </summary>
+        ObjectId BranchTarget { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is a partial merge, that is other migration steps are required.
+        /// </summary>
+        bool IsPartialMerge { get; }
+
+        /// <summary>
+        /// Gets the required migrator.
+        /// </summary>
+        Migrator RequiredMigrator { get; }
+
+        /// <summary>
+        /// Gets the modified chunks.
+        /// </summary>
+        IList<MetadataTreeMergeChunkChange> ModifiedChunks { get; }
+
+        /// <summary>
+        /// Gets the added objects.
+        /// </summary>
+        IList<MetadataTreeMergeObjectAdd> AddedObjects { get; }
+
+        /// <summary>
+        /// Gets the deleted objects.
+        /// </summary>
+        IList<MetadataTreeMergeObjectDelete> DeletedObjects { get; }
+
+        /// <summary>
         /// Applies the changes in the repository.
         /// </summary>
         /// <param name="merger">The merger.</param>
         /// <returns>The merge commit.</returns>
-        Commit Apply(Signature merger);
+        ObjectId Apply(Signature merger);
     }
 }

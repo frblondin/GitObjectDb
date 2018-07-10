@@ -1,4 +1,5 @@
 using GitObjectDb.Compare;
+using GitObjectDb.Migrations;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
 using System;
@@ -13,8 +14,8 @@ namespace GitObjectDb.Tests.Assets.Models
 {
     public class Instance : AbstractInstance
     {
-        public Instance(IServiceProvider serviceProvider, Guid id, string name, ILazyChildren<Application> applications)
-            : base(serviceProvider, id, name)
+        public Instance(IServiceProvider serviceProvider, Guid id, string name, ILazyChildren<IMigration> migrations, ILazyChildren<Application> applications)
+            : base(serviceProvider, id, name, migrations)
         {
             Applications = (applications ?? throw new ArgumentNullException(nameof(applications))).AttachToParent(this);
         }

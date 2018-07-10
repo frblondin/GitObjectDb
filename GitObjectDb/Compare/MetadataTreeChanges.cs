@@ -1,3 +1,4 @@
+using GitObjectDb.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -16,6 +17,8 @@ namespace GitObjectDb.Compare
         /// <summary>
         /// Initializes a new instance of the <see cref="MetadataTreeChanges"/> class.
         /// </summary>
+        /// <param name="oldInstance">The old instance.</param>
+        /// <param name="newInstance">The new instance.</param>
         /// <param name="added">The list of <see cref="MetadataTreeEntryChanges" /> that have been been added.</param>
         /// <param name="modified">The list of <see cref="MetadataTreeEntryChanges" /> that have been been modified.</param>
         /// <param name="deleted">The list of <see cref="MetadataTreeEntryChanges" /> that have been been deleted.</param>
@@ -26,12 +29,24 @@ namespace GitObjectDb.Compare
         /// or
         /// deleted
         /// </exception>
-        public MetadataTreeChanges(IImmutableList<MetadataTreeEntryChanges> added, IImmutableList<MetadataTreeEntryChanges> modified, IImmutableList<MetadataTreeEntryChanges> deleted)
+        public MetadataTreeChanges(IInstance oldInstance, IInstance newInstance, IImmutableList<MetadataTreeEntryChanges> added, IImmutableList<MetadataTreeEntryChanges> modified, IImmutableList<MetadataTreeEntryChanges> deleted)
         {
+            OldInstance = oldInstance ?? throw new ArgumentNullException(nameof(oldInstance));
+            NewInstance = newInstance ?? throw new ArgumentNullException(nameof(newInstance));
             Modified = modified ?? throw new ArgumentNullException(nameof(modified));
             Added = added ?? throw new ArgumentNullException(nameof(added));
             Deleted = deleted ?? throw new ArgumentNullException(nameof(deleted));
         }
+
+        /// <summary>
+        /// Gets the old instance.
+        /// </summary>
+        public IInstance OldInstance { get; }
+
+        /// <summary>
+        /// Gets the new instance.
+        /// </summary>
+        public IInstance NewInstance { get; }
 
         /// <summary>
         /// Gets the list of <see cref="MetadataTreeEntryChanges" /> that have been been added.

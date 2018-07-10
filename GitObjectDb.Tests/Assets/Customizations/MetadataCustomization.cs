@@ -1,4 +1,5 @@
 using AutoFixture;
+using GitObjectDb.Migrations;
 using GitObjectDb.Models;
 using GitObjectDb.Tests.Assets.Models;
 using System;
@@ -10,14 +11,14 @@ namespace GitObjectDb.Tests.Assets.Customizations
 {
     public class MetadataCustomization : ICustomization
     {
-        internal const int ApplicationCount = 10;
-        internal const int PagePerApplicationCount = 5;
-        internal const int FieldPerPageCount = 20;
+        internal const int ApplicationCount = 2;
+        internal const int PagePerApplicationCount = 3;
+        internal const int FieldPerPageCount = 10;
 
         public void Customize(IFixture fixture)
         {
             var serviceProvider = fixture.Create<IServiceProvider>();
-            var module = new Instance(serviceProvider, Guid.NewGuid(), "Some module", new LazyChildren<Application>(
+            var module = new Instance(serviceProvider, Guid.NewGuid(), "Some module", new LazyChildren<IMigration>(), new LazyChildren<Application>(
                 Enumerable.Range(1, ApplicationCount).Select(a =>
                     new Application(serviceProvider, Guid.NewGuid(), $"Application {a}", new LazyChildren<Page>(
                         Enumerable.Range(1, PagePerApplicationCount).Select(p =>

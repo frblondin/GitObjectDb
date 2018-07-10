@@ -54,6 +54,15 @@ namespace GitObjectDb.Models
             _children = value ?? throw new ArgumentNullException(nameof(value));
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LazyChildren{TChild}"/> class.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">value</exception>
+        public LazyChildren()
+            : this(ImmutableList.Create<TChild>())
+        {
+        }
+
         /// <inheritdoc />
         public IMetadataObject Parent { get; private set; }
 

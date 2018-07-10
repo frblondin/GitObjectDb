@@ -21,14 +21,12 @@ namespace GitObjectDb.Tests.Models
     [DebuggerDisplay("{_path}")]
     public partial class InstanceTests
     {
-        string _path;
-
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
         public void CreateAndLoadRepository(IInstanceLoader loader, Instance sut, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Act
-            sut.SaveInNewRepository(signature, message, _path, GetRepositoryDescription(inMemoryBackend));
+            sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
             var loaded = loader.LoadFrom<Instance>(GetRepositoryDescription(inMemoryBackend));
 
             // Assert
@@ -44,7 +42,7 @@ namespace GitObjectDb.Tests.Models
         public void MergePageNameUpdate(Instance sut, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Act
-            sut.SaveInNewRepository(signature, message, _path, GetRepositoryDescription(inMemoryBackend));
+            sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
             var modifiedPage = page.With(p => p.Name == "modified");
             var commit = sut.Commit(modifiedPage.Instance, signature, message);
 
@@ -67,14 +65,6 @@ namespace GitObjectDb.Tests.Models
             Assert.That(resolved, Is.SameAs(field));
         }
 
-        RepositoryDescription GetRepositoryDescription(OdbBackend backend = null) => new RepositoryDescription(_path, backend);
-
-        [SetUp]
-        public void GetTempPath() =>
-            _path = Path.Combine(Path.GetTempPath(), "Repos", Guid.NewGuid().ToString());
-
-        [TearDown]
-        public void DeleteTempPath() =>
-            DirectoryUtils.Delete(_path);
+        static RepositoryDescription GetRepositoryDescription(OdbBackend backend = null) => new RepositoryDescription(RepositoryFixture.GitPath, backend);
     }
 }

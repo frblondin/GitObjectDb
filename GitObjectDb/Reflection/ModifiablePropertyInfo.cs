@@ -21,6 +21,7 @@ namespace GitObjectDb.Reflection
         {
             Property = property ?? throw new ArgumentNullException(nameof(property));
             Accessor = CreateGetter(property).Compile();
+            Setter = CreateSetter(property.DeclaringType.GetProperty(property.Name)).Compile();
         }
 
         /// <summary>
@@ -32,6 +33,11 @@ namespace GitObjectDb.Reflection
         /// Gets the property value accessor.
         /// </summary>
         public Func<IMetadataObject, object> Accessor { get; }
+
+        /// <summary>
+        /// Gets the property value setter.
+        /// </summary>
+        public Action<IMetadataObject, object> Setter { get; }
 
         /// <summary>
         /// Gets the name of the property.
@@ -48,6 +54,22 @@ namespace GitObjectDb.Reflection
                         property),
                     typeof(object)),
                 instanceParam);
+        }
+
+        static Expression<Action<IMetadataObject, object>> CreateSetter(PropertyInfo property)
+        {
+            var instanceParam = Expression.Parameter(typeof(IMetadataObject), "instance");
+            var valueParam = Expression.Parameter(typeof(object), "value");
+            var propertySetter = property.GetSetMethod(true) ??
+                throw new NotSupportedException($"No public/private setter could be found for property {property}.");
+            return Expression.Lambda<Action<IMetadataObject, object>>(
+                Expression.Call(
+                    Expression.Convert(instanceParam, property.DeclaringType),
+                    propertySetter,
+                    Expression.Convert(
+                        valueParam,
+                        property.PropertyType)),
+                instanceParam, valueParam);
         }
 
         /// <summary>
@@ -75,21 +97,6 @@ namespace GitObjectDb.Reflection
             var oldValue = Accessor(old);
             var newValue = Accessor(@new);
             return oldValue == newValue || (oldValue?.Equals(newValue) ?? false);
-        }
-
-        /// <summary>
-        /// Gets whether this instance has the same case insensitive name.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <returns><code>true</code> is the names are matching.</returns>
-        public bool Matches(string name)
-        {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            return Name.Equals(name, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

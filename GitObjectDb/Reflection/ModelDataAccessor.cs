@@ -16,8 +16,8 @@ namespace GitObjectDb.Reflection
     {
         readonly IServiceProvider _serviceProvider;
         readonly IModelDataAccessorProvider _dataAccessorProvider;
-        readonly Lazy<ImmutableList<ChildPropertyInfo>> _childProperties;
-        readonly Lazy<ImmutableList<ModifiablePropertyInfo>> _modifiableProperties;
+        readonly Lazy<IImmutableList<ChildPropertyInfo>> _childProperties;
+        readonly Lazy<IImmutableList<ModifiablePropertyInfo>> _modifiableProperties;
         readonly Lazy<ConstructorParameterBinding> _constructorBinding;
 
         /// <summary>
@@ -38,8 +38,8 @@ namespace GitObjectDb.Reflection
             Type = type ?? throw new ArgumentNullException(nameof(type));
 
             _dataAccessorProvider = _serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
-            _childProperties = new Lazy<ImmutableList<ChildPropertyInfo>>(GetChildProperties);
-            _modifiableProperties = new Lazy<ImmutableList<ModifiablePropertyInfo>>(GetModifiableProperties);
+            _childProperties = new Lazy<IImmutableList<ChildPropertyInfo>>(GetChildProperties);
+            _modifiableProperties = new Lazy<IImmutableList<ModifiablePropertyInfo>>(GetModifiableProperties);
             _constructorBinding = new Lazy<ConstructorParameterBinding>(() =>
             {
                 var constructors = from c in Type.GetConstructors()
@@ -52,33 +52,34 @@ namespace GitObjectDb.Reflection
         public Type Type { get; }
 
         /// <inheritdoc />
-        public ImmutableList<ChildPropertyInfo> ChildProperties => _childProperties.Value;
+        public IImmutableList<ChildPropertyInfo> ChildProperties => _childProperties.Value;
 
         /// <inheritdoc />
-        public ImmutableList<ModifiablePropertyInfo> ModifiableProperties => _modifiableProperties.Value;
+        public IImmutableList<ModifiablePropertyInfo> ModifiableProperties => _modifiableProperties.Value;
 
         /// <inheritdoc />
         public ConstructorParameterBinding ConstructorParameterBinding => _constructorBinding.Value;
 
-        ImmutableList<ChildPropertyInfo> GetChildProperties() =>
+        IImmutableList<ChildPropertyInfo> GetChildProperties() =>
             (from p in Type.GetProperties()
              let lazyChildrenType = LazyChildrenHelper.TryGetLazyChildrenInterface(p.PropertyType)
              where lazyChildrenType != null
-             select new ChildPropertyInfo(p, lazyChildrenType.GetGenericArguments()[0])).ToImmutableList();
+             select new ChildPropertyInfo(p, lazyChildrenType.GetGenericArguments()[0]))
+            .ToImmutableList();
 
-        ImmutableList<ModifiablePropertyInfo> GetModifiableProperties() =>
+        IImmutableList<ModifiablePropertyInfo> GetModifiableProperties() =>
             (from p in Type.GetProperties()
              where Attribute.IsDefined(p, typeof(ModifiableAttribute))
-             select new ModifiablePropertyInfo(p)).ToImmutableList();
+             select new ModifiablePropertyInfo(p))
+            .ToImmutableList();
 
-        IMetadataObject CloneSubTree(IMetadataObject @object, Expression predicate = null)
+        IMetadataObject CloneSubTree(IMetadataObject @object, PredicateReflector reflector)
         {
             if (@object == null)
             {
                 throw new ArgumentNullException(nameof(@object));
             }
 
-            var reflector = new PredicateReflector(predicate);
             return ConstructorParameterBinding.Cloner(
                 @object,
                 reflector,
@@ -88,8 +89,8 @@ namespace GitObjectDb.Reflection
                     return children.Clone(
                         forceVisit: false,
                         update: n => n == @object ?
-                              @new :
-                              childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
+                                @new :
+                                childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
                         added: childChanges?.Where(c => c.Type == PredicateReflector.ChildChangeType.Add).Select(c => c.Child) ?? Enumerable.Empty<IMetadataObject>(),
                         deleted: childChanges?.Where(c => c.Type == PredicateReflector.ChildChangeType.Delete).Select(c => c.Child) ?? Enumerable.Empty<IMetadataObject>());
                 });
@@ -127,8 +128,8 @@ namespace GitObjectDb.Reflection
                 (name, children, _, childDataAccessor) =>
                     children.Clone(forceVisit: false,
                         update: n => n == old ?
-                                                                 @new :
-                                                                 childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
+                                @new :
+                                childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
                         added: null,
                         deleted: null));
             @new.AttachToParent(newParent);
@@ -148,7 +149,7 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(predicate));
             }
 
-            var result = CloneSubTree(source, predicate);
+            var result = CloneSubTree(source, new PredicateReflector(predicate));
             CreateNewParentTree(source, result);
             return result;
         }

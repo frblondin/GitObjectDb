@@ -98,34 +98,8 @@ namespace GitObjectDb.Reflection
                 return memberExpression.Member;
             }
 
-            static object ExtractValue(Expression node)
-            {
-                switch (node)
-                {
-                    case ConstantExpression constant:
-                        return constant.Value;
-                    case DefaultExpression @default:
-                        return null;
-                    case MemberExpression member:
-                        return GetMemberValue(
-                            ExtractValue(member.Expression),
-                            member.Member);
-                    default: throw new NotSupportedException("Only constant expressions expected in predicate right-hand values.");
-                }
-            }
-
-            static object GetMemberValue(object instance, MemberInfo member)
-            {
-                switch (member)
-                {
-                    case FieldInfo field: return field.GetValue(instance);
-                    case PropertyInfo property: return property.GetValue(instance);
-                    default: throw new NotSupportedException($"Unsupported member type {member.GetType()}.");
-                }
-            }
-
             static void ThrowNotSupported(string nodeDetails) =>
-                throw new NotSupportedException($"Expression of type {nodeDetails} is not suppoerted in predicate reflector.");
+                throw new NotSupportedException($"Expression of type {nodeDetails} is not supported in predicate reflector.");
 
             protected override Expression VisitBinary(BinaryExpression node)
             {
@@ -137,7 +111,7 @@ namespace GitObjectDb.Reflection
                 if (node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.TypeEqual)
                 {
                     var member = ExtractMember(node.Left);
-                    Values[member.Name] = ExtractValue(node.Right);
+                    Values[member.Name] = ValueVisitor.ExtractValue(node.Right);
                 }
                 else
                 {
@@ -156,10 +130,12 @@ namespace GitObjectDb.Reflection
                 if (node.Method == _childrenAddMethod)
                 {
                     VisitAddOrDeleteMethodCall(node, ChildChangeType.Add);
+                    return node;
                 }
                 else if (node.Method == _childrenDeleteMethod)
                 {
                     VisitAddOrDeleteMethodCall(node, ChildChangeType.Delete);
+                    return node;
                 }
                 else
                 {
@@ -172,7 +148,7 @@ namespace GitObjectDb.Reflection
             {
                 var instance = node.Object as MemberExpression ??
                     throw new NotSupportedException($"{changeType.ToString()} method is only supported when called on an object child property, eg. object.ChildProperty.{changeType.ToString()}(...).");
-                var value = ExtractValue(node.Arguments[0]) as IMetadataObject ??
+                var value = ValueVisitor.ExtractValue(node.Arguments[0]) as IMetadataObject ??
                     throw new NotSupportedException("The parameter provided for the Add method call could not be extracted as a non-nullable instance.");
 
                 var changes = GetChildChangeList(instance.Member.Name);
@@ -209,6 +185,70 @@ namespace GitObjectDb.Reflection
                 }
                 return base.Visit(node);
             }
+        }
+        #endregion
+
+        #region ValueVisitor
+        [ExcludeFromGuardForNull]
+        class ValueVisitor : ExpressionVisitor
+        {
+            private ValueVisitor()
+            {
+            }
+
+            public static object ExtractValue(Expression node) => new ValueVisitor().ExtractValueImpl(node);
+
+            object ExtractValueImpl(Expression node)
+            {
+                var expression = Visit(node);
+                switch (expression)
+                {
+                    case null:
+                        return null;
+                    case ConstantExpression constant:
+                        return constant.Value;
+                    case DefaultExpression @default:
+                        return @default.Type.IsByRef ? null : Activator.CreateInstance(@default.Type);
+                    default:
+                        throw new NotSupportedException("Could node extract a constant value out of the expression.");
+                }
+            }
+
+            protected override Expression VisitMember(MemberExpression node)
+            {
+                switch (node.Member)
+                {
+                    case FieldInfo field:
+                        return Expression.Constant(field.GetValue(ExtractValueImpl(node.Expression)), node.Type);
+                    case PropertyInfo property:
+                        return Expression.Constant(property.GetValue(ExtractValueImpl(node.Expression)), node.Type);
+                    default:
+                        throw new NotSupportedException($"Unsupported member type {node.Member.GetType()}.");
+                }
+            }
+
+            protected override Expression VisitIndex(IndexExpression node)
+            {
+                var instance = ExtractValueImpl(node.Object);
+                var arguments = node.Arguments.Select(a => ExtractValueImpl(a)).ToArray();
+                return Expression.Constant(node.Indexer.GetValue(instance, arguments), node.Type);
+            }
+
+            protected override Expression VisitMethodCall(MethodCallExpression node)
+            {
+                var instance = ExtractValueImpl(node.Object);
+                var arguments = node.Arguments.Select(a => ExtractValueImpl(a)).ToArray();
+                return Expression.Constant(node.Method.Invoke(instance, arguments), node.Type);
+            }
+
+            protected override Expression VisitNew(NewExpression node)
+            {
+                var arguments = node.Arguments.Select(a => ExtractValueImpl(a)).ToArray();
+                return Expression.Constant(node.Constructor.Invoke(arguments));
+            }
+
+            static void ThrowNotSupported(string nodeDetails) =>
+                throw new NotSupportedException($"Expression of type {nodeDetails} is not suppoerted in predicate reflector.");
         }
         #endregion
     }

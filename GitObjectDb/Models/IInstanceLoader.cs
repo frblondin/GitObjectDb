@@ -1,5 +1,6 @@
 using GitObjectDb.Git;
 using LibGit2Sharp;
+using Newtonsoft.Json;
 using System;
 
 namespace GitObjectDb.Models
@@ -9,6 +10,13 @@ namespace GitObjectDb.Models
     /// </summary>
     public interface IInstanceLoader
     {
+        /// <summary>
+        /// Gets the json serializer.
+        /// </summary>
+        /// <param name="childrenResolver">The children resolver.</param>
+        /// <returns>A new <see cref="JsonSerializer"/>.</returns>
+        JsonSerializer GetJsonSerializer(ChildrenResolver childrenResolver = null);
+
         /// <summary>
         /// Loads the instance from a Git repository.
         /// </summary>

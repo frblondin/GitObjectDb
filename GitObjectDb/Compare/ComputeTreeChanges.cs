@@ -78,46 +78,47 @@ namespace GitObjectDb.Compare
 
                 var oldCommit = repository.Lookup<Commit>(oldCommitId);
                 var newCommit = repository.Lookup<Commit>(newCommitId);
-                var changes = repository.Diff.Compare<Patch>(oldCommit.Tree, newCommit.Tree);
+                using (var changes = repository.Diff.Compare<TreeChanges>(oldCommit.Tree, newCommit.Tree))
+                {
+                    ThrowIfNonSupportedChangeTypes(changes);
 
-                ThrowIfNonSupportedChangeTypes(changes);
-
-                var modified = CollectModifiedNodes(oldInstance, newInstance, changes, oldCommit);
-                var added = CollectAddedNodes(newInstance, changes, newCommit);
-                var deleted = CollectDeletedNodes(oldInstance, changes, oldCommit);
-                return new MetadataTreeChanges(added, modified, deleted);
+                    var modified = CollectModifiedNodes(oldInstance, newInstance, changes, oldCommit);
+                    var added = CollectAddedNodes(newInstance, changes, newCommit);
+                    var deleted = CollectDeletedNodes(oldInstance, changes, oldCommit);
+                    return new MetadataTreeChanges(oldInstance, newInstance, added, modified, deleted);
+                }
             });
         }
 
-        static IImmutableList<MetadataTreeEntryChanges> CollectModifiedNodes(AbstractInstance oldInstance, AbstractInstance newInstance, Patch changes, Commit oldCommit) =>
+        static IImmutableList<MetadataTreeEntryChanges> CollectModifiedNodes(AbstractInstance oldInstance, AbstractInstance newInstance, TreeChanges changes, Commit oldCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Modified)
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
-             let path = c.Path.ParentPath()
+             let path = c.Path.GetParentPath()
              let oldNode = oldInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in old instance.")
              let newNode = newInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in new instance.")
              select new MetadataTreeEntryChanges(c, oldNode, newNode))
             .ToImmutableList();
 
-        static IImmutableList<MetadataTreeEntryChanges> CollectAddedNodes(AbstractInstance newInstance, Patch changes, Commit newCommit) =>
+        static IImmutableList<MetadataTreeEntryChanges> CollectAddedNodes(AbstractInstance newInstance, TreeChanges changes, Commit newCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Added)
              let newEntry = newCommit[c.Path]
              where newEntry.TargetType == TreeEntryTargetType.Blob
-             let path = c.Path.ParentPath()
+             let path = c.Path.GetParentPath()
              let newNode = newInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in new instance.")
              select new MetadataTreeEntryChanges(c, null, newNode))
             .ToImmutableList();
 
-        static IImmutableList<MetadataTreeEntryChanges> CollectDeletedNodes(AbstractInstance oldInstance, Patch changes, Commit oldCommit) =>
+        static IImmutableList<MetadataTreeEntryChanges> CollectDeletedNodes(AbstractInstance oldInstance, TreeChanges changes, Commit oldCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Deleted)
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
-             let path = c.Path.ParentPath()
+             let path = c.Path.GetParentPath()
              let oldNode = oldInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in old instance.")
              select new MetadataTreeEntryChanges(c, oldNode, null))
             .ToImmutableList();
 
-        static void ThrowIfNonSupportedChangeTypes(Patch changes)
+        static void ThrowIfNonSupportedChangeTypes(TreeChanges changes)
         {
             if (changes.Any(c => c.Status == ChangeKind.Conflicted))
             {
@@ -173,7 +174,7 @@ namespace GitObjectDb.Compare
                     continue;
                 }
 
-                stack.Push(childProperty.Name);
+                stack.Push(childProperty.FolderName);
                 anyChange |= CompareNodeChildren(repository, original, @new, tree, definition, stack, childProperty);
                 stack.Pop();
             }

@@ -27,7 +27,7 @@ namespace GitObjectDb.Tests.Assets.Models
 
         [DataMember]
         [Modifiable]
-        public string Description { get; }
+        public string Description { get; private set; }
 
         public ILazyChildren<Field> Fields { get; }
     }

@@ -110,7 +110,7 @@ namespace GitObjectDb.Models
             {
                 result.Append('/');
             }
-            result.Append(InstanceLoader.DataFile);
+            result.Append(FileSystemStorage.DataFile);
             return result.ToString();
         }
 

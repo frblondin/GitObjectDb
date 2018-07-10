@@ -15,11 +15,6 @@ namespace GitObjectDb.Models
     /// <inheritdoc />
     internal class InstanceLoader : IInstanceLoader
     {
-        /// <summary>
-        /// The data file name used to store information in Git.
-        /// </summary>
-        internal const string DataFile = "data.json";
-
         readonly IContractResolver _contractResolver = new DefaultContractResolver();
         readonly IServiceProvider _serviceProvider;
         readonly IModelDataAccessorProvider _dataAccessorProvider;
@@ -58,7 +53,7 @@ namespace GitObjectDb.Models
                     currentCommit = repository.Lookup<Commit>(commitId);
                 }
 
-                var instance = (AbstractInstance)LoadEntry(commitId, currentCommit[DataFile], string.Empty);
+                var instance = (AbstractInstance)LoadEntry(commitId, currentCommit[FileSystemStorage.DataFile], string.Empty);
                 instance.SetRepositoryData(repositoryDescription, commitId);
                 return instance;
             });
@@ -73,29 +68,51 @@ namespace GitObjectDb.Models
 
         IMetadataObject LoadEntry(ObjectId commitId, TreeEntry entry, string path)
         {
-            var blob = entry.Target.Peel<Blob>();
             ILazyChildren ResolveChildren(Type type, string propertyName)
             {
                 var dataAccessor = _dataAccessorProvider.Get(type);
-                var childProperty = dataAccessor.ChildProperties.FirstOrDefault(p => p.Matches(propertyName)) ??
+                var childProperty = dataAccessor.ChildProperties.FirstOrDefault(
+                    p => p.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+                if (childProperty == null)
+                {
                     throw new NotSupportedException($"Unable to find property details for '{propertyName}'.");
+                }
                 return LoadEntryChildren(commitId, path, childProperty);
             }
             var serializer = GetJsonSerializer(ResolveChildren);
+            var blob = entry.Target.Peel<Blob>();
             var jobject = blob.GetContentStream().ToJson<JObject>(serializer);
             var objectType = Type.GetType(jobject.Value<string>("$type"));
             return (IMetadataObject)jobject.ToObject(objectType, serializer);
         }
 
-        JsonSerializer GetJsonSerializer(MetadataObjectJsonConverter.ChildrenResolver childrenResolver)
+        /// <inheritdoc />
+        public JsonSerializer GetJsonSerializer(ChildrenResolver childrenResolver = null)
         {
-            var serializer = new JsonSerializer { TypeNameHandling = TypeNameHandling.Objects };
+            if (childrenResolver == null)
+            {
+                childrenResolver = ReturnEmptyChildren;
+            }
+
+            var serializer = new JsonSerializer
+            {
+                TypeNameHandling = TypeNameHandling.Objects,
+                Formatting = Formatting.Indented
+            };
             serializer.Converters.Add(new MetadataObjectJsonConverter(_serviceProvider, childrenResolver));
 
             // Optimization: prevent reflection for each new object!
             serializer.ContractResolver = _contractResolver;
 
             return serializer;
+        }
+
+        ILazyChildren ReturnEmptyChildren(Type parentType, string propertyName)
+        {
+            var dataAccessor = _dataAccessorProvider.Get(parentType);
+            var childProperty = dataAccessor.ChildProperties.FirstOrDefault(
+                p => p.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+            return LazyChildrenHelper.Create(childProperty, (o, r) => Enumerable.Empty<IMetadataObject>());
         }
 
         ILazyChildren LoadEntryChildren(ObjectId commitId, string path, ChildPropertyInfo childProperty) =>
@@ -109,7 +126,7 @@ namespace GitObjectDb.Models
                     from c in subTree
                     where c.TargetType == TreeEntryTargetType.Tree
                     let childTree = c.Target.Peel<Tree>()
-                    let data = childTree[DataFile]
+                    let data = childTree[FileSystemStorage.DataFile]
                     where data != null
                     select LoadEntry(commitId, data, $"{childPath}/{c.Name}") :
 

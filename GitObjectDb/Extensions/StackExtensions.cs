@@ -1,4 +1,4 @@
-using GitObjectDb.Models;
+using GitObjectDb;
 using System;
 using System.Linq;
 using System.Text;
@@ -30,7 +30,7 @@ namespace System.Collections.Generic
             {
                 path += "/";
             }
-            return path + InstanceLoader.DataFile;
+            return path + FileSystemStorage.DataFile;
         }
     }
 }

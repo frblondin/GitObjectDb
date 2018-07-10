@@ -1,12 +1,14 @@
-using DiffPatch;
-using DiffPatch.Data;
 using GitObjectDb.Attributes;
 using GitObjectDb.Git;
+using GitObjectDb.Migrations;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -16,14 +18,11 @@ namespace GitObjectDb.Compare
     [ExcludeFromGuardForNull]
     public sealed class MetadataTreeMerge : IMetadataTreeMerge
     {
+        readonly IServiceProvider _serviceProvider;
         readonly IRepositoryProvider _repositoryProvider;
         readonly IModelDataAccessorProvider _modelDataProvider;
-        readonly Func<RepositoryDescription, IComputeTreeChanges> _computeTreeChangesFactory;
+        readonly Func<RepositoryDescription, MigrationScaffolder> _migrationScaffolderFactory;
         readonly RepositoryDescription _repositoryDescription;
-        readonly StringBuilder _jsonBuffer = new StringBuilder();
-
-        readonly TreeDefinition _treeDefinition;
-        ObjectId _branchTip;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MetadataTreeMerge"/> class.
@@ -45,19 +44,16 @@ namespace GitObjectDb.Compare
         /// </exception>
         public MetadataTreeMerge(IServiceProvider serviceProvider, RepositoryDescription repositoryDescription, ObjectId commitId, string branchName)
         {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
             CommitId = commitId ?? throw new ArgumentNullException(nameof(commitId));
             BranchName = branchName ?? throw new ArgumentNullException(nameof(branchName));
 
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _modelDataProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
-            _computeTreeChangesFactory = serviceProvider.GetRequiredService<Func<RepositoryDescription, IComputeTreeChanges>>();
+            _migrationScaffolderFactory = serviceProvider.GetRequiredService<Func<RepositoryDescription, MigrationScaffolder>>();
 
-            _treeDefinition = Initialize();
+            Initialize();
         }
 
         /// <inheritdoc/>
@@ -66,52 +62,79 @@ namespace GitObjectDb.Compare
         /// <inheritdoc/>
         public string BranchName { get; }
 
-        static void CheckForConflict(MetadataTreeEntryChanges changes, FileDiff fileDiff, MetadataTreeChanges headChanges)
+        /// <inheritdoc/>
+        public ObjectId BranchTarget { get; private set; }
+
+        /// <inheritdoc/>
+        public bool IsPartialMerge { get; private set; }
+
+        /// <inheritdoc/>
+        public Migrator RequiredMigrator { get; private set; }
+
+        /// <inheritdoc/>
+        public IList<MetadataTreeMergeChunkChange> ModifiedChunks { get; } = new List<MetadataTreeMergeChunkChange>();
+
+        /// <inheritdoc/>
+        public IList<MetadataTreeMergeObjectAdd> AddedObjects { get; } = new List<MetadataTreeMergeObjectAdd>();
+
+        /// <inheritdoc/>
+        public IList<MetadataTreeMergeObjectDelete> DeletedObjects { get; } = new List<MetadataTreeMergeObjectDelete>();
+
+        static JObject GetContent(Commit mergeBase, string path, string branchInfo)
         {
-            foreach (var matching in headChanges.Where(c => c.Path == changes.Path))
-            {
-                if (matching.Status == ChangeKind.Deleted)
-                {
-                    throw new NotSupportedException($"Node {matching.Path} has been modified in branch and deleted in head.");
-                }
-                var matchingPatch = DiffParserHelper.Parse(matching.Patch).Single();
-                foreach (var chunk in fileDiff.Chunks)
-                {
-                    if (matchingPatch.Chunks.Any(c => AreChunksOverlapping(chunk, c)))
-                    {
-                        throw new NotSupportedException($"Node {matching.Path} has conflicting change chunks.");
-                    }
-                }
-            }
+            var content = mergeBase[path]?.Target?.Peel<Blob>()?.GetContentText() ??
+                throw new NotImplementedException($"Could not find node {path} in {branchInfo} tree.");
+            return JsonConvert.DeserializeObject<JObject>(content);
         }
 
-        static bool AreChunksOverlapping(Chunk chunkA, Chunk chunkB)
+        static JToken TryGetToken(JObject headObject, KeyValuePair<string, JToken> kvp)
         {
-            var modifiedLinesA = from c in chunkA.Changes where !c.Normal select c.Index;
-            var modifiedLinesB = from c in chunkB.Changes where !c.Normal select c.Index;
-            return modifiedLinesA.Intersect(modifiedLinesB).Any();
+            return headObject.TryGetValue(kvp.Key, StringComparison.OrdinalIgnoreCase, out var headValue) ?
+                headValue :
+                null;
         }
 
-        TreeDefinition Initialize()
+        void Initialize()
         {
-            return _repositoryProvider.Execute(_repositoryDescription, repository =>
+            _repositoryProvider.Execute(_repositoryDescription, repository =>
             {
                 EnsureHeadCommit(repository);
 
                 var branch = repository.Branches[BranchName];
                 var branchTip = branch.Tip;
-                _branchTip = branchTip.Id;
+                BranchTarget = branchTip.Id;
                 var headTip = repository.Head.Tip;
                 var baseCommit = repository.ObjectDatabase.FindMergeBase(headTip, branchTip);
 
-                var computeChanges = _computeTreeChangesFactory(_repositoryDescription);
-                var branchDiff = computeChanges.Compare(GetType(), baseCommit.Id, branchTip.Id);
-                var headDiff = computeChanges.Compare(GetType(), baseCommit.Id, headTip.Id);
-                return ComputeMerge(repository, branchDiff, headDiff);
+                var migrationScaffolder = _migrationScaffolderFactory(_repositoryDescription);
+                var migrators = migrationScaffolder.Scaffold(baseCommit.Id, BranchTarget, MigrationMode.Upgrade);
+
+                branchTip = ResolveRequiredMigrator(repository, branchTip, migrators);
+
+                ComputeMerge(repository, baseCommit, branchTip, headTip);
             });
         }
 
-        void EnsureHeadCommit(IRepository repository)
+        Commit ResolveRequiredMigrator(IRepository repository, Commit branchTip, System.Collections.Immutable.IImmutableList<Migrator> migrators)
+        {
+            RequiredMigrator = migrators.Count > 0 ? migrators[0] : null;
+            if (RequiredMigrator != null && RequiredMigrator.CommitId != BranchTarget)
+            {
+                IsPartialMerge = true;
+
+                branchTip = repository.Lookup<Commit>(RequiredMigrator.CommitId);
+                BranchTarget = RequiredMigrator.CommitId;
+            }
+
+            return branchTip;
+        }
+
+        /// <summary>
+        /// Ensures that the head tip refers to the right commit.
+        /// </summary>
+        /// <param name="repository">The repository.</param>
+        /// <exception cref="NotSupportedException">The current head commit id is different from the commit used by current instance.</exception>
+        internal void EnsureHeadCommit(IRepository repository)
         {
             if (!repository.Head.Tip.Id.Equals(CommitId))
             {
@@ -119,60 +142,90 @@ namespace GitObjectDb.Compare
             }
         }
 
-        TreeDefinition ComputeMerge(IRepository repository, MetadataTreeChanges branchChanges, MetadataTreeChanges headChanges)
+        void ComputeMerge(IRepository repository, Commit mergeBase, Commit branchTip, Commit headTip)
         {
-            var headTip = repository.Head.Tip;
-            var definition = TreeDefinition.From(headTip);
-            foreach (var change in branchChanges)
+            using (var branchChanges = repository.Diff.Compare<Patch>(mergeBase.Tree, branchTip.Tree))
             {
-                switch (change.Status)
+                using (var headChanges = repository.Diff.Compare<Patch>(mergeBase.Tree, headTip.Tree))
                 {
-                    case ChangeKind.Added:
-                        if (headChanges.Added.Any(n => n.New.Id == change.New.Id))
+                    foreach (var change in branchChanges)
+                    {
+                        switch (change.Status)
                         {
-                            throw new NotSupportedException($"Same node with id {change.New.Id} added in both branches.");
+                            case ChangeKind.Modified:
+                                ComputeMerge_Modified(mergeBase, branchTip, headTip, headChanges, change);
+                                break;
+                            case ChangeKind.Added:
+                                ComputeMerge_Added(branchTip, change, headChanges);
+                                break;
+                            case ChangeKind.Deleted:
+                                ComputeMerge_Deleted(mergeBase, change, headChanges);
+                                break;
+                            default:
+                                throw new NotImplementedException($"Change type '{change.Status}' for branch merge is not supported.");
                         }
-                        var path = change.New.ToDataPath(_modelDataProvider);
-                        change.New.ToJson(_jsonBuffer);
-                        definition.Add(path, repository.CreateBlob(_jsonBuffer), Mode.NonExecutableFile);
-                        break;
-                    case ChangeKind.Modified:
-                        var patch = DiffParserHelper.Parse(change.Patch).Single();
-
-                        CheckForConflict(change, patch, headChanges);
-
-                        var content = headTip[change.Path].Target.Peel<Blob>().GetContentText();
-                        var modified = PatchHelper.Patch(content, patch.Chunks, "\n");
-                        definition.Add(change.Path, repository.CreateBlob(modified), Mode.NonExecutableFile);
-                        break;
-                    case ChangeKind.Deleted:
-                    default:
-                        throw new NotImplementedException("Deletion for branch merge is not supported.");
+                    }
                 }
             }
-            return definition;
+        }
+
+        void ComputeMerge_Modified(Commit mergeBase, Commit branchTip, Commit headTip, Patch headChanges, PatchEntryChanges change)
+        {
+            var mergeBaseObject = GetContent(mergeBase, change.Path, "merge base");
+            var branchObject = GetContent(branchTip, change.Path, "branch tip");
+            var headObject = GetContent(headTip, change.Path, "head tip");
+
+            AddModifiedChunks(change, mergeBaseObject, branchObject, headObject, headChanges[change.Path]);
+        }
+
+        void ComputeMerge_Added(Commit branchTip, PatchEntryChanges change, Patch headChanges)
+        {
+            var parentDataPath = change.Path.GetDataParentDataPath();
+            if (headChanges.Any(c => c.Path.Equals(parentDataPath, StringComparison.OrdinalIgnoreCase) && c.Status == ChangeKind.Deleted))
+            {
+                throw new NotImplementedException("Node addition while parent has been deleted in head is not supported.");
+            }
+
+            var branchObject = GetContent(branchTip, change.Path, "branch tip");
+            AddedObjects.Add(new MetadataTreeMergeObjectAdd(change.Path, branchObject));
+        }
+
+        void ComputeMerge_Deleted(Commit mergeBase, PatchEntryChanges change, Patch headChanges)
+        {
+            var folder = change.Path.Replace($"/{FileSystemStorage.DataFile}", string.Empty);
+            if (headChanges.Any(c => c.Path.Equals(folder, StringComparison.OrdinalIgnoreCase) && (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))
+            {
+                throw new NotImplementedException("Node deletion while children have been added or modified in head is not supported.");
+            }
+
+            var mergeBaseObject = GetContent(mergeBase, change.Path, "branch tip");
+            DeletedObjects.Add(new MetadataTreeMergeObjectDelete(change.Path, mergeBaseObject));
+        }
+
+        void AddModifiedChunks(PatchEntryChanges branchChange, JObject mergeBaseObject, JObject newObject, JObject headObject, PatchEntryChanges headChange)
+        {
+            if (headChange?.Status == ChangeKind.Deleted)
+            {
+                throw new NotImplementedException($"Conflict as a modified node {branchChange.Path} in merge branch source has been deleted in head.");
+            }
+            var type = Type.GetType(mergeBaseObject.Value<string>("$type"));
+            var properties = _modelDataProvider.Get(type).ModifiableProperties;
+
+            var changes = from kvp in (IEnumerable<KeyValuePair<string, JToken>>)newObject
+                          let p = properties.FirstOrDefault(pr => pr.Name.Equals(kvp.Key, StringComparison.OrdinalIgnoreCase))
+                          where p != null
+                          let mergeBaseValue = mergeBaseObject[kvp.Key]
+                          where mergeBaseValue == null || !JToken.DeepEquals(kvp.Value, mergeBaseValue)
+                          let headValue = TryGetToken(headObject, kvp)
+                          select new MetadataTreeMergeChunkChange(branchChange.Path, mergeBaseObject, newObject, headObject, p, mergeBaseValue, kvp.Value, headValue);
+
+            foreach (var modifiedProperty in changes)
+            {
+                ModifiedChunks.Add(modifiedProperty);
+            }
         }
 
         /// <inheritdoc/>
-        public Commit Apply(Signature merger)
-        {
-            if (merger == null)
-            {
-                throw new ArgumentNullException(nameof(merger));
-            }
-
-            return _repositoryProvider.Execute(_repositoryDescription, repository =>
-            {
-                EnsureHeadCommit(repository);
-                var branch = repository.Branches[BranchName];
-                var branchTip = branch.Tip;
-                if (branchTip.Id != _branchTip)
-                {
-                    throw new NotImplementedException($"The branch {branch.FriendlyName} has changed since merge started.");
-                }
-                var message = $"Merge branch {branch.FriendlyName} into {repository.Head.FriendlyName}";
-                return repository.Commit(_treeDefinition, message, merger, merger, mergeParent: branchTip);
-            });
-        }
+        public ObjectId Apply(Signature merger) => new MetadataTreeMergeProcessor(_serviceProvider, _repositoryDescription, this).Apply(merger);
     }
 }

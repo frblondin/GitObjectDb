@@ -11,7 +11,7 @@ namespace GitObjectDb.Compare
     [DebuggerDisplay("Status = {Status}, Old = {Old?.Id}, New = {New?.Id}")]
     public class MetadataTreeEntryChanges
     {
-        private readonly PatchEntryChanges _entryChanges;
+        readonly TreeEntryChanges _entryChanges;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MetadataTreeEntryChanges"/> class.
@@ -20,7 +20,7 @@ namespace GitObjectDb.Compare
         /// <param name="old">The old value.</param>
         /// <param name="new">The new value.</param>
         /// <exception cref="ArgumentNullException">old</exception>
-        public MetadataTreeEntryChanges(PatchEntryChanges entryChanges, IMetadataObject old = null, IMetadataObject @new = null)
+        public MetadataTreeEntryChanges(TreeEntryChanges entryChanges, IMetadataObject old = null, IMetadataObject @new = null)
         {
             _entryChanges = entryChanges ?? throw new ArgumentNullException(nameof(entryChanges));
             if (old == null && @new == null)
@@ -41,11 +41,6 @@ namespace GitObjectDb.Compare
         /// Gets the new object.
         /// </summary>
         public IMetadataObject New { get; }
-
-        /// <summary>
-        /// Gets the patch corresponding to these changes.
-        /// </summary>
-        public string Patch => _entryChanges.Patch;
 
         /// <summary>
         /// Gets the new path.

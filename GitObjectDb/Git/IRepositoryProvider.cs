@@ -17,5 +17,12 @@ namespace GitObjectDb.Git
         /// <param name="processor">The function.</param>
         /// <returns>The result of the function call.</returns>
         TResult Execute<TResult>(RepositoryDescription description, Func<IRepository, TResult> processor);
+
+        /// <summary>
+        /// Calls the provided function processing.
+        /// </summary>
+        /// <param name="description">The description.</param>
+        /// <param name="processor">The function.</param>
+        void Execute(RepositoryDescription description, Action<IRepository> processor);
     }
 }

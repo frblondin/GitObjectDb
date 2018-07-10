@@ -45,10 +45,12 @@ namespace GitObjectDb.Compare
             Right != null && Left != null && Left.Id == Right.Id;
 
         public bool NodeHasBeenAdded =>
-            (Left == null && Right != null) || (Left != null && Left.Id.CompareTo(Right.Id) > 0);
+            (Left == null && Right != null) ||
+            (Left != null && Right != null && Left.Id.CompareTo(Right.Id) > 0);
 
         public bool NodeHasBeenRemoved =>
-            (Left != null && Right == null) || (Right != null && Left.Id.CompareTo(Right.Id) < 0);
+            (Left != null && Right == null) ||
+            (Left != null && Right != null && Left.Id.CompareTo(Right.Id) < 0);
 
         public void MoveNextLeft() => _leftCompleted = !_leftEnumerator.MoveNext();
 

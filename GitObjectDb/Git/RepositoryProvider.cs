@@ -39,21 +39,21 @@ namespace GitObjectDb.Git
         }
 
         /// <inheritdoc/>
-        public TResult Execute<TResult>(RepositoryDescription description, Func<IRepository, TResult> function)
+        public TResult Execute<TResult>(RepositoryDescription description, Func<IRepository, TResult> processor)
         {
             if (description == null)
             {
                 throw new ArgumentNullException(nameof(description));
             }
-            if (function == null)
+            if (processor == null)
             {
-                throw new ArgumentNullException(nameof(function));
+                throw new ArgumentNullException(nameof(processor));
             }
 
             var entry = GetEntry(description);
             try
             {
-                return function(entry.Repository);
+                return processor(entry.Repository);
             }
             finally
             {
@@ -63,6 +63,25 @@ namespace GitObjectDb.Git
                 }
                 StartScanForExpiredItems();
             }
+        }
+
+        /// <inheritdoc/>
+        public void Execute(RepositoryDescription description, Action<IRepository> processor)
+        {
+            if (description == null)
+            {
+                throw new ArgumentNullException(nameof(description));
+            }
+            if (processor == null)
+            {
+                throw new ArgumentNullException(nameof(processor));
+            }
+
+            Execute(description, repository =>
+            {
+                processor(repository);
+                return default(object);
+            });
         }
 
         CacheEntry GetEntry(RepositoryDescription description)

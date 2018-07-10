@@ -2,11 +2,15 @@ using AutoFixture;
 using AutoFixture.Idioms;
 using AutoFixture.NUnit3;
 using GitObjectDb.Attributes;
+using GitObjectDb.Migrations;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
 using GitObjectDb.Tests.Assets.Customizations;
+using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Utils;
+using GitObjectDb.Tests.Migrations;
 using LibGit2Sharp;
+using Newtonsoft.Json.Linq;
 using NSubstitute;
 using NUnit.Framework;
 using System;
@@ -47,16 +51,30 @@ namespace GitObjectDb.Tests.Git
                     new FilterCommand(new NullReferenceBehaviorExpectation())));
 
                 fixture.Inject(typeof(string));
-                fixture.Inject(ExpressionReflector.GetConstructor(() => new StringBuilder()));
-                fixture.Inject(ExpressionReflector.GetProperty<string>(s => s.Length));
+                fixture.Inject(ExpressionReflector.GetConstructor(() => new Page(default, default, default, default, default)));
+                fixture.Inject(ExpressionReflector.GetProperty<Page>(p => p.Description));
                 fixture.Inject((Expression)Expression.Default(typeof(object)));
-                fixture.Register<AbstractInstance>(() => fixture.Create<Assets.Models.Instance>());
-                fixture.Register<AbstractModel>(() => fixture.Create<Assets.Models.Instance>());
-                fixture.Inject<Func<IRepository, Tree>>(r => r.Head.Tip.Tree);
+                fixture.Register<AbstractInstance>(() => fixture.Create<Instance>());
+                fixture.Register<AbstractMigration>(() => fixture.Create<Migration>());
+                fixture.Register<AbstractModel>(() => fixture.Create<Instance>());
                 fixture.Inject<ConstructorParameterBinding.ChildProcessor>((name, children, @new, dataAccessor) => children);
                 fixture.Inject<ConstructorParameterBinding.Clone>((@object, predicateReflector, processor) => @object);
+                CustomizeGitObjects(fixture);
+                CustomizeJsonObjects(fixture);
+            }
+
+            static void CustomizeGitObjects(IFixture fixture)
+            {
+                fixture.Inject<Func<IRepository, Tree>>(r => r.Head.Tip.Tree);
                 fixture.Inject(new ObjectId("2fa2540fecec8c4908fb0ccba825cdb903f09440"));
                 fixture.Inject(Substitute.For<PatchEntryChanges>());
+                fixture.Inject(Substitute.For<TreeEntryChanges>());
+            }
+
+            static void CustomizeJsonObjects(IFixture fixture)
+            {
+                fixture.Inject(JObject.Parse(@"{""a"": ""b""}"));
+                fixture.Register<JToken>(() => fixture.Create<JObject>());
             }
         }
 
