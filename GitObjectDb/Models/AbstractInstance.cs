@@ -1,7 +1,9 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Compare;
 using GitObjectDb.Git;
+using GitObjectDb.Git.Hooks;
 using GitObjectDb.Migrations;
+using GitObjectDb.Reflection;
 using LibGit2Sharp;
 using Newtonsoft.Json;
 using System;
@@ -30,7 +32,7 @@ namespace GitObjectDb.Models
         internal const string MigrationFolder = "$Migrations";
 
         readonly Func<RepositoryDescription, IComputeTreeChanges> _computeTreeChangesFactory;
-        readonly Func<RepositoryDescription, ObjectId, string, IMetadataTreeMerge> _metadataTreeMergeFactory;
+        readonly Func<RepositoryDescription, IInstance, string, IMetadataTreeMerge> _metadataTreeMergeFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AbstractInstance"/> class.
@@ -49,9 +51,10 @@ namespace GitObjectDb.Models
             }
 
             _computeTreeChangesFactory = serviceProvider.GetRequiredService<Func<RepositoryDescription, IComputeTreeChanges>>();
-            _metadataTreeMergeFactory = serviceProvider.GetRequiredService<Func<RepositoryDescription, ObjectId, string, IMetadataTreeMerge>>();
+            _metadataTreeMergeFactory = serviceProvider.GetRequiredService<Func<RepositoryDescription, IInstance, string, IMetadataTreeMerge>>();
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _instanceLoader = serviceProvider.GetRequiredService<IInstanceLoader>();
+            _hooks = serviceProvider.GetRequiredService<GitHooks>();
             Migrations = (migrations ?? throw new ArgumentNullException(nameof(migrations))).AttachToParent(this);
         }
 

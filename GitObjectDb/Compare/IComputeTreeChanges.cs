@@ -29,6 +29,6 @@ namespace GitObjectDb.Compare
         /// or
         /// new
         /// </exception>
-        (TreeDefinition NewTree, bool AnyChange) Compare(AbstractInstance original, AbstractInstance newInstance);
+        MetadataTreeChanges Compare(IInstance original, IInstance newInstance);
     }
 }

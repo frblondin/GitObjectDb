@@ -1,4 +1,5 @@
 using AutoFixture.NUnit3;
+using GitObjectDb.Git.Hooks;
 using LibGit2Sharp;
 using NUnit.Framework;
 using System;
@@ -23,9 +24,12 @@ namespace GitObjectDb.Tests.Git.Backends
             {
                 repository.ObjectDatabase.AddBackend(sut, priority: 5);
 
+                var definition = !repository.Info.IsHeadUnborn ? TreeDefinition.From(repository.Head.Tip.Tree) : new TreeDefinition();
+                definition.Add("somefile.txt", repository.CreateBlob("foo"), Mode.NonExecutableFile);
                 repository.Commit(
-                    (r, d) => d.Add("somefile.txt", r.CreateBlob(new StringBuilder("foo")), Mode.NonExecutableFile),
-                    message, signature, signature);
+                    definition,
+                    message,
+                    signature, signature);
             }
         }
 

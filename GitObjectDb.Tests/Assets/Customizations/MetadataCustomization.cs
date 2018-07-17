@@ -18,7 +18,7 @@ namespace GitObjectDb.Tests.Assets.Customizations
         public void Customize(IFixture fixture)
         {
             var serviceProvider = fixture.Create<IServiceProvider>();
-            var module = new Instance(serviceProvider, Guid.NewGuid(), "Some module", new LazyChildren<IMigration>(), new LazyChildren<Application>(
+            var module = new Instance(serviceProvider, Guid.NewGuid(), "Some repository", new LazyChildren<IMigration>(), new LazyChildren<Application>(
                 Enumerable.Range(1, ApplicationCount).Select(a =>
                     new Application(serviceProvider, Guid.NewGuid(), $"Application {a}", new LazyChildren<Page>(
                         Enumerable.Range(1, PagePerApplicationCount).Select(p =>

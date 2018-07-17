@@ -1,5 +1,6 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Git;
+using GitObjectDb.Git.Hooks;
 using GitObjectDb.Migrations;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
@@ -11,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace GitObjectDb.Compare
 {
@@ -20,11 +22,14 @@ namespace GitObjectDb.Compare
     internal sealed class MetadataTreeMergeProcessor
     {
         readonly IRepositoryProvider _repositoryProvider;
+        readonly Func<RepositoryDescription, IComputeTreeChanges> _computeTreeChangesFactory;
         readonly RepositoryDescription _repositoryDescription;
         readonly Lazy<JsonSerializer> _serializer;
+        readonly GitHooks _hooks;
 
         readonly MetadataTreeMerge _metadataTreeMerge;
-        readonly StringBuilder _buffer = new StringBuilder();
+        readonly ISet<Guid> _forceVisit;
+        readonly ILookup<string, MetadataTreeMergeChunkChange> _changes;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MetadataTreeMergeProcessor"/> class.
@@ -43,18 +48,30 @@ namespace GitObjectDb.Compare
             {
                 throw new ArgumentNullException(nameof(serviceProvider));
             }
+
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
             _metadataTreeMerge = metadataTreeMerge ?? throw new ArgumentNullException(nameof(metadataTreeMerge));
 
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
+            _computeTreeChangesFactory = serviceProvider.GetRequiredService<Func<RepositoryDescription, IComputeTreeChanges>>();
             _serializer = new Lazy<JsonSerializer>(() => serviceProvider.GetRequiredService<IInstanceLoader>().GetJsonSerializer());
+            _hooks = serviceProvider.GetRequiredService<GitHooks>();
+            _changes = _metadataTreeMerge.ModifiedChunks.ToLookup(c => c.Path, StringComparer.OrdinalIgnoreCase);
+
+            Guid tempGuid;
+            _forceVisit = new HashSet<Guid>(from path in _metadataTreeMerge.AllImpactedPaths
+                                            from part in path.Split('/')
+                                            where Guid.TryParse(part, out tempGuid)
+                                            let guid = tempGuid
+                                            select guid);
         }
 
-        static JObject GetContent(Commit mergeBase, string path, string branchInfo)
+        static Regex GetChildPathRegex(IMetadataObject node, ChildPropertyInfo childProperty)
         {
-            var content = mergeBase[path]?.Target?.Peel<Blob>()?.GetContentText() ??
-                throw new NotImplementedException($"Could not find node {path} in {branchInfo} tree.");
-            return JsonConvert.DeserializeObject<JObject>(content);
+            var path = node.GetFolderPath();
+            return string.IsNullOrEmpty(path) ?
+                new Regex($@"{childProperty.FolderName}/[\w-]+/{FileSystemStorage.DataFile}", RegexOptions.IgnoreCase) :
+                new Regex($@"{path}/{childProperty.FolderName}/[\w-]+/{FileSystemStorage.DataFile}", RegexOptions.IgnoreCase);
         }
 
         /// <summary>
@@ -85,62 +102,48 @@ namespace GitObjectDb.Compare
 
         ObjectId ApplyMerge(Signature merger, IRepository repository)
         {
+            var treeChanges = ComputeMergeResult();
+
             var branch = repository.Branches[_metadataTreeMerge.BranchName];
-            var treeDefinition = CreateTree(repository);
             var message = $"Merge branch {branch.FriendlyName} into {repository.Head.FriendlyName}";
-            var commit = repository.Commit(treeDefinition, message, merger, merger, mergeParent: repository.Lookup<Commit>(_metadataTreeMerge.BranchTarget));
-            return commit.Id;
+            var commit = repository.CommitChanges(treeChanges, message, merger, merger, hooks: _hooks, mergeParent: repository.Lookup<Commit>(_metadataTreeMerge.BranchTarget));
+            return commit?.Id;
         }
 
-        TreeDefinition CreateTree(IRepository repository)
+        MetadataTreeChanges ComputeMergeResult()
         {
-            var definition = TreeDefinition.From(repository.Head.Tip);
-
-            ManageModifications(repository, definition);
-            ManageAdditions(repository, definition);
-            ManageDeletions(definition);
-
-            return definition;
+            var mergeResult = _metadataTreeMerge.Instance.DataAccessor.DeepClone(_metadataTreeMerge.Instance, ProcessProperty, ChildChangesGetter, n => _forceVisit.Contains(n.Id));
+            var computeChanges = _computeTreeChangesFactory(_repositoryDescription);
+            return computeChanges.Compare(_metadataTreeMerge.Instance, mergeResult);
         }
 
-        void ManageModifications(IRepository repository, TreeDefinition definition)
+        object ProcessProperty(IMetadataObject node, string name, Type argumentType, object fallback)
         {
-            foreach (var change in _metadataTreeMerge.ModifiedChunks.GroupBy(c => c.HeadNode))
+            var path = node.GetDataPath();
+            var propertyChange = _changes[path].FirstOrDefault(c => c.Property.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            return propertyChange != null ?
+                propertyChange.MergeValue.ToObject(argumentType, _serializer.Value) :
+                fallback;
+        }
+
+        (IEnumerable<IMetadataObject> Additions, IEnumerable<IMetadataObject> Deletions) ChildChangesGetter(IMetadataObject node, ChildPropertyInfo childProperty)
+        {
+            if (_forceVisit.Contains(node.Id))
             {
-                var modified = (JObject)change.Key.DeepClone();
-                foreach (var chunkChange in change)
-                {
-                    chunkChange.ApplyTo(modified);
-                }
-                Serialize(modified);
-                definition.Add(change.First().Path, repository.CreateBlob(_buffer), Mode.NonExecutableFile);
+                Console.WriteLine(node.Id.ToString());
             }
-        }
 
-        void ManageAdditions(IRepository repository, TreeDefinition definition)
-        {
-            foreach (var addition in _metadataTreeMerge.AddedObjects)
-            {
-                Serialize(addition.BranchNode);
-                definition.Add(addition.Path, repository.CreateBlob(_buffer), Mode.NonExecutableFile);
-            }
-        }
+            var pathWithProperty = GetChildPathRegex(node, childProperty);
+            var additions = (from o in _metadataTreeMerge.AddedObjects
+                             where pathWithProperty.IsMatch(o.Path)
+                             let objectType = Type.GetType(o.BranchNode.Value<string>("$type"))
+                             select (IMetadataObject)o.BranchNode.ToObject(childProperty.ItemType, _serializer.Value)).ToList();
+            var deleted = new HashSet<Guid>(from o in _metadataTreeMerge.DeletedObjects
+                                            where pathWithProperty.IsMatch(o.Path)
+                                            select o.BranchNode["Id"].ToObject<Guid>());
+            var deletions = childProperty.Accessor(node).Where(n => deleted.Contains(n.Id)).ToList();
 
-        void ManageDeletions(TreeDefinition definition)
-        {
-            foreach (var deletion in _metadataTreeMerge.DeletedObjects)
-            {
-                definition.Remove(deletion.Path);
-            }
-        }
-
-        void Serialize(JToken modified)
-        {
-            _buffer.Clear();
-            using (var writer = new StringWriter(_buffer))
-            {
-                _serializer.Value.Serialize(writer, modified);
-            }
+            return (additions, deletions);
         }
     }
 }

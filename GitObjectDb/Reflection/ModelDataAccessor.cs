@@ -14,8 +14,6 @@ namespace GitObjectDb.Reflection
     /// <inheritdoc />
     internal class ModelDataAccessor : IModelDataAccessor
     {
-        readonly IServiceProvider _serviceProvider;
-        readonly IModelDataAccessorProvider _dataAccessorProvider;
         readonly Lazy<IImmutableList<ChildPropertyInfo>> _childProperties;
         readonly Lazy<IImmutableList<ModifiablePropertyInfo>> _modifiableProperties;
         readonly Lazy<ConstructorParameterBinding> _constructorBinding;
@@ -34,16 +32,19 @@ namespace GitObjectDb.Reflection
         /// </exception>
         public ModelDataAccessor(IServiceProvider serviceProvider, Type type)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            if (serviceProvider == null)
+            {
+                throw new ArgumentNullException(nameof(serviceProvider));
+            }
+
             Type = type ?? throw new ArgumentNullException(nameof(type));
 
-            _dataAccessorProvider = _serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             _childProperties = new Lazy<IImmutableList<ChildPropertyInfo>>(GetChildProperties);
             _modifiableProperties = new Lazy<IImmutableList<ModifiablePropertyInfo>>(GetModifiableProperties);
             _constructorBinding = new Lazy<ConstructorParameterBinding>(() =>
             {
                 var constructors = from c in Type.GetConstructors()
-                                   select new ConstructorParameterBinding(_serviceProvider, c);
+                                   select new ConstructorParameterBinding(serviceProvider, c);
                 return serviceProvider.GetRequiredService<IConstructorSelector>().SelectConstructorBinding(Type, constructors.ToArray());
             });
         }
@@ -73,70 +74,6 @@ namespace GitObjectDb.Reflection
              select new ModifiablePropertyInfo(p))
             .ToImmutableList();
 
-        IMetadataObject CloneSubTree(IMetadataObject @object, PredicateReflector reflector)
-        {
-            if (@object == null)
-            {
-                throw new ArgumentNullException(nameof(@object));
-            }
-
-            return ConstructorParameterBinding.Cloner(
-                @object,
-                reflector,
-                (name, children, @new, childDataAccessor) =>
-                {
-                    var childChanges = reflector.TryGetChildChanges(name);
-                    return children.Clone(
-                        forceVisit: false,
-                        update: n => n == @object ?
-                                @new :
-                                childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
-                        added: childChanges?.Where(c => c.Type == PredicateReflector.ChildChangeType.Add).Select(c => c.Child) ?? Enumerable.Empty<IMetadataObject>(),
-                        deleted: childChanges?.Where(c => c.Type == PredicateReflector.ChildChangeType.Delete).Select(c => c.Child) ?? Enumerable.Empty<IMetadataObject>());
-                });
-        }
-
-        ILazyChildren RecursiveClone(string name, ILazyChildren children, IMetadataObject @new, IModelDataAccessor childDataAccessor) =>
-            children.Clone(forceVisit: false,
-                update: n => childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
-                added: null,
-                deleted: null);
-
-        void CreateNewParentTree(IMetadataObject old, IMetadataObject @new)
-        {
-            if (old is AbstractInstance)
-            {
-                return;
-            }
-            if (old == null)
-            {
-                throw new ArgumentNullException(nameof(old));
-            }
-            if (@new == null)
-            {
-                throw new ArgumentNullException(nameof(@new));
-            }
-            if (old.Parent == null)
-            {
-                throw new NotSupportedException($"Object '{old}' does not have any parent.");
-            }
-
-            var parentDataAccessor = _dataAccessorProvider.Get(old.Parent.GetType());
-            var newParent = parentDataAccessor.ConstructorParameterBinding.Cloner(
-                old.Parent,
-                PredicateReflector.Empty,
-                (name, children, _, childDataAccessor) =>
-                    children.Clone(forceVisit: false,
-                        update: n => n == old ?
-                                @new :
-                                childDataAccessor.ConstructorParameterBinding.Cloner(n, PredicateReflector.Empty, RecursiveClone),
-                        added: null,
-                        deleted: null));
-            @new.AttachToParent(newParent);
-
-            CreateNewParentTree(old.Parent, newParent);
-        }
-
         /// <inheritdoc />
         public IMetadataObject With(IMetadataObject source, Expression predicate)
         {
@@ -149,9 +86,56 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(predicate));
             }
 
-            var result = CloneSubTree(source, new PredicateReflector(predicate));
-            CreateNewParentTree(source, result);
-            return result;
+            var predicateReflector = new PredicateReflector(source, predicate);
+            var newInstance = DeepClone(
+                source.Instance,
+                predicateReflector.ProcessArgument,
+                predicateReflector.GetChildChanges,
+                n => n.IsParentOf(source));
+            return newInstance.TryGetFromGitPath(source.GetDataPath());
+        }
+
+        /// <inheritdoc />
+        public IInstance DeepClone(IInstance instance, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IMetadataObject, bool> mustForceVisit)
+        {
+            if (instance == null)
+            {
+                throw new ArgumentNullException(nameof(instance));
+            }
+
+            return (IInstance)DeepClone((IMetadataObject)instance, processArgument, childChangesGetter, mustForceVisit);
+        }
+
+        IMetadataObject DeepClone(IMetadataObject node, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IMetadataObject, bool> mustForceVisit)
+        {
+            if (node == null)
+            {
+                throw new ArgumentNullException(nameof(node));
+            }
+            if (processArgument == null)
+            {
+                throw new ArgumentNullException(nameof(processArgument));
+            }
+            if (childChangesGetter == null)
+            {
+                throw new ArgumentNullException(nameof(childChangesGetter));
+            }
+            if (mustForceVisit == null)
+            {
+                throw new ArgumentNullException(nameof(mustForceVisit));
+            }
+
+            ILazyChildren ProcessChildren(ChildPropertyInfo childProperty, ILazyChildren children, IMetadataObject @new, IModelDataAccessor childDataAccessor)
+            {
+                var childChanges = childChangesGetter.Invoke(node, childProperty);
+                return children.Clone(
+                    forceVisit: mustForceVisit(children.Parent),
+                    update: n => DeepClone(n, processArgument, childChangesGetter, mustForceVisit),
+                    added: childChanges.Additions,
+                    deleted: childChanges.Deletions);
+            }
+
+            return node.DataAccessor.ConstructorParameterBinding.Cloner(node, processArgument, ProcessChildren);
         }
     }
 }

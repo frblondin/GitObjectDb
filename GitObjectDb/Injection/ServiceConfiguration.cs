@@ -1,5 +1,6 @@
 using GitObjectDb.Compare;
 using GitObjectDb.Git;
+using GitObjectDb.Git.Hooks;
 using GitObjectDb.Migrations;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
@@ -33,6 +34,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         static IServiceCollection ConfigureServices(IServiceCollection source)
         {
+            source.AddSingleton<GitHooks>();
             source.AddSingleton<IInstanceLoader, InstanceLoader>();
             source.AddSingleton<IModelDataAccessorProvider, ModelDataAccessorProvider>();
             source.AddSingleton<IConstructorSelector, MostParametersConstructorSelector>();
@@ -42,8 +44,8 @@ namespace Microsoft.Extensions.DependencyInjection
             source.AddSingleton<IRepositoryProvider, RepositoryProvider>();
             source.AddSingleton<IModelDataAccessorProvider>(s =>
                 new CachedModelDataAccessorProvider(new ModelDataAccessorProvider(s)));
-            source.AddSingleton<Func<RepositoryDescription, ObjectId, string, IMetadataTreeMerge>>(s =>
-                (description, commitId, branchName) => new MetadataTreeMerge(s, description, commitId, branchName));
+            source.AddSingleton<Func<RepositoryDescription, IInstance, string, IMetadataTreeMerge>>(s =>
+                (description, instance, branchName) => new MetadataTreeMerge(s, description, instance, branchName));
             source.AddSingleton<Func<RepositoryDescription, MigrationScaffolder>>(s =>
                 description => new MigrationScaffolder(s, description));
             return source;

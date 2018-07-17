@@ -11,18 +11,19 @@ namespace GitObjectDb.Compare
     [DebuggerDisplay("Status = {Status}, Old = {Old?.Id}, New = {New?.Id}")]
     public class MetadataTreeEntryChanges
     {
-        readonly TreeEntryChanges _entryChanges;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="MetadataTreeEntryChanges"/> class.
         /// </summary>
-        /// <param name="entryChanges">The entry changes.</param>
+        /// <param name="path">The path.</param>
+        /// <param name="status">The change type.</param>
         /// <param name="old">The old value.</param>
         /// <param name="new">The new value.</param>
         /// <exception cref="ArgumentNullException">old</exception>
-        public MetadataTreeEntryChanges(TreeEntryChanges entryChanges, IMetadataObject old = null, IMetadataObject @new = null)
+        public MetadataTreeEntryChanges(string path, ChangeKind status, IMetadataObject old = null, IMetadataObject @new = null)
         {
-            _entryChanges = entryChanges ?? throw new ArgumentNullException(nameof(entryChanges));
+            Path = path ?? throw new ArgumentNullException(nameof(path));
+            Status = status;
+
             if (old == null && @new == null)
             {
                 throw new ArgumentNullException($"{nameof(old)} and {nameof(@new)}");
@@ -45,11 +46,11 @@ namespace GitObjectDb.Compare
         /// <summary>
         /// Gets the new path.
         /// </summary>
-        public string Path => _entryChanges.Path;
+        public string Path { get; }
 
         /// <summary>
         /// Gets the type of change.
         /// </summary>
-        public ChangeKind Status => _entryChanges.Status;
+        public ChangeKind Status { get; }
     }
 }

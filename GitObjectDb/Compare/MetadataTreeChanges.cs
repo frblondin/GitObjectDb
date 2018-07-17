@@ -1,10 +1,12 @@
 using GitObjectDb.Models;
+using LibGit2Sharp;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 
 namespace GitObjectDb.Compare
 {
@@ -12,16 +14,16 @@ namespace GitObjectDb.Compare
     /// Holds the result of a diff between two trees.
     /// </summary>
     [DebuggerDisplay("+{Added.Count} ~{Modified.Count} -{Deleted.Count}")]
-    public class MetadataTreeChanges : IEnumerable<MetadataTreeEntryChanges>
+    public class MetadataTreeChanges : IReadOnlyList<MetadataTreeEntryChanges>
     {
+        readonly IImmutableList<MetadataTreeEntryChanges> _changes;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MetadataTreeChanges"/> class.
         /// </summary>
-        /// <param name="oldInstance">The old instance.</param>
         /// <param name="newInstance">The new instance.</param>
-        /// <param name="added">The list of <see cref="MetadataTreeEntryChanges" /> that have been been added.</param>
-        /// <param name="modified">The list of <see cref="MetadataTreeEntryChanges" /> that have been been modified.</param>
-        /// <param name="deleted">The list of <see cref="MetadataTreeEntryChanges" /> that have been been deleted.</param>
+        /// <param name="changed">The list of <see cref="MetadataTreeEntryChanges" /> that have been been changed.</param>
+        /// <param name="oldInstance">The old instance.</param>
         /// <exception cref="ArgumentNullException">
         /// modified
         /// or
@@ -29,13 +31,11 @@ namespace GitObjectDb.Compare
         /// or
         /// deleted
         /// </exception>
-        public MetadataTreeChanges(IInstance oldInstance, IInstance newInstance, IImmutableList<MetadataTreeEntryChanges> added, IImmutableList<MetadataTreeEntryChanges> modified, IImmutableList<MetadataTreeEntryChanges> deleted)
+        public MetadataTreeChanges(IInstance newInstance, IImmutableList<MetadataTreeEntryChanges> changed, IInstance oldInstance = null)
         {
-            OldInstance = oldInstance ?? throw new ArgumentNullException(nameof(oldInstance));
             NewInstance = newInstance ?? throw new ArgumentNullException(nameof(newInstance));
-            Modified = modified ?? throw new ArgumentNullException(nameof(modified));
-            Added = added ?? throw new ArgumentNullException(nameof(added));
-            Deleted = deleted ?? throw new ArgumentNullException(nameof(deleted));
+            _changes = changed ?? throw new ArgumentNullException(nameof(changed));
+            OldInstance = oldInstance;
         }
 
         /// <summary>
@@ -51,23 +51,56 @@ namespace GitObjectDb.Compare
         /// <summary>
         /// Gets the list of <see cref="MetadataTreeEntryChanges" /> that have been been added.
         /// </summary>
-        public IImmutableList<MetadataTreeEntryChanges> Added { get; }
+        public IEnumerable<MetadataTreeEntryChanges> Added => _changes.Where(c => c.Status == ChangeKind.Added);
 
         /// <summary>
         /// Gets the list of <see cref="MetadataTreeEntryChanges" /> that have been been modified.
         /// </summary>
-        public IImmutableList<MetadataTreeEntryChanges> Modified { get; }
+        public IEnumerable<MetadataTreeEntryChanges> Modified => _changes.Where(c => c.Status == ChangeKind.Modified);
 
         /// <summary>
         /// Gets the list of <see cref="MetadataTreeEntryChanges" /> that have been been deleted.
         /// </summary>
-        public IImmutableList<MetadataTreeEntryChanges> Deleted { get; }
+        public IEnumerable<MetadataTreeEntryChanges> Deleted => _changes.Where(c => c.Status == ChangeKind.Deleted);
 
         /// <inheritdoc/>
-        public IEnumerator<MetadataTreeEntryChanges> GetEnumerator() =>
-            Added.Concat(Modified).Concat(Deleted).GetEnumerator();
+        public int Count => _changes.Count;
+
+        /// <inheritdoc/>
+        public MetadataTreeEntryChanges this[int index] => _changes[index];
+
+        /// <inheritdoc/>
+        public IEnumerator<MetadataTreeEntryChanges> GetEnumerator() => _changes.GetEnumerator();
 
         /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        /// <summary>
+        /// Updates the tree definition.
+        /// </summary>
+        /// <param name="repository">The repository.</param>
+        /// <param name="definition">The definition.</param>
+        internal void UpdateTreeDefinition(IRepository repository, TreeDefinition definition)
+        {
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
+            }
+            if (definition == null)
+            {
+                throw new ArgumentNullException(nameof(definition));
+            }
+
+            var buffer = new StringBuilder();
+            foreach (var change in Modified.Concat(Added))
+            {
+                change.New.ToJson(buffer);
+                definition.Add(change.Path, repository.CreateBlob(buffer), Mode.NonExecutableFile);
+            }
+            foreach (var deleted in Deleted)
+            {
+                definition.Remove(deleted.Path);
+            }
+        }
     }
 }

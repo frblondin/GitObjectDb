@@ -50,7 +50,7 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(branchName));
             }
 
-            return _metadataTreeMergeFactory(_repositoryDescription, CommitId, branchName);
+            return _metadataTreeMergeFactory(_repositoryDescription, this, branchName);
         }
     }
 }

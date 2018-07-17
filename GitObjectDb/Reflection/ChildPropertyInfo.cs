@@ -2,6 +2,7 @@ using GitObjectDb.Attributes;
 using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -11,6 +12,7 @@ namespace GitObjectDb.Reflection
     /// <summary>
     /// Provides information to manage child properties.
     /// </summary>
+    [DebuggerDisplay("Name = {Name}, ItemType = {ItemType}")]
     public class ChildPropertyInfo
     {
         readonly PropertyNameAttribute _childPropertyNameAttribute;

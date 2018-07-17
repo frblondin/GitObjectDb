@@ -46,10 +46,11 @@ namespace GitObjectDb.Tests.Models
 
             // Assert
             var changes = computeTreeChangesFactory(GetRepositoryDescription())
-                .Compare(typeof(Instance), commitC.Id, mergeCommit);
-            Assert.That(changes.Modified, Has.Count.EqualTo(1));
-            Assert.That(changes.Modified[0].Old.Name, Is.EqualTo(page.Name));
-            Assert.That(changes.Modified[0].New.Name, Is.EqualTo(updateName.Name));
+                .Compare(typeof(Instance), commitC, mergeCommit);
+            Assert.That(changes, Has.Count.EqualTo(1));
+            Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Modified));
+            Assert.That(changes[0].Old.Name, Is.EqualTo(page.Name));
+            Assert.That(changes[0].New.Name, Is.EqualTo(updateName.Name));
         }
 
         [Test]
@@ -76,9 +77,10 @@ namespace GitObjectDb.Tests.Models
 
             // Assert
             var changes = computeTreeChangesFactory(GetRepositoryDescription())
-                .Compare(typeof(Instance), commitC.Id, mergeCommit);
-            Assert.That(changes.Added, Has.Count.EqualTo(1));
-            Assert.That(changes.Added[0].New.Name, Is.EqualTo("new field"));
+                .Compare(typeof(Instance), commitC, mergeCommit);
+            Assert.That(changes, Has.Count.EqualTo(1));
+            Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Added));
+            Assert.That(changes[0].New.Name, Is.EqualTo("new field"));
         }
 
         [Test]
@@ -105,9 +107,10 @@ namespace GitObjectDb.Tests.Models
 
             // Assert
             var changes = computeTreeChangesFactory(GetRepositoryDescription())
-                .Compare(typeof(Instance), commitC.Id, mergeCommit);
-            Assert.That(changes.Deleted, Has.Count.EqualTo(1));
-            Assert.That(changes.Deleted[0].Old.Id, Is.EqualTo(page.Fields[1].Id));
+                .Compare(typeof(Instance), commitC, mergeCommit);
+            Assert.That(changes, Has.Count.EqualTo(1));
+            Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Deleted));
+            Assert.That(changes[0].Old.Id, Is.EqualTo(page.Fields[1].Id));
         }
 
         [Test]
@@ -127,7 +130,7 @@ namespace GitObjectDb.Tests.Models
             // B, C
             sut.Branch("newBranch");
             var updatedInstance = sut.With(i => i.Migrations.Add(fixture.Create<Migration>()));
-            var commitB = sut.Commit(updatedInstance.Instance, signature, message); // B
+            sut.Commit(updatedInstance.Instance, signature, message); // B
             var loaded = loader.LoadFrom<Instance>(GetRepositoryDescription());
             var updateName = loaded.Applications[1].Pages[1].With(p => p.Name == "modified name");
             loaded.Commit(updateName.Instance, signature, message); // C
@@ -135,19 +138,19 @@ namespace GitObjectDb.Tests.Models
             // D
             sut.Checkout("master");
             var updateDescription = page.With(p => p.Description == "modified description");
-            var commitC = sut.Commit(updateDescription.Instance, signature, message); // D
+            sut.Commit(updateDescription.Instance, signature, message); // D
             loaded = loader.LoadFrom<Instance>(GetRepositoryDescription());
 
             // E
             var mergeStep1 = loaded.Merge("newBranch");
             Assert.That(mergeStep1.IsPartialMerge, Is.True);
-            var mergeCommit1 = mergeStep1.Apply(signature); // E
+            mergeStep1.Apply(signature); // E
 
             // F
             loaded = loader.LoadFrom<Instance>(GetRepositoryDescription());
             var mergeStep2 = loaded.Merge("newBranch");
             Assert.That(mergeStep2.IsPartialMerge, Is.False);
-            var mergeCommit2 = mergeStep2.Apply(signature); // F
+            mergeStep2.Apply(signature); // F
         }
 
         [Test]
@@ -200,10 +203,11 @@ namespace GitObjectDb.Tests.Models
 
             // Assert
             var changes = computeTreeChangesFactory(GetRepositoryDescription())
-                .Compare(typeof(Instance), commitC.Id, mergeCommit);
-            Assert.That(changes.Modified, Has.Count.EqualTo(1));
-            Assert.That(changes.Modified[0].Old.Name, Is.EqualTo("yet again modified name"));
-            Assert.That(changes.Modified[0].New.Name, Is.EqualTo("merged name"));
+                .Compare(typeof(Instance), commitC, mergeCommit);
+            Assert.That(changes, Has.Count.EqualTo(1));
+            Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Modified));
+            Assert.That(changes[0].Old.Name, Is.EqualTo("yet again modified name"));
+            Assert.That(changes[0].New.Name, Is.EqualTo("merged name"));
         }
     }
 }

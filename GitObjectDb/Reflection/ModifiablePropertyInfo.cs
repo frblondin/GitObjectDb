@@ -2,6 +2,7 @@ using GitObjectDb.Attributes;
 using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -10,6 +11,7 @@ namespace GitObjectDb.Reflection
     /// <summary>
     /// Provides information to properties decorated with the <see cref="ModifiableAttribute"/> attribute.
     /// </summary>
+    [DebuggerDisplay("Name = {Name}")]
     public class ModifiablePropertyInfo
     {
         /// <summary>

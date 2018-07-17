@@ -29,7 +29,7 @@ namespace GitObjectDb.Compare
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
         /// <param name="repositoryDescription">The repository description.</param>
-        /// <param name="commitId">The commit identifier.</param>
+        /// <param name="instance">The instance on which to apply the merge.</param>
         /// <param name="branchName">Name of the branch.</param>
         /// <exception cref="ArgumentNullException">
         /// serviceProvider
@@ -42,11 +42,12 @@ namespace GitObjectDb.Compare
         /// or
         /// merger
         /// </exception>
-        public MetadataTreeMerge(IServiceProvider serviceProvider, RepositoryDescription repositoryDescription, ObjectId commitId, string branchName)
+        public MetadataTreeMerge(IServiceProvider serviceProvider, RepositoryDescription repositoryDescription, IInstance instance, string branchName)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
-            CommitId = commitId ?? throw new ArgumentNullException(nameof(commitId));
+            Instance = instance ?? throw new ArgumentNullException(nameof(instance));
+            CommitId = instance.CommitId ?? throw new NotSupportedException("Instance has no commit.");
             BranchName = branchName ?? throw new ArgumentNullException(nameof(branchName));
 
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
@@ -55,6 +56,11 @@ namespace GitObjectDb.Compare
 
             Initialize();
         }
+
+        /// <summary>
+        /// Gets the instance.
+        /// </summary>
+        public IInstance Instance { get; }
 
         /// <inheritdoc/>
         public ObjectId CommitId { get; }
@@ -70,6 +76,14 @@ namespace GitObjectDb.Compare
 
         /// <inheritdoc/>
         public Migrator RequiredMigrator { get; private set; }
+
+        /// <summary>
+        /// Gets all impacted paths.
+        /// </summary>
+        internal IEnumerable<string> AllImpactedPaths =>
+            ModifiedChunks.Select(c => c.Path)
+            .Union(AddedObjects.Select(a => a.Path), StringComparer.OrdinalIgnoreCase)
+            .Union(DeletedObjects.Select(d => d.Path), StringComparer.OrdinalIgnoreCase);
 
         /// <inheritdoc/>
         public IList<MetadataTreeMergeChunkChange> ModifiedChunks { get; } = new List<MetadataTreeMergeChunkChange>();

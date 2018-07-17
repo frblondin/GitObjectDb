@@ -30,14 +30,13 @@ namespace GitObjectDb.Tests.Models
 
             // Act
             var changes = computeTreeChangesFactory(GetRepositoryDescription(inMemoryBackend))
-                .Compare(typeof(Instance), originalCommit.Id, commit.Id);
+                .Compare(typeof(Instance), originalCommit, commit);
 
             // Assert
-            Assert.That(changes.Added, Is.Empty);
-            Assert.That(changes.Deleted, Is.Empty);
-            Assert.That(changes.Modified, Has.Count.EqualTo(1));
-            Assert.That(changes.Modified[0].Old.Name, Is.EqualTo(page.Name));
-            Assert.That(changes.Modified[0].New.Name, Is.EqualTo(modifiedPage.Name));
+            Assert.That(changes, Has.Count.EqualTo(1));
+            Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Modified));
+            Assert.That(changes[0].Old.Name, Is.EqualTo(page.Name));
+            Assert.That(changes[0].New.Name, Is.EqualTo(modifiedPage.Name));
         }
 
         [Test]
@@ -52,14 +51,13 @@ namespace GitObjectDb.Tests.Models
 
             // Act
             var changes = computeTreeChangesFactory(GetRepositoryDescription(inMemoryBackend))
-                .Compare(typeof(Instance), originalCommit.Id, commit.Id);
+                .Compare(typeof(Instance), originalCommit, commit);
 
             // Assert
-            Assert.That(changes.Modified, Is.Empty);
-            Assert.That(changes.Deleted, Is.Empty);
-            Assert.That(changes.Added, Has.Count.EqualTo(1));
-            Assert.That(changes.Added[0].Old, Is.Null);
-            Assert.That(changes.Added[0].New.Name, Is.EqualTo(field.Name));
+            Assert.That(changes, Has.Count.EqualTo(1));
+            Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Added));
+            Assert.That(changes[0].Old, Is.Null);
+            Assert.That(changes[0].New.Name, Is.EqualTo(field.Name));
         }
 
         [Test]
@@ -74,14 +72,13 @@ namespace GitObjectDb.Tests.Models
 
             // Act
             var changes = computeTreeChangesFactory(GetRepositoryDescription(inMemoryBackend))
-                .Compare(typeof(Instance), originalCommit.Id, commit.Id);
+                .Compare(typeof(Instance), originalCommit, commit);
 
             // Assert
-            Assert.That(changes.Modified, Is.Empty);
-            Assert.That(changes.Added, Is.Empty);
-            Assert.That(changes.Deleted, Has.Count.EqualTo(1));
-            Assert.That(changes.Deleted[0].New, Is.Null);
-            Assert.That(changes.Deleted[0].Old.Name, Is.EqualTo(field.Name));
+            Assert.That(changes, Has.Count.EqualTo(1));
+            Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Deleted));
+            Assert.That(changes[0].New, Is.Null);
+            Assert.That(changes[0].Old.Name, Is.EqualTo(field.Name));
         }
 
         [Test]
@@ -96,12 +93,12 @@ namespace GitObjectDb.Tests.Models
 
             // Act
             var changes = computeTreeChangesFactory(GetRepositoryDescription(inMemoryBackend))
-                .Compare(typeof(Instance), originalCommit.Id, commit.Id);
+                .Compare(typeof(Instance), originalCommit, commit);
 
             // Assert
             Assert.That(changes.Modified, Is.Empty);
             Assert.That(changes.Added, Is.Empty);
-            Assert.That(changes.Deleted, Has.Count.EqualTo(MetadataCustomization.FieldPerPageCount + 1));
+            Assert.That(changes, Has.Count.EqualTo(MetadataCustomization.FieldPerPageCount + 1));
             var pageDeletion = changes.Deleted.FirstOrDefault(o => o.Old is Page);
             Assert.That(pageDeletion, Is.Not.Null);
             Assert.That(pageDeletion.New, Is.Null);

@@ -24,8 +24,6 @@ namespace GitObjectDb.Models
         /// </summary>
         internal const string DebuggerDisplay = "Name = {Name}, Id = {Id}";
 
-        readonly IModelDataAccessor _dataAccessor;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="AbstractModel"/> class.
         /// </summary>
@@ -46,8 +44,8 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(serviceProvider));
             }
 
-            DataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
-            _dataAccessor = DataAccessorProvider.Get(GetType());
+            var dataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
+            DataAccessor = dataAccessorProvider.Get(GetType());
             if (id == Guid.Empty)
             {
                 throw new ArgumentNullException(nameof(id));
@@ -57,10 +55,8 @@ namespace GitObjectDb.Models
             Name = name ?? throw new ArgumentNullException(nameof(name));
         }
 
-        /// <summary>
-        /// Gets the data accessor provider.
-        /// </summary>
-        protected IModelDataAccessorProvider DataAccessorProvider { get; }
+        /// <inheritdoc />
+        public IModelDataAccessor DataAccessor { get; }
 
         /// <inheritdoc />
         [DataMember]
@@ -73,7 +69,7 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public IEnumerable<IMetadataObject> Children => _dataAccessor.ChildProperties.SelectMany(p => p.Accessor(this));
+        public IEnumerable<IMetadataObject> Children => DataAccessor.ChildProperties.SelectMany(p => p.Accessor(this));
 
         /// <inheritdoc />
         public IMetadataObject Parent { get; private set; }
@@ -103,8 +99,5 @@ namespace GitObjectDb.Models
 
             Parent = parent;
         }
-
-        /// <inheritdoc />
-        public IMetadataObject With(Expression predicate) => _dataAccessor.With(this, predicate);
     }
 }

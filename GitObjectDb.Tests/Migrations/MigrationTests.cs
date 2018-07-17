@@ -27,11 +27,11 @@ namespace GitObjectDb.Tests.Migrations
 
             // Act
             var migrationScaffolder = new MigrationScaffolder(serviceProvider, repositoryDescription);
-            var migrators = migrationScaffolder.Scaffold(sut.CommitId, commit.Id, MigrationMode.Upgrade);
+            var migrators = migrationScaffolder.Scaffold(sut.CommitId, commit, MigrationMode.Upgrade);
 
             // Assert
             Assert.That(migrators, Has.Count.EqualTo(1));
-            Assert.That(migrators[0].CommitId, Is.EqualTo(commit.Id));
+            Assert.That(migrators[0].CommitId, Is.EqualTo(commit));
             Assert.That(migrators[0].Mode, Is.EqualTo(MigrationMode.Upgrade));
             Assert.That(migrators[0].Migrations, Has.Count.EqualTo(1));
         }

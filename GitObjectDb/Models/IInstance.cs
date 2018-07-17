@@ -26,8 +26,8 @@ namespace GitObjectDb.Models
         /// <param name="path">The path.</param>
         /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="isBare">if set to <c>true</c> a bare Git repository will be created.</param>
-        /// <returns>The <see cref="Commit"/> of the new repository HEAD.</returns>
-        Commit SaveInNewRepository(Signature signature, string message, string path, RepositoryDescription repositoryDescription, bool isBare = false);
+        /// <returns>The commit identifier of the new repository HEAD.</returns>
+        ObjectId SaveInNewRepository(Signature signature, string message, string path, RepositoryDescription repositoryDescription, bool isBare = false);
 
         /// <summary>
         /// Commits all changes by comparing the current instance with a new one.
@@ -36,8 +36,8 @@ namespace GitObjectDb.Models
         /// <param name="signature">The signature.</param>
         /// <param name="message">The message.</param>
         /// <param name="options">The options.</param>
-        /// <returns>The <see cref="Commit"/> of the new repository HEAD.</returns>
-        Commit Commit(AbstractInstance newInstance, Signature signature, string message, CommitOptions options = null);
+        /// <returns>The commit identifier of the new repository HEAD.</returns>
+        ObjectId Commit(AbstractInstance newInstance, Signature signature, string message, CommitOptions options = null);
 
         /// <summary>
         /// Checkouts the specified branch name.

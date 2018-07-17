@@ -1,8 +1,11 @@
+using GitObjectDb.Compare;
 using GitObjectDb.Git;
+using GitObjectDb.Git.Hooks;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 
@@ -10,8 +13,6 @@ namespace GitObjectDb.Models
 {
     public partial class AbstractInstance
     {
-        readonly StringBuilder _jsonBuffer = new StringBuilder();
-
         /// <summary>
         /// The repository provider.
         /// </summary>
@@ -23,6 +24,7 @@ namespace GitObjectDb.Models
         internal RepositoryDescription _repositoryDescription;
 
         readonly IInstanceLoader _instanceLoader;
+        readonly GitHooks _hooks;
 
         /// <inheritdoc />
         public ObjectId CommitId { get; private set; }
@@ -39,7 +41,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public Commit SaveInNewRepository(Signature signature, string message, string path, RepositoryDescription repositoryDescription, bool isBare = false)
+        public ObjectId SaveInNewRepository(Signature signature, string message, string path, RepositoryDescription repositoryDescription, bool isBare = false)
         {
             if (signature == null)
             {
@@ -58,38 +60,17 @@ namespace GitObjectDb.Models
 
             return _repositoryProvider.Execute(repositoryDescription, repository =>
             {
-                var result = repository.Commit(AddMetadataObjectToCommit, message, signature, signature);
-                SetRepositoryData(repositoryDescription, result.Id);
-                return result;
-            });
-        }
+                var all = this.Flatten().Select(o => new MetadataTreeEntryChanges(o.GetDataPath(), ChangeKind.Added, @new: o));
+                var changes = new MetadataTreeChanges(this, all.ToImmutableList());
+                var result = repository.CommitChanges(changes, message, signature, signature, hooks: _hooks);
 
-        void AddMetadataObjectToCommit(IRepository repository, TreeDefinition tree) =>
-            AddNodeToCommit(repository, tree, new Stack<string>(), this);
-
-        void AddNodeToCommit(IRepository repository, TreeDefinition tree, Stack<string> stack, IMetadataObject node)
-        {
-            var path = stack.ToDataPath();
-            node.ToJson(_jsonBuffer);
-            tree.Add(path, repository.CreateBlob(_jsonBuffer), Mode.NonExecutableFile);
-            AddNodeChildrenToCommit(repository, tree, stack, node);
-        }
-
-        void AddNodeChildrenToCommit(IRepository repository, TreeDefinition tree, Stack<string> stack, IMetadataObject node)
-        {
-            var dataAccessor = DataAccessorProvider.Get(node.GetType());
-            foreach (var childProperty in dataAccessor.ChildProperties)
-            {
-                var children = childProperty.Accessor(node);
-                stack.Push(childProperty.Name);
-                foreach (var child in children)
+                if (result != null)
                 {
-                    stack.Push(child.Id.ToString());
-                    AddNodeToCommit(repository, tree, stack, child);
-                    stack.Pop();
+                    SetRepositoryData(repositoryDescription, result.Id);
                 }
-                stack.Pop();
-            }
+
+                return result?.Id;
+            });
         }
 
         /// <inheritdoc />
@@ -105,8 +86,7 @@ namespace GitObjectDb.Models
             IMetadataObject result = this;
             for (int i = 0; i < chunks.Length - 1 && result != null; i++)
             {
-                var dataAccessor = DataAccessorProvider.Get(result.GetType());
-                var propertyInfo = dataAccessor.ChildProperties.FirstOrDefault(
+                var propertyInfo = result.DataAccessor.ChildProperties.FirstOrDefault(
                     p => p.FolderName.Equals(chunks[i], StringComparison.OrdinalIgnoreCase));
                 if (propertyInfo == null)
                 {

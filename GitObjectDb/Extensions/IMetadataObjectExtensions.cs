@@ -30,7 +30,7 @@ namespace GitObjectDb.Models
         public static TModel With<TModel>(this TModel source, Expression<Predicate<TModel>> predicate = null)
             where TModel : IMetadataObject
         {
-            return (TModel)source.With(predicate);
+            return (TModel)source.DataAccessor.With(source, predicate);
         }
 
         /// <summary>
@@ -52,6 +52,37 @@ namespace GitObjectDb.Models
             }
 
             return node;
+        }
+
+        /// <summary>
+        /// Determines whether this node is a parent of the specified instance.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="instance">The instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the node is a parent of the specified instance; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsParentOf(this IMetadataObject source, IMetadataObject instance)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+            if (instance == null)
+            {
+                throw new ArgumentNullException(nameof(instance));
+            }
+
+            var node = instance.Parent;
+            while (node != null)
+            {
+                if (node == source)
+                {
+                    return true;
+                }
+                node = node.Parent;
+            }
+            return false;
         }
 
         /// <summary>
@@ -97,15 +128,26 @@ namespace GitObjectDb.Models
         }
 
         /// <summary>
+        /// Gets the folder path containing the data file for a node.
+        /// </summary>
+        /// <param name="source">The node.</param>
+        /// <returns>A <see cref="string"/> value containing the path to the folder.</returns>
+        internal static string GetFolderPath(this IMetadataObject source)
+        {
+            var result = new StringBuilder();
+            GetFolderPath(source, result);
+            return result.ToString();
+        }
+
+        /// <summary>
         /// Gets the path to the data file for a node.
         /// </summary>
         /// <param name="source">The node.</param>
-        /// <param name="dataAccessorProvider">The data accessor provider.</param>
         /// <returns>A <see cref="string"/> value containing the path to the data file.</returns>
-        internal static string ToDataPath(this IMetadataObject source, IModelDataAccessorProvider dataAccessorProvider)
+        internal static string GetDataPath(this IMetadataObject source)
         {
             var result = new StringBuilder();
-            ToDataPath(source, dataAccessorProvider, result);
+            GetFolderPath(source, result);
             if (result.Length > 0)
             {
                 result.Append('/');
@@ -114,18 +156,23 @@ namespace GitObjectDb.Models
             return result.ToString();
         }
 
-        static void ToDataPath(IMetadataObject node, IModelDataAccessorProvider dataAccessorProvider, StringBuilder builder)
+        static void GetFolderPath(IMetadataObject node, StringBuilder builder)
         {
             if (node.Parent != null)
             {
-                ToDataPath(node.Parent, dataAccessorProvider, builder);
-                var dataAccessor = dataAccessorProvider.Get(node.Parent.GetType());
-                var childProperty = dataAccessor.ChildProperties.Single(p => p.ItemType.IsInstanceOfType(node));
-                builder.Append('/');
+                GetFolderPath(node.Parent, builder);
+                var childProperty = node.Parent.DataAccessor.ChildProperties.Single(p => p.ItemType.IsInstanceOfType(node));
+                if (builder.Length > 0)
+                {
+                    builder.Append('/');
+                }
                 builder.Append(childProperty.Name);
                 builder.Append('/');
             }
-            builder.Append(node.Id);
+            if (!(node is IInstance))
+            {
+                builder.Append(node.Id);
+            }
         }
 
         /// <summary>

@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 namespace GitObjectDb.Tests.Git
@@ -59,8 +60,16 @@ namespace GitObjectDb.Tests.Git
                 fixture.Register<AbstractModel>(() => fixture.Create<Instance>());
                 fixture.Inject<ConstructorParameterBinding.ChildProcessor>((name, children, @new, dataAccessor) => children);
                 fixture.Inject<ConstructorParameterBinding.Clone>((@object, predicateReflector, processor) => @object);
+                CustomizeIMetadataObject(fixture);
                 CustomizeGitObjects(fixture);
                 CustomizeJsonObjects(fixture);
+            }
+
+            static void CustomizeIMetadataObject(IFixture fixture)
+            {
+                var metadataObject = Substitute.For<IMetadataObject>();
+                metadataObject.Parent.Returns(default(IMetadataObject));
+                fixture.Inject(metadataObject);
             }
 
             static void CustomizeGitObjects(IFixture fixture)
@@ -113,7 +122,8 @@ namespace GitObjectDb.Tests.Git
             {
                 var methodInvokeCommand = TryGetCommand<MethodInvokeCommand>(command);
                 return methodInvokeCommand != null &&
-                    (methodInvokeCommand.ParameterInfo.IsOptional ||
+                    (((MethodBase)methodInvokeCommand.ParameterInfo.Member).IsSpecialName ||
+                     methodInvokeCommand.ParameterInfo.IsOptional ||
                      Attribute.IsDefined(methodInvokeCommand.ParameterInfo.Member, typeof(ExcludeFromGuardForNullAttribute)) ||
                      ExcludeType(methodInvokeCommand.ParameterInfo.Member.ReflectedType));
             }

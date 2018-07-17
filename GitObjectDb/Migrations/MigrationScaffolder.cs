@@ -52,6 +52,11 @@ namespace GitObjectDb.Migrations
         /// <returns>The <see cref="Migrator"/> used to apply migrations.</returns>
         public IImmutableList<Migrator> Scaffold(ObjectId start, ObjectId end, MigrationMode mode)
         {
+            if (mode == MigrationMode.Downgrade)
+            {
+                throw new NotImplementedException(MigrationMode.Downgrade.ToString());
+            }
+
             return _repositoryProvider.Execute(_repositoryDescription, repository =>
             {
                 var log = repository.Commits.QueryBy(new CommitFilter
