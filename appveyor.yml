@@ -9,16 +9,27 @@ init:
 - cmd: git config --global core.autocrlf true
 nuget:
   project_feed: true
+environment:
+  sonarcloudtoken:
+    secure: JA/uVC3EvWgRnDuc5anaS1PMfRCxGNme+jAUP8x4W9qOKp+yhQWnn2gSlTvESn7y
+  github_auth_token:
+    secure: FrT2s5duJDHDcTflCfUMFf6LNAQxjfGrgBX5bNtzKTPaehqSE+CjYL5+VH/5Yfj0
 before_build:
-- cmd: >-
-    dotnet --version
-
-    nuget restore
-build:
-  parallel: true
-  verbosity: minimal
-after_test:
-- ps: >-
-    dotnet pack GitObjectDb --no-build /p:Version="$ENV:APPVEYOR_BUILD_VERSION" -o ..\Artifacts
-
-    Get-ChildItem Artifacts\*.nupkg | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
+  - dotnet --version
+  - dotnet restore
+  - choco install "msbuild-sonarqube-runner" -y
+build_script:
+  - ps: |
+      if ($env:APPVEYOR_PULL_REQUEST_NUMBER) {
+        SonarScanner.MSBuild.exe begin /k:"GitObjectDb" /d:sonar.organization="frblondin-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$ENV:sonarcloudtoken" /d:sonar.cs.opencover.reportsPaths="$ENV:CD\coverage\coverage.opencover.xml" /d:"sonar.analysis.mode=preview" /d:"sonar.github.pullRequest=$env:APPVEYOR_PULL_REQUEST_NUMBER" /d:"sonar.github.repository=https://github.com/frblondin/GitObjectDb" /d:"sonar.github.oauth=$ENV:github_auth_token"
+      } Else {
+        SonarScanner.MSBuild.exe begin /k:"GitObjectDb" /d:sonar.organization="frblondin-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$ENV:sonarcloudtoken" /d:sonar.cs.opencover.reportsPaths="$ENV:CD\coverage\coverage.opencover.xml"
+      }
+  - dotnet build GitObjectDb.sln --configuration Release /p:SourceLinkCreate=true /p:IncludeSymbols=true /p:IncludeSource=true /v:n
+  - dotnet test GitObjectDb.Tests\GitObjectDb.Tests.csproj /p:CollectCoverage=true --no-build --configuration Release /p:CoverletOutput=../coverage/coverage.opencover.xml /p:CoverletOutputFormat=opencover
+  - SonarScanner.MSBuild.exe end /d:"sonar.login=%sonarcloudtoken%"
+  - ps: |
+      if (-Not $env:APPVEYOR_PULL_REQUEST_NUMBER) {
+        dotnet pack GitObjectDb --no-build --configuration Release /p:Version="$ENV:APPVEYOR_BUILD_VERSION" -o ..\Artifacts --include-symbols --include-source
+        Get-ChildItem Artifacts\*.nupkg | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
+      }
