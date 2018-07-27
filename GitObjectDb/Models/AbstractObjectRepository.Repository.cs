@@ -41,7 +41,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public ObjectId SaveInNewRepository(Signature signature, string message, string path, RepositoryDescription repositoryDescription, bool isBare = false)
+        public ObjectId SaveInNewRepository(Signature signature, string message, RepositoryDescription repositoryDescription, bool isBare = false)
         {
             if (signature == null)
             {
@@ -56,7 +56,7 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(repositoryDescription));
             }
 
-            LibGit2Sharp.Repository.Init(path, isBare);
+            LibGit2Sharp.Repository.Init(repositoryDescription.Path, isBare);
 
             return _repositoryProvider.Execute(repositoryDescription, repository =>
             {

@@ -23,11 +23,10 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="signature">The signature.</param>
         /// <param name="message">The message.</param>
-        /// <param name="path">The path.</param>
         /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="isBare">if set to <c>true</c> a bare Git repository will be created.</param>
         /// <returns>The commit identifier of the new repository HEAD.</returns>
-        ObjectId SaveInNewRepository(Signature signature, string message, string path, RepositoryDescription repositoryDescription, bool isBare = false);
+        ObjectId SaveInNewRepository(Signature signature, string message, RepositoryDescription repositoryDescription, bool isBare = false);
 
         /// <summary>
         /// Commits all changes by comparing the current instance with a new one.

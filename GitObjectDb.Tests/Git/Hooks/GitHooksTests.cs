@@ -24,7 +24,7 @@ namespace GitObjectDb.Tests.Git.Hooks
             sut.CommitStarted += (_, args) => lastEvent = args;
 
             // Act
-            instance.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
+            instance.SaveInNewRepository(signature, message, GetRepositoryDescription(inMemoryBackend));
             var modifiedPage = page.With(p => p.Name == "modified");
             instance.Commit(modifiedPage.Repository, signature, message);
 
@@ -41,7 +41,7 @@ namespace GitObjectDb.Tests.Git.Hooks
             sut.CommitStarted += (_, args) => args.Cancel = true;
 
             // Act
-            var commit = instance.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
+            var commit = instance.SaveInNewRepository(signature, message, GetRepositoryDescription(inMemoryBackend));
 
             // Assert
             Assert.That(commit, Is.Null);
@@ -56,7 +56,7 @@ namespace GitObjectDb.Tests.Git.Hooks
             sut.CommitCompleted += (_, args) => lastEvent = args;
 
             // Act
-            instance.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
+            instance.SaveInNewRepository(signature, message, GetRepositoryDescription(inMemoryBackend));
             var modifiedPage = page.With(p => p.Name == "modified");
             var commit = instance.Commit(modifiedPage.Repository, signature, message);
 

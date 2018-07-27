@@ -24,7 +24,7 @@ namespace GitObjectDb.Tests.Models
         public void ResolveDiffsPageNameUpdate(ObjectRepository sut, Page page, Signature signature, string message, Func<RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
-            var originalCommit = sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
+            var originalCommit = sut.SaveInNewRepository(signature, message, GetRepositoryDescription(inMemoryBackend));
             var modifiedPage = page.With(p => p.Name == "modified");
             var commit = sut.Commit(modifiedPage.Repository, signature, message);
 
@@ -44,7 +44,7 @@ namespace GitObjectDb.Tests.Models
         public void ResolveDiffsFieldAddition(IServiceProvider serviceProvider, ObjectRepository sut, Page page, Signature signature, string message, Func<RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
-            var originalCommit = sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
+            var originalCommit = sut.SaveInNewRepository(signature, message, GetRepositoryDescription(inMemoryBackend));
             var field = new Field(serviceProvider, Guid.NewGuid(), "foo");
             var modifiedPage = page.With(p => p.Fields.Add(field));
             var commit = sut.Commit(modifiedPage.Repository, signature, message);
@@ -65,7 +65,7 @@ namespace GitObjectDb.Tests.Models
         public void ResolveDiffsFieldDeletion(ObjectRepository sut, Page page, Signature signature, string message, Func<RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
-            var originalCommit = sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
+            var originalCommit = sut.SaveInNewRepository(signature, message, GetRepositoryDescription(inMemoryBackend));
             var field = page.Fields[5];
             var modifiedPage = page.With(p => p.Fields.Delete(field));
             var commit = sut.Commit(modifiedPage.Repository, signature, message);
@@ -86,7 +86,7 @@ namespace GitObjectDb.Tests.Models
         public void ResolveDiffsPageDeletion(ObjectRepository sut, Application application, Signature signature, string message, Func<RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
-            var originalCommit = sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
+            var originalCommit = sut.SaveInNewRepository(signature, message, GetRepositoryDescription(inMemoryBackend));
             var page = application.Pages[1];
             var modifiedApplication = application.With(p => p.Pages.Delete(page));
             var commit = sut.Commit(modifiedApplication.Repository, signature, message);

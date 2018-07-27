@@ -32,7 +32,7 @@ namespace GitObjectDb.Tests.Models
 
             // Arrange
             var repositoryDescription = GetRepositoryDescription();
-            sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, repositoryDescription); // A
+            sut.SaveInNewRepository(signature, message, repositoryDescription); // A
 
             // Act
             sut.Branch("newBranch");
@@ -63,7 +63,7 @@ namespace GitObjectDb.Tests.Models
 
             // Arrange
             var repositoryDescription = GetRepositoryDescription();
-            sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, repositoryDescription); // A
+            sut.SaveInNewRepository(signature, message, repositoryDescription); // A
 
             // Act
             sut.Branch("newBranch");
@@ -93,7 +93,7 @@ namespace GitObjectDb.Tests.Models
 
             // Arrange
             var repositoryDescription = GetRepositoryDescription();
-            sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, repositoryDescription); // A
+            sut.SaveInNewRepository(signature, message, repositoryDescription); // A
 
             // Act
             sut.Branch("newBranch");
@@ -125,7 +125,7 @@ namespace GitObjectDb.Tests.Models
 
             // Arrange
             var repositoryDescription = GetRepositoryDescription();
-            sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, repositoryDescription); // A
+            sut.SaveInNewRepository(signature, message, repositoryDescription); // A
 
             // B, C
             sut.Branch("newBranch");
@@ -163,7 +163,7 @@ namespace GitObjectDb.Tests.Models
 
             // Arrange
             var repositoryDescription = GetRepositoryDescription();
-            sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, repositoryDescription); // A
+            sut.SaveInNewRepository(signature, message, repositoryDescription); // A
 
             // Act
             sut.Branch("newBranch");
@@ -186,7 +186,7 @@ namespace GitObjectDb.Tests.Models
 
             // Arrange
             var repositoryDescription = GetRepositoryDescription();
-            sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, repositoryDescription); // A
+            sut.SaveInNewRepository(signature, message, repositoryDescription); // A
 
             // Act
             sut.Branch("newBranch");

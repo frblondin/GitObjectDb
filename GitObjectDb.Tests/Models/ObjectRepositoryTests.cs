@@ -26,7 +26,7 @@ namespace GitObjectDb.Tests.Models
         public void CreateAndLoadRepository(IObjectRepositoryLoader loader, ObjectRepository sut, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Act
-            sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
+            sut.SaveInNewRepository(signature, message, GetRepositoryDescription(inMemoryBackend));
             var loaded = loader.LoadFrom<ObjectRepository>(GetRepositoryDescription(inMemoryBackend));
 
             // Assert
@@ -42,7 +42,7 @@ namespace GitObjectDb.Tests.Models
         public void CommitPageNameUpdate(ObjectRepository sut, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Act
-            sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
+            sut.SaveInNewRepository(signature, message, GetRepositoryDescription(inMemoryBackend));
             var modifiedPage = page.With(p => p.Name == "modified");
             var commit = sut.Commit(modifiedPage.Repository, signature, message);
 

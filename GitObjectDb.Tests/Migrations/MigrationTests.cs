@@ -21,7 +21,7 @@ namespace GitObjectDb.Tests.Migrations
         {
             // Arrange
             var repositoryDescription = GetRepositoryDescription();
-            sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, repositoryDescription);
+            sut.SaveInNewRepository(signature, message, repositoryDescription);
             var updated = sut.With(i => i.Migrations.Add(fixture.Create<Migration>()));
             var commit = sut.Commit(updated, signature, message);
 
