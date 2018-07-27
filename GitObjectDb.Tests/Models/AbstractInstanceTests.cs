@@ -19,7 +19,7 @@ using System.Text;
 namespace GitObjectDb.Tests.Models
 {
     [DebuggerDisplay("{_path}")]
-    public partial class InstanceTests
+    public partial class AbstractInstanceTests
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]

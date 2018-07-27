@@ -17,7 +17,7 @@ using System.Text;
 
 namespace GitObjectDb.Tests.Models
 {
-    public partial class InstanceTests
+    public partial class AbstractInstanceTests
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]

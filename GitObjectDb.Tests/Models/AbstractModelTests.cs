@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace GitObjectDb.Tests.Models
 {
-    public class PageTests
+    public class AbstractModelTests
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
