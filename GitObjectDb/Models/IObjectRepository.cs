@@ -11,7 +11,7 @@ namespace GitObjectDb.Models
     /// Root node of a metadata tree.
     /// </summary>
     /// <seealso cref="IMetadataObject" />
-    public interface IInstance : IMetadataObject
+    public interface IObjectRepository : IMetadataObject
     {
         /// <summary>
         /// Gets the <see cref="LibGit2Sharp.Commit"/> id this instance has been load from.
@@ -32,12 +32,12 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Commits all changes by comparing the current instance with a new one.
         /// </summary>
-        /// <param name="newInstance">The new instance containing all the changes that must be committed.</param>
+        /// <param name="newRepository">The new repository containing all the changes that must be committed.</param>
         /// <param name="signature">The signature.</param>
         /// <param name="message">The message.</param>
         /// <param name="options">The options.</param>
         /// <returns>The commit identifier of the new repository HEAD.</returns>
-        ObjectId Commit(AbstractInstance newInstance, Signature signature, string message, CommitOptions options = null);
+        ObjectId Commit(AbstractObjectRepository newRepository, Signature signature, string message, CommitOptions options = null);
 
         /// <summary>
         /// Checkouts the specified branch name.

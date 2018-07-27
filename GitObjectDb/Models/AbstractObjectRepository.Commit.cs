@@ -7,14 +7,14 @@ using System.Text;
 
 namespace GitObjectDb.Models
 {
-    public partial class AbstractInstance
+    public partial class AbstractObjectRepository
     {
         /// <inheritdoc />
-        public ObjectId Commit(AbstractInstance newInstance, Signature signature, string message, CommitOptions options = null)
+        public ObjectId Commit(AbstractObjectRepository newRepository, Signature signature, string message, CommitOptions options = null)
         {
-            if (newInstance == null)
+            if (newRepository == null)
             {
-                throw new ArgumentNullException(nameof(newInstance));
+                throw new ArgumentNullException(nameof(newRepository));
             }
             if (signature == null)
             {
@@ -33,7 +33,7 @@ namespace GitObjectDb.Models
                 }
 
                 var computeChanges = _computeTreeChangesFactory(_repositoryDescription);
-                var changes = computeChanges.Compare(this, newInstance);
+                var changes = computeChanges.Compare(this, newRepository);
                 return changes.Any() ?
                     repository.CommitChanges(changes, message, signature, signature, _hooks, options)?.Id :
                     null;

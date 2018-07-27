@@ -49,6 +49,6 @@ namespace GitObjectDb.Reflection
         /// <param name="childChangesGetter">The child changes getter.</param>
         /// <param name="mustForceVisit">The must force visit.</param>
         /// <returns>The cloned instance.</returns>
-        IInstance DeepClone(IInstance instance, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IMetadataObject, bool> mustForceVisit);
+        IObjectRepository DeepClone(IObjectRepository instance, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IMetadataObject, bool> mustForceVisit);
     }
 }

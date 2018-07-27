@@ -62,9 +62,9 @@ namespace GitObjectDb.Tests.Git
 
             static void CustomizeModelObjects(IFixture fixture)
             {
-                fixture.Register<AbstractInstance>(() => fixture.Create<Instance>());
+                fixture.Register<AbstractObjectRepository>(() => fixture.Create<ObjectRepository>());
                 fixture.Register<AbstractMigration>(() => fixture.Create<Migration>());
-                fixture.Register<AbstractModel>(() => fixture.Create<Instance>());
+                fixture.Register<AbstractModel>(() => fixture.Create<ObjectRepository>());
                 fixture.Inject<ConstructorParameterBinding.ChildProcessor>((name, children, @new, dataAccessor) => children);
                 fixture.Inject<ConstructorParameterBinding.Clone>((@object, predicateReflector, processor) => @object);
             }

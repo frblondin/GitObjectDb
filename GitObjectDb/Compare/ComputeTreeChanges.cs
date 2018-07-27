@@ -16,7 +16,7 @@ namespace GitObjectDb.Compare
     internal class ComputeTreeChanges : IComputeTreeChanges
     {
         readonly IModelDataAccessorProvider _modelDataProvider;
-        readonly IInstanceLoader _instanceLoader;
+        readonly IObjectRepositoryLoader _objectRepositoryLoader;
         readonly IRepositoryProvider _repositoryProvider;
         readonly RepositoryDescription _repositoryDescription;
 
@@ -34,7 +34,7 @@ namespace GitObjectDb.Compare
             }
 
             _modelDataProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
-            _instanceLoader = serviceProvider.GetRequiredService<IInstanceLoader>();
+            _objectRepositoryLoader = serviceProvider.GetRequiredService<IObjectRepositoryLoader>();
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
 
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
@@ -68,7 +68,7 @@ namespace GitObjectDb.Compare
         }
 
         /// <inheritdoc/>
-        public MetadataTreeChanges Compare(Type instanceType, ObjectId oldCommitId, ObjectId newCommitId)
+        public MetadataTreeChanges Compare(ObjectId oldCommitId, ObjectId newCommitId)
         {
             if (oldCommitId == null)
             {
@@ -81,8 +81,8 @@ namespace GitObjectDb.Compare
 
             return _repositoryProvider.Execute(_repositoryDescription, repository =>
             {
-                var oldInstance = _instanceLoader.LoadFrom(_repositoryDescription, oldCommitId);
-                var newInstance = _instanceLoader.LoadFrom(_repositoryDescription, newCommitId);
+                var oldRepository = _objectRepositoryLoader.LoadFrom(_repositoryDescription, oldCommitId);
+                var newRepository = _objectRepositoryLoader.LoadFrom(_repositoryDescription, newCommitId);
 
                 var oldCommit = repository.Lookup<Commit>(oldCommitId);
                 var newCommit = repository.Lookup<Commit>(newCommitId);
@@ -90,39 +90,39 @@ namespace GitObjectDb.Compare
                 {
                     ThrowIfNonSupportedChangeTypes(changes);
 
-                    var modified = CollectModifiedNodes(oldInstance, newInstance, changes, oldCommit);
-                    var added = CollectAddedNodes(newInstance, changes, newCommit);
-                    var deleted = CollectDeletedNodes(oldInstance, changes, oldCommit);
-                    return new MetadataTreeChanges(newInstance, added.Concat(modified).Concat(deleted).ToImmutableList(), oldInstance);
+                    var modified = CollectModifiedNodes(oldRepository, newRepository, changes, oldCommit);
+                    var added = CollectAddedNodes(newRepository, changes, newCommit);
+                    var deleted = CollectDeletedNodes(oldRepository, changes, oldCommit);
+                    return new MetadataTreeChanges(newRepository, added.Concat(modified).Concat(deleted).ToImmutableList(), oldRepository);
                 }
             });
         }
 
-        static IImmutableList<MetadataTreeEntryChanges> CollectModifiedNodes(AbstractInstance oldInstance, AbstractInstance newInstance, TreeChanges changes, Commit oldCommit) =>
+        static IImmutableList<MetadataTreeEntryChanges> CollectModifiedNodes(AbstractObjectRepository oldRepository, AbstractObjectRepository newRepository, TreeChanges changes, Commit oldCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Modified)
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
-             let oldNode = oldInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in old instance.")
-             let newNode = newInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in new instance.")
+             let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in old repository.")
+             let newNode = newRepository.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in new repository.")
              select new MetadataTreeEntryChanges(c.Path, c.Status, oldNode, newNode))
             .ToImmutableList();
 
-        static IImmutableList<MetadataTreeEntryChanges> CollectAddedNodes(AbstractInstance newInstance, TreeChanges changes, Commit newCommit) =>
+        static IImmutableList<MetadataTreeEntryChanges> CollectAddedNodes(AbstractObjectRepository newRepository, TreeChanges changes, Commit newCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Added)
              let newEntry = newCommit[c.Path]
              where newEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
-             let newNode = newInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in new instance.")
+             let newNode = newRepository.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in new instance.")
              select new MetadataTreeEntryChanges(c.Path, c.Status, null, newNode))
             .ToImmutableList();
 
-        static IImmutableList<MetadataTreeEntryChanges> CollectDeletedNodes(AbstractInstance oldInstance, TreeChanges changes, Commit oldCommit) =>
+        static IImmutableList<MetadataTreeEntryChanges> CollectDeletedNodes(AbstractObjectRepository oldRepository, TreeChanges changes, Commit oldCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Deleted)
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
-             let oldNode = oldInstance.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in old instance.")
+             let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in old instance.")
              select new MetadataTreeEntryChanges(c.Path, c.Status, oldNode, null))
             .ToImmutableList();
 
@@ -147,20 +147,20 @@ namespace GitObjectDb.Compare
         }
 
         /// <inheritdoc/>
-        public MetadataTreeChanges Compare(IInstance original, IInstance newInstance)
+        public MetadataTreeChanges Compare(IObjectRepository original, IObjectRepository newRepository)
         {
             if (original == null)
             {
                 throw new ArgumentNullException(nameof(original));
             }
-            if (newInstance == null)
+            if (newRepository == null)
             {
-                throw new ArgumentNullException(nameof(newInstance));
+                throw new ArgumentNullException(nameof(newRepository));
             }
 
             var changes = new List<MetadataTreeEntryChanges>();
-            CompareNode(original, newInstance, changes, new Stack<string>());
-            return new MetadataTreeChanges(newInstance, changes.ToImmutableList(), original);
+            CompareNode(original, newRepository, changes, new Stack<string>());
+            return new MetadataTreeChanges(newRepository, changes.ToImmutableList(), original);
         }
 
         void CompareNode(IMetadataObject original, IMetadataObject @new, IList<MetadataTreeEntryChanges> changes, Stack<string> stack)

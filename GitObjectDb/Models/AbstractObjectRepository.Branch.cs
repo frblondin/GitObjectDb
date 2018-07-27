@@ -8,7 +8,7 @@ using System.Text;
 
 namespace GitObjectDb.Models
 {
-    public partial class AbstractInstance
+    public partial class AbstractObjectRepository
     {
         /// <inheritdoc />
         public Branch Checkout(string branchName)

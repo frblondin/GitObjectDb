@@ -12,9 +12,9 @@ using System.Text;
 
 namespace GitObjectDb.Tests.Assets.Models
 {
-    public class Instance : AbstractInstance
+    public class ObjectRepository : AbstractObjectRepository
     {
-        public Instance(IServiceProvider serviceProvider, Guid id, string name, ILazyChildren<IMigration> migrations, ILazyChildren<Application> applications)
+        public ObjectRepository(IServiceProvider serviceProvider, Guid id, string name, ILazyChildren<IMigration> migrations, ILazyChildren<Application> applications)
             : base(serviceProvider, id, name, migrations)
         {
             Applications = (applications ?? throw new ArgumentNullException(nameof(applications))).AttachToParent(this);

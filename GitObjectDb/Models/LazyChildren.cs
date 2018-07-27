@@ -123,8 +123,8 @@ namespace GitObjectDb.Models
             }
             else if (_factoryWithRepo != null)
             {
-                var instance = (AbstractInstance)parent.Instance;
-                return instance._repositoryProvider.Execute(instance._repositoryDescription, repository =>
+                var objectRepository = (AbstractObjectRepository)parent.Repository;
+                return objectRepository._repositoryProvider.Execute(objectRepository._repositoryDescription, repository =>
                 {
                     var nodes = _factoryWithRepo(parent, repository) ?? throw new NotSupportedException(_nullReturnedValueExceptionMessage);
                     return nodes.Cast<TChild>();

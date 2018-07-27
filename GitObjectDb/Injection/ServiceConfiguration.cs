@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.DependencyInjection
         static IServiceCollection ConfigureServices(IServiceCollection source)
         {
             source.AddSingleton<GitHooks>();
-            source.AddSingleton<IInstanceLoader, InstanceLoader>();
+            source.AddSingleton<IObjectRepositoryLoader, RepositoryLoader>();
             source.AddSingleton<IModelDataAccessorProvider, ModelDataAccessorProvider>();
             source.AddSingleton<IConstructorSelector, MostParametersConstructorSelector>();
             source.AddSingleton<Func<RepositoryDescription, IComputeTreeChanges>>(s =>
@@ -44,8 +44,8 @@ namespace Microsoft.Extensions.DependencyInjection
             source.AddSingleton<IRepositoryProvider, RepositoryProvider>();
             source.AddSingleton<IModelDataAccessorProvider>(s =>
                 new CachedModelDataAccessorProvider(new ModelDataAccessorProvider(s)));
-            source.AddSingleton<Func<RepositoryDescription, IInstance, string, IMetadataTreeMerge>>(s =>
-                (description, instance, branchName) => new MetadataTreeMerge(s, description, instance, branchName));
+            source.AddSingleton<Func<RepositoryDescription, IObjectRepository, string, IMetadataTreeMerge>>(s =>
+                (description, repository, branchName) => new MetadataTreeMerge(s, description, repository, branchName));
             source.AddSingleton<Func<RepositoryDescription, MigrationScaffolder>>(s =>
                 description => new MigrationScaffolder(s, description));
             return source;

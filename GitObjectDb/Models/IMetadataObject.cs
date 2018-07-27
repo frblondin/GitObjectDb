@@ -18,9 +18,9 @@ namespace GitObjectDb.Models
         IModelDataAccessor DataAccessor { get; }
 
         /// <summary>
-        /// Gets the parent instance.
+        /// Gets the parent repository.
         /// </summary>
-        IInstance Instance { get; }
+        IObjectRepository Repository { get; }
 
         /// <summary>
         /// Gets the parent.

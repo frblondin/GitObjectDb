@@ -88,7 +88,7 @@ namespace GitObjectDb.Reflection
 
             var predicateReflector = new PredicateReflector(source, predicate);
             var newInstance = DeepClone(
-                source.Instance,
+                source.Repository,
                 predicateReflector.ProcessArgument,
                 predicateReflector.GetChildChanges,
                 n => n.IsParentOf(source));
@@ -96,14 +96,14 @@ namespace GitObjectDb.Reflection
         }
 
         /// <inheritdoc />
-        public IInstance DeepClone(IInstance instance, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IMetadataObject, bool> mustForceVisit)
+        public IObjectRepository DeepClone(IObjectRepository instance, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IMetadataObject, bool> mustForceVisit)
         {
             if (instance == null)
             {
                 throw new ArgumentNullException(nameof(instance));
             }
 
-            return (IInstance)DeepClone((IMetadataObject)instance, processArgument, childChangesGetter, mustForceVisit);
+            return (IObjectRepository)DeepClone((IMetadataObject)instance, processArgument, childChangesGetter, mustForceVisit);
         }
 
         IMetadataObject DeepClone(IMetadataObject node, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IMetadataObject, bool> mustForceVisit)

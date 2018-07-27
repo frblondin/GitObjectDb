@@ -54,7 +54,7 @@ namespace GitObjectDb.Compare
 
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _computeTreeChangesFactory = serviceProvider.GetRequiredService<Func<RepositoryDescription, IComputeTreeChanges>>();
-            _serializer = new Lazy<JsonSerializer>(() => serviceProvider.GetRequiredService<IInstanceLoader>().GetJsonSerializer());
+            _serializer = new Lazy<JsonSerializer>(() => serviceProvider.GetRequiredService<IObjectRepositoryLoader>().GetJsonSerializer());
             _hooks = serviceProvider.GetRequiredService<GitHooks>();
             _changes = _metadataTreeMerge.ModifiedChunks.ToLookup(c => c.Path, StringComparer.OrdinalIgnoreCase);
 
@@ -112,9 +112,9 @@ namespace GitObjectDb.Compare
 
         MetadataTreeChanges ComputeMergeResult()
         {
-            var mergeResult = _metadataTreeMerge.Instance.DataAccessor.DeepClone(_metadataTreeMerge.Instance, ProcessProperty, ChildChangesGetter, n => _forceVisit.Contains(n.Id));
+            var mergeResult = _metadataTreeMerge.Repository.DataAccessor.DeepClone(_metadataTreeMerge.Repository, ProcessProperty, ChildChangesGetter, n => _forceVisit.Contains(n.Id));
             var computeChanges = _computeTreeChangesFactory(_repositoryDescription);
-            return computeChanges.Compare(_metadataTreeMerge.Instance, mergeResult);
+            return computeChanges.Compare(_metadataTreeMerge.Repository, mergeResult);
         }
 
         object ProcessProperty(IMetadataObject node, string name, Type argumentType, object fallback)

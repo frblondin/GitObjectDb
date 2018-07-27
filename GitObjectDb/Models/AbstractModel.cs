@@ -77,13 +77,13 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Gets the parent instance.
         /// </summary>
-        /// <exception cref="NotSupportedException">No parent instance has been set.</exception>
-        public AbstractInstance Instance =>
-            this.Root() as AbstractInstance ??
-            throw new NotSupportedException("No parent instance has been set.");
+        /// <exception cref="NotSupportedException">No parent repository has been set.</exception>
+        public AbstractObjectRepository Repository =>
+            this.Root() as AbstractObjectRepository ??
+            throw new NotSupportedException("No parent repository has been set.");
 
         /// <inheritdoc />
-        IInstance IMetadataObject.Instance => Instance;
+        IObjectRepository IMetadataObject.Repository => Repository;
 
         /// <inheritdoc />
         public void AttachToParent(IMetadataObject parent)

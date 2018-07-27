@@ -21,7 +21,7 @@ namespace GitObjectDb.Models
         });
 
         /// <summary>
-        /// Creates a copy of the instance and apply changes according to the new test values provided in the predicate.
+        /// Creates a copy of the repository and apply changes according to the new test values provided in the predicate.
         /// </summary>
         /// <typeparam name="TModel">The type of the model.</typeparam>
         /// <param name="source">The source.</param>
@@ -34,7 +34,7 @@ namespace GitObjectDb.Models
         }
 
         /// <summary>
-        /// Gets the root instance of the specified node.
+        /// Gets the root repository of the specified node.
         /// </summary>
         /// <param name="node">The node.</param>
         /// <returns>The root <see cref="IMetadataObject"/> instance.</returns>
@@ -169,7 +169,7 @@ namespace GitObjectDb.Models
                 builder.Append(childProperty.Name);
                 builder.Append('/');
             }
-            if (!(node is IInstance))
+            if (!(node is IObjectRepository))
             {
                 builder.Append(node.Id);
             }

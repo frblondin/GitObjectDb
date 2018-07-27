@@ -6,9 +6,9 @@ using System;
 namespace GitObjectDb.Models
 {
     /// <summary>
-    /// Loads instance from a Git repository.
+    /// Loads a <see cref="AbstractObjectRepository"/> instance from a Git repository.
     /// </summary>
-    public interface IInstanceLoader
+    public interface IObjectRepositoryLoader
     {
         /// <summary>
         /// Gets the json serializer.
@@ -23,16 +23,16 @@ namespace GitObjectDb.Models
         /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="commitId">The commit.</param>
         /// <returns>The loaded instance.</returns>
-        AbstractInstance LoadFrom(RepositoryDescription repositoryDescription, ObjectId commitId = null);
+        AbstractObjectRepository LoadFrom(RepositoryDescription repositoryDescription, ObjectId commitId = null);
 
         /// <summary>
         /// Loads the instance from a Git repository.
         /// </summary>
-        /// <typeparam name="TInstance">The type of the instance.</typeparam>
+        /// <typeparam name="TRepository">The type of the repository.</typeparam>
         /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="commitId">The commit.</param>
         /// <returns>The loaded instance.</returns>
-        TInstance LoadFrom<TInstance>(RepositoryDescription repositoryDescription, ObjectId commitId = null)
-            where TInstance : AbstractInstance;
+        TRepository LoadFrom<TRepository>(RepositoryDescription repositoryDescription, ObjectId commitId = null)
+            where TRepository : AbstractObjectRepository;
     }
 }

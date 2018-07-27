@@ -29,7 +29,7 @@ namespace GitObjectDb.Compare
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
         /// <param name="repositoryDescription">The repository description.</param>
-        /// <param name="instance">The instance on which to apply the merge.</param>
+        /// <param name="repository">The repository on which to apply the merge.</param>
         /// <param name="branchName">Name of the branch.</param>
         /// <exception cref="ArgumentNullException">
         /// serviceProvider
@@ -42,12 +42,12 @@ namespace GitObjectDb.Compare
         /// or
         /// merger
         /// </exception>
-        public MetadataTreeMerge(IServiceProvider serviceProvider, RepositoryDescription repositoryDescription, IInstance instance, string branchName)
+        public MetadataTreeMerge(IServiceProvider serviceProvider, RepositoryDescription repositoryDescription, IObjectRepository repository, string branchName)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
-            Instance = instance ?? throw new ArgumentNullException(nameof(instance));
-            CommitId = instance.CommitId ?? throw new NotSupportedException("Instance has no commit.");
+            Repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            CommitId = repository.CommitId ?? throw new NotSupportedException("Repository has no commit.");
             BranchName = branchName ?? throw new ArgumentNullException(nameof(branchName));
 
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
@@ -58,9 +58,9 @@ namespace GitObjectDb.Compare
         }
 
         /// <summary>
-        /// Gets the instance.
+        /// Gets the repository.
         /// </summary>
-        public IInstance Instance { get; }
+        public IObjectRepository Repository { get; }
 
         /// <inheritdoc/>
         public ObjectId CommitId { get; }
@@ -147,12 +147,12 @@ namespace GitObjectDb.Compare
         /// Ensures that the head tip refers to the right commit.
         /// </summary>
         /// <param name="repository">The repository.</param>
-        /// <exception cref="NotSupportedException">The current head commit id is different from the commit used by current instance.</exception>
+        /// <exception cref="NotSupportedException">The current head commit id is different from the commit used by current repository.</exception>
         internal void EnsureHeadCommit(IRepository repository)
         {
             if (!repository.Head.Tip.Id.Equals(CommitId))
             {
-                throw new NotSupportedException("The current head commit id is different from the commit used by current instance.");
+                throw new NotSupportedException("The current head commit id is different from the commit used by current repository.");
             }
         }
 

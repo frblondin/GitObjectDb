@@ -21,9 +21,9 @@ namespace GitObjectDb.Compare
         /// <summary>
         /// Initializes a new instance of the <see cref="MetadataTreeChanges"/> class.
         /// </summary>
-        /// <param name="newInstance">The new instance.</param>
+        /// <param name="newRepository">The new repository.</param>
         /// <param name="changed">The list of <see cref="MetadataTreeEntryChanges" /> that have been been changed.</param>
-        /// <param name="oldInstance">The old instance.</param>
+        /// <param name="oldRepository">The old repository.</param>
         /// <exception cref="ArgumentNullException">
         /// modified
         /// or
@@ -31,22 +31,22 @@ namespace GitObjectDb.Compare
         /// or
         /// deleted
         /// </exception>
-        public MetadataTreeChanges(IInstance newInstance, IImmutableList<MetadataTreeEntryChanges> changed, IInstance oldInstance = null)
+        public MetadataTreeChanges(IObjectRepository newRepository, IImmutableList<MetadataTreeEntryChanges> changed, IObjectRepository oldRepository = null)
         {
-            NewInstance = newInstance ?? throw new ArgumentNullException(nameof(newInstance));
+            NewRepository = newRepository ?? throw new ArgumentNullException(nameof(newRepository));
             _changes = changed ?? throw new ArgumentNullException(nameof(changed));
-            OldInstance = oldInstance;
+            OldRepository = oldRepository;
         }
 
         /// <summary>
-        /// Gets the old instance.
+        /// Gets the old repository.
         /// </summary>
-        public IInstance OldInstance { get; }
+        public IObjectRepository OldRepository { get; }
 
         /// <summary>
-        /// Gets the new instance.
+        /// Gets the new repository.
         /// </summary>
-        public IInstance NewInstance { get; }
+        public IObjectRepository NewRepository { get; }
 
         /// <summary>
         /// Gets the list of <see cref="MetadataTreeEntryChanges" /> that have been been added.

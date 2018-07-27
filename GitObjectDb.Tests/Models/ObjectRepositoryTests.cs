@@ -19,18 +19,18 @@ using System.Text;
 namespace GitObjectDb.Tests.Models
 {
     [DebuggerDisplay("{_path}")]
-    public partial class AbstractInstanceTests
+    public partial class ObjectRepositoryTests
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void CreateAndLoadRepository(IInstanceLoader loader, Instance sut, Signature signature, string message, InMemoryBackend inMemoryBackend)
+        public void CreateAndLoadRepository(IObjectRepositoryLoader loader, ObjectRepository sut, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Act
             sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
-            var loaded = loader.LoadFrom<Instance>(GetRepositoryDescription(inMemoryBackend));
+            var loaded = loader.LoadFrom<ObjectRepository>(GetRepositoryDescription(inMemoryBackend));
 
             // Assert
-            PAssert.IsTrue(AreFunctionnally.Equivalent<Instance>(() => sut == loaded));
+            PAssert.IsTrue(AreFunctionnally.Equivalent<ObjectRepository>(() => sut == loaded));
             foreach (var apps in sut.Applications.OrderBy(v => v.Id).Zip(loaded.Applications.OrderBy(v => v.Id), (a, b) => new { source = a, desctination = b }))
             {
                 PAssert.IsTrue(AreFunctionnally.Equivalent<Application>(() => apps.source == apps.desctination));
@@ -39,12 +39,12 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void CommitPageNameUpdate(Instance sut, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
+        public void CommitPageNameUpdate(ObjectRepository sut, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Act
             sut.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
             var modifiedPage = page.With(p => p.Name == "modified");
-            var commit = sut.Commit(modifiedPage.Instance, signature, message);
+            var commit = sut.Commit(modifiedPage.Repository, signature, message);
 
             // Assert
             Assert.That(commit, Is.Not.Null);
@@ -52,7 +52,7 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void GetFromGitPath(Instance sut, Field field)
+        public void GetFromGitPath(ObjectRepository sut, Field field)
         {
             // Arrange
             var application = field.Parents().OfType<Application>().Single();

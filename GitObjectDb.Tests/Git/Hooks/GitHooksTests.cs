@@ -17,7 +17,7 @@ namespace GitObjectDb.Tests.Git.Hooks
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void PreCommitWhenPropertyChangeGetsFired(GitHooks sut, Instance instance, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
+        public void PreCommitWhenPropertyChangeGetsFired(GitHooks sut, ObjectRepository instance, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Arrange
             CommitStartedEventArgs lastEvent = null;
@@ -26,7 +26,7 @@ namespace GitObjectDb.Tests.Git.Hooks
             // Act
             instance.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
             var modifiedPage = page.With(p => p.Name == "modified");
-            instance.Commit(modifiedPage.Instance, signature, message);
+            instance.Commit(modifiedPage.Repository, signature, message);
 
             // Assert
             Assert.That(lastEvent, Is.Not.Null);
@@ -35,7 +35,7 @@ namespace GitObjectDb.Tests.Git.Hooks
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void PreCommitCancelsCommitIfRequested(GitHooks sut, Instance instance, Signature signature, string message, InMemoryBackend inMemoryBackend)
+        public void PreCommitCancelsCommitIfRequested(GitHooks sut, ObjectRepository instance, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Arrange
             sut.CommitStarted += (_, args) => args.Cancel = true;
@@ -49,7 +49,7 @@ namespace GitObjectDb.Tests.Git.Hooks
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void PostCommitWhenPropertyChangeGetsFired(GitHooks sut, Instance instance, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
+        public void PostCommitWhenPropertyChangeGetsFired(GitHooks sut, ObjectRepository instance, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Arrange
             CommitCompletedEventArgs lastEvent = null;
@@ -58,7 +58,7 @@ namespace GitObjectDb.Tests.Git.Hooks
             // Act
             instance.SaveInNewRepository(signature, message, RepositoryFixture.GitPath, GetRepositoryDescription(inMemoryBackend));
             var modifiedPage = page.With(p => p.Name == "modified");
-            var commit = instance.Commit(modifiedPage.Instance, signature, message);
+            var commit = instance.Commit(modifiedPage.Repository, signature, message);
 
             // Assert
             Assert.That(lastEvent, Is.Not.Null);

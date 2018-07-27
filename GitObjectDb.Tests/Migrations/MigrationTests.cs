@@ -17,7 +17,7 @@ namespace GitObjectDb.Tests.Migrations
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void MigrationScaffolderDetectsRequiredChanges(IFixture fixture, IServiceProvider serviceProvider, Instance sut, Signature signature, string message)
+        public void MigrationScaffolderDetectsRequiredChanges(IFixture fixture, IServiceProvider serviceProvider, ObjectRepository sut, Signature signature, string message)
         {
             // Arrange
             var repositoryDescription = GetRepositoryDescription();

@@ -11,7 +11,7 @@ using System.Text;
 
 namespace GitObjectDb.Models
 {
-    public partial class AbstractInstance
+    public partial class AbstractObjectRepository
     {
         /// <summary>
         /// The repository provider.
@@ -23,7 +23,7 @@ namespace GitObjectDb.Models
         /// </summary>
         internal RepositoryDescription _repositoryDescription;
 
-        readonly IInstanceLoader _instanceLoader;
+        readonly IObjectRepositoryLoader _repositoryLoader;
         readonly GitHooks _hooks;
 
         /// <inheritdoc />
@@ -56,7 +56,7 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(repositoryDescription));
             }
 
-            Repository.Init(path, isBare);
+            LibGit2Sharp.Repository.Init(path, isBare);
 
             return _repositoryProvider.Execute(repositoryDescription, repository =>
             {

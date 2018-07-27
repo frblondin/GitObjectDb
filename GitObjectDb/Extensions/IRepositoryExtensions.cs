@@ -60,13 +60,13 @@ namespace LibGit2Sharp
         internal static Commit CommitChanges(this IRepository repository, MetadataTreeChanges changes, string message, Signature author, Signature committer, GitHooks hooks, CommitOptions options = null, Commit mergeParent = null)
         {
             TreeDefinition definition;
-            if (changes.OldInstance?.CommitId != null)
+            if (changes.OldRepository?.CommitId != null)
             {
-                if (repository.Head.Tip.Id != changes.OldInstance.CommitId)
+                if (repository.Head.Tip.Id != changes.OldRepository.CommitId)
                 {
                     throw new NotSupportedException("Changes are not based on the HEAD commit.");
                 }
-                var startCommit = repository.Lookup<Commit>(changes.OldInstance.CommitId);
+                var startCommit = repository.Lookup<Commit>(changes.OldRepository.CommitId);
                 definition = TreeDefinition.From(startCommit);
             }
             else if (repository.Info.IsHeadUnborn)

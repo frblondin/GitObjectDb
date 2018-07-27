@@ -38,7 +38,7 @@ namespace GitObjectDb.Migrations
                 throw new ArgumentNullException(nameof(serviceProvider));
             }
 
-            _serializer = serviceProvider.GetRequiredService<IInstanceLoader>().GetJsonSerializer();
+            _serializer = serviceProvider.GetRequiredService<IObjectRepositoryLoader>().GetJsonSerializer();
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
         }
@@ -111,7 +111,7 @@ namespace GitObjectDb.Migrations
         {
             using (var changes = repository.Diff.Compare<TreeChanges>(previousCommit.Tree, commit.Tree))
             {
-                foreach (var change in changes.Where(c => c.Path.StartsWith(AbstractInstance.MigrationFolder, StringComparison.OrdinalIgnoreCase) && (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))
+                foreach (var change in changes.Where(c => c.Path.StartsWith(AbstractObjectRepository.MigrationFolder, StringComparison.OrdinalIgnoreCase) && (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))
                 {
                     var blob = commit[change.Path].Target.Peel<Blob>();
                     var jobject = blob.GetContentStream().ToJson<JObject>(_serializer);

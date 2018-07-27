@@ -19,9 +19,9 @@ namespace GitObjectDb.Compare
         }
 
 #pragma warning disable CA1000 // Do not declare static members on generic types
-                              /// <summary>
-                              /// Gets the instance.
-                              /// </summary>
+        /// <summary>
+        /// Gets the instance.
+        /// </summary>
         public static MetadataObjectIdComparer<TModel> Instance { get; } = new MetadataObjectIdComparer<TModel>();
 #pragma warning restore CA1000 // Do not declare static members on generic types
 

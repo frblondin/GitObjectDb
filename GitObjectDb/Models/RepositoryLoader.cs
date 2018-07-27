@@ -13,7 +13,7 @@ using System.Text;
 namespace GitObjectDb.Models
 {
     /// <inheritdoc />
-    internal class InstanceLoader : IInstanceLoader
+    internal class RepositoryLoader : IObjectRepositoryLoader
     {
         readonly IContractResolver _contractResolver = new DefaultContractResolver();
         readonly IServiceProvider _serviceProvider;
@@ -21,10 +21,10 @@ namespace GitObjectDb.Models
         readonly IRepositoryProvider _repositoryProvider;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="InstanceLoader"/> class.
+        /// Initializes a new instance of the <see cref="RepositoryLoader"/> class.
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
-        public InstanceLoader(IServiceProvider serviceProvider)
+        public RepositoryLoader(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
 
@@ -33,7 +33,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public AbstractInstance LoadFrom(RepositoryDescription repositoryDescription, ObjectId commitId = null)
+        public AbstractObjectRepository LoadFrom(RepositoryDescription repositoryDescription, ObjectId commitId = null)
         {
             if (repositoryDescription == null)
             {
@@ -53,7 +53,7 @@ namespace GitObjectDb.Models
                     currentCommit = repository.Lookup<Commit>(commitId);
                 }
 
-                var instance = (AbstractInstance)LoadEntry(commitId, currentCommit[FileSystemStorage.DataFile], string.Empty);
+                var instance = (AbstractObjectRepository)LoadEntry(commitId, currentCommit[FileSystemStorage.DataFile], string.Empty);
                 instance.SetRepositoryData(repositoryDescription, commitId);
                 return instance;
             });
@@ -61,7 +61,7 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         public TInstance LoadFrom<TInstance>(RepositoryDescription repositoryDescription, ObjectId commitId = null)
-            where TInstance : AbstractInstance
+            where TInstance : AbstractObjectRepository
         {
             return (TInstance)LoadFrom(repositoryDescription, commitId);
         }
