@@ -117,34 +117,12 @@ namespace GitObjectDb.Compare
         /// <param name="value">The merge value.</param>
         public void Resolve(JToken value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
             if (MergeValue != null)
             {
                 throw new NotSupportedException("There is no conflict on this node.");
             }
 
-            MergeValue = value;
-        }
-
-        /// <summary>
-        /// Applies the change to an instance of <see cref="JObject"/>.
-        /// </summary>
-        /// <param name="jObject">The object.</param>
-        internal void ApplyTo(JObject jObject)
-        {
-            if (jObject == null)
-            {
-                throw new ArgumentNullException(nameof(jObject));
-            }
-            if (IsInConflict)
-            {
-                throw new RemainingConflictsException(Enumerable.Repeat(this, 1));
-            }
-
-            jObject[Property.Name] = MergeValue;
+            MergeValue = value ?? throw new ArgumentNullException(nameof(value));
         }
     }
 }

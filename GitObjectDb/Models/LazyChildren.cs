@@ -98,10 +98,7 @@ namespace GitObjectDb.Models
                             return _children;
                         }
 
-                        _children = _factory == null ?
-                            GetValueFromRepositoryFactory(Parent) :
-                            _factory(Parent).ToImmutableList();
-                        return _children;
+                        return _children = GetValueFromFactory(Parent).ToImmutableList();
                     }
                 }
                 finally
@@ -118,21 +115,22 @@ namespace GitObjectDb.Models
         /// <inheritdoc />
         public TChild this[int index] => Children[index];
 
-        IImmutableList<TChild> GetValueFromRepositoryFactory(IMetadataObject parent)
+        IEnumerable<TChild> GetValueFromFactory(IMetadataObject parent)
         {
-            if (_factoryWithRepo == null)
+            if (_factory != null)
             {
-                throw new NotSupportedException("Factory cannot be null.");
+                return _factory(parent) ?? throw new NotSupportedException(_nullReturnedValueExceptionMessage);
             }
-
-            var instance = (AbstractInstance)parent.Instance;
-            return instance._repositoryProvider.Execute(instance._repositoryDescription, repository =>
+            else if (_factoryWithRepo != null)
             {
-                var nodes = _factoryWithRepo(parent, repository) ?? throw new NotSupportedException(_nullReturnedValueExceptionMessage);
-                return nodes.Cast<TChild>()
-                            .OrderBy(v => v.Id)
-                            .ToImmutableList();
-            });
+                var instance = (AbstractInstance)parent.Instance;
+                return instance._repositoryProvider.Execute(instance._repositoryDescription, repository =>
+                {
+                    var nodes = _factoryWithRepo(parent, repository) ?? throw new NotSupportedException(_nullReturnedValueExceptionMessage);
+                    return nodes.Cast<TChild>();
+                });
+            }
+            throw new NotSupportedException("Factory cannot be null.");
         }
 
         void AttachChildrenToParentIfNeeded(IMetadataObject parent)
@@ -151,12 +149,7 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         [ExcludeFromGuardForNull]
-        public ILazyChildren Clone(bool forceVisit, Func<IMetadataObject, IMetadataObject> update, IEnumerable added = null, IEnumerable deleted = null) =>
-            Clone(forceVisit, n => (TChild)update(n), added?.Cast<TChild>(), deleted?.Cast<TChild>());
-
-        /// <inheritdoc />
-        [ExcludeFromGuardForNull]
-        public ILazyChildren<TChild> Clone(bool forceVisit, Func<TChild, TChild> update, IEnumerable<TChild> added = null, IEnumerable<TChild> deleted = null)
+        public ILazyChildren Clone(bool forceVisit, Func<IMetadataObject, IMetadataObject> update, IEnumerable<IMetadataObject> added = null, IEnumerable<IMetadataObject> deleted = null)
         {
             if (update == null)
             {
@@ -165,9 +158,9 @@ namespace GitObjectDb.Models
 
             return new LazyChildren<TChild>(parent =>
                 Children
-                .Except(deleted ?? Enumerable.Empty<TChild>())
-                .Select(c => update.Invoke(c) ?? throw new NotSupportedException("No child returned while cloning children."))
-                .Union(added ?? Enumerable.Empty<TChild>())
+                .Except(deleted?.Cast<TChild>() ?? Enumerable.Empty<TChild>())
+                .Select(c => (TChild)update.Invoke(c) ?? throw new NotSupportedException("No child returned while cloning children."))
+                .Union(added?.Cast<TChild>() ?? Enumerable.Empty<TChild>())
                 .ToImmutableList())
             {
                 ForceVisit = ForceVisit || forceVisit
@@ -175,7 +168,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        ILazyChildren<TChild> ILazyChildren<TChild>.AttachToParent(IMetadataObject parent)
+        public ILazyChildren<TChild> AttachToParent(IMetadataObject parent)
         {
             if (parent == null)
             {
@@ -192,11 +185,13 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        bool ILazyChildren.Add(IMetadataObject child) =>
+        [ExcludeFromGuardForNull]
+        public bool Add(IMetadataObject child) =>
             throw new NotSupportedException($"The {nameof(ILazyChildren.Add)} method should never by called. Its purpose is to be used within a With(...) predicate.");
 
         /// <inheritdoc />
-        bool ILazyChildren.Delete(IMetadataObject child) =>
+        [ExcludeFromGuardForNull]
+        public bool Delete(IMetadataObject child) =>
             throw new NotSupportedException($"The {nameof(ILazyChildren.Delete)} method should never by called. Its purpose is to be used within a With(...) predicate.");
 
         /// <inheritdoc />

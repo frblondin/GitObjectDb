@@ -67,7 +67,7 @@ namespace GitObjectDb.Reflection
             {
                 if (node == null)
                 {
-                    throw new ArgumentNullException(nameof(node));
+                    return null;
                 }
 
                 if (node is TExpression found)

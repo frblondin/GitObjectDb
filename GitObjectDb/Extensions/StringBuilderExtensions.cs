@@ -14,7 +14,6 @@ namespace System.Text
     /// <summary>
     /// A set of methods for instances of <see cref="StringBuilder"/>.
     /// </summary>
-    [ExcludeFromGuardForNull]
     internal static class StringBuilderExtensions
     {
         /// <summary>

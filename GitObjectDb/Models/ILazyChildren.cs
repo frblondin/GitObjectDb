@@ -22,16 +22,6 @@ namespace GitObjectDb.Models
         /// <returns>The same instance, allowing simpled chained calls if needed.</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
         ILazyChildren<TChild> AttachToParent(IMetadataObject parent);
-
-        /// <summary>
-        /// Clones this instance by applying an update to each child.
-        /// </summary>
-        /// <param name="forceVisit">if set to <c>true</c> [force visit].</param>
-        /// <param name="update">The update.</param>
-        /// <param name="added">Nodes that must be added.</param>
-        /// <param name="deleted">Nodes that must be deleted.</param>
-        /// <returns>The new <see cref="ILazyChildren{TChild}"/> instance containing the result of the transformations.</returns>
-        ILazyChildren<TChild> Clone(bool forceVisit, Func<TChild, TChild> update, IEnumerable<TChild> added = null, IEnumerable<TChild> deleted = null);
     }
 
     /// <summary>
@@ -62,7 +52,7 @@ namespace GitObjectDb.Models
         /// <param name="added">Nodes that must be added.</param>
         /// <param name="deleted">Nodes that must be deleted.</param>
         /// <returns>The new <see cref="ILazyChildren"/> instance containing the result of the transformations.</returns>
-        ILazyChildren Clone(bool forceVisit, Func<IMetadataObject, IMetadataObject> update, IEnumerable added = null, IEnumerable deleted = null);
+        ILazyChildren Clone(bool forceVisit, Func<IMetadataObject, IMetadataObject> update, IEnumerable<IMetadataObject> added = null, IEnumerable<IMetadataObject> deleted = null);
 
         /// <summary>
         /// Adds the specified child. This method should only be used within <see cref="IMetadataObjectExtensions.With{TModel}(TModel, Expression{Predicate{TModel}})"/>.

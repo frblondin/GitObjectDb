@@ -10,6 +10,7 @@ using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Utils;
 using GitObjectDb.Tests.Migrations;
 using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using NSubstitute;
 using NUnit.Framework;
@@ -27,11 +28,13 @@ namespace GitObjectDb.Tests.Git
         /// <summary>
         /// Add missing type to <see cref="CommonTypeProviderCustomization"/> as needed in case of errors.
         /// </summary>
+        /// <param name="fixture">The fixture.</param>
         /// <param name="assertion">The assertion.</param>
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(CommonTypeProviderCustomization), typeof(NSubstituteForAbstractTypesCustomization))]
-        public void VerifyGuardForNullClauses(GuardClauseAssertion assertion)
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(CommonTypeProviderCustomization), typeof(JsonCustomization), typeof(NSubstituteForAbstractTypesCustomization))]
+        public void VerifyGuardForNullClauses(IFixture fixture, GuardClauseAssertion assertion)
         {
+            fixture.Customizations.OfType<NSubstituteForAbstractTypesCustomization>().Single().ExcludeEnumerableTypes = false;
             var types = from t in typeof(IMetadataObject).Assembly.GetTypes()
                         where !t.IsEnum
                         where !typeof(Delegate).IsAssignableFrom(t)
@@ -51,18 +54,27 @@ namespace GitObjectDb.Tests.Git
                     fixture,
                     new FilterCommand(new NullReferenceBehaviorExpectation())));
 
-                fixture.Inject(typeof(string));
-                fixture.Inject(ExpressionReflector.GetConstructor(() => new Page(default, default, default, default, default)));
-                fixture.Inject(ExpressionReflector.GetProperty<Page>(p => p.Description));
-                fixture.Inject((Expression)Expression.Default(typeof(object)));
+                CustomizeModelObjects(fixture);
+                CustomizeExpressionObjects(fixture);
+                CustomizeIMetadataObject(fixture);
+                CustomizeGitObjects(fixture);
+            }
+
+            static void CustomizeModelObjects(IFixture fixture)
+            {
                 fixture.Register<AbstractInstance>(() => fixture.Create<Instance>());
                 fixture.Register<AbstractMigration>(() => fixture.Create<Migration>());
                 fixture.Register<AbstractModel>(() => fixture.Create<Instance>());
                 fixture.Inject<ConstructorParameterBinding.ChildProcessor>((name, children, @new, dataAccessor) => children);
                 fixture.Inject<ConstructorParameterBinding.Clone>((@object, predicateReflector, processor) => @object);
-                CustomizeIMetadataObject(fixture);
-                CustomizeGitObjects(fixture);
-                CustomizeJsonObjects(fixture);
+            }
+
+            static void CustomizeExpressionObjects(IFixture fixture)
+            {
+                fixture.Inject(typeof(string));
+                fixture.Inject(ExpressionReflector.GetConstructor(() => new Page(default, default, default, default, default)));
+                fixture.Inject(ExpressionReflector.GetProperty<Page>(p => p.Description));
+                fixture.Inject((Expression)Expression.Default(typeof(object)));
             }
 
             static void CustomizeIMetadataObject(IFixture fixture)
@@ -78,12 +90,6 @@ namespace GitObjectDb.Tests.Git
                 fixture.Inject(new ObjectId("2fa2540fecec8c4908fb0ccba825cdb903f09440"));
                 fixture.Inject(Substitute.For<PatchEntryChanges>());
                 fixture.Inject(Substitute.For<TreeEntryChanges>());
-            }
-
-            static void CustomizeJsonObjects(IFixture fixture)
-            {
-                fixture.Inject(JObject.Parse(@"{""a"": ""b""}"));
-                fixture.Register<JToken>(() => fixture.Create<JObject>());
             }
         }
 
