@@ -53,6 +53,12 @@ namespace GitObjectDb.Tests
         public static RepositoryDescription BenchmarkRepositoryDescription =>
             new RepositoryDescription(BenchmarkRepositoryPath);
 
+        public static string SmallRepositoryPath =>
+            Path.Combine(TestContext.CurrentContext.WorkDirectory, "Repos", "Small");
+
+        public static RepositoryDescription SmallRepositoryDescription =>
+            new RepositoryDescription(SmallRepositoryPath);
+
         public static string GetRepositoryPath(string name) =>
             Path.Combine(TestContext.CurrentContext.WorkDirectory, "Repos", name);
 
@@ -68,6 +74,10 @@ namespace GitObjectDb.Tests
             if (!Directory.Exists(Path.Combine(BenchmarkRepositoryPath, ".git")))
             {
                 ZipFile.ExtractToDirectory("Assets\\Benchmark.zip", BenchmarkRepositoryPath);
+            }
+            if (!Directory.Exists(Path.Combine(SmallRepositoryPath, ".git")))
+            {
+                ZipFile.ExtractToDirectory("Assets\\Small.zip", SmallRepositoryPath);
             }
         }
 

@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.DependencyInjection
         static IServiceCollection ConfigureServices(IServiceCollection source)
         {
             source.AddSingleton<GitHooks>();
-            source.AddSingleton<IObjectRepositoryLoader, RepositoryLoader>();
+            source.AddSingleton<IObjectRepositoryLoader, ObjectRepositoryLoader>();
             source.AddSingleton<IModelDataAccessorProvider, ModelDataAccessorProvider>();
             source.AddSingleton<IConstructorSelector, MostParametersConstructorSelector>();
             source.AddSingleton<Func<RepositoryDescription, IComputeTreeChanges>>(s =>

@@ -36,7 +36,7 @@ namespace GitObjectDb.Tests.Assets.Customizations
         public void Customize(IFixture fixture)
         {
             var serviceProvider = fixture.Create<IServiceProvider>();
-            var module = new ObjectRepository(serviceProvider, Guid.NewGuid(), "Some repository", new LazyChildren<IMigration>(), new LazyChildren<Application>(
+            var module = new Lazy<ObjectRepository>(() => new ObjectRepository(serviceProvider, Guid.NewGuid(), "Some repository", new LazyChildren<IMigration>(), new LazyChildren<Application>(
                 Enumerable.Range(1, ApplicationCount).Select(a =>
                     new Application(serviceProvider, Guid.NewGuid(), $"Application {a}", new LazyChildren<Page>(
                         Enumerable.Range(1, PagePerApplicationCount).Select(p =>
@@ -45,8 +45,8 @@ namespace GitObjectDb.Tests.Assets.Customizations
                                     new Field(serviceProvider, Guid.NewGuid(), $"Field {f}"))
                                 .ToImmutableList())))
                         .ToImmutableList())))
-                .ToImmutableList()));
-            fixture.Inject(module);
+                .ToImmutableList())));
+            fixture.Register(() => module.Value);
 
             fixture.Register(() => module.Value.Applications.PickRandom());
             fixture.Register(() => fixture.Create<Application>().Pages.PickRandom());

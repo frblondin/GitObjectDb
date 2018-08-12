@@ -22,6 +22,17 @@ namespace GitObjectDb.Tests.Models
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        public void CloneRepository(IObjectRepositoryLoader loader)
+        {
+            // Act
+            var loaded = loader.Clone<ObjectRepository>(RepositoryFixture.SmallRepositoryPath, RepositoryFixture.GetRepositoryDescription());
+
+            // Assert
+            Assert.That(loaded.Applications, Has.Count.EqualTo(2));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
         public void CreateAndLoadRepository(IObjectRepositoryLoader loader, ObjectRepository sut, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Act

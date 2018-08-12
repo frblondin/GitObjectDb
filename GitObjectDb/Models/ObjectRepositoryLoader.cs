@@ -13,7 +13,7 @@ using System.Text;
 namespace GitObjectDb.Models
 {
     /// <inheritdoc />
-    internal class RepositoryLoader : IObjectRepositoryLoader
+    internal class ObjectRepositoryLoader : IObjectRepositoryLoader
     {
         readonly IContractResolver _contractResolver = new DefaultContractResolver();
         readonly IServiceProvider _serviceProvider;
@@ -21,15 +21,39 @@ namespace GitObjectDb.Models
         readonly IRepositoryProvider _repositoryProvider;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="RepositoryLoader"/> class.
+        /// Initializes a new instance of the <see cref="ObjectRepositoryLoader"/> class.
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
-        public RepositoryLoader(IServiceProvider serviceProvider)
+        public ObjectRepositoryLoader(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
 
             _dataAccessorProvider = _serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             _repositoryProvider = _serviceProvider.GetRequiredService<IRepositoryProvider>();
+        }
+
+        /// <inheritdoc />
+        public AbstractObjectRepository Clone(string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
+        {
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
+            }
+
+            if (repositoryDescription == null)
+            {
+                throw new ArgumentNullException(nameof(repositoryDescription));
+            }
+
+            Repository.Clone(repository, repositoryDescription.Path, new CloneOptions { Checkout = false });
+            return LoadFrom(repositoryDescription, commitId);
+        }
+
+        /// <inheritdoc />
+        public TRepository Clone<TRepository>(string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
+            where TRepository : AbstractObjectRepository
+        {
+            return (TRepository)Clone(repository, repositoryDescription, commitId);
         }
 
         /// <inheritdoc />
@@ -80,7 +104,7 @@ namespace GitObjectDb.Models
                 return LoadEntryChildren(commitId, path, childProperty);
             }
             var serializer = GetJsonSerializer(ResolveChildren);
-            var blob = entry.Target.Peel<Blob>();
+            var blob = (Blob)entry.Target;
             var jobject = blob.GetContentStream().ToJson<JObject>(serializer);
             var objectType = Type.GetType(jobject.Value<string>("$type"));
             return (IMetadataObject)jobject.ToObject(objectType, serializer);
@@ -120,17 +144,18 @@ namespace GitObjectDb.Models
             {
                 var childPath = string.IsNullOrEmpty(path) ? childProperty.Name : $"{path}/{childProperty.Name}";
                 var commit = repository.Lookup<Commit>(commitId);
-                var subTree = commit[childPath]?.Target.Peel<Tree>();
+                var subTree = (Tree)commit[childPath]?.Target;
                 return (subTree?.Any() ?? false) ?
-
-                    from c in subTree
-                    where c.TargetType == TreeEntryTargetType.Tree
-                    let childTree = c.Target.Peel<Tree>()
-                    let data = childTree[FileSystemStorage.DataFile]
-                    where data != null
-                    select LoadEntry(commitId, data, $"{childPath}/{c.Name}") :
-
+                    LoadEntryChildren(commitId, childPath, subTree) :
                     Enumerable.Empty<IMetadataObject>();
             });
+
+        IEnumerable<IMetadataObject> LoadEntryChildren(ObjectId commitId, string childPath, Tree subTree) =>
+            from c in subTree
+            where c.TargetType == TreeEntryTargetType.Tree
+            let childTree = (Tree)c.Target
+            let data = childTree[FileSystemStorage.DataFile]
+            where data != null
+            select LoadEntry(commitId, data, $"{childPath}/{c.Name}");
     }
 }
