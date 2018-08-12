@@ -40,10 +40,17 @@
     <PackageReference Include="PowerAssert" Version="1.0.79" />
     <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.0.2" />
+    <PackageReference Include="System.IO.Compression.ZipFile" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\GitObjectDb\GitObjectDb.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Assets\Benchmark.zip">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

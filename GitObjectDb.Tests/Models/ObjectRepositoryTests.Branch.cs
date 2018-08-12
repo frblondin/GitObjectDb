@@ -31,7 +31,7 @@ namespace GitObjectDb.Tests.Models
             // newBranch:   B---'
 
             // Arrange
-            var repositoryDescription = GetRepositoryDescription();
+            var repositoryDescription = RepositoryFixture.GetRepositoryDescription();
             sut.SaveInNewRepository(signature, message, repositoryDescription); // A
 
             // Act
@@ -41,11 +41,11 @@ namespace GitObjectDb.Tests.Models
             sut.Checkout("master");
             var updateDescription = page.With(p => p.Description == "modified description");
             var commitC = sut.Commit(updateDescription.Repository, signature, message); // C
-            var loaded = loader.LoadFrom<ObjectRepository>(GetRepositoryDescription());
+            var loaded = loader.LoadFrom<ObjectRepository>(RepositoryFixture.GetRepositoryDescription());
             var mergeCommit = loaded.Merge("newBranch").Apply(signature); // D
 
             // Assert
-            var changes = computeTreeChangesFactory(GetRepositoryDescription())
+            var changes = computeTreeChangesFactory(RepositoryFixture.GetRepositoryDescription())
                 .Compare(commitC, mergeCommit);
             Assert.That(changes, Has.Count.EqualTo(1));
             Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Modified));
@@ -62,7 +62,7 @@ namespace GitObjectDb.Tests.Models
             // newBranch:   B---'
 
             // Arrange
-            var repositoryDescription = GetRepositoryDescription();
+            var repositoryDescription = RepositoryFixture.GetRepositoryDescription();
             sut.SaveInNewRepository(signature, message, repositoryDescription); // A
 
             // Act
@@ -72,11 +72,11 @@ namespace GitObjectDb.Tests.Models
             sut.Checkout("master");
             var updateDescription = page.With(p => p.Description == "modified description");
             var commitC = sut.Commit(updateDescription.Repository, signature, message); // C
-            var loaded = loader.LoadFrom<ObjectRepository>(GetRepositoryDescription());
+            var loaded = loader.LoadFrom<ObjectRepository>(RepositoryFixture.GetRepositoryDescription());
             var mergeCommit = loaded.Merge("newBranch").Apply(signature); // D
 
             // Assert
-            var changes = computeTreeChangesFactory(GetRepositoryDescription())
+            var changes = computeTreeChangesFactory(RepositoryFixture.GetRepositoryDescription())
                 .Compare(commitC, mergeCommit);
             Assert.That(changes, Has.Count.EqualTo(1));
             Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Added));
@@ -92,7 +92,7 @@ namespace GitObjectDb.Tests.Models
             // newBranch:   B---'
 
             // Arrange
-            var repositoryDescription = GetRepositoryDescription();
+            var repositoryDescription = RepositoryFixture.GetRepositoryDescription();
             sut.SaveInNewRepository(signature, message, repositoryDescription); // A
 
             // Act
@@ -102,11 +102,11 @@ namespace GitObjectDb.Tests.Models
             sut.Checkout("master");
             var updateDescription = page.With(p => p.Description == "modified description");
             var commitC = sut.Commit(updateDescription.Repository, signature, message); // C
-            var loaded = loader.LoadFrom<ObjectRepository>(GetRepositoryDescription());
+            var loaded = loader.LoadFrom<ObjectRepository>(RepositoryFixture.GetRepositoryDescription());
             var mergeCommit = loaded.Merge("newBranch").Apply(signature); // D
 
             // Assert
-            var changes = computeTreeChangesFactory(GetRepositoryDescription())
+            var changes = computeTreeChangesFactory(RepositoryFixture.GetRepositoryDescription())
                 .Compare(commitC, mergeCommit);
             Assert.That(changes, Has.Count.EqualTo(1));
             Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Deleted));
@@ -124,14 +124,14 @@ namespace GitObjectDb.Tests.Models
             // newBranch:     B---C---' (B contains a non-idempotent migration)
 
             // Arrange
-            var repositoryDescription = GetRepositoryDescription();
+            var repositoryDescription = RepositoryFixture.GetRepositoryDescription();
             sut.SaveInNewRepository(signature, message, repositoryDescription); // A
 
             // B, C
             sut.Branch("newBranch");
             var updatedInstance = sut.With(i => i.Migrations.Add(fixture.Create<Migration>()));
             sut.Commit(updatedInstance.Repository, signature, message); // B
-            var loaded = loader.LoadFrom<ObjectRepository>(GetRepositoryDescription());
+            var loaded = loader.LoadFrom<ObjectRepository>(RepositoryFixture.GetRepositoryDescription());
             var updateName = loaded.Applications[1].Pages[1].With(p => p.Name == "modified name");
             loaded.Commit(updateName.Repository, signature, message); // C
 
@@ -139,7 +139,7 @@ namespace GitObjectDb.Tests.Models
             sut.Checkout("master");
             var updateDescription = page.With(p => p.Description == "modified description");
             sut.Commit(updateDescription.Repository, signature, message); // D
-            loaded = loader.LoadFrom<ObjectRepository>(GetRepositoryDescription());
+            loaded = loader.LoadFrom<ObjectRepository>(RepositoryFixture.GetRepositoryDescription());
 
             // E
             var mergeStep1 = loaded.Merge("newBranch");
@@ -147,7 +147,7 @@ namespace GitObjectDb.Tests.Models
             mergeStep1.Apply(signature); // E
 
             // F
-            loaded = loader.LoadFrom<ObjectRepository>(GetRepositoryDescription());
+            loaded = loader.LoadFrom<ObjectRepository>(RepositoryFixture.GetRepositoryDescription());
             var mergeStep2 = loaded.Merge("newBranch");
             Assert.That(mergeStep2.IsPartialMerge, Is.False);
             mergeStep2.Apply(signature); // F
@@ -162,7 +162,7 @@ namespace GitObjectDb.Tests.Models
             // newBranch:   B---'
 
             // Arrange
-            var repositoryDescription = GetRepositoryDescription();
+            var repositoryDescription = RepositoryFixture.GetRepositoryDescription();
             sut.SaveInNewRepository(signature, message, repositoryDescription); // A
 
             // Act
@@ -172,7 +172,7 @@ namespace GitObjectDb.Tests.Models
             sut.Checkout("master");
             var updateNameOther = page.With(p => p.Name == "yet again modified name");
             sut.Commit(updateNameOther.Repository, signature, message); // C
-            var loaded = loader.LoadFrom<ObjectRepository>(GetRepositoryDescription());
+            var loaded = loader.LoadFrom<ObjectRepository>(RepositoryFixture.GetRepositoryDescription());
             Assert.Throws<RemainingConflictsException>(() => loaded.Merge("newBranch").Apply(signature));
         }
 
@@ -185,7 +185,7 @@ namespace GitObjectDb.Tests.Models
             // newBranch:   B---'
 
             // Arrange
-            var repositoryDescription = GetRepositoryDescription();
+            var repositoryDescription = RepositoryFixture.GetRepositoryDescription();
             sut.SaveInNewRepository(signature, message, repositoryDescription); // A
 
             // Act
@@ -195,14 +195,14 @@ namespace GitObjectDb.Tests.Models
             sut.Checkout("master");
             var updateNameOther = page.With(p => p.Name == "yet again modified name");
             var commitC = sut.Commit(updateNameOther.Repository, signature, message); // C
-            var loaded = loader.LoadFrom<ObjectRepository>(GetRepositoryDescription());
+            var loaded = loader.LoadFrom<ObjectRepository>(RepositoryFixture.GetRepositoryDescription());
             var merge = loaded.Merge("newBranch");
             var chunk = merge.ModifiedChunks.Single();
             chunk.Resolve(JToken.FromObject("merged name"));
             var mergeCommit = merge.Apply(signature); // D
 
             // Assert
-            var changes = computeTreeChangesFactory(GetRepositoryDescription())
+            var changes = computeTreeChangesFactory(RepositoryFixture.GetRepositoryDescription())
                 .Compare(commitC, mergeCommit);
             Assert.That(changes, Has.Count.EqualTo(1));
             Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Modified));

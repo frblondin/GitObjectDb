@@ -1,8 +1,11 @@
+using GitObjectDb.Git;
 using GitObjectDb.Tests.Assets.Tools;
+using LibGit2Sharp;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 
 namespace GitObjectDb.Tests
@@ -36,12 +39,36 @@ namespace GitObjectDb.Tests
 
                 if (result == null)
                 {
-                    result = Path.Combine(Path.GetTempPath(), "Repos", Guid.NewGuid().ToString());
+                    result = GetRepositoryPath(TestContext.CurrentContext.Test.ID);
                     GitPath = result;
                 }
                 return result;
             }
             private set => TestContext.CurrentContext.Test.Properties.Set(nameof(GitPath), value);
+        }
+
+        public static string BenchmarkRepositoryPath =>
+            Path.Combine(TestContext.CurrentContext.WorkDirectory, "Repos", "Benchmark");
+
+        public static RepositoryDescription BenchmarkRepositoryDescription =>
+            new RepositoryDescription(BenchmarkRepositoryPath);
+
+        public static string GetRepositoryPath(string name) =>
+            Path.Combine(TestContext.CurrentContext.WorkDirectory, "Repos", name);
+
+        public static RepositoryDescription GetRepositoryDescription(OdbBackend backend = null) =>
+            GetRepositoryDescription(GitPath, backend);
+
+        public static RepositoryDescription GetRepositoryDescription(string path, OdbBackend backend = null) =>
+            new RepositoryDescription(path, backend);
+
+        [OneTimeSetUp]
+        public void RestoreRepositories()
+        {
+            if (!Directory.Exists(Path.Combine(BenchmarkRepositoryPath, ".git")))
+            {
+                ZipFile.ExtractToDirectory("Assets\\Benchmark.zip", BenchmarkRepositoryPath);
+            }
         }
 
         [OneTimeTearDown]

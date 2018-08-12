@@ -96,7 +96,8 @@ namespace GitObjectDb.Compare
 
         static JObject GetContent(Commit mergeBase, string path, string branchInfo)
         {
-            var content = mergeBase[path]?.Target?.Peel<Blob>()?.GetContentText() ??
+            var blob = mergeBase[path]?.Target as Blob;
+            var content = blob?.GetContentText() ??
                 throw new NotImplementedException($"Could not find node {path} in {branchInfo} tree.");
             return JsonConvert.DeserializeObject<JObject>(content);
         }

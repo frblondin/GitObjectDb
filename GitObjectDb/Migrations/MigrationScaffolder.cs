@@ -88,9 +88,8 @@ namespace GitObjectDb.Migrations
 
         IEnumerable<Migrator> GetLogMigrators(IRepository repository, ICommitLog log, List<IMigration> deferred, Commit previousCommit, MigrationMode mode)
         {
-            foreach (var logCommit in log)
+            foreach (var commit in log)
             {
-                var commit = logCommit.Peel<Commit>();
                 if (previousCommit != null)
                 {
                     var migrations = GetCommitMigrations(repository, previousCommit, commit).ToList();
@@ -113,7 +112,7 @@ namespace GitObjectDb.Migrations
             {
                 foreach (var change in changes.Where(c => c.Path.StartsWith(AbstractObjectRepository.MigrationFolder, StringComparison.OrdinalIgnoreCase) && (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))
                 {
-                    var blob = commit[change.Path].Target.Peel<Blob>();
+                    var blob = (Blob)commit[change.Path].Target;
                     var jobject = blob.GetContentStream().ToJson<JObject>(_serializer);
                     var objectType = Type.GetType(jobject.Value<string>("$type"));
                     yield return (IMigration)jobject.ToObject(objectType, _serializer);

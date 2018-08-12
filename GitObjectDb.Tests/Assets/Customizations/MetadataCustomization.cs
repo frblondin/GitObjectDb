@@ -11,9 +11,27 @@ namespace GitObjectDb.Tests.Assets.Customizations
 {
     public class MetadataCustomization : ICustomization
     {
-        internal const int ApplicationCount = 2;
-        internal const int PagePerApplicationCount = 3;
-        internal const int FieldPerPageCount = 10;
+        public const int DefaultApplicationCount = 2;
+        public const int DefaultPagePerApplicationCount = 3;
+        public const int DefaultFieldPerPageCount = 10;
+
+        public MetadataCustomization()
+            : this(DefaultApplicationCount, DefaultPagePerApplicationCount, DefaultFieldPerPageCount)
+        {
+        }
+
+        public MetadataCustomization(int applicationCount, int pagePerApplicationCount, int fieldPerPageCount)
+        {
+            ApplicationCount = applicationCount;
+            PagePerApplicationCount = pagePerApplicationCount;
+            FieldPerPageCount = fieldPerPageCount;
+        }
+
+        public int ApplicationCount { get; }
+
+        public int PagePerApplicationCount { get; }
+
+        public int FieldPerPageCount { get; }
 
         public void Customize(IFixture fixture)
         {
@@ -30,10 +48,9 @@ namespace GitObjectDb.Tests.Assets.Customizations
                 .ToImmutableList()));
             fixture.Inject(module);
 
-            var random = new Random();
-            fixture.Register(() => module.Applications[random.Next(ApplicationCount)]);
-            fixture.Register(() => fixture.Create<Application>().Pages[random.Next(PagePerApplicationCount)]);
-            fixture.Register(() => fixture.Create<Page>().Fields[random.Next(FieldPerPageCount)]);
+            fixture.Register(() => module.Value.Applications.PickRandom());
+            fixture.Register(() => fixture.Create<Application>().Pages.PickRandom());
+            fixture.Register(() => fixture.Create<Page>().Fields.PickRandom());
         }
     }
 }

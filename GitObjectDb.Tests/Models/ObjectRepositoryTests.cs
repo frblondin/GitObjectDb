@@ -18,7 +18,6 @@ using System.Text;
 
 namespace GitObjectDb.Tests.Models
 {
-    [DebuggerDisplay("{_path}")]
     public partial class ObjectRepositoryTests
     {
         [Test]
@@ -26,8 +25,8 @@ namespace GitObjectDb.Tests.Models
         public void CreateAndLoadRepository(IObjectRepositoryLoader loader, ObjectRepository sut, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Act
-            sut.SaveInNewRepository(signature, message, GetRepositoryDescription(inMemoryBackend));
-            var loaded = loader.LoadFrom<ObjectRepository>(GetRepositoryDescription(inMemoryBackend));
+            sut.SaveInNewRepository(signature, message, RepositoryFixture.GetRepositoryDescription(inMemoryBackend));
+            var loaded = loader.LoadFrom<ObjectRepository>(RepositoryFixture.GetRepositoryDescription(inMemoryBackend));
 
             // Assert
             PAssert.IsTrue(AreFunctionnally.Equivalent<ObjectRepository>(() => sut == loaded));
@@ -42,7 +41,7 @@ namespace GitObjectDb.Tests.Models
         public void CommitPageNameUpdate(ObjectRepository sut, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Act
-            sut.SaveInNewRepository(signature, message, GetRepositoryDescription(inMemoryBackend));
+            sut.SaveInNewRepository(signature, message, RepositoryFixture.GetRepositoryDescription(inMemoryBackend));
             var modifiedPage = page.With(p => p.Name == "modified");
             var commit = sut.Commit(modifiedPage.Repository, signature, message);
 
@@ -64,7 +63,5 @@ namespace GitObjectDb.Tests.Models
             // Assert
             Assert.That(resolved, Is.SameAs(field));
         }
-
-        static RepositoryDescription GetRepositoryDescription(OdbBackend backend = null) => new RepositoryDescription(RepositoryFixture.GitPath, backend);
     }
 }

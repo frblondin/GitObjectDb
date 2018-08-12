@@ -20,7 +20,7 @@ namespace GitObjectDb.Tests.Migrations
         public void MigrationScaffolderDetectsRequiredChanges(IFixture fixture, IServiceProvider serviceProvider, ObjectRepository sut, Signature signature, string message)
         {
             // Arrange
-            var repositoryDescription = GetRepositoryDescription();
+            var repositoryDescription = RepositoryFixture.GetRepositoryDescription();
             sut.SaveInNewRepository(signature, message, repositoryDescription);
             var updated = sut.With(i => i.Migrations.Add(fixture.Create<Migration>()));
             var commit = sut.Commit(updated, signature, message);
@@ -35,7 +35,5 @@ namespace GitObjectDb.Tests.Migrations
             Assert.That(migrators[0].Mode, Is.EqualTo(MigrationMode.Upgrade));
             Assert.That(migrators[0].Migrations, Has.Count.EqualTo(1));
         }
-
-        static RepositoryDescription GetRepositoryDescription(OdbBackend backend = null) => new RepositoryDescription(RepositoryFixture.GitPath, backend);
     }
 }
