@@ -65,5 +65,12 @@ namespace GitObjectDb.Models
         /// <param name="path">The Git path.</param>
         /// <returns>The object, if any was found.</returns>
         IMetadataObject TryGetFromGitPath(string path);
+
+        /// <summary>
+        /// Gets a nested object from its Git path.
+        /// </summary>
+        /// <param name="path">The Git path.</param>
+        /// <returns>The object, if any was found.</returns>
+        IMetadataObject GetFromGitPath(string path);
     }
 }

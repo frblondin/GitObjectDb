@@ -121,18 +121,18 @@ namespace GitObjectDb.Compare
         {
             var path = node.GetDataPath();
             var propertyChange = _changes[path].FirstOrDefault(c => c.Property.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            return propertyChange != null ?
-                propertyChange.MergeValue.ToObject(argumentType, _serializer.Value) :
-                fallback;
+            if (propertyChange != null)
+            {
+                return propertyChange.MergeValue.ToObject(argumentType, _serializer.Value);
+            }
+            else
+            {
+                return fallback is ICloneable cloneable ? cloneable.Clone() : fallback;
+            }
         }
 
         (IEnumerable<IMetadataObject> Additions, IEnumerable<IMetadataObject> Deletions) ChildChangesGetter(IMetadataObject node, ChildPropertyInfo childProperty)
         {
-            if (_forceVisit.Contains(node.Id))
-            {
-                Console.WriteLine(node.Id.ToString());
-            }
-
             var pathWithProperty = GetChildPathRegex(node, childProperty);
             var additions = (from o in _metadataTreeMerge.AddedObjects
                              where pathWithProperty.IsMatch(o.Path)

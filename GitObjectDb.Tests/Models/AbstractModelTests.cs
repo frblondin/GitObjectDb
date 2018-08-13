@@ -26,6 +26,17 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        public void WithModifiesLink(LinkField field, Page newLinkedPage)
+        {
+            // Act
+            var modified = field.With(f => f.PageLink == new LazyLink<Page>(newLinkedPage));
+
+            // Assert
+            Assert.That(modified.PageLink.Link, Is.EqualTo(newLinkedPage));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
         public void WithDuplicatesImmutableMetadataTree(Page page, string newName)
         {
             // Act

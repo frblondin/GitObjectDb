@@ -105,5 +105,9 @@ namespace GitObjectDb.Models
             }
             return result;
         }
+
+        /// <inheritdoc />
+        public IMetadataObject GetFromGitPath(string path) =>
+            TryGetFromGitPath(path) ?? throw new NotFoundException($"The element with path '{path}' could not be found.");
     }
 }

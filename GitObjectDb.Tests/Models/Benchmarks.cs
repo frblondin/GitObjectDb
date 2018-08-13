@@ -67,7 +67,7 @@ namespace GitObjectDb.Tests.Models
 
             // Assert
             // Child loading is lazy so root load time should be really short
-            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(30)));
+            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromMinutes(1)));
         }
 
         [Test]

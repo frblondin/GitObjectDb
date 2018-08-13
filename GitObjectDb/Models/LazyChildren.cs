@@ -81,7 +81,7 @@ namespace GitObjectDb.Models
             {
                 if (Parent == null)
                 {
-                    throw new NotSupportedException($"Parent is not attached to {nameof(LazyChildrenHelper)}.");
+                    throw new NotSupportedException($"Parent is not attached to {nameof(LazyChildren<TChild>)}.");
                 }
 
                 try
@@ -124,11 +124,13 @@ namespace GitObjectDb.Models
             else if (_factoryWithRepo != null)
             {
                 var objectRepository = (AbstractObjectRepository)parent.Repository;
-                return objectRepository._repositoryProvider.Execute(objectRepository._repositoryDescription, repository =>
-                {
-                    var nodes = _factoryWithRepo(parent, repository) ?? throw new NotSupportedException(_nullReturnedValueExceptionMessage);
-                    return nodes.Cast<TChild>();
-                });
+                return objectRepository._repositoryProvider.Execute(
+                    objectRepository._repositoryDescription,
+                    repository =>
+                    {
+                        var nodes = _factoryWithRepo(parent, repository) ?? throw new NotSupportedException(_nullReturnedValueExceptionMessage);
+                        return nodes.Cast<TChild>();
+                    });
             }
             throw new NotSupportedException("Factory cannot be null.");
         }
@@ -181,6 +183,7 @@ namespace GitObjectDb.Models
             }
 
             Parent = parent;
+            AttachChildrenToParentIfNeeded(parent);
             return this;
         }
 

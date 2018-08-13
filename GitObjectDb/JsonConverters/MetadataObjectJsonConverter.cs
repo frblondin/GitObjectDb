@@ -37,10 +37,18 @@ namespace GitObjectDb.JsonConverters
         /// <inheritdoc />
         public override bool CanRead => true;
 
-        static object ResolveFromJsonToken(JsonProperty property, JObject jObject) =>
-            jObject.TryGetValue(property.PropertyName, StringComparison.OrdinalIgnoreCase, out var token) ?
-            token.ToObject(property.PropertyType) :
-            null;
+        static object ResolveFromJsonToken(JsonProperty property, JObject jObject)
+        {
+            if (jObject.TryGetValue(property.PropertyName, StringComparison.OrdinalIgnoreCase, out var token))
+            {
+                var typeName = (token as JContainer)?.Value<string>("$type");
+                var type = !string.IsNullOrEmpty(typeName) ?
+                    Type.GetType(typeName) :
+                    property.PropertyType;
+                return token.ToObject(type);
+            }
+            return null;
+        }
 
         /// <inheritdoc />
         public override bool CanConvert(Type objectType)
