@@ -1,6 +1,7 @@
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
 using GitObjectDb.Models;
+using GitObjectDb.Reflection;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Utils;
@@ -17,7 +18,7 @@ namespace GitObjectDb.Tests.Git.Hooks
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void PreCommitWhenPropertyChangeGetsFired(GitHooks sut, ObjectRepository instance, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
+        public void PreCommitWhenPropertyChangeGetsFired(GitHooks sut, ObjectRepository instance, Page page, LinkField field, Page newLinkedPage, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Arrange
             CommitStartedEventArgs lastEvent = null;
@@ -25,12 +26,15 @@ namespace GitObjectDb.Tests.Git.Hooks
 
             // Act
             instance.SaveInNewRepository(signature, message, RepositoryFixture.GetRepositoryDescription(inMemoryBackend));
-            var modifiedPage = page.With(p => p.Name == "modified");
-            instance.Commit(modifiedPage.Repository, signature, message);
+            var composer = new PredicateComposer()
+                .And(field, f => f.Name == "modified field name" && f.PageLink == new LazyLink<Page>(newLinkedPage))
+                .And(page, p => p.Name == "modified page name");
+            var modified = field.With(composer);
+            instance.Commit(modified.Repository, signature, message);
 
             // Assert
             Assert.That(lastEvent, Is.Not.Null);
-            Assert.That(lastEvent.Changes, Has.Count.EqualTo(1));
+            Assert.That(lastEvent.Changes, Has.Count.EqualTo(2));
         }
 
         [Test]

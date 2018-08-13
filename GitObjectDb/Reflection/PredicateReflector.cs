@@ -9,10 +9,8 @@ using System.Text;
 
 namespace GitObjectDb.Reflection
 {
-    /// <summary>
-    /// Analyzes the conditions of a predicate to collect property assignments to be made.
-    /// </summary>
-    internal partial class PredicateReflector
+    /// <inheritdoc/>
+    internal partial class PredicateReflector : IPredicateReflector
     {
         static readonly MethodInfo _childrenAddMethod = ExpressionReflector.GetMethod<ILazyChildren>(c => c.Add(default));
         static readonly MethodInfo _childrenDeleteMethod = ExpressionReflector.GetMethod<ILazyChildren>(c => c.Delete(default));
@@ -44,40 +42,47 @@ namespace GitObjectDb.Reflection
             return visitor;
         }
 
-        /// <summary>
-        /// Returns the value collected by the reflector, <paramref name="fallback"/> is none was found.
-        /// </summary>
-        /// <param name="instance">The instance.</param>
-        /// <param name="name">The name of the parameter.</param>
-        /// <param name="argumentType">The argument type.</param>
-        /// <param name="fallback">The fallback value.</param>
-        /// <returns>The final value to be used for the parameter.</returns>
-        internal object ProcessArgument(IMetadataObject instance, string name, Type argumentType, object fallback)
+        /// <inheritdoc/>
+        public object ProcessArgument(IMetadataObject instance, string name, Type argumentType, object fallback = null)
         {
-            if (instance != Instance)
+            if (name == null)
             {
-                return fallback;
+                throw new ArgumentNullException(nameof(name));
             }
-            if (_visitor != null && _visitor.Values.TryGetValue(name, out var value))
+            if (instance == null)
             {
-                return value;
+                throw new ArgumentNullException(nameof(instance));
             }
             if (argumentType == null)
             {
                 throw new ArgumentNullException(nameof(argumentType));
             }
 
+            if (instance != Instance)
+            {
+                return fallback is ICloneable cloneable ? cloneable.Clone() : fallback;
+            }
+
+            if (_visitor != null && _visitor.Values.TryGetValue(name, out var value))
+            {
+                return value;
+            }
+
             return fallback;
         }
 
-        /// <summary>
-        /// Gets the child changes collected by the reflector.
-        /// </summary>
-        /// <param name="instance">The instance.</param>
-        /// <param name="childProperty">The child property.</param>
-        /// <returns>A list of changes.</returns>
-        internal (IEnumerable<IMetadataObject> Additions, IEnumerable<IMetadataObject> Deletions) GetChildChanges(IMetadataObject instance, ChildPropertyInfo childProperty)
+        /// <inheritdoc/>
+        public (IEnumerable<IMetadataObject> Additions, IEnumerable<IMetadataObject> Deletions) GetChildChanges(IMetadataObject instance, ChildPropertyInfo childProperty)
         {
+            if (instance == null)
+            {
+                throw new ArgumentNullException(nameof(instance));
+            }
+            if (childProperty == null)
+            {
+                throw new ArgumentNullException(nameof(childProperty));
+            }
+
             var childChanges = instance == Instance && _visitor != null && _visitor.ChildChanges.TryGetValue(childProperty.Name, out var changes) ? changes : null;
             return
             (

@@ -1,4 +1,4 @@
-﻿using GitObjectDb.Attributes;
+using GitObjectDb.Attributes;
 using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
@@ -37,16 +37,19 @@ namespace GitObjectDb.Reflection
                     throw new ArgumentNullException(nameof(node));
                 }
 
-                if (node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.TypeEqual)
+                switch (node.NodeType)
                 {
-                    var member = ExtractMember(node.Left);
-                    Values[member.Name] = ValueVisitor.ExtractValue(node.Right);
+                    case ExpressionType.Equal:
+                    case ExpressionType.TypeEqual:
+                        var member = ExtractMember(node.Left);
+                        Values[member.Name] = ValueVisitor.ExtractValue(node.Right);
+                        return node;
+                    case ExpressionType.And:
+                    case ExpressionType.AndAlso:
+                        return base.VisitBinary(node);
                 }
-                else
-                {
-                    ThrowNotSupported(node.NodeType.ToString());
-                }
-                return base.VisitBinary(node);
+                ThrowNotSupported(node.NodeType.ToString());
+                return node;
             }
 
             protected override Expression VisitMethodCall(MethodCallExpression node)

@@ -36,6 +36,10 @@ namespace GitObjectDb.Compare
             NewRepository = newRepository ?? throw new ArgumentNullException(nameof(newRepository));
             _changes = changed ?? throw new ArgumentNullException(nameof(changed));
             OldRepository = oldRepository;
+
+            Added = _changes.Where(c => c.Status == ChangeKind.Added).ToImmutableList();
+            Modified = _changes.Where(c => c.Status == ChangeKind.Modified).ToImmutableList();
+            Deleted = _changes.Where(c => c.Status == ChangeKind.Deleted).ToImmutableList();
         }
 
         /// <summary>
@@ -51,17 +55,17 @@ namespace GitObjectDb.Compare
         /// <summary>
         /// Gets the list of <see cref="MetadataTreeEntryChanges" /> that have been been added.
         /// </summary>
-        public IEnumerable<MetadataTreeEntryChanges> Added => _changes.Where(c => c.Status == ChangeKind.Added);
+        public IReadOnlyList<MetadataTreeEntryChanges> Added { get; }
 
         /// <summary>
         /// Gets the list of <see cref="MetadataTreeEntryChanges" /> that have been been modified.
         /// </summary>
-        public IEnumerable<MetadataTreeEntryChanges> Modified => _changes.Where(c => c.Status == ChangeKind.Modified);
+        public IReadOnlyList<MetadataTreeEntryChanges> Modified { get; }
 
         /// <summary>
         /// Gets the list of <see cref="MetadataTreeEntryChanges" /> that have been been deleted.
         /// </summary>
-        public IEnumerable<MetadataTreeEntryChanges> Deleted => _changes.Where(c => c.Status == ChangeKind.Deleted);
+        public IReadOnlyList<MetadataTreeEntryChanges> Deleted { get; }
 
         /// <inheritdoc/>
         public int Count => _changes.Count;

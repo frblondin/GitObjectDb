@@ -75,7 +75,7 @@ namespace GitObjectDb.Reflection
             .ToImmutableList();
 
         /// <inheritdoc />
-        public IMetadataObject With(IMetadataObject source, Expression predicate)
+        public IMetadataObject With(IMetadataObject source, IPredicateReflector predicate)
         {
             if (source == null)
             {
@@ -86,11 +86,10 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(predicate));
             }
 
-            var predicateReflector = new PredicateReflector(source, predicate);
             var newInstance = DeepClone(
                 source.Repository,
-                predicateReflector.ProcessArgument,
-                predicateReflector.GetChildChanges,
+                predicate.ProcessArgument,
+                predicate.GetChildChanges,
                 n => n.IsParentOf(source));
             return newInstance.TryGetFromGitPath(source.GetDataPath());
         }
