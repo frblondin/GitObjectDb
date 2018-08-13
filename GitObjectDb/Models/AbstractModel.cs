@@ -60,12 +60,12 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         [DataMember]
-        public Guid Id { get; private set; }
+        public Guid Id { get; }
 
         /// <inheritdoc />
         [DataMember]
         [Modifiable]
-        public string Name { get; private set; }
+        public string Name { get; }
 
         /// <inheritdoc />
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
