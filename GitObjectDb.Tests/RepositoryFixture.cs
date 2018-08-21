@@ -50,6 +50,9 @@ namespace GitObjectDb.Tests
         public static string BenchmarkRepositoryPath =>
             Path.Combine(TestContext.CurrentContext.WorkDirectory, "Repos", "Benchmark");
 
+        public static string TempRepoPath =>
+            Path.Combine(TestContext.CurrentContext.WorkDirectory, "TempRepos");
+
         public static RepositoryDescription BenchmarkRepositoryDescription =>
             new RepositoryDescription(BenchmarkRepositoryPath);
 
@@ -60,7 +63,7 @@ namespace GitObjectDb.Tests
             new RepositoryDescription(SmallRepositoryPath);
 
         public static string GetRepositoryPath(string name) =>
-            Path.Combine(TestContext.CurrentContext.WorkDirectory, "Repos", name);
+            Path.Combine(TempRepoPath, name);
 
         public static RepositoryDescription GetRepositoryDescription(OdbBackend backend = null) =>
             GetRepositoryDescription(GitPath, backend);
@@ -86,11 +89,7 @@ namespace GitObjectDb.Tests
 
         static void DeleteTempPathImpl()
         {
-            var path = GitPath;
-            if (path != null)
-            {
-                DirectoryUtils.Delete(path);
-            }
+            DirectoryUtils.Delete(TempRepoPath);
         }
     }
 }
