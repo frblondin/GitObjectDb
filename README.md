@@ -6,7 +6,6 @@
 [![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=coverage)](https://sonarcloud.io/component_measures?id=GitObjectDb&metric=Coverage)
 [![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=code_smells)](https://sonarcloud.io/project/issues?id=GitObjectDb&resolved=false&types=CODE_SMELL)
 
-**GitObjectDb simplfies the configuration management versioning by backing it in Git.**
 **GitObjectDb simplifies the configuration management versioning by backing it in Git.**
 
 ## Overview
