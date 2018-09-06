@@ -19,7 +19,7 @@ namespace GitObjectDb.Models
 
         readonly object _syncLock = new object();
         readonly Func<IMetadataObject, TLink> _factory;
-        string _path;
+        ObjectPath _path;
         TLink _link;
 
         /// <summary>
@@ -46,8 +46,8 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="path">The path.</param>
         [JsonConstructor]
-        public LazyLink(string path)
-            : this(parent => (TLink)parent.Repository.GetFromGitPath(path))
+        public LazyLink(ObjectPath path)
+            : this(parent => (TLink)parent.Container.GetFromGitPath(path))
         {
             _path = path;
         }
@@ -79,7 +79,7 @@ namespace GitObjectDb.Models
                     }
 
                     _link = GetValueFromFactory(Parent);
-                    _path = _link.GetFolderPath();
+                    _path = new ObjectPath(_link);
                     return _link;
                 }
             }
@@ -90,7 +90,7 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         [DataMember]
-        public string Path => _path ?? Link.GetFolderPath();
+        public ObjectPath Path => _path ?? new ObjectPath(Link);
 
         /// <inheritdoc />
         public bool IsLinkCreated => _link != null;
@@ -139,7 +139,7 @@ namespace GitObjectDb.Models
                 return true; // No better way to spare performance...
             }
 
-            return Path.Equals(Path, StringComparison.OrdinalIgnoreCase);
+            return Path.Equals(Path);
         }
 
         /// <inheritdoc />

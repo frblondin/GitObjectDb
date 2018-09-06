@@ -1,10 +1,10 @@
 using AutoFixture;
 using GitObjectDb.Compare;
 using GitObjectDb.Git;
+using GitObjectDb.IO;
 using GitObjectDb.Models;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
-using GitObjectDb.Tests.Assets.Tools;
 using GitObjectDb.Tests.Assets.Utils;
 using LibGit2Sharp;
 using NUnit.Framework;
@@ -31,8 +31,9 @@ namespace GitObjectDb.Tests.Models
             fixture.Customize(new MetadataCustomization(2, 200, 30));
 
             // Act
-            var sut = fixture.Create<ObjectRepository>();
-            sut.SaveInNewRepository(signature, message, RepositoryFixture.GetRepositoryDescription(targetDir));
+            var container = fixture.Create<IObjectRepositoryContainer<ObjectRepository>>();
+            var repository = fixture.Create<ObjectRepository>();
+            container.AddRepository(repository, signature, message);
 
             // Assert
             // No assertion, the goal of this test is to create a repository to update Assets\Benchmark.zip
@@ -41,13 +42,13 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization))]
-        public void LoadLargeRepository(IObjectRepositoryLoader loader)
+        public void LoadLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
             var stopwatch = Stopwatch.StartNew();
 
             // Act
-            loader.LoadFrom<ObjectRepository>(RepositoryFixture.BenchmarkRepositoryDescription);
+            loader.LoadFrom<ObjectRepository>(container, RepositoryFixture.BenchmarkRepositoryDescription);
 
             // Assert
             // Child loading is lazy so root load time should be really short
@@ -56,10 +57,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization))]
-        public void SearchInLargeRepository(IObjectRepositoryLoader loader)
+        public void SearchInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
-            var sut = loader.LoadFrom<ObjectRepository>(RepositoryFixture.BenchmarkRepositoryDescription);
+            var sut = loader.LoadFrom<ObjectRepository>(container, RepositoryFixture.BenchmarkRepositoryDescription);
             var stopwatch = Stopwatch.StartNew();
 
             // Act
@@ -72,15 +73,15 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization))]
-        public void ComputeChangesInLargeRepository(IObjectRepositoryLoader loader, Func<RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory)
+        public void ComputeChangesInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory)
         {
             // Arrange
-            var sut = loader.LoadFrom<ObjectRepository>(RepositoryFixture.BenchmarkRepositoryDescription);
+            var sut = loader.LoadFrom<ObjectRepository>(container, RepositoryFixture.BenchmarkRepositoryDescription);
             var fieldToModify = sut
                 .Applications.PickRandom()
                 .Pages.PickRandom()
                 .Fields.PickRandom();
-            var computeTreeChanges = computeTreeChangesFactory(RepositoryFixture.BenchmarkRepositoryDescription);
+            var computeTreeChanges = computeTreeChangesFactory(container, RepositoryFixture.BenchmarkRepositoryDescription);
             var stopwatch = Stopwatch.StartNew();
 
             // Act

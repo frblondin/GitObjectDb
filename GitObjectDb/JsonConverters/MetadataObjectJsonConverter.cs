@@ -19,16 +19,19 @@ namespace GitObjectDb.JsonConverters
     {
         readonly IServiceProvider _serviceProvider;
         readonly ChildrenResolver _childResolver;
+        readonly IObjectRepositoryContainer _repositoryContainer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MetadataObjectJsonConverter"/> class.
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
         /// <param name="childResolver">The child resolver.</param>
-        public MetadataObjectJsonConverter(IServiceProvider serviceProvider, ChildrenResolver childResolver)
+        /// <param name="repositoryContainer">The repository container.</param>
+        public MetadataObjectJsonConverter(IServiceProvider serviceProvider, ChildrenResolver childResolver, IObjectRepositoryContainer repositoryContainer)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _childResolver = childResolver ?? throw new ArgumentNullException(nameof(childResolver));
+            _repositoryContainer = repositoryContainer ?? throw new ArgumentNullException(nameof(repositoryContainer));
         }
 
         /// <inheritdoc />
@@ -41,7 +44,9 @@ namespace GitObjectDb.JsonConverters
         {
             if (jObject.TryGetValue(property.PropertyName, StringComparison.OrdinalIgnoreCase, out var token))
             {
-                var typeName = (token as JContainer)?.Value<string>("$type");
+                var typeName = !(token is JArray) ?
+                    (token as JContainer)?.Value<string>("$type") :
+                    null;
                 var type = !string.IsNullOrEmpty(typeName) ?
                     Type.GetType(typeName) :
                     property.PropertyType;
@@ -104,6 +109,7 @@ namespace GitObjectDb.JsonConverters
             ResolveChildren(property, objectType) ??
             ResolveFromJsonToken(property, jObject) ??
             ResolveFromServiceProvider(property) ??
+            ResolveContainer(property) ??
             throw new NotImplementedException($"Unable to create parameter '{property.PropertyName}' of type '{property.PropertyType}'.");
 
         object ResolveChildren(JsonProperty property, Type objectType) =>
@@ -113,6 +119,11 @@ namespace GitObjectDb.JsonConverters
 
         object ResolveFromServiceProvider(JsonProperty property) =>
             _serviceProvider.GetService(property.PropertyType);
+
+        IObjectRepositoryContainer ResolveContainer(JsonProperty property) =>
+            typeof(IObjectRepositoryContainer).IsAssignableFrom(property.PropertyType) ?
+            _repositoryContainer :
+            null;
 
         /// <inheritdoc />
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

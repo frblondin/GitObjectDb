@@ -1,6 +1,5 @@
 using GitObjectDb.Git;
-using GitObjectDb.Tests.Assets.Tools;
-using LibGit2Sharp;
+using GitObjectDb.IO;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -64,12 +63,6 @@ namespace GitObjectDb.Tests
 
         public static string GetRepositoryPath(string name) =>
             Path.Combine(TempRepoPath, name);
-
-        public static RepositoryDescription GetRepositoryDescription(OdbBackend backend = null) =>
-            GetRepositoryDescription(GitPath, backend);
-
-        public static RepositoryDescription GetRepositoryDescription(string path, OdbBackend backend = null) =>
-            new RepositoryDescription(path, backend);
 
         [OneTimeSetUp]
         public void RestoreRepositories()

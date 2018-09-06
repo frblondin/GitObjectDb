@@ -1,6 +1,5 @@
 using AutoFixture;
 using AutoFixture.Idioms;
-using AutoFixture.NUnit3;
 using GitObjectDb.Attributes;
 using GitObjectDb.Migrations;
 using GitObjectDb.Models;
@@ -25,6 +24,8 @@ namespace GitObjectDb.Tests.Git
 {
     public class GuardClauseTests
     {
+        static Assembly Assembly { get; } = typeof(IMetadataObject).Assembly;
+
         /// <summary>
         /// Add missing type to <see cref="CommonTypeProviderCustomization"/> as needed in case of errors.
         /// </summary>
@@ -35,10 +36,11 @@ namespace GitObjectDb.Tests.Git
         public void VerifyGuardForNullClauses(IFixture fixture, GuardClauseAssertion assertion)
         {
             fixture.Customizations.OfType<NSubstituteForAbstractTypesCustomization>().Single().ExcludeEnumerableTypes = false;
-            var types = from t in typeof(IMetadataObject).Assembly.GetTypes()
+            var types = from t in Assembly.GetTypes()
                         where !t.IsEnum
                         where !typeof(Delegate).IsAssignableFrom(t)
                         where !Attribute.IsDefined(t, typeof(ExcludeFromGuardForNullAttribute))
+                        where !typeof(FluentValidation.IValidator).IsAssignableFrom(t) && !typeof(FluentValidation.Validators.IPropertyValidator).IsAssignableFrom(t)
                         select t;
             assertion.Verify(types);
         }
@@ -75,6 +77,7 @@ namespace GitObjectDb.Tests.Git
                 fixture.Inject(ExpressionReflector.GetConstructor(() => new Page(default, default, default, default, default)));
                 fixture.Inject(ExpressionReflector.GetProperty<Page>(p => p.Description));
                 fixture.Inject((Expression)Expression.Default(typeof(object)));
+                fixture.Inject((LambdaExpression)Expression.Lambda<Action>(Expression.Empty()));
             }
 
             static void CustomizeIMetadataObject(IFixture fixture)
@@ -127,11 +130,16 @@ namespace GitObjectDb.Tests.Git
             static bool IsMethodCommandToBeIgnored(IGuardClauseCommand command)
             {
                 var methodInvokeCommand = TryGetCommand<MethodInvokeCommand>(command);
-                return methodInvokeCommand != null &&
-                    (((MethodBase)methodInvokeCommand.ParameterInfo.Member).IsSpecialName ||
-                     methodInvokeCommand.ParameterInfo.IsOptional ||
-                     Attribute.IsDefined(methodInvokeCommand.ParameterInfo.Member, typeof(ExcludeFromGuardForNullAttribute)) ||
-                     ExcludeType(methodInvokeCommand.ParameterInfo.Member.ReflectedType));
+                var method = (MethodBase)methodInvokeCommand?.ParameterInfo.Member;
+                if (method == null)
+                {
+                    return false;
+                }
+                return method.DeclaringType.Assembly != Assembly || // Filter out inherited methods not being overridden
+                       method.IsSpecialName ||
+                       methodInvokeCommand.ParameterInfo.IsOptional ||
+                       Attribute.IsDefined(methodInvokeCommand.ParameterInfo.Member, typeof(ExcludeFromGuardForNullAttribute)) ||
+                       ExcludeType(methodInvokeCommand.ParameterInfo.Member.ReflectedType);
             }
 
             static bool IsPropertySetToBeIgnored(IGuardClauseCommand command)

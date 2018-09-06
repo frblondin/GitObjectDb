@@ -17,21 +17,20 @@ namespace GitObjectDb.Tests.Migrations
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void MigrationScaffolderDetectsRequiredChanges(IFixture fixture, IServiceProvider serviceProvider, ObjectRepository sut, Signature signature, string message)
+        public void MigrationScaffolderDetectsRequiredChanges(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IFixture fixture, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange
-            var repositoryDescription = RepositoryFixture.GetRepositoryDescription();
-            sut.SaveInNewRepository(signature, message, repositoryDescription);
+            container.AddRepository(sut, signature, message);
             var updated = sut.With(i => i.Migrations.Add(fixture.Create<Migration>()));
-            var commit = sut.Commit(updated, signature, message);
+            var commit = container.Commit(updated, signature, message);
 
             // Act
-            var migrationScaffolder = new MigrationScaffolder(serviceProvider, repositoryDescription);
-            var migrators = migrationScaffolder.Scaffold(sut.CommitId, commit, MigrationMode.Upgrade);
+            var migrationScaffolder = new MigrationScaffolder(serviceProvider, container, sut.RepositoryDescription);
+            var migrators = migrationScaffolder.Scaffold(sut.CommitId, commit.CommitId, MigrationMode.Upgrade);
 
             // Assert
             Assert.That(migrators, Has.Count.EqualTo(1));
-            Assert.That(migrators[0].CommitId, Is.EqualTo(commit));
+            Assert.That(migrators[0].CommitId, Is.EqualTo(commit.CommitId));
             Assert.That(migrators[0].Mode, Is.EqualTo(MigrationMode.Upgrade));
             Assert.That(migrators[0].Migrations, Has.Count.EqualTo(1));
         }

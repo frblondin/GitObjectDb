@@ -18,15 +18,17 @@ namespace GitObjectDb.Compare
         readonly IModelDataAccessorProvider _modelDataProvider;
         readonly IObjectRepositoryLoader _objectRepositoryLoader;
         readonly IRepositoryProvider _repositoryProvider;
+        readonly IObjectRepositoryContainer _container;
         readonly RepositoryDescription _repositoryDescription;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeTreeChanges"/> class.
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
+        /// <param name="container">The container.</param>
         /// <param name="repositoryDescription">The repository description.</param>
         /// <exception cref="ArgumentNullException">serviceProvider</exception>
-        public ComputeTreeChanges(IServiceProvider serviceProvider, RepositoryDescription repositoryDescription)
+        public ComputeTreeChanges(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription)
         {
             if (serviceProvider == null)
             {
@@ -36,7 +38,7 @@ namespace GitObjectDb.Compare
             _modelDataProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             _objectRepositoryLoader = serviceProvider.GetRequiredService<IObjectRepositoryLoader>();
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
-
+            _container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
         }
 
@@ -81,8 +83,8 @@ namespace GitObjectDb.Compare
 
             return _repositoryProvider.Execute(_repositoryDescription, repository =>
             {
-                var oldRepository = _objectRepositoryLoader.LoadFrom(_repositoryDescription, oldCommitId);
-                var newRepository = _objectRepositoryLoader.LoadFrom(_repositoryDescription, newCommitId);
+                var oldRepository = _objectRepositoryLoader.LoadFrom(_container, _repositoryDescription, oldCommitId);
+                var newRepository = _objectRepositoryLoader.LoadFrom(_container, _repositoryDescription, newCommitId);
 
                 var oldCommit = repository.Lookup<Commit>(oldCommitId);
                 var newCommit = repository.Lookup<Commit>(newCommitId);

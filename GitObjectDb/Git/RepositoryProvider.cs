@@ -84,6 +84,24 @@ namespace GitObjectDb.Git
             });
         }
 
+        /// <inheritdoc/>
+        public void Evict(RepositoryDescription description)
+        {
+            if (description == null)
+            {
+                throw new ArgumentNullException(nameof(description));
+            }
+
+            lock (_syncLock)
+            {
+                var kvp = _dictionary.FirstOrDefault(k => k.Key.Equals(description));
+                if (kvp.Key != null)
+                {
+                    Evict(kvp);
+                }
+            }
+        }
+
         CacheEntry GetEntry(RepositoryDescription description)
         {
             lock (_syncLock)
@@ -114,15 +132,21 @@ namespace GitObjectDb.Git
                 var expiredItems = (from kvp in _dictionary
                                     where kvp.Value.Counter == 0 && kvp.Value.ShouldBeEvicted
                                     select kvp).ToList();
-                var collection = (ICollection<KeyValuePair<RepositoryDescription, CacheEntry>>)_dictionary;
                 foreach (var kvp in expiredItems)
                 {
-                    // By using the ICollection<KVP>.Remove overload, we additionally enforce that the exact value in the KVP is the one associated with the key.
-                    // this would prevent, for instance, removing an item if it got touched right after we enumerated it above.
-                    collection.Remove(kvp);
-                    kvp.Value.Evict();
+                    Evict(kvp);
                 }
             }
+        }
+
+        void Evict(KeyValuePair<RepositoryDescription, CacheEntry> kvp)
+        {
+            var collection = (ICollection<KeyValuePair<RepositoryDescription, CacheEntry>>)_dictionary;
+
+            // By using the ICollection<KVP>.Remove overload, we additionally enforce that the exact value in the KVP is the one associated with the key.
+            // this would prevent, for instance, removing an item if it got touched right after we enumerated it above.
+            collection.Remove(kvp);
+            kvp.Value.Evict();
         }
 
         /// <inheritdoc/>

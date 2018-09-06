@@ -44,7 +44,7 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Gets the path.
         /// </summary>
-        string Path { get; }
+        ObjectPath Path { get; }
 
         /// <summary>Gets a value indicating whether the link value has been created.</summary>
         /// <returns><code>true</code> if a value has been created.</returns>

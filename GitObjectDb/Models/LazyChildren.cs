@@ -124,8 +124,8 @@ namespace GitObjectDb.Models
             else if (_factoryWithRepo != null)
             {
                 var objectRepository = (AbstractObjectRepository)parent.Repository;
-                return objectRepository._repositoryProvider.Execute(
-                    objectRepository._repositoryDescription,
+                return objectRepository.RepositoryProvider.Execute(
+                    objectRepository.RepositoryDescription,
                     repository =>
                     {
                         var nodes = _factoryWithRepo(parent, repository) ?? throw new NotSupportedException(_nullReturnedValueExceptionMessage);

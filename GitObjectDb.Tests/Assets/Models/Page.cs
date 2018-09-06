@@ -22,6 +22,8 @@ namespace GitObjectDb.Tests.Assets.Models
             Fields = (fields ?? throw new ArgumentNullException(nameof(fields))).AttachToParent(this);
         }
 
+        public new ObjectRepository Repository => (ObjectRepository)base.Repository;
+
         public Application Application =>
             (Application)Parent ?? throw new NotSupportedException("No parent has been set.");
 

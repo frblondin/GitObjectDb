@@ -1,5 +1,7 @@
+using GitObjectDb.JsonConverters;
 using GitObjectDb.Reflection;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,7 +19,8 @@ namespace GitObjectDb.Models
         static readonly JsonSerializer _jsonSerializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
         {
             TypeNameHandling = TypeNameHandling.Objects,
-            Formatting = Formatting.Indented
+            Formatting = Formatting.Indented,
+            Converters = new JsonConverter[] { new VersionConverter() }
         });
 
         /// <summary>
@@ -91,7 +94,7 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(instance));
             }
 
-            var node = instance.Parent;
+            var node = instance;
             while (node != null)
             {
                 if (node == source)

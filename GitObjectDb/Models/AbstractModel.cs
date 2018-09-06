@@ -1,3 +1,5 @@
+using FluentValidation;
+using FluentValidation.Results;
 using GitObjectDb.Attributes;
 using GitObjectDb.Reflection;
 using System;
@@ -24,6 +26,8 @@ namespace GitObjectDb.Models
         /// </summary>
         internal const string DebuggerDisplay = "Name = {Name}, Id = {Id}";
 
+        readonly IValidatorFactory _validatorFactory;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AbstractModel"/> class.
         /// </summary>
@@ -44,6 +48,7 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(serviceProvider));
             }
 
+            _validatorFactory = serviceProvider.GetRequiredService<IValidatorFactory>();
             var dataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             DataAccessor = dataAccessorProvider.Get(GetType());
             if (id == Guid.Empty)
@@ -86,6 +91,9 @@ namespace GitObjectDb.Models
         IObjectRepository IMetadataObject.Repository => Repository;
 
         /// <inheritdoc />
+        public virtual IObjectRepositoryContainer Container => Repository.Container;
+
+        /// <inheritdoc />
         public void AttachToParent(IMetadataObject parent)
         {
             if (parent == null)
@@ -98,6 +106,14 @@ namespace GitObjectDb.Models
             }
 
             Parent = parent;
+        }
+
+        /// <inheritdoc />
+        public ValidationResult Validate(ValidationRules rules = ValidationRules.None)
+        {
+            var validator = (IValidator<AbstractModel>)_validatorFactory.GetValidator(GetType());
+            var ruleSet = rules == ValidationRules.None ? "*" : rules.ToString();
+            return validator.Validate(this, ruleSet: ruleSet);
         }
     }
 }

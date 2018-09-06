@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -21,13 +22,14 @@ namespace GitObjectDb.Compare
         readonly IServiceProvider _serviceProvider;
         readonly IRepositoryProvider _repositoryProvider;
         readonly IModelDataAccessorProvider _modelDataProvider;
-        readonly Func<RepositoryDescription, MigrationScaffolder> _migrationScaffolderFactory;
+        readonly Func<IObjectRepositoryContainer, RepositoryDescription, MigrationScaffolder> _migrationScaffolderFactory;
         readonly RepositoryDescription _repositoryDescription;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MetadataTreeMerge"/> class.
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
+        /// <param name="container">The container.</param>
         /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="repository">The repository on which to apply the merge.</param>
         /// <param name="branchName">Name of the branch.</param>
@@ -42,9 +44,10 @@ namespace GitObjectDb.Compare
         /// or
         /// merger
         /// </exception>
-        public MetadataTreeMerge(IServiceProvider serviceProvider, RepositoryDescription repositoryDescription, IObjectRepository repository, string branchName)
+        public MetadataTreeMerge(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, string branchName)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            Container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
             Repository = repository ?? throw new ArgumentNullException(nameof(repository));
             CommitId = repository.CommitId ?? throw new NotSupportedException("Repository has no commit.");
@@ -52,10 +55,15 @@ namespace GitObjectDb.Compare
 
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _modelDataProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
-            _migrationScaffolderFactory = serviceProvider.GetRequiredService<Func<RepositoryDescription, MigrationScaffolder>>();
+            _migrationScaffolderFactory = serviceProvider.GetRequiredService<Func<IObjectRepositoryContainer, RepositoryDescription, MigrationScaffolder>>();
 
             Initialize();
         }
+
+        /// <summary>
+        /// Gets the container.
+        /// </summary>
+        public IObjectRepositoryContainer Container { get; }
 
         /// <summary>
         /// Gets the repository.
@@ -121,7 +129,7 @@ namespace GitObjectDb.Compare
                 var headTip = repository.Head.Tip;
                 var baseCommit = repository.ObjectDatabase.FindMergeBase(headTip, branchTip);
 
-                var migrationScaffolder = _migrationScaffolderFactory(_repositoryDescription);
+                var migrationScaffolder = _migrationScaffolderFactory(Container, _repositoryDescription);
                 var migrators = migrationScaffolder.Scaffold(baseCommit.Id, BranchTarget, MigrationMode.Upgrade);
 
                 branchTip = ResolveRequiredMigrator(repository, branchTip, migrators);
@@ -130,7 +138,7 @@ namespace GitObjectDb.Compare
             });
         }
 
-        Commit ResolveRequiredMigrator(IRepository repository, Commit branchTip, System.Collections.Immutable.IImmutableList<Migrator> migrators)
+        Commit ResolveRequiredMigrator(IRepository repository, Commit branchTip, IImmutableList<Migrator> migrators)
         {
             RequiredMigrator = migrators.Count > 0 ? migrators[0] : null;
             if (RequiredMigrator != null && RequiredMigrator.CommitId != BranchTarget)
