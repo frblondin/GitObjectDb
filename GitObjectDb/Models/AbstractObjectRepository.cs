@@ -126,8 +126,8 @@ namespace GitObjectDb.Models
         /// <param name="commitId">The commit getter.</param>
         internal void SetRepositoryData(RepositoryDescription repositoryDescription, ObjectId commitId)
         {
-            RepositoryDescription = repositoryDescription;
-            CommitId = commitId;
+            RepositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
+            CommitId = commitId ?? throw new ArgumentNullException(nameof(commitId));
         }
     }
 }

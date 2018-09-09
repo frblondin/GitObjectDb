@@ -21,13 +21,13 @@ namespace GitObjectDb.Tests.Models
         public void ResolveDiffsPageNameUpdate(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
-            var originalCommit = container.AddRepository(sut, signature, message, inMemoryBackend);
+            sut = container.AddRepository(sut, signature, message, inMemoryBackend);
             var modifiedPage = page.With(p => p.Name == "modified");
             var commit = container.Commit(modifiedPage.Repository, signature, message);
 
             // Act
             var changes = computeTreeChangesFactory(container, sut.RepositoryDescription)
-                .Compare(originalCommit, commit.CommitId);
+                .Compare(sut.CommitId, commit.CommitId);
 
             // Assert
             Assert.That(changes, Has.Count.EqualTo(1));
@@ -41,14 +41,14 @@ namespace GitObjectDb.Tests.Models
         public void ResolveDiffsFieldAddition(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Page page, Signature signature, string message, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
-            var originalCommit = container.AddRepository(sut, signature, message, inMemoryBackend);
+            sut = container.AddRepository(sut, signature, message, inMemoryBackend);
             var field = new Field(serviceProvider, Guid.NewGuid(), "foo");
             var modifiedPage = page.With(p => p.Fields.Add(field));
             var commit = container.Commit(modifiedPage.Repository, signature, message);
 
             // Act
             var changes = computeTreeChangesFactory(container, sut.RepositoryDescription)
-                .Compare(originalCommit, commit.CommitId);
+                .Compare(sut.CommitId, commit.CommitId);
 
             // Assert
             Assert.That(changes, Has.Count.EqualTo(1));
@@ -62,14 +62,14 @@ namespace GitObjectDb.Tests.Models
         public void ResolveDiffsFieldDeletion(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
-            var originalCommit = container.AddRepository(sut, signature, message, inMemoryBackend);
+            sut = container.AddRepository(sut, signature, message, inMemoryBackend);
             var field = page.Fields[5];
             var modifiedPage = page.With(p => p.Fields.Delete(field));
             var commit = container.Commit(modifiedPage.Repository, signature, message);
 
             // Act
             var changes = computeTreeChangesFactory(container, sut.RepositoryDescription)
-                .Compare(originalCommit, commit.CommitId);
+                .Compare(sut.CommitId, commit.CommitId);
 
             // Assert
             Assert.That(changes, Has.Count.EqualTo(1));
@@ -83,14 +83,14 @@ namespace GitObjectDb.Tests.Models
         public void ResolveDiffsPageDeletion(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Application application, Signature signature, string message, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
-            var originalCommit = container.AddRepository(sut, signature, message, inMemoryBackend);
+            sut = container.AddRepository(sut, signature, message, inMemoryBackend);
             var page = application.Pages[1];
             var modifiedApplication = application.With(p => p.Pages.Delete(page));
             var commit = container.Commit(modifiedApplication.Repository, signature, message);
 
             // Act
             var changes = computeTreeChangesFactory(container, sut.RepositoryDescription)
-                .Compare(originalCommit, commit.CommitId);
+                .Compare(sut.CommitId, commit.CommitId);
 
             // Assert
             Assert.That(changes.Modified, Is.Empty);

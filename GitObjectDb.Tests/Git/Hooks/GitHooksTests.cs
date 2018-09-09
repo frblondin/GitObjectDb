@@ -45,10 +45,10 @@ namespace GitObjectDb.Tests.Git.Hooks
             sut.CommitStarted += (_, args) => args.Cancel = true;
 
             // Act
-            var commit = container.AddRepository(instance, signature, message, inMemoryBackend);
+            var update = container.AddRepository(instance, signature, message, inMemoryBackend);
 
             // Assert
-            Assert.That(commit, Is.Null);
+            Assert.That(update, Is.Null);
         }
 
         [Test]

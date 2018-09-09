@@ -41,7 +41,7 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Gets all repositories.
         /// </summary>
-        IImmutableList<TRepository> Repositories { get; }
+        IImmutableSet<TRepository> Repositories { get; }
 
         /// <summary>
         /// Gets the <typeparamref name="TRepository"/> with the specified identifier.
@@ -58,7 +58,7 @@ namespace GitObjectDb.Models
         /// <param name="backend">The backend (optional).</param>
         /// <param name="isBare">if set to <c>true</c> a bare Git repository will be created.</param>
         /// <returns>The commit identifier of the new repository HEAD.</returns>
-        ObjectId AddRepository(TRepository repository, Signature signature, string message, OdbBackend backend = null, bool isBare = false);
+        TRepository AddRepository(TRepository repository, Signature signature, string message, OdbBackend backend = null, bool isBare = false);
 
         /// <summary>
         /// Loads the instance from a Git repository.

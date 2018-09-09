@@ -11,7 +11,7 @@ namespace GitObjectDb.Compare
     /// </summary>
     /// <typeparam name="TModel">The type of the model.</typeparam>
     /// <seealso cref="System.Collections.Generic.IEqualityComparer{TModel}" />
-    public class MetadataObjectIdComparer<TModel> : IEqualityComparer<TModel>
+    public class MetadataObjectIdComparer<TModel> : IEqualityComparer<TModel>, IComparer<TModel>
         where TModel : class, IMetadataObject
     {
         private MetadataObjectIdComparer()
@@ -24,6 +24,25 @@ namespace GitObjectDb.Compare
         /// </summary>
         public static MetadataObjectIdComparer<TModel> Instance { get; } = new MetadataObjectIdComparer<TModel>();
 #pragma warning restore CA1000 // Do not declare static members on generic types
+
+        /// <inheritdoc/>
+        public int Compare(TModel x, TModel y)
+        {
+            if (x == null)
+            {
+                throw new ArgumentNullException(nameof(x));
+            }
+            if (y == null)
+            {
+                throw new ArgumentNullException(nameof(y));
+            }
+
+            if (x == y)
+            {
+                return 0;
+            }
+            return x.Id.CompareTo(y.Id);
+        }
 
         /// <inheritdoc/>
         [ExcludeFromGuardForNull]

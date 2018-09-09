@@ -158,8 +158,13 @@ namespace GitObjectDb.Models
             {
                 var childPath = string.IsNullOrEmpty(path) ? childProperty.FolderName : $"{path}/{childProperty.FolderName}";
                 var commit = repository.Lookup<Commit>(commitId);
-                var subTree = (Tree)commit[childPath]?.Target;
-                return (subTree?.Any() ?? false) ?
+                var entry = commit[childPath];
+                if (entry == null)
+                {
+                    return Enumerable.Empty<IMetadataObject>();
+                }
+                var subTree = (Tree)entry.Target;
+                return subTree.Any() ?
                     LoadEntryChildren(container, commitId, childPath, subTree) :
                     Enumerable.Empty<IMetadataObject>();
             });

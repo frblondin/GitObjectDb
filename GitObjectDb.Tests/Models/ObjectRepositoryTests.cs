@@ -31,7 +31,7 @@ namespace GitObjectDb.Tests.Models
         public void CreateAndLoadRepository(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange
-            container.AddRepository(sut, signature, message);
+            sut = container.AddRepository(sut, signature, message);
 
             // Act
             var newContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, container.Path);

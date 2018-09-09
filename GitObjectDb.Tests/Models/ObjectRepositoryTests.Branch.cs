@@ -30,7 +30,7 @@ namespace GitObjectDb.Tests.Models
             // newBranch:   B---'
 
             // Arrange
-            container.AddRepository(sut, signature, message); // A
+            sut = container.AddRepository(sut, signature, message); // A
 
             // Act
             container.Branch(sut, "newBranch");
@@ -59,7 +59,7 @@ namespace GitObjectDb.Tests.Models
             // newBranch:   B---'
 
             // Arrange
-            container.AddRepository(sut, signature, message); // A
+            sut = container.AddRepository(sut, signature, message); // A
 
             // Act
             container.Branch(sut, "newBranch");
@@ -87,7 +87,7 @@ namespace GitObjectDb.Tests.Models
             // newBranch:   B---'
 
             // Arrange
-            container.AddRepository(sut, signature, message); // A
+            sut = container.AddRepository(sut, signature, message); // A
 
             // Act
             container.Branch(sut, "newBranch");
@@ -117,7 +117,7 @@ namespace GitObjectDb.Tests.Models
             // newBranch:     B---C---' (B contains a non-idempotent migration)
 
             // Arrange
-            container.AddRepository(sut, signature, message); // A
+            sut = container.AddRepository(sut, signature, message); // A
 
             // B, C
             container.Branch(sut, "newBranch");
@@ -152,7 +152,7 @@ namespace GitObjectDb.Tests.Models
             // newBranch:   B---'
 
             // Arrange
-            container.AddRepository(sut, signature, message); // A
+            sut = container.AddRepository(sut, signature, message); // A
 
             // Act
             container.Branch(sut, "newBranch");
@@ -173,7 +173,7 @@ namespace GitObjectDb.Tests.Models
             // newBranch:   B---'
 
             // Arrange
-            container.AddRepository(sut, signature, message); // A
+            sut = container.AddRepository(sut, signature, message); // A
 
             // Act
             container.Branch(sut, "newBranch");

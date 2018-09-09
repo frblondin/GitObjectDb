@@ -56,7 +56,7 @@ namespace GitObjectDb.Models
         public override string Path { get; }
 
         /// <inheritdoc />
-        public IImmutableList<TRepository> Repositories { get; private set; }
+        public IImmutableSet<TRepository> Repositories { get; private set; }
 
         /// <inheritdoc />
         public TRepository this[Guid id] =>
@@ -79,18 +79,18 @@ namespace GitObjectDb.Models
         public override IMetadataObject GetFromGitPath(ObjectPath path) =>
             TryGetFromGitPath(path) ?? throw new NotFoundException($"The element with path '{path}' could not be found.");
 
-        IImmutableList<TRepository> LoadRepositories()
+        IImmutableSet<TRepository> LoadRepositories()
         {
-            var builder = ImmutableList.CreateBuilder<TRepository>();
+            var builder = ImmutableSortedSet.CreateBuilder(MetadataObjectIdComparer<TRepository>.Instance);
             foreach (var repositoryPath in Directory.EnumerateDirectories(Path))
             {
                 if (Repository.IsValid(repositoryPath))
                 {
                     var description = new RepositoryDescription(repositoryPath);
-                    builder.Add(_repositoryLoader.LoadFrom<TRepository>(this, description));
+                    builder.Add(_repositoryLoader.LoadFrom(this, description));
                 }
             }
-            return builder.ToImmutableList();
+            return builder.ToImmutable();
         }
 
         /// <inheritdoc />
@@ -104,23 +104,17 @@ namespace GitObjectDb.Models
             // Clone & load in a temp folder to extract the repository id
             var tempPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString());
             var tempRepoDescription = new RepositoryDescription(tempPath, backend);
-            var cloned = _repositoryLoader.Clone<TRepository>(this, repository, tempRepoDescription, commitId);
+            var cloned = _repositoryLoader.Clone(this, repository, tempRepoDescription, commitId);
             _repositoryProvider.Evict(tempRepoDescription);
 
             var path = System.IO.Path.Combine(Path, cloned.Id.ToString());
             Directory.Move(tempPath, path);
             var repositoryDescription = new RepositoryDescription(path, backend);
-            var result = _repositoryLoader.LoadFrom<TRepository>(this, repositoryDescription, commitId);
-            Repositories = Repositories.Add(result);
-            if (result is AbstractObjectRepository @abstract)
-            {
-                @abstract.SetRepositoryData(repositoryDescription, commitId);
-            }
-            return result;
+            return ReloadRepository(repositoryDescription, cloned.CommitId);
         }
 
         /// <inheritdoc />
-        public ObjectId AddRepository(TRepository repository, Signature signature, string message, OdbBackend backend = null, bool isBare = false)
+        public TRepository AddRepository(TRepository repository, Signature signature, string message, OdbBackend backend = null, bool isBare = false)
         {
             if (repository == null)
             {
@@ -143,23 +137,12 @@ namespace GitObjectDb.Models
             {
                 var all = repository.Flatten().Select(o => new MetadataTreeEntryChanges(o.GetDataPath(), ChangeKind.Added, @new: o));
                 var changes = new MetadataTreeChanges(repository, all.ToImmutableList());
-                var result = r.CommitChanges(changes, message, signature, signature, _hooks);
-
-                if (result != null)
+                var commit = r.CommitChanges(changes, message, signature, signature, _hooks);
+                if (commit == null)
                 {
-                    Repositories = Repositories.Add(repository);
-                    if (repository is AbstractObjectRepository @abstract)
-                    {
-                        @abstract.SetRepositoryData(repositoryDescription, result.Id);
-                    }
-                    return result.Id;
-                }
-                else
-                {
-                    _repositoryProvider.Evict(repositoryDescription);
-                    DirectoryUtils.Delete(repositoryDescription.Path);
                     return null;
                 }
+                return ReloadRepository(repositoryDescription, commit.Id);
             });
         }
 
@@ -216,10 +199,25 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        internal override IObjectRepository ReloadRepository(IObjectRepository previousRepository, ObjectId commit)
+        internal override IObjectRepository ReloadRepository(IObjectRepository previousRepository, ObjectId commit) =>
+            ReloadRepository(previousRepository.RepositoryDescription, commit);
+
+        TRepository ReloadRepository(RepositoryDescription repositoryDescription, ObjectId commit)
         {
-            var newRepository = _repositoryLoader.LoadFrom(this, previousRepository.RepositoryDescription, commit);
-            Repositories = Repositories.Replace((TRepository)previousRepository, newRepository);
+            var result = _repositoryLoader.LoadFrom(this, repositoryDescription, commit);
+            return AddOrReplace(result);
+        }
+
+        TRepository AddOrReplace(TRepository newRepository)
+        {
+            if (Repositories.TryGetValue(newRepository, out var old))
+            {
+                Repositories = Repositories.Remove(old).Add(newRepository);
+            }
+            else
+            {
+                Repositories = Repositories.Add(newRepository);
+            }
             return newRepository;
         }
 
@@ -241,9 +239,8 @@ namespace GitObjectDb.Models
                 var branch = r.Branches[branchName];
                 r.Refs.MoveHeadTarget(branch.CanonicalName);
 
-                var newRepository = _repositoryLoader.LoadFrom<TRepository>(this, repository.RepositoryDescription, branch.Tip.Id);
-                Repositories = Repositories.Replace(repository, newRepository);
-                return newRepository;
+                var newRepository = _repositoryLoader.LoadFrom(this, repository.RepositoryDescription, branch.Tip.Id);
+                return AddOrReplace(newRepository);
             });
         }
 
@@ -276,9 +273,8 @@ namespace GitObjectDb.Models
                 var branch = r.CreateBranch(branchName);
                 r.Refs.MoveHeadTarget(branch.CanonicalName);
 
-                var newRepository = _repositoryLoader.LoadFrom<TRepository>(this, repository.RepositoryDescription, branch.Tip.Id);
-                Repositories = Repositories.Replace(repository, newRepository);
-                return newRepository;
+                var newRepository = _repositoryLoader.LoadFrom(this, repository.RepositoryDescription, branch.Tip.Id);
+                return AddOrReplace(newRepository);
             });
         }
 

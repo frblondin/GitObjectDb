@@ -20,7 +20,7 @@ namespace GitObjectDb.Tests.Migrations
         public void MigrationScaffolderDetectsRequiredChanges(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IFixture fixture, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange
-            container.AddRepository(sut, signature, message);
+            sut = container.AddRepository(sut, signature, message);
             var updated = sut.With(i => i.Migrations.Add(fixture.Create<Migration>()));
             var commit = container.Commit(updated, signature, message);
 
