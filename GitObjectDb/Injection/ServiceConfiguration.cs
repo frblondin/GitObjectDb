@@ -2,6 +2,7 @@ using FluentValidation;
 using GitObjectDb.Compare;
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
+using GitObjectDb.JsonConverters;
 using GitObjectDb.Migrations;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
@@ -51,7 +52,16 @@ namespace Microsoft.Extensions.DependencyInjection
             source.AddSingleton<Func<IObjectRepositoryContainer, RepositoryDescription, MigrationScaffolder>>(s =>
                 (container, description) => new MigrationScaffolder(s, container, description));
             source.AddSingleton<IValidatorFactory, ValidatorFactory>();
+            source.AddSingleton<JsonSerializationValidator>();
+            AddCreatorParameterResolvers(source);
             return source;
+        }
+
+        static void AddCreatorParameterResolvers(IServiceCollection source)
+        {
+            source.AddSingleton<ICreatorParameterResolver, CreatorParameterChildrenResolver>();
+            source.AddSingleton<ICreatorParameterResolver, CreatorParameterFromServiceProviderResolver>();
+            source.AddSingleton<ICreatorParameterResolver, CreatorRepositoryContainerParameterResolver>();
         }
     }
 }

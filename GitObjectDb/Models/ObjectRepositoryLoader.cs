@@ -136,7 +136,7 @@ namespace GitObjectDb.Models
                 TypeNameHandling = TypeNameHandling.Objects,
                 Formatting = Formatting.Indented
             };
-            serializer.Converters.Add(new MetadataObjectJsonConverter(_serviceProvider, childrenResolver, container));
+            serializer.Converters.Add(new MetadataObjectConverter(_serviceProvider, childrenResolver, container));
             serializer.Converters.Add(new VersionConverter());
 
             // Optimization: prevent reflection for each new object!

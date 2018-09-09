@@ -1,5 +1,7 @@
+using FluentValidation;
 using GitObjectDb.Attributes;
 using GitObjectDb.Models;
+using GitObjectDb.Validations;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -38,6 +40,8 @@ namespace GitObjectDb.Reflection
             }
 
             Type = type ?? throw new ArgumentNullException(nameof(type));
+
+            serviceProvider.GetRequiredService<JsonSerializationValidator>().ValidateAndThrow(type);
 
             _childProperties = new Lazy<IImmutableList<ChildPropertyInfo>>(GetChildProperties);
             _modifiableProperties = new Lazy<IImmutableList<ModifiablePropertyInfo>>(GetModifiableProperties);

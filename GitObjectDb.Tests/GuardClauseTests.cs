@@ -67,6 +67,7 @@ namespace GitObjectDb.Tests.Git
                 fixture.Register<AbstractObjectRepository>(() => fixture.Create<ObjectRepository>());
                 fixture.Register<AbstractMigration>(() => fixture.Create<Migration>());
                 fixture.Register<AbstractModel>(() => fixture.Create<ObjectRepository>());
+                fixture.Inject(new ModelDataAccessor(fixture.Create<IServiceProvider>(), typeof(Page)));
                 fixture.Inject<ConstructorParameterBinding.ChildProcessor>((name, children, @new, dataAccessor) => children);
                 fixture.Inject<ConstructorParameterBinding.Clone>((@object, predicateReflector, processor) => @object);
             }
