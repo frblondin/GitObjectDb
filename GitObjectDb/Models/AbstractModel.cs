@@ -1,4 +1,5 @@
 using FluentValidation;
+using FluentValidation.Internal;
 using FluentValidation.Results;
 using GitObjectDb.Attributes;
 using GitObjectDb.Reflection;
@@ -109,11 +110,14 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public ValidationResult Validate(ValidationRules rules = ValidationRules.None)
+        public ValidationResult Validate(ValidationRules rules = ValidationRules.All)
         {
-            var validator = (IValidator<AbstractModel>)_validatorFactory.GetValidator(GetType());
-            var ruleSet = rules == ValidationRules.None ? "*" : rules.ToString();
-            return validator.Validate(this, ruleSet: ruleSet);
+            var validator = _validatorFactory.GetValidator(GetType());
+            var selector = rules == ValidationRules.All ?
+                ValidatorOptions.ValidatorSelectors.DefaultValidatorSelectorFactory() :
+                ValidatorOptions.ValidatorSelectors.RulesetValidatorSelectorFactory(rules.ToString().Split(',', ';'));
+            var context = new ValidationContext(this, new PropertyChain(), selector);
+            return validator.Validate(context);
         }
     }
 }

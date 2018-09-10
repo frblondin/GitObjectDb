@@ -60,6 +60,6 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="rules">The rules.</param>
         /// <returns>A <see cref="ValidationResult"/> object containing any validation failures.</returns>
-        ValidationResult Validate(ValidationRules rules = ValidationRules.None);
+        ValidationResult Validate(ValidationRules rules = ValidationRules.All);
     }
 }

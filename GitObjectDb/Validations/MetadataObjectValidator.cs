@@ -36,12 +36,13 @@ namespace GitObjectDb.Validations
                 p => LazyChildrenHelper.TryGetLazyChildrenInterface(p.PropertyType) != null,
                 r =>
                 {
-                    var validator = _validatorFactory.GetValidator(r.TypeToValidate);
+                    var elementType = r.TypeToValidate.GetGenericArguments()[0];
+                    var validator = _validatorFactory.GetValidator(elementType);
                     return new ChildValidatorAdaptor(validator, validator.GetType());
                 });
         }
 
-        static (LambdaExpression expression, Expression<Func<object, object>> nonGenericExpression) CreatePropertyAccessors(PropertyInfo p)
+        static (LambdaExpression Expression, Expression<Func<object, object>> NonGenericExpression) CreatePropertyAccessors(PropertyInfo p)
         {
             var instanceParam = Expression.Parameter(typeof(TMetadataObject));
             var nonGenInstanceParam = Expression.Parameter(typeof(object));
@@ -61,14 +62,14 @@ namespace GitObjectDb.Validations
 
         void RuleFor(Predicate<PropertyInfo> predicate, Func<PropertyRule, IPropertyValidator> validator)
         {
-            foreach (var p in typeof(TMetadataObject).GetProperties())
+            foreach (var property in typeof(TMetadataObject).GetProperties())
             {
-                if (!p.CanRead || !predicate(p))
+                if (!property.CanRead || !predicate(property))
                 {
                     continue;
                 }
-                var (expression, nonGenericExpression) = CreatePropertyAccessors(p);
-                var rule = new PropertyRule(p, nonGenericExpression.Compile(), expression, () => CascadeMode, p.PropertyType, typeof(TMetadataObject));
+                var (expression, nonGenericExpression) = CreatePropertyAccessors(property);
+                var rule = new PropertyRule(property, nonGenericExpression.Compile(), expression, () => CascadeMode, property.PropertyType, typeof(TMetadataObject));
                 AddRule(rule);
                 rule.AddValidator(validator(rule));
             }
@@ -76,14 +77,14 @@ namespace GitObjectDb.Validations
 
         void RuleForEach<TProperty>(Predicate<PropertyInfo> predicate, Func<PropertyRule, IPropertyValidator> validator)
         {
-            foreach (var p in typeof(TMetadataObject).GetProperties())
+            foreach (var property in typeof(TMetadataObject).GetProperties())
             {
-                if (!p.CanRead || !predicate(p))
+                if (!property.CanRead || !predicate(property))
                 {
                     continue;
                 }
-                var (expression, nonGenericExpression) = CreatePropertyAccessors(p);
-                var rule = new CollectionPropertyRule<TProperty>(p, nonGenericExpression.Compile(), expression, () => CascadeMode, p.PropertyType, typeof(TMetadataObject));
+                var (expression, nonGenericExpression) = CreatePropertyAccessors(property);
+                var rule = new CollectionPropertyRule<TProperty>(property, nonGenericExpression.Compile(), expression, () => CascadeMode, property.PropertyType, typeof(TMetadataObject));
                 AddRule(rule);
                 rule.AddValidator(validator(rule));
             }
