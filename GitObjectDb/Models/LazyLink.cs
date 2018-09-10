@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 
 namespace GitObjectDb.Models
 {
@@ -17,8 +18,8 @@ namespace GitObjectDb.Models
         static readonly string _nullReturnedValueExceptionMessage =
             $"Value returned by {nameof(LazyLink<TLink>)} was null.";
 
-        readonly object _syncLock = new object();
         readonly Func<IMetadataObject, TLink> _factory;
+        object _syncLock = new object();
         ObjectPath _path;
         TLink _link;
 
@@ -71,17 +72,9 @@ namespace GitObjectDb.Models
                     return _link;
                 }
 
-                lock (_syncLock)
-                {
-                    if (_link != null)
-                    {
-                        return _link;
-                    }
-
-                    _link = GetValueFromFactory(Parent);
-                    _path = new ObjectPath(_link);
-                    return _link;
-                }
+                var initialized = false;
+                return LazyInitializer.EnsureInitialized(ref _link, ref initialized, ref _syncLock,
+                    CreateLink);
             }
         }
 
@@ -94,6 +87,13 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         public bool IsLinkCreated => _link != null;
+
+        TLink CreateLink()
+        {
+            var result = GetValueFromFactory(Parent);
+            _path = new ObjectPath(result);
+            return result;
+        }
 
         TLink GetValueFromFactory(IMetadataObject parent)
         {

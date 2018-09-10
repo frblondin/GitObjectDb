@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 
 namespace GitObjectDb.Models
 {
@@ -72,8 +73,6 @@ namespace GitObjectDb.Models
         /// <inheritdoc />
         public bool ForceVisit { get; private set; }
 
-        object SyncLock => (object)_factoryWithRepo ?? _factory;
-
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         IImmutableList<TChild> Children
         {
@@ -91,15 +90,10 @@ namespace GitObjectDb.Models
                         return _children;
                     }
 
-                    lock (SyncLock)
-                    {
-                        if (_children != null)
-                        {
-                            return _children;
-                        }
-
-                        return _children = GetValueFromFactory(Parent).ToImmutableList();
-                    }
+                    var initialized = false;
+                    var syncLock = (object)_factoryWithRepo ?? _factory;
+                    return LazyInitializer.EnsureInitialized(ref _children, ref initialized, ref syncLock,
+                        () => GetValueFromFactory(Parent).ToImmutableList());
                 }
                 finally
                 {
