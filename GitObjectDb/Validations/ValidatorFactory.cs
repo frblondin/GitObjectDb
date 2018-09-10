@@ -142,10 +142,15 @@ namespace GitObjectDb.Validations
                 throw new ArgumentNullException(nameof(type));
             }
 
-            return _cache.GetOrAdd(type, ResolveImpl);
+            return _cache.GetOrAdd(type, Resolve);
         }
 
-        IValidator ResolveImpl(Type targetType)
+        /// <summary>
+        /// Resolves the <see cref="IValidator"/> associated to the specified target type.
+        /// </summary>
+        /// <param name="targetType">Type of the target.</param>
+        /// <returns>The validator.</returns>
+        protected virtual IValidator Resolve(Type targetType)
         {
             var type = (from v in _validators
                         let score = ComputeScore(targetType, v.ValidatorType, v.TargetType)
