@@ -53,7 +53,7 @@ namespace GitObjectDb.Validations
             {
                 return true;
             }
-            var matching = contract.Properties.FirstOrDefault(p => p.PropertyName.Equals(constructorParameter.PropertyName, StringComparison.OrdinalIgnoreCase));
+            var matching = contract.Properties.TryGetWithValue(p => p.PropertyName, constructorParameter.PropertyName);
             if (matching == null)
             {
                 context.MessageFormatter.AppendArgument("Message", $"no property named '{constructorParameter.PropertyName}' could be found.");

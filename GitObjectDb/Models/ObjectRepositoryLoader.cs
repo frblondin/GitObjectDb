@@ -103,8 +103,7 @@ namespace GitObjectDb.Models
             ILazyChildren ResolveChildren(Type type, string propertyName)
             {
                 var dataAccessor = _dataAccessorProvider.Get(type);
-                var childProperty = dataAccessor.ChildProperties.FirstOrDefault(
-                    p => p.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+                var childProperty = dataAccessor.ChildProperties.TryGetWithValue(p => p.Name, propertyName);
                 if (childProperty == null)
                 {
                     throw new NotSupportedException($"Unable to find property details for '{propertyName}'.");
@@ -148,8 +147,7 @@ namespace GitObjectDb.Models
         ILazyChildren ReturnEmptyChildren(Type parentType, string propertyName)
         {
             var dataAccessor = _dataAccessorProvider.Get(parentType);
-            var childProperty = dataAccessor.ChildProperties.FirstOrDefault(
-                p => p.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+            var childProperty = dataAccessor.ChildProperties.TryGetWithValue(p => p.Name, propertyName);
             return LazyChildrenHelper.Create(childProperty, (o, r) => Enumerable.Empty<IMetadataObject>());
         }
 

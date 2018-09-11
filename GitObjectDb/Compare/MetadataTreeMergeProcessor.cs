@@ -124,7 +124,7 @@ namespace GitObjectDb.Compare
         object ProcessProperty(IMetadataObject node, string name, Type argumentType, object fallback)
         {
             var path = node.GetDataPath();
-            var propertyChange = _changes[path].FirstOrDefault(c => c.Property.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            var propertyChange = _changes[path].TryGetWithValue(c => c.Property.Name, name);
             if (propertyChange != null)
             {
                 return propertyChange.MergeValue.ToObject(argumentType, _serializer.Value);

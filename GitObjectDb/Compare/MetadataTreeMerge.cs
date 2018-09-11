@@ -235,7 +235,7 @@ namespace GitObjectDb.Compare
             var properties = _modelDataProvider.Get(type).ModifiableProperties;
 
             var changes = from kvp in (IEnumerable<KeyValuePair<string, JToken>>)newObject
-                          let p = properties.FirstOrDefault(pr => pr.Name.Equals(kvp.Key, StringComparison.OrdinalIgnoreCase))
+                          let p = properties.TryGetWithValue(pr => pr.Name, kvp.Key)
                           where p != null
                           let mergeBaseValue = mergeBaseObject[kvp.Key]
                           where mergeBaseValue == null || !JToken.DeepEquals(kvp.Value, mergeBaseValue)
