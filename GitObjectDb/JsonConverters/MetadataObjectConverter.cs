@@ -15,21 +15,37 @@ namespace GitObjectDb.JsonConverters
     /// Converts <see cref="IMetadataObject"/> objects.
     /// </summary>
     /// <seealso cref="JsonConverter" />
-    internal class MetadataObjectJsonConverter : JsonConverter
+    internal class MetadataObjectConverter : JsonConverter
     {
-        readonly IServiceProvider _serviceProvider;
-        readonly ChildrenResolver _childResolver;
+        readonly IEnumerable<ICreatorParameterResolver> _creatorParameterResolvers;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MetadataObjectJsonConverter"/> class.
+        /// Initializes a new instance of the <see cref="MetadataObjectConverter"/> class.
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
         /// <param name="childResolver">The child resolver.</param>
-        public MetadataObjectJsonConverter(IServiceProvider serviceProvider, ChildrenResolver childResolver)
+        /// <param name="repositoryContainer">The repository container.</param>
+        public MetadataObjectConverter(IServiceProvider serviceProvider, ChildrenResolver childResolver, IObjectRepositoryContainer repositoryContainer)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _childResolver = childResolver ?? throw new ArgumentNullException(nameof(childResolver));
+            if (serviceProvider == null)
+            {
+                throw new ArgumentNullException(nameof(serviceProvider));
+            }
+
+            ChildResolver = childResolver ?? throw new ArgumentNullException(nameof(childResolver));
+            RepositoryContainer = repositoryContainer ?? throw new ArgumentNullException(nameof(repositoryContainer));
+            _creatorParameterResolvers = serviceProvider.GetRequiredService<IEnumerable<ICreatorParameterResolver>>();
         }
+
+        /// <summary>
+        /// Gets the repository container.
+        /// </summary>
+        internal IObjectRepositoryContainer RepositoryContainer { get; }
+
+        /// <summary>
+        /// Gets the child resolver.
+        /// </summary>
+        internal ChildrenResolver ChildResolver { get; }
 
         /// <inheritdoc />
         public override bool CanWrite => false;
@@ -41,7 +57,9 @@ namespace GitObjectDb.JsonConverters
         {
             if (jObject.TryGetValue(property.PropertyName, StringComparison.OrdinalIgnoreCase, out var token))
             {
-                var typeName = (token as JContainer)?.Value<string>("$type");
+                var typeName = !(token is JArray) ?
+                    (token as JContainer)?.Value<string>("$type") :
+                    null;
                 var type = !string.IsNullOrEmpty(typeName) ?
                     Type.GetType(typeName) :
                     property.PropertyType;
@@ -100,19 +118,17 @@ namespace GitObjectDb.JsonConverters
             return Activator.CreateInstance(objectType, arguments);
         }
 
-        object ResolveParameter(JsonProperty property, Type objectType, JObject jObject) =>
-            ResolveChildren(property, objectType) ??
-            ResolveFromJsonToken(property, jObject) ??
-            ResolveFromServiceProvider(property) ??
-            throw new NotImplementedException($"Unable to create parameter '{property.PropertyName}' of type '{property.PropertyType}'.");
-
-        object ResolveChildren(JsonProperty property, Type objectType) =>
-            typeof(ILazyChildren).IsAssignableFrom(property.PropertyType) ?
-            _childResolver(objectType, property.PropertyName) :
-            null;
-
-        object ResolveFromServiceProvider(JsonProperty property) =>
-            _serviceProvider.GetService(property.PropertyType);
+        object ResolveParameter(JsonProperty property, Type objectType, JObject jObject)
+        {
+            var instance = ResolveFromJsonToken(property, jObject);
+            if (instance != null)
+            {
+                return instance;
+            }
+            var resolver = _creatorParameterResolvers.FirstOrDefault(r => r.CanResolve(property, objectType));
+            return resolver?.Resolve(this, property, objectType) ??
+                throw new NotImplementedException($"Unable to create parameter '{property.PropertyName}' of type '{property.PropertyType}'.");
+        }
 
         /// <inheritdoc />
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

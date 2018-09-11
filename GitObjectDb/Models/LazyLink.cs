@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 
 namespace GitObjectDb.Models
 {
@@ -17,9 +18,9 @@ namespace GitObjectDb.Models
         static readonly string _nullReturnedValueExceptionMessage =
             $"Value returned by {nameof(LazyLink<TLink>)} was null.";
 
-        readonly object _syncLock = new object();
         readonly Func<IMetadataObject, TLink> _factory;
-        string _path;
+        object _syncLock = new object();
+        ObjectPath _path;
         TLink _link;
 
         /// <summary>
@@ -46,7 +47,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="path">The path.</param>
         [JsonConstructor]
-        public LazyLink(string path)
+        public LazyLink(ObjectPath path)
             : this(parent => (TLink)parent.Repository.GetFromGitPath(path))
         {
             _path = path;
@@ -71,17 +72,9 @@ namespace GitObjectDb.Models
                     return _link;
                 }
 
-                lock (_syncLock)
-                {
-                    if (_link != null)
-                    {
-                        return _link;
-                    }
-
-                    _link = GetValueFromFactory(Parent);
-                    _path = _link.GetFolderPath();
-                    return _link;
-                }
+                var initialized = false;
+                return LazyInitializer.EnsureInitialized(ref _link, ref initialized, ref _syncLock,
+                    CreateLink);
             }
         }
 
@@ -90,10 +83,17 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         [DataMember]
-        public string Path => _path ?? Link.GetFolderPath();
+        public ObjectPath Path => _path ?? new ObjectPath(Link);
 
         /// <inheritdoc />
         public bool IsLinkCreated => _link != null;
+
+        TLink CreateLink()
+        {
+            var result = GetValueFromFactory(Parent);
+            _path = new ObjectPath(result);
+            return result;
+        }
 
         TLink GetValueFromFactory(IMetadataObject parent)
         {
@@ -139,7 +139,7 @@ namespace GitObjectDb.Models
                 return true; // No better way to spare performance...
             }
 
-            return Path.Equals(Path, StringComparison.OrdinalIgnoreCase);
+            return Path.Equals(Path);
         }
 
         /// <inheritdoc />

@@ -25,20 +25,25 @@ namespace GitObjectDb.Migrations
         /// Initializes a new instance of the <see cref="MigrationScaffolder"/> class.
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
+        /// <param name="container">The container.</param>
         /// <param name="repositoryDescription">The repository description.</param>
         /// <exception cref="ArgumentNullException">
         /// serviceProvider
         /// or
         /// repository
         /// </exception>
-        public MigrationScaffolder(IServiceProvider serviceProvider, RepositoryDescription repositoryDescription)
+        public MigrationScaffolder(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription)
         {
             if (serviceProvider == null)
             {
                 throw new ArgumentNullException(nameof(serviceProvider));
             }
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
 
-            _serializer = serviceProvider.GetRequiredService<IObjectRepositoryLoader>().GetJsonSerializer();
+            _serializer = serviceProvider.GetRequiredService<IObjectRepositoryLoader>().GetJsonSerializer(container);
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
         }

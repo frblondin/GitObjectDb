@@ -22,7 +22,7 @@ namespace GitObjectDb.Compare
     internal sealed class MetadataTreeMergeProcessor
     {
         readonly IRepositoryProvider _repositoryProvider;
-        readonly Func<RepositoryDescription, IComputeTreeChanges> _computeTreeChangesFactory;
+        readonly Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> _computeTreeChangesFactory;
         readonly RepositoryDescription _repositoryDescription;
         readonly Lazy<JsonSerializer> _serializer;
         readonly GitHooks _hooks;
@@ -53,8 +53,8 @@ namespace GitObjectDb.Compare
             _metadataTreeMerge = metadataTreeMerge ?? throw new ArgumentNullException(nameof(metadataTreeMerge));
 
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
-            _computeTreeChangesFactory = serviceProvider.GetRequiredService<Func<RepositoryDescription, IComputeTreeChanges>>();
-            _serializer = new Lazy<JsonSerializer>(() => serviceProvider.GetRequiredService<IObjectRepositoryLoader>().GetJsonSerializer());
+            _computeTreeChangesFactory = serviceProvider.GetRequiredService<Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges>>();
+            _serializer = new Lazy<JsonSerializer>(() => serviceProvider.GetRequiredService<IObjectRepositoryLoader>().GetJsonSerializer(metadataTreeMerge.Container));
             _hooks = serviceProvider.GetRequiredService<GitHooks>();
             _changes = _metadataTreeMerge.ModifiedChunks.ToLookup(c => c.Path, StringComparer.OrdinalIgnoreCase);
 
@@ -106,21 +106,25 @@ namespace GitObjectDb.Compare
 
             var branch = repository.Branches[_metadataTreeMerge.BranchName];
             var message = $"Merge branch {branch.FriendlyName} into {repository.Head.FriendlyName}";
-            var commit = repository.CommitChanges(treeChanges, message, merger, merger, hooks: _hooks, mergeParent: repository.Lookup<Commit>(_metadataTreeMerge.BranchTarget));
-            return commit?.Id;
+            var commit = repository.CommitChanges(treeChanges, message, merger, merger, hooks: _hooks, mergeParent: repository.Lookup<Commit>(_metadataTreeMerge.BranchTarget)).Id;
+            if (_metadataTreeMerge.Repository.Container is ObjectRepositoryContainer container)
+            {
+                container.ReloadRepository(_metadataTreeMerge.Repository, commit);
+            }
+            return commit;
         }
 
         MetadataTreeChanges ComputeMergeResult()
         {
             var mergeResult = _metadataTreeMerge.Repository.DataAccessor.DeepClone(_metadataTreeMerge.Repository, ProcessProperty, ChildChangesGetter, n => _forceVisit.Contains(n.Id));
-            var computeChanges = _computeTreeChangesFactory(_repositoryDescription);
+            var computeChanges = _computeTreeChangesFactory(_metadataTreeMerge.Container, _repositoryDescription);
             return computeChanges.Compare(_metadataTreeMerge.Repository, mergeResult);
         }
 
         object ProcessProperty(IMetadataObject node, string name, Type argumentType, object fallback)
         {
             var path = node.GetDataPath();
-            var propertyChange = _changes[path].FirstOrDefault(c => c.Property.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            var propertyChange = _changes[path].TryGetWithValue(c => c.Property.Name, name);
             if (propertyChange != null)
             {
                 return propertyChange.MergeValue.ToObject(argumentType, _serializer.Value);

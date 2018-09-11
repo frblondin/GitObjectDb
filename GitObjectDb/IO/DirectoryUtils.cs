@@ -3,11 +3,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace GitObjectDb.Tests.Assets.Tools
+namespace GitObjectDb.IO
 {
-    public static class DirectoryUtils
+    /// <summary>
+    /// Set of tools for managing directories.
+    /// </summary>
+    internal static class DirectoryUtils
     {
-        public static void Delete(string targetDir)
+        /// <summary>
+        /// Deletes the specified target dir and all its children recursively.
+        /// </summary>
+        /// <param name="targetDir">The target dir.</param>
+        internal static void Delete(string targetDir)
         {
             if (!Directory.Exists(targetDir))
             {

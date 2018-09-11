@@ -7,7 +7,7 @@ namespace GitObjectDb.Git
     /// Provides access to reusable repository instances that get automatically evicted
     /// after a timeout duration.
     /// </summary>
-    internal interface IRepositoryProvider
+    public interface IRepositoryProvider
     {
         /// <summary>
         /// Returns the result of the provided function processing.
@@ -24,5 +24,11 @@ namespace GitObjectDb.Git
         /// <param name="description">The description.</param>
         /// <param name="processor">The function.</param>
         void Execute(RepositoryDescription description, Action<IRepository> processor);
+
+        /// <summary>
+        /// Disposes the specified description.
+        /// </summary>
+        /// <param name="description">The description.</param>
+        void Evict(RepositoryDescription description);
     }
 }

@@ -133,7 +133,7 @@ namespace GitObjectDb.Reflection
         Expression ResolveArgumentForLazyChildren(ParameterInfo parameter, IModelDataAccessor dataProvider)
         {
             // childProcessor(lazyChildren, result, childDataProvider)
-            var property = dataProvider.ChildProperties.FirstOrDefault(p => p.Name.Equals(parameter.Name, StringComparison.OrdinalIgnoreCase)) ??
+            var property = dataProvider.ChildProperties.TryGetWithValue(p => p.Name, parameter.Name) ??
                 throw new NotSupportedException($"A property _{parameter.Name} was expected to be existing for argument {parameter.Name}.");
 
             var childType = parameter.ParameterType.GetGenericArguments()[0];

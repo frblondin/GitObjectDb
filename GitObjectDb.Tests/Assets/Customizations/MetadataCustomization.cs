@@ -35,8 +35,15 @@ namespace GitObjectDb.Tests.Assets.Customizations
 
         public void Customize(IFixture fixture)
         {
-            Lazy<ObjectRepository> module = default;
             var serviceProvider = fixture.Create<IServiceProvider>();
+
+            var tempPath = RepositoryFixture.GetRepositoryPath(fixture.Create<Guid>().ToString());
+            var container = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
+            fixture.Inject(container);
+            fixture.Inject<IObjectRepositoryContainer<ObjectRepository>>(container);
+            fixture.Inject<IObjectRepositoryContainer>(container);
+
+            Lazy<ObjectRepository> module = default;
             var createdPages = new List<Page>();
 
             Application PickRandomApplication() => module.Value.Applications.PickRandom();
@@ -60,13 +67,14 @@ namespace GitObjectDb.Tests.Assets.Customizations
                 new LinkField(serviceProvider, Guid.NewGuid(), $"Field {position}", new LazyLink<Page>(PickRandomPage(_ => true))) :
                 new Field(serviceProvider, Guid.NewGuid(), $"Field {position}");
 
-            module = new Lazy<ObjectRepository>(() => new ObjectRepository(serviceProvider, Guid.NewGuid(), "Some repository", new LazyChildren<IMigration>(), new LazyChildren<Application>(
-                Enumerable.Range(1, ApplicationCount).Select(a =>
-                    new Application(serviceProvider, Guid.NewGuid(), $"Application {a}", new LazyChildren<Page>(
-                        Enumerable.Range(1, PagePerApplicationCount).Select(p =>
-                            CreatePage(p))
-                        .ToImmutableList())))
-                .ToImmutableList())));
+            module = new Lazy<ObjectRepository>(() =>
+                new ObjectRepository(serviceProvider, container, Guid.NewGuid(), "Some repository", new Version(1, 0, 0), ImmutableList.Create<RepositoryDependency>(), new LazyChildren<IMigration>(), new LazyChildren<Application>(
+                    Enumerable.Range(1, ApplicationCount).Select(a =>
+                        new Application(serviceProvider, Guid.NewGuid(), $"Application {a}", new LazyChildren<Page>(
+                            Enumerable.Range(1, PagePerApplicationCount).Select(p =>
+                                CreatePage(p))
+                            .ToImmutableList())))
+                    .ToImmutableList())));
 
             fixture.Register(PickRandomApplication);
             fixture.Register(() => PickRandomPage(_ => true));

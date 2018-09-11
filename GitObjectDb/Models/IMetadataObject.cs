@@ -1,3 +1,4 @@
+using FluentValidation.Results;
 using GitObjectDb.Reflection;
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,11 @@ namespace GitObjectDb.Models
         /// Gets the parent repository.
         /// </summary>
         IObjectRepository Repository { get; }
+
+        /// <summary>
+        /// Gets the container.
+        /// </summary>
+        IObjectRepositoryContainer Container { get; }
 
         /// <summary>
         /// Gets the parent.
@@ -48,5 +54,12 @@ namespace GitObjectDb.Models
         /// <param name="parent">The parent.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]
         void AttachToParent(IMetadataObject parent);
+
+        /// <summary>
+        /// Validates the specified rules.
+        /// </summary>
+        /// <param name="rules">The rules.</param>
+        /// <returns>A <see cref="ValidationResult"/> object containing any validation failures.</returns>
+        ValidationResult Validate(ValidationRules rules = ValidationRules.All);
     }
 }

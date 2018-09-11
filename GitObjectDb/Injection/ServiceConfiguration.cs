@@ -1,9 +1,12 @@
+using FluentValidation;
 using GitObjectDb.Compare;
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
+using GitObjectDb.JsonConverters;
 using GitObjectDb.Migrations;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
+using GitObjectDb.Validations;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -38,17 +41,27 @@ namespace Microsoft.Extensions.DependencyInjection
             source.AddSingleton<IObjectRepositoryLoader, ObjectRepositoryLoader>();
             source.AddSingleton<IModelDataAccessorProvider, ModelDataAccessorProvider>();
             source.AddSingleton<IConstructorSelector, MostParametersConstructorSelector>();
-            source.AddSingleton<Func<RepositoryDescription, IComputeTreeChanges>>(s =>
-                description => new ComputeTreeChanges(s, description));
+            source.AddSingleton<Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges>>(s =>
+                (container, description) => new ComputeTreeChanges(s, container, description));
             source.AddSingleton<IRepositoryFactory, RepositoryFactory>();
             source.AddSingleton<IRepositoryProvider, RepositoryProvider>();
             source.AddSingleton<IModelDataAccessorProvider>(s =>
                 new CachedModelDataAccessorProvider(new ModelDataAccessorProvider(s)));
-            source.AddSingleton<Func<RepositoryDescription, IObjectRepository, string, IMetadataTreeMerge>>(s =>
-                (description, repository, branchName) => new MetadataTreeMerge(s, description, repository, branchName));
-            source.AddSingleton<Func<RepositoryDescription, MigrationScaffolder>>(s =>
-                description => new MigrationScaffolder(s, description));
+            source.AddSingleton<Func<IObjectRepositoryContainer, RepositoryDescription, IObjectRepository, string, IMetadataTreeMerge>>(s =>
+                (container, description, repository, branchName) => new MetadataTreeMerge(s, container, description, repository, branchName));
+            source.AddSingleton<Func<IObjectRepositoryContainer, RepositoryDescription, MigrationScaffolder>>(s =>
+                (container, description) => new MigrationScaffolder(s, container, description));
+            source.AddSingleton<IValidatorFactory, ValidatorFactory>();
+            source.AddSingleton<JsonSerializationValidator>();
+            AddCreatorParameterResolvers(source);
             return source;
+        }
+
+        static void AddCreatorParameterResolvers(IServiceCollection source)
+        {
+            source.AddSingleton<ICreatorParameterResolver, CreatorParameterChildrenResolver>();
+            source.AddSingleton<ICreatorParameterResolver, CreatorParameterFromServiceProviderResolver>();
+            source.AddSingleton<ICreatorParameterResolver, CreatorRepositoryContainerParameterResolver>();
         }
     }
 }

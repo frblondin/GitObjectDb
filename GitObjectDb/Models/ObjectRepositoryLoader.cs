@@ -3,6 +3,7 @@ using GitObjectDb.JsonConverters;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using System;
@@ -33,32 +34,39 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public AbstractObjectRepository Clone(string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
+        public AbstractObjectRepository Clone(IObjectRepositoryContainer container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
         {
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
             if (repository == null)
             {
                 throw new ArgumentNullException(nameof(repository));
             }
-
             if (repositoryDescription == null)
             {
                 throw new ArgumentNullException(nameof(repositoryDescription));
             }
 
             Repository.Clone(repository, repositoryDescription.Path, new CloneOptions { Checkout = false });
-            return LoadFrom(repositoryDescription, commitId);
+            return LoadFrom(container, repositoryDescription, commitId);
         }
 
         /// <inheritdoc />
-        public TRepository Clone<TRepository>(string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
+        public TRepository Clone<TRepository>(IObjectRepositoryContainer<TRepository> container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
             where TRepository : AbstractObjectRepository
         {
-            return (TRepository)Clone(repository, repositoryDescription, commitId);
+            return (TRepository)Clone((IObjectRepositoryContainer)container, repository, repositoryDescription, commitId);
         }
 
         /// <inheritdoc />
-        public AbstractObjectRepository LoadFrom(RepositoryDescription repositoryDescription, ObjectId commitId = null)
+        public AbstractObjectRepository LoadFrom(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, ObjectId commitId = null)
         {
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
             if (repositoryDescription == null)
             {
                 throw new ArgumentNullException(nameof(repositoryDescription));
@@ -77,33 +85,32 @@ namespace GitObjectDb.Models
                     currentCommit = repository.Lookup<Commit>(commitId);
                 }
 
-                var instance = (AbstractObjectRepository)LoadEntry(commitId, currentCommit[FileSystemStorage.DataFile], string.Empty);
+                var instance = (AbstractObjectRepository)LoadEntry(container, commitId, currentCommit[FileSystemStorage.DataFile], string.Empty);
                 instance.SetRepositoryData(repositoryDescription, commitId);
                 return instance;
             });
         }
 
         /// <inheritdoc />
-        public TInstance LoadFrom<TInstance>(RepositoryDescription repositoryDescription, ObjectId commitId = null)
-            where TInstance : AbstractObjectRepository
+        public TRepository LoadFrom<TRepository>(IObjectRepositoryContainer<TRepository> container, RepositoryDescription repositoryDescription, ObjectId commitId = null)
+            where TRepository : AbstractObjectRepository
         {
-            return (TInstance)LoadFrom(repositoryDescription, commitId);
+            return (TRepository)LoadFrom((IObjectRepositoryContainer)container, repositoryDescription, commitId);
         }
 
-        IMetadataObject LoadEntry(ObjectId commitId, TreeEntry entry, string path)
+        IMetadataObject LoadEntry(IObjectRepositoryContainer container, ObjectId commitId, TreeEntry entry, string path)
         {
             ILazyChildren ResolveChildren(Type type, string propertyName)
             {
                 var dataAccessor = _dataAccessorProvider.Get(type);
-                var childProperty = dataAccessor.ChildProperties.FirstOrDefault(
-                    p => p.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+                var childProperty = dataAccessor.ChildProperties.TryGetWithValue(p => p.Name, propertyName);
                 if (childProperty == null)
                 {
                     throw new NotSupportedException($"Unable to find property details for '{propertyName}'.");
                 }
-                return LoadEntryChildren(commitId, path, childProperty);
+                return LoadEntryChildren(container, commitId, path, childProperty);
             }
-            var serializer = GetJsonSerializer(ResolveChildren);
+            var serializer = GetJsonSerializer(container, ResolveChildren);
             var blob = (Blob)entry.Target;
             var jobject = blob.GetContentStream().ToJson<JObject>(serializer);
             var objectType = Type.GetType(jobject.Value<string>("$type"));
@@ -111,8 +118,12 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public JsonSerializer GetJsonSerializer(ChildrenResolver childrenResolver = null)
+        public JsonSerializer GetJsonSerializer(IObjectRepositoryContainer container, ChildrenResolver childrenResolver = null)
         {
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
             if (childrenResolver == null)
             {
                 childrenResolver = ReturnEmptyChildren;
@@ -120,10 +131,12 @@ namespace GitObjectDb.Models
 
             var serializer = new JsonSerializer
             {
+                ContractResolver = new CamelCasePropertyNamesContractResolver(),
                 TypeNameHandling = TypeNameHandling.Objects,
                 Formatting = Formatting.Indented
             };
-            serializer.Converters.Add(new MetadataObjectJsonConverter(_serviceProvider, childrenResolver));
+            serializer.Converters.Add(new MetadataObjectConverter(_serviceProvider, childrenResolver, container));
+            serializer.Converters.Add(new VersionConverter());
 
             // Optimization: prevent reflection for each new object!
             serializer.ContractResolver = _contractResolver;
@@ -134,28 +147,32 @@ namespace GitObjectDb.Models
         ILazyChildren ReturnEmptyChildren(Type parentType, string propertyName)
         {
             var dataAccessor = _dataAccessorProvider.Get(parentType);
-            var childProperty = dataAccessor.ChildProperties.FirstOrDefault(
-                p => p.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+            var childProperty = dataAccessor.ChildProperties.TryGetWithValue(p => p.Name, propertyName);
             return LazyChildrenHelper.Create(childProperty, (o, r) => Enumerable.Empty<IMetadataObject>());
         }
 
-        ILazyChildren LoadEntryChildren(ObjectId commitId, string path, ChildPropertyInfo childProperty) =>
+        ILazyChildren LoadEntryChildren(IObjectRepositoryContainer container, ObjectId commitId, string path, ChildPropertyInfo childProperty) =>
             LazyChildrenHelper.Create(childProperty, (parent, repository) =>
             {
-                var childPath = string.IsNullOrEmpty(path) ? childProperty.Name : $"{path}/{childProperty.Name}";
+                var childPath = string.IsNullOrEmpty(path) ? childProperty.FolderName : $"{path}/{childProperty.FolderName}";
                 var commit = repository.Lookup<Commit>(commitId);
-                var subTree = (Tree)commit[childPath]?.Target;
-                return (subTree?.Any() ?? false) ?
-                    LoadEntryChildren(commitId, childPath, subTree) :
+                var entry = commit[childPath];
+                if (entry == null)
+                {
+                    return Enumerable.Empty<IMetadataObject>();
+                }
+                var subTree = (Tree)entry.Target;
+                return subTree.Any() ?
+                    LoadEntryChildren(container, commitId, childPath, subTree) :
                     Enumerable.Empty<IMetadataObject>();
             });
 
-        IEnumerable<IMetadataObject> LoadEntryChildren(ObjectId commitId, string childPath, Tree subTree) =>
+        IEnumerable<IMetadataObject> LoadEntryChildren(IObjectRepositoryContainer container, ObjectId commitId, string childPath, Tree subTree) =>
             from c in subTree
             where c.TargetType == TreeEntryTargetType.Tree
             let childTree = (Tree)c.Target
             let data = childTree[FileSystemStorage.DataFile]
             where data != null
-            select LoadEntry(commitId, data, $"{childPath}/{c.Name}");
+            select LoadEntry(container, commitId, data, $"{childPath}/{c.Name}");
     }
 }

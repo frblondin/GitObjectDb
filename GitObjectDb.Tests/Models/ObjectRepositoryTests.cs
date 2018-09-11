@@ -1,9 +1,6 @@
-using GitObjectDb.Compare;
-using GitObjectDb.Git;
 using GitObjectDb.Models;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
-using GitObjectDb.Tests.Assets.Tools;
 using GitObjectDb.Tests.Assets.Utils;
 using GitObjectDb.Tests.Git.Backends;
 using LibGit2Sharp;
@@ -11,8 +8,6 @@ using NUnit.Framework;
 using PowerAssert;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -22,10 +17,10 @@ namespace GitObjectDb.Tests.Models
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void CloneRepository(IObjectRepositoryLoader loader)
+        public void CloneRepository(IObjectRepositoryContainer<ObjectRepository> container)
         {
             // Act
-            var loaded = loader.Clone<ObjectRepository>(RepositoryFixture.SmallRepositoryPath, RepositoryFixture.GetRepositoryDescription());
+            var loaded = container.Clone(RepositoryFixture.SmallRepositoryPath);
 
             // Assert
             Assert.That(loaded.Applications, Has.Count.EqualTo(2));
@@ -33,11 +28,14 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void CreateAndLoadRepository(IObjectRepositoryLoader loader, ObjectRepository sut, Signature signature, string message, InMemoryBackend inMemoryBackend)
+        public void CreateAndLoadRepository(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Signature signature, string message)
         {
+            // Arrange
+            sut = container.AddRepository(sut, signature, message);
+
             // Act
-            sut.SaveInNewRepository(signature, message, RepositoryFixture.GetRepositoryDescription(inMemoryBackend));
-            var loaded = loader.LoadFrom<ObjectRepository>(RepositoryFixture.GetRepositoryDescription(inMemoryBackend));
+            var newContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, container.Path);
+            var loaded = newContainer.Repositories.Single();
 
             // Assert
             PAssert.IsTrue(AreFunctionnally.Equivalent<ObjectRepository>(() => sut == loaded));
@@ -49,15 +47,16 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void CommitPageNameUpdate(ObjectRepository sut, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
+        public void CommitPageNameUpdate(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message)
         {
             // Act
-            sut.SaveInNewRepository(signature, message, RepositoryFixture.GetRepositoryDescription(inMemoryBackend));
+            container.AddRepository(sut, signature, message);
             var modifiedPage = page.With(p => p.Name == "modified");
-            var commit = sut.Commit(modifiedPage.Repository, signature, message);
+            var updated = container.Commit(modifiedPage.Repository, signature, message);
+            var retrievedPage = updated.Flatten().OfType<Page>().FirstOrDefault(p => p.Name == "modified");
 
             // Assert
-            Assert.That(commit, Is.Not.Null);
+            Assert.That(retrievedPage.Name, Is.EqualTo("modified"));
         }
 
         [Test]
