@@ -63,22 +63,6 @@ namespace GitObjectDb.Models
             Repositories.FirstOrDefault(r => r.Id == id) ??
             throw new NotSupportedException("The repository could not be found.");
 
-        /// <inheritdoc />
-        public override IMetadataObject TryGetFromGitPath(ObjectPath path)
-        {
-            if (path == null)
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
-
-            var repository = Repositories.FirstOrDefault(r => r.Id == path.Repository);
-            return repository?.TryGetFromGitPath(path.Path);
-        }
-
-        /// <inheritdoc />
-        public override IMetadataObject GetFromGitPath(ObjectPath path) =>
-            TryGetFromGitPath(path) ?? throw new NotFoundException($"The element with path '{path}' could not be found.");
-
         IImmutableSet<TRepository> LoadRepositories()
         {
             var builder = ImmutableSortedSet.CreateBuilder(MetadataObjectIdComparer<TRepository>.Instance);
@@ -92,6 +76,10 @@ namespace GitObjectDb.Models
             }
             return builder.ToImmutable();
         }
+
+        /// <inheritdoc />
+        public override IObjectRepository TryGetRepository(Guid id) =>
+            Repositories.FirstOrDefault(r => r.Id == id);
 
         /// <inheritdoc />
         public TRepository Clone(string repository, ObjectId commitId = null, OdbBackend backend = null)

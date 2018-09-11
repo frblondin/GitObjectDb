@@ -2,6 +2,7 @@ using AutoFixture;
 using AutoFixture.NUnit3;
 using FluentValidation;
 using FluentValidation.Results;
+using GitObjectDb.Models;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Utils;
@@ -30,7 +31,7 @@ namespace GitObjectDb.Tests.Validations
             // Arrange
             var services = new ServiceCollection();
             services.AddGitObjectDb();
-            services.AddSingleton<IValidatorFactory, CustomValidatorFactory>();
+            services.AddSingleton<IValidatorFactory, CustomValidatorFactory<Field>>();
             var serviceProvider = services.BuildServiceProvider();
             fixture.Inject<IServiceProvider>(serviceProvider);
             fixture.Customize(new MetadataCustomization());
@@ -41,10 +42,37 @@ namespace GitObjectDb.Tests.Validations
 
             // Assert
             Assert.That(result, Has.Property(nameof(ValidationResult.IsValid)).False);
-            Assert.That(result.ToString(), Does.Contain("'Name' should not be equal to 'Field 2'."));
+            Assert.That(result.ToString(), Does.Contain("'Name' should be equal to 'foo'."));
         }
 
-        public class CustomValidatorFactory : ValidatorFactory
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        public void LinkWithWrongRepositoryIsDetected(LinkField linkField)
+        {
+            // Act
+            var modified = linkField.With(f => f.PageLink == new LazyLink<Page>(new ObjectPath(Guid.NewGuid(), "foo")));
+            var result = modified.Repository.Validate();
+
+            // Assert
+            Assert.That(result, Has.Property(nameof(ValidationResult.IsValid)).False);
+            Assert.That(result.ToString(), Does.Contain("which is not added to the dependencies"));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        public void LinkWithWrongObjectPathIsDetected(LinkField linkField)
+        {
+            // Act
+            var modified = linkField.With(f => f.PageLink == new LazyLink<Page>(new ObjectPath(linkField.Repository.Id, "foo")));
+            var result = modified.Repository.Validate();
+
+            // Assert
+            Assert.That(result, Has.Property(nameof(ValidationResult.IsValid)).False);
+            Assert.That(result.ToString(), Does.Contain("Path is referring an unexisting object"));
+        }
+
+        public class CustomValidatorFactory<TTarget> : ValidatorFactory
+            where TTarget : AbstractModel
         {
             readonly IServiceProvider _serviceProvider;
 
@@ -56,23 +84,24 @@ namespace GitObjectDb.Tests.Validations
 
             protected override IValidator Resolve(Type targetType)
             {
-                if (targetType == typeof(Field))
+                if (targetType == typeof(TTarget))
                 {
-                    return new FieldValidation(_serviceProvider);
+                    return new TargetValidation<TTarget>(_serviceProvider);
                 }
                 return base.Resolve(targetType);
             }
         }
 
-        class FieldValidation : AbstractValidator<Field>
+        class TargetValidation<TTarget> : AbstractValidator<TTarget>
+            where TTarget : AbstractModel
         {
-            public FieldValidation(IServiceProvider serviceProvider)
+            public TargetValidation(IServiceProvider serviceProvider)
             {
-                Include(new MetadataObjectValidator<Field>(serviceProvider));
-                RuleFor(p => p.Name).NotEqual("Field 2");
+                Include(new MetadataObjectValidator<TTarget>(serviceProvider));
+                RuleFor(p => p.Name).Equal("foo");
             }
 
-            public override ValidationResult Validate(ValidationContext<Field> context)
+            public override ValidationResult Validate(ValidationContext<TTarget> context)
             {
                 context.GetType();
                 return base.Validate(context);

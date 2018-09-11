@@ -48,7 +48,7 @@ namespace GitObjectDb.Models
         /// <param name="path">The path.</param>
         [JsonConstructor]
         public LazyLink(ObjectPath path)
-            : this(parent => (TLink)parent.Container.GetFromGitPath(path))
+            : this(parent => (TLink)parent.Repository.GetFromGitPath(path))
         {
             _path = path;
         }

@@ -83,6 +83,24 @@ namespace GitObjectDb.Models
         public RepositoryDescription RepositoryDescription { get; private set; }
 
         /// <inheritdoc />
+        public IMetadataObject TryGetFromGitPath(ObjectPath path)
+        {
+            if (path == null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            var repository = Id == path.Repository ?
+                this :
+                Container.TryGetRepository(path.Repository);
+            return repository?.TryGetFromGitPath(path.Path);
+        }
+
+        /// <inheritdoc />
+        public IMetadataObject GetFromGitPath(ObjectPath path) =>
+            TryGetFromGitPath(path) ?? throw new NotFoundException($"The element with path '{path}' could not be found.");
+
+        /// <inheritdoc />
         public IMetadataObject TryGetFromGitPath(string path)
         {
             if (path == null)
@@ -90,27 +108,32 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(path));
             }
 
+            if (path.Equals(FileSystemStorage.DataFile, StringComparison.OrdinalIgnoreCase))
+            {
+                return this;
+            }
+
             var chunks = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (chunks.Length < 2)
+            {
+                return null;
+            }
 
             IMetadataObject result = this;
-            for (int i = 0; i < chunks.Length - 1 && result != null; i++)
+            for (int i = 0; result != null && i < chunks.Length - 1; i += 2)
             {
-                var propertyInfo = result.DataAccessor.ChildProperties.FirstOrDefault(
-                    p => p.FolderName.Equals(chunks[i], StringComparison.OrdinalIgnoreCase));
+                var propertyInfo = result.DataAccessor.ChildProperties.TryGetWithValue(
+                    p => p.FolderName,
+                    chunks[i]);
                 if (propertyInfo == null)
                 {
                     return null;
                 }
 
-                i++;
-                if (i >= chunks.Length)
-                {
-                    return null;
-                }
-
                 var children = propertyInfo.Accessor(result);
-                var guid = Guid.Parse(chunks[i]);
-                result = children.FirstOrDefault(c => c.Id == guid);
+                result = Guid.TryParse(chunks[i + 1], out var guid) ?
+                    children.FirstOrDefault(c => c.Id == guid) :
+                    null;
             }
             return result;
         }

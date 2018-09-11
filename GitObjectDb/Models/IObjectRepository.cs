@@ -46,6 +46,20 @@ namespace GitObjectDb.Models
         RepositoryDescription RepositoryDescription { get; }
 
         /// <summary>
+        /// Tries getting a nested object from an <see cref="ObjectPath"/>.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <returns>The object, if any was found.</returns>
+        IMetadataObject TryGetFromGitPath(ObjectPath path);
+
+        /// <summary>
+        /// Gets a nested object from an <see cref="ObjectPath"/>.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <returns>The object, if any was found.</returns>
+        IMetadataObject GetFromGitPath(ObjectPath path);
+
+        /// <summary>
         /// Tries getting a nested object from its Git path.
         /// </summary>
         /// <param name="path">The Git path.</param>

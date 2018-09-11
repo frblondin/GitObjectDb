@@ -23,12 +23,6 @@ namespace GitObjectDb.Models
         /// <inheritdoc />
         public abstract string Path { get; }
 
-        /// <inheritdoc />
-        public abstract IMetadataObject GetFromGitPath(ObjectPath path);
-
-        /// <inheritdoc />
-        public abstract IMetadataObject TryGetFromGitPath(ObjectPath path);
-
         /// <summary>
         /// Reloads the repository and refreshes the reference in the container.
         /// </summary>
@@ -36,5 +30,8 @@ namespace GitObjectDb.Models
         /// <param name="commit">The commit.</param>
         /// <returns>The loaded repository.</returns>
         internal abstract IObjectRepository ReloadRepository(IObjectRepository previousRepository, ObjectId commit);
+
+        /// <inheritdoc />
+        public abstract IObjectRepository TryGetRepository(Guid id);
     }
 }

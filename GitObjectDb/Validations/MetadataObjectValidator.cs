@@ -33,13 +33,7 @@ namespace GitObjectDb.Validations
                 p => typeof(ILazyLink).IsAssignableFrom(p.PropertyType),
                 _ => new ChildValidatorAdaptor(LazyLinkValidator.Instance, LazyLinkValidator.Instance.GetType()));
             RuleForEach<IMetadataObject>(
-                p => LazyChildrenHelper.TryGetLazyChildrenInterface(p.PropertyType) != null,
-                r =>
-                {
-                    var elementType = r.TypeToValidate.GetGenericArguments()[0];
-                    var validator = _validatorFactory.GetValidator(elementType);
-                    return new ChildValidatorAdaptor(validator, validator.GetType());
-                });
+                p => LazyChildrenHelper.TryGetLazyChildrenInterface(p.PropertyType) != null);
         }
 
         static (LambdaExpression Expression, Expression<Func<object, object>> NonGenericExpression) CreatePropertyAccessors(PropertyInfo p)
@@ -75,7 +69,7 @@ namespace GitObjectDb.Validations
             }
         }
 
-        void RuleForEach<TProperty>(Predicate<PropertyInfo> predicate, Func<PropertyRule, IPropertyValidator> validator)
+        void RuleForEach<TProperty>(Predicate<PropertyInfo> predicate)
         {
             foreach (var property in typeof(TMetadataObject).GetProperties())
             {
@@ -86,8 +80,12 @@ namespace GitObjectDb.Validations
                 var (expression, nonGenericExpression) = CreatePropertyAccessors(property);
                 var rule = new CollectionPropertyRule<TProperty>(property, nonGenericExpression.Compile(), expression, () => CascadeMode, property.PropertyType, typeof(TMetadataObject));
                 AddRule(rule);
-                rule.AddValidator(validator(rule));
+                var validator = new ChildValidatorAdaptor(GetPropertyValidator, typeof(IValidator));
+                rule.AddValidator(validator);
             }
         }
+
+        IValidator GetPropertyValidator(IValidationContext context) =>
+            _validatorFactory.GetValidator(context.PropertyValue.GetType());
     }
 }

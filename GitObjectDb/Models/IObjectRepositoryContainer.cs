@@ -2,6 +2,7 @@ using GitObjectDb.Compare;
 using GitObjectDb.Git;
 using LibGit2Sharp;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace GitObjectDb.Models
@@ -17,18 +18,11 @@ namespace GitObjectDb.Models
         string Path { get; }
 
         /// <summary>
-        /// Tries getting a nested object from an <see cref="ObjectPath"/>.
+        /// Tries to get an existing repository from its identifier.
         /// </summary>
-        /// <param name="path">The path.</param>
-        /// <returns>The object, if any was found.</returns>
-        IMetadataObject TryGetFromGitPath(ObjectPath path);
-
-        /// <summary>
-        /// Gets a nested object from an <see cref="ObjectPath"/>.
-        /// </summary>
-        /// <param name="path">The path.</param>
-        /// <returns>The object, if any was found.</returns>
-        IMetadataObject GetFromGitPath(ObjectPath path);
+        /// <param name="id">The identifier.</param>
+        /// <returns>Found <see cref="IObjectRepository"/>, if any.</returns>
+        IObjectRepository TryGetRepository(Guid id);
     }
 
     /// <summary>

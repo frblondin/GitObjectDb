@@ -25,7 +25,8 @@ namespace GitObjectDb.Validations
         protected override bool IsValid(PropertyValidatorContext context)
         {
             var path = context.PropertyValue as ObjectPath ?? throw new NotSupportedException($"Property of type {nameof(ObjectPath)} expected.");
-            var instance = context.Instance as IMetadataObject ?? throw new NotSupportedException($"Instance of type {nameof(IMetadataObject)} expected.");
+            var lazyLink = context.Instance as ILazyLink ?? throw new NotSupportedException($"Instance of type {nameof(ILazyLink)} expected.");
+            var instance = lazyLink.Parent;
 
             return IsValid(context, path, instance);
         }
@@ -42,7 +43,7 @@ namespace GitObjectDb.Validations
 
                 if (!IsReferencedObjectExisting(path, instance))
                 {
-                    context.MessageFormatter.AppendArgument("Message", $"is referring an object {path} which does not exist.");
+                    context.MessageFormatter.AppendArgument("Message", $"is referring an unexisting object {path}.");
                     return false;
                 }
             }
@@ -54,6 +55,6 @@ namespace GitObjectDb.Validations
             instance.Repository.Dependencies.Select(d => d.Id).Contains(path.Repository);
 
         static bool IsReferencedObjectExisting(ObjectPath path, IMetadataObject instance) =>
-            instance.Container.TryGetFromGitPath(path) != null;
+            instance.Repository.TryGetFromGitPath(path) != null;
     }
 }
