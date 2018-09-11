@@ -46,19 +46,23 @@ Here's a simple example:
 3. Basic commands
    - Initialize a new repository
         ```cs
+        var container = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
         var repo = new ObjectRepository(...);
-        repo.SaveInNewRepository(signature, message, new RepositoryDescription(path));
+        container.AddRepository(repo, signature, message);
         ```
    - Commit a new change
         ```cs
         var modifiedPage = page.With(p => p.Name == "modified");
-        instance.Commit(modifiedPage.Repository, signature, message);
+        container.Commit(modifiedPage.Repository, signature, message);
         ```
     - [Branch management](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Models/ObjectRepositoryTests.Branch.cs)
     - Migrations:
         
         Migrations allows to define any action that must be executed when the commit containing the migration will be processed by a pull. See the [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Migrations/MigrationTests.cs) for more details.
     - [Pre/post commit hook](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Git/Hooks/GitHooksTests.cs)
+	- Validation using [FluentValidation](https://github.com/JeremySkinner/FluentValidation).
+        
+        See [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Validations/ModelValidationTests.cs) for more information
 
 ## Prerequisites
 
