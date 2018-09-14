@@ -114,7 +114,7 @@ namespace GitObjectDb.Models
         {
             var validator = _validatorFactory.GetValidator(GetType());
             var selector = rules == ValidationRules.All ?
-                ValidatorOptions.ValidatorSelectors.DefaultValidatorSelectorFactory() :
+                ValidatorOptions.ValidatorSelectors.RulesetValidatorSelectorFactory(new[] { "*" }) :
                 ValidatorOptions.ValidatorSelectors.RulesetValidatorSelectorFactory(rules.ToString().Split(',', ';'));
             var context = new ValidationContext(this, new PropertyChain(), selector);
             return validator.Validate(context);

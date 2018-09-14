@@ -315,5 +315,9 @@ namespace GitObjectDb.Models
                 throw new NotSupportedException("The repository is not currently managed by the container.");
             }
         }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(ValidationRules rules = ValidationRules.All) =>
+            new ValidationResult(Repositories.SelectMany(r => r.Validate(rules).Errors));
     }
 }

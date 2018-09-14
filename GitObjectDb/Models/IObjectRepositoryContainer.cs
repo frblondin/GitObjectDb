@@ -1,3 +1,4 @@
+using FluentValidation.Results;
 using GitObjectDb.Compare;
 using GitObjectDb.Git;
 using LibGit2Sharp;
@@ -23,6 +24,13 @@ namespace GitObjectDb.Models
         /// <param name="id">The identifier.</param>
         /// <returns>Found <see cref="IObjectRepository"/>, if any.</returns>
         IObjectRepository TryGetRepository(Guid id);
+
+        /// <summary>
+        /// Validates the specified rules.
+        /// </summary>
+        /// <param name="rules">The rules.</param>
+        /// <returns>A <see cref="ValidationResult"/> object containing any validation failures.</returns>
+        ValidationResult Validate(ValidationRules rules = ValidationRules.All);
     }
 
     /// <summary>

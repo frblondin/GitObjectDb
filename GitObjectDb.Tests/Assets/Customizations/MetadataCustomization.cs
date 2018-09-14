@@ -43,16 +43,9 @@ namespace GitObjectDb.Tests.Assets.Customizations
             fixture.Inject<IObjectRepositoryContainer<ObjectRepository>>(container);
             fixture.Inject<IObjectRepositoryContainer>(container);
 
-            Lazy<ObjectRepository> module = default;
+            ObjectRepository lastModule = default;
             var createdPages = new List<Page>();
 
-            Application PickRandomApplication() => module.Value.Applications.PickRandom();
-            Page PickRandomPage(Func<Page, bool> predicate) =>
-                !createdPages.Any() ?
-                module.Value.Applications.PickRandom().Pages.Last(predicate) :
-                createdPages.Last(predicate);
-            Field PickRandomField() => PickRandomPage(_ => true).Fields.PickRandom();
-            LinkField PickRandomLinkField() => PickRandomPage(p => p.Fields.OfType<LinkField>().Any()).Fields.OfType<LinkField>().First();
             Page CreatePage(int position)
             {
                 var page = new Page(serviceProvider, Guid.NewGuid(), $"Page {position}", $"Description for {position}", new LazyChildren<Field>(
@@ -67,20 +60,32 @@ namespace GitObjectDb.Tests.Assets.Customizations
                 new LinkField(serviceProvider, Guid.NewGuid(), $"Field {position}", new LazyLink<Page>(PickRandomPage(_ => true))) :
                 new Field(serviceProvider, Guid.NewGuid(), $"Field {position}");
 
-            module = new Lazy<ObjectRepository>(() =>
-                new ObjectRepository(serviceProvider, container, Guid.NewGuid(), "Some repository", new Version(1, 0, 0), ImmutableList.Create<RepositoryDependency>(), new LazyChildren<IMigration>(), new LazyChildren<Application>(
+            ObjectRepository CreateModule()
+            {
+                createdPages.Clear();
+                lastModule = new ObjectRepository(serviceProvider, container, Guid.NewGuid(), "Some repository", new Version(1, 0, 0), ImmutableList.Create<RepositoryDependency>(), new LazyChildren<IMigration>(), new LazyChildren<Application>(
                     Enumerable.Range(1, ApplicationCount).Select(a =>
                         new Application(serviceProvider, Guid.NewGuid(), $"Application {a}", new LazyChildren<Page>(
                             Enumerable.Range(1, PagePerApplicationCount).Select(p =>
                                 CreatePage(p))
                             .ToImmutableList())))
-                    .ToImmutableList())));
+                    .ToImmutableList()));
+                return lastModule;
+            }
+
+            Application PickRandomApplication() => (lastModule ?? CreateModule()).Applications.PickRandom();
+            Page PickRandomPage(Func<Page, bool> predicate) =>
+                !createdPages.Any() ?
+                PickRandomApplication().Pages.Last(predicate) :
+                createdPages.Last(predicate);
+            Field PickRandomField() => PickRandomPage(_ => true).Fields.PickRandom();
+            LinkField PickRandomLinkField() => PickRandomPage(p => p.Fields.OfType<LinkField>().Any()).Fields.OfType<LinkField>().First();
 
             fixture.Register(PickRandomApplication);
-            fixture.Register(() => PickRandomPage(_ => true));
-            fixture.Register(PickRandomField);
-            fixture.Register(PickRandomLinkField);
-            fixture.Register(() => module.Value);
+                fixture.Register(() => PickRandomPage(_ => true));
+                fixture.Register(PickRandomField);
+                fixture.Register(PickRandomLinkField);
+                fixture.Register(CreateModule);
         }
     }
 }

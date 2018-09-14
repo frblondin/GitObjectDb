@@ -33,5 +33,8 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         public abstract IObjectRepository TryGetRepository(Guid id);
+
+        /// <inheritdoc />
+        public abstract ValidationResult Validate(ValidationRules rules = ValidationRules.All);
     }
 }
