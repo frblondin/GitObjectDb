@@ -9,7 +9,7 @@ using System.Text;
 namespace GitObjectDb.Validations
 {
     /// <inheritdoc />
-    public class ValidatorFactory : IValidatorFactory
+    public partial class ValidatorFactory : IValidatorFactory
     {
         readonly IServiceProvider _serviceProvider;
         readonly IList<(Type ValidatorType, Type TargetType)> _validators;
@@ -46,91 +46,6 @@ namespace GitObjectDb.Validations
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         }
 
-        static (int? Distance, Type ConcreteType) ComputeScore(Type type, Type validatorType, Type validatorTargetType)
-        {
-            if (validatorTargetType == type)
-            {
-                // Best score
-                return (0, validatorType);
-            }
-            else if (validatorType.IsGenericTypeDefinition)
-            {
-                var genericParameters = validatorType.GetGenericArguments();
-                TryAdaptGenericParameters(validatorTargetType, type, genericParameters);
-                if (genericParameters.All(p => !p.IsGenericParameter))
-                {
-                    var adapted = validatorType.MakeGenericType(genericParameters);
-
-                    // Slightly lower score than a perfect match
-                    return (adapted != null ? (int?)1 : null, adapted);
-                }
-                else
-                {
-                    return (null, null);
-                }
-            }
-            else
-            {
-                // Slightly lower score than a perfect match or a generic type match
-                return (validatorTargetType.IsAssignableFrom(type) ? (int?)2 : null, validatorType);
-            }
-        }
-
-        static void TryAdaptGenericParameters(Type validatorTypeChunk, Type typeChunk, IList<Type> genericParameters)
-        {
-            if (validatorTypeChunk.IsGenericParameter)
-            {
-                TryAdaptGenericParameter(validatorTypeChunk, typeChunk, genericParameters);
-            }
-            else if (validatorTypeChunk.IsGenericType)
-            {
-                TryAdaptGenericParameterArgs(validatorTypeChunk, typeChunk, genericParameters);
-            }
-        }
-
-        static void TryAdaptGenericParameter(Type validatorTypeChunk, Type typeChunk, IList<Type> genericParameters)
-        {
-            var validConstraints = validatorTypeChunk.GetGenericParameterConstraints().All(constraint => constraint.IsAssignableFrom(typeChunk));
-            if (validConstraints)
-            {
-                var index = genericParameters.IndexOf(validatorTypeChunk);
-                if (index != -1)
-                {
-                    genericParameters[index] = typeChunk;
-                }
-            }
-        }
-
-        static void TryAdaptGenericParameterArgs(Type validatorTypeChunk, Type typeChunk, IList<Type> genericParameters)
-        {
-            var definition = validatorTypeChunk.GetGenericTypeDefinition();
-            var matchingTypeDefinition = FlattenInterfacesAndBaseTypes(typeChunk).FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == definition);
-            if (matchingTypeDefinition != null)
-            {
-                var validatorGenericArgs = validatorTypeChunk.GetGenericArguments();
-                var typeGenericArgs = matchingTypeDefinition.GetGenericArguments();
-                for (int i = 0; i < validatorGenericArgs.Length; i++)
-                {
-                    TryAdaptGenericParameters(validatorGenericArgs[i], typeGenericArgs[i], genericParameters);
-                }
-            }
-        }
-
-        static IEnumerable<Type> FlattenInterfacesAndBaseTypes(Type type)
-        {
-            yield return type;
-            foreach (var i in type.GetInterfaces())
-            {
-                yield return i;
-            }
-            var baseType = type.BaseType;
-            while (baseType != null && baseType != typeof(object))
-            {
-                yield return baseType;
-                baseType = baseType.BaseType;
-            }
-        }
-
         /// <inheritdoc />
         public IValidator<T> GetValidator<T>() => (IValidator<T>)GetValidator(typeof(T));
 
@@ -152,18 +67,11 @@ namespace GitObjectDb.Validations
         /// <returns>The validator.</returns>
         protected virtual IValidator Resolve(Type targetType)
         {
-            var type = (from v in _validators
-                        let score = ComputeScore(targetType, v.ValidatorType, v.TargetType)
-                        where score.Distance != null
-                        orderby score.Distance
-                        select score.ConcreteType).FirstOrDefault();
-
-            if (type == null)
-            {
+            var types = _validators.Select(v => new ValidatorComparerItem(targetType, v)).OrderBy(v => v, new ValidatorComparer(targetType));
+            var winner = types.FirstOrDefault() ??
                 throw new KeyNotFoundException($"Could not find any validator for type {targetType}.");
-            }
 
-            return InstantiateValidator(type);
+            return InstantiateValidator(winner.AdaptedType);
         }
 
         IValidator InstantiateValidator(Type type)

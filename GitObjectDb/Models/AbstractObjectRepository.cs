@@ -67,6 +67,7 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         [DataMember]
+        [Modifiable]
         public IImmutableList<RepositoryDependency> Dependencies { get; }
 
         /// <inheritdoc />
