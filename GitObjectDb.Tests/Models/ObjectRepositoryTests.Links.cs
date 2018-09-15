@@ -1,5 +1,3 @@
-using GitObjectDb.Compare;
-using GitObjectDb.Git;
 using GitObjectDb.Models;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;

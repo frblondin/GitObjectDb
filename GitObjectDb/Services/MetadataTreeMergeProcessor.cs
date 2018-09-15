@@ -1,12 +1,10 @@
-using GitObjectDb.Attributes;
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
-using GitObjectDb.Migrations;
 using GitObjectDb.Models;
+using GitObjectDb.Models.Compare;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace GitObjectDb.Compare
+namespace GitObjectDb.Services
 {
     /// <summary>
     /// Applies the merge changes.

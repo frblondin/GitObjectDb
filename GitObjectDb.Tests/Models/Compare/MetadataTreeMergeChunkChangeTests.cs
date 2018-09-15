@@ -1,4 +1,4 @@
-using GitObjectDb.Compare;
+using GitObjectDb.Models.Compare;
 using GitObjectDb.Reflection;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
@@ -9,7 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace GitObjectDb.Tests.Compare
+namespace GitObjectDb.Tests.Models.Compare
 {
     public class MetadataTreeMergeChunkChangeTests
     {

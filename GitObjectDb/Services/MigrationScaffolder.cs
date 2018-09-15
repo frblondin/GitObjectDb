@@ -1,6 +1,8 @@
-using GitObjectDb.Compare;
 using GitObjectDb.Git;
 using GitObjectDb.Models;
+using GitObjectDb.Models.Compare;
+using GitObjectDb.Models.Migration;
+using GitObjectDb.Services;
 using LibGit2Sharp;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -10,7 +12,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Migrations
+namespace GitObjectDb.Services
 {
     /// <summary>
     /// Scaffolds migrations to apply pending model changes.

@@ -1,17 +1,15 @@
-using GitObjectDb.Migrations;
-using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Runtime.Serialization;
 using System.Text;
 
-namespace GitObjectDb.Tests.Migrations
+namespace GitObjectDb.Tests.Assets.Models.Migration
 {
     [DataContract]
-    public class Migration : AbstractMigration
+    public class DummyMigration : GitObjectDb.Models.Migration.AbstractMigration
     {
-        public Migration(IServiceProvider serviceProvider, Guid id, string name, bool canDowngrade, bool isIdempotent, string formula)
+        public DummyMigration(IServiceProvider serviceProvider, Guid id, string name, bool canDowngrade, bool isIdempotent, string formula)
             : base(serviceProvider, id, name)
         {
             CanDowngrade = canDowngrade;

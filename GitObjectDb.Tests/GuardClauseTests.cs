@@ -1,16 +1,14 @@
 using AutoFixture;
 using AutoFixture.Idioms;
 using GitObjectDb.Attributes;
-using GitObjectDb.Migrations;
 using GitObjectDb.Models;
+using GitObjectDb.Models.Migration;
 using GitObjectDb.Reflection;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
+using GitObjectDb.Tests.Assets.Models.Migration;
 using GitObjectDb.Tests.Assets.Utils;
-using GitObjectDb.Tests.Migrations;
 using LibGit2Sharp;
-using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using NSubstitute;
 using NUnit.Framework;
 using System;
@@ -65,7 +63,7 @@ namespace GitObjectDb.Tests.Git
             static void CustomizeModelObjects(IFixture fixture)
             {
                 fixture.Register<AbstractObjectRepository>(() => fixture.Create<ObjectRepository>());
-                fixture.Register<AbstractMigration>(() => fixture.Create<Migration>());
+                fixture.Register<AbstractMigration>(() => fixture.Create<DummyMigration>());
                 fixture.Register<AbstractModel>(() => fixture.Create<ObjectRepository>());
                 fixture.Inject(new ModelDataAccessor(fixture.Create<IServiceProvider>(), typeof(Page)));
                 fixture.Inject<ConstructorParameterBinding.ChildProcessor>((name, children, @new, dataAccessor) => children);

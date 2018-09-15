@@ -1,9 +1,6 @@
 using GitObjectDb.Attributes;
-using GitObjectDb.Compare;
 using GitObjectDb.Git;
-using GitObjectDb.Git.Hooks;
-using GitObjectDb.Migrations;
-using GitObjectDb.Reflection;
+using GitObjectDb.Models.Migration;
 using LibGit2Sharp;
 using Newtonsoft.Json;
 using System;

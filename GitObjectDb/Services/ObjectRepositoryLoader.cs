@@ -1,5 +1,6 @@
 using GitObjectDb.Git;
 using GitObjectDb.JsonConverters;
+using GitObjectDb.Models;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
 using Newtonsoft.Json;
@@ -11,7 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Models
+namespace GitObjectDb.Services
 {
     /// <inheritdoc />
     internal class ObjectRepositoryLoader : IObjectRepositoryLoader

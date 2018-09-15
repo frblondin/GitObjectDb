@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace GitObjectDb.Migrations
+namespace GitObjectDb.Models.Migration
 {
     /// <summary>
     /// Represents the base class for migrations.

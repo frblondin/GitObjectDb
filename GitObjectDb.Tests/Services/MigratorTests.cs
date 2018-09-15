@@ -1,9 +1,10 @@
 using AutoFixture;
-using GitObjectDb.Git;
-using GitObjectDb.Migrations;
 using GitObjectDb.Models;
+using GitObjectDb.Models.Migration;
+using GitObjectDb.Services;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
+using GitObjectDb.Tests.Assets.Models.Migration;
 using GitObjectDb.Tests.Assets.Utils;
 using LibGit2Sharp;
 using NUnit.Framework;
@@ -13,7 +14,7 @@ using System.Text;
 
 namespace GitObjectDb.Tests.Migrations
 {
-    public class MigrationTests
+    public class MigratorTests
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
@@ -21,7 +22,7 @@ namespace GitObjectDb.Tests.Migrations
         {
             // Arrange
             sut = container.AddRepository(sut, signature, message);
-            var updated = sut.With(i => i.Migrations.Add(fixture.Create<Migration>()));
+            var updated = sut.With(i => i.Migrations.Add(fixture.Create<DummyMigration>()));
             var commit = container.Commit(updated, signature, message);
 
             // Act

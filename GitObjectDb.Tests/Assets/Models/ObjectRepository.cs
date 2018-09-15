@@ -1,7 +1,5 @@
-using GitObjectDb.Compare;
-using GitObjectDb.Migrations;
 using GitObjectDb.Models;
-using GitObjectDb.Reflection;
+using GitObjectDb.Models.Migration;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;

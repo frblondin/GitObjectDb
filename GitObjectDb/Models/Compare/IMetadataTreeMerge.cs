@@ -1,10 +1,10 @@
-using GitObjectDb.Migrations;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
+using GitObjectDb.Services;
 using LibGit2Sharp;
 using System.Collections.Generic;
 
-namespace GitObjectDb.Compare
+namespace GitObjectDb.Models.Compare
 {
     /// <summary>
     /// Provides the ability to merge changes between two branches.

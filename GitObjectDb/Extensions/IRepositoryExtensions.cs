@@ -1,8 +1,7 @@
 using GitObjectDb;
-using GitObjectDb.Compare;
-using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
 using GitObjectDb.IO;
+using GitObjectDb.Models.Compare;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;

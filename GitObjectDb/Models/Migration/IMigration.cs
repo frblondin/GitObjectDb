@@ -1,7 +1,7 @@
 using GitObjectDb.Models;
 using System;
 
-namespace GitObjectDb.Migrations
+namespace GitObjectDb.Models.Migration
 {
     /// <summary>
     /// Represents the interface for migrations.

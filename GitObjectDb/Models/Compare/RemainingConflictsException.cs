@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Compare
+namespace GitObjectDb.Models.Compare
 {
     /// <summary>
     /// The exception that is thrown when remaining conflicts were not resolved.

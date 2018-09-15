@@ -1,11 +1,12 @@
 using AutoFixture;
-using GitObjectDb.Compare;
 using GitObjectDb.Git;
 using GitObjectDb.Models;
+using GitObjectDb.Models.Compare;
+using GitObjectDb.Services;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
+using GitObjectDb.Tests.Assets.Models.Migration;
 using GitObjectDb.Tests.Assets.Utils;
-using GitObjectDb.Tests.Git.Backends;
 using GitObjectDb.Tests.Migrations;
 using LibGit2Sharp;
 using Newtonsoft.Json.Linq;
@@ -121,7 +122,7 @@ namespace GitObjectDb.Tests.Models
 
             // B, C
             container.Branch(sut, "newBranch");
-            var updatedInstance = sut.With(i => i.Migrations.Add(fixture.Create<Migration>()));
+            var updatedInstance = sut.With(i => i.Migrations.Add(fixture.Create<DummyMigration>()));
             var b = container.Commit(updatedInstance.Repository, signature, message); // B
             Assert.That(b.Migrations.Count, Is.GreaterThan(0));
             var updateName = b.Applications[1].Pages[1].With(p => p.Name == "modified name");

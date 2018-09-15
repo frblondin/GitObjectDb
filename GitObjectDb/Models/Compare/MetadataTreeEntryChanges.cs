@@ -3,7 +3,7 @@ using LibGit2Sharp;
 using System;
 using System.Diagnostics;
 
-namespace GitObjectDb.Compare
+namespace GitObjectDb.Models.Compare
 {
     /// <summary>
     /// Holds the changes between two versions of a tree entry.

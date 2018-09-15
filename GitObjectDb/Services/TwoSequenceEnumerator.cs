@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Compare
+namespace GitObjectDb.Services
 {
 #pragma warning disable SA1600 // Elements must be documented
     internal sealed class TwoSequenceEnumerator<T> : IDisposable

@@ -1,8 +1,9 @@
 using GitObjectDb.Models;
+using GitObjectDb.Models.Compare;
 using LibGit2Sharp;
 using System;
 
-namespace GitObjectDb.Compare
+namespace GitObjectDb.Services
 {
     /// <summary>
     /// Compares to commits and computes the differences (additions, deletions...).
