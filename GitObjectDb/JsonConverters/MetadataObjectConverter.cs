@@ -1,5 +1,6 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Models;
+using GitObjectDb.Services;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;

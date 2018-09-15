@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Compare
+namespace GitObjectDb.Models.Compare
 {
     /// <summary>
     /// Holds the result of a diff between two trees.

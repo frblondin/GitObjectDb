@@ -1,6 +1,5 @@
-using GitObjectDb.Compare;
 using GitObjectDb.Git;
-using GitObjectDb.Migrations;
+using GitObjectDb.Models.Migration;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;

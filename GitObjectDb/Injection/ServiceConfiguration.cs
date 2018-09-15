@@ -1,11 +1,11 @@
 using FluentValidation;
-using GitObjectDb.Compare;
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
 using GitObjectDb.JsonConverters;
-using GitObjectDb.Migrations;
 using GitObjectDb.Models;
+using GitObjectDb.Models.Compare;
 using GitObjectDb.Reflection;
+using GitObjectDb.Services;
 using GitObjectDb.Validations;
 using LibGit2Sharp;
 using System;

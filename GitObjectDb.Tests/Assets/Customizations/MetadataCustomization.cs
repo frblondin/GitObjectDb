@@ -1,6 +1,6 @@
 using AutoFixture;
-using GitObjectDb.Migrations;
 using GitObjectDb.Models;
+using GitObjectDb.Models.Migration;
 using GitObjectDb.Tests.Assets.Models;
 using System;
 using System.Collections.Generic;

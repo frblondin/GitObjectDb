@@ -1,9 +1,10 @@
 using GitObjectDb.Git;
+using GitObjectDb.Models;
 using LibGit2Sharp;
 using Newtonsoft.Json;
 using System;
 
-namespace GitObjectDb.Models
+namespace GitObjectDb.Services
 {
     /// <summary>
     /// Loads a <see cref="AbstractObjectRepository"/> instance from a Git repository.

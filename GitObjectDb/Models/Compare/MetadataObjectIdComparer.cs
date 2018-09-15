@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace GitObjectDb.Compare
+namespace GitObjectDb.Models.Compare
 {
     /// <summary>
     /// Compares metadata objects only by using the <see cref="IMetadataObject.Id"/> property.

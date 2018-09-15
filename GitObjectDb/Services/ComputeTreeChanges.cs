@@ -1,7 +1,6 @@
-using DiffPatch;
-using DiffPatch.Data;
 using GitObjectDb.Git;
 using GitObjectDb.Models;
+using GitObjectDb.Models.Compare;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
 using System;
@@ -10,7 +9,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Compare
+namespace GitObjectDb.Services
 {
     /// <inheritdoc/>
     internal class ComputeTreeChanges : IComputeTreeChanges

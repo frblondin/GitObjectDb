@@ -1,3 +1,4 @@
+using GitObjectDb.Models.Migration;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -5,7 +6,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Migrations
+namespace GitObjectDb.Services
 {
     /// <summary>
     /// Migrator is used to apply existing migrations to a database. Migrator can be used to upgrade and downgrade

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace GitObjectDb.Migrations
+namespace GitObjectDb.Models.Migration
 {
     /// <summary>
     /// Specifies the migration mode.

@@ -1,8 +1,9 @@
+using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace GitObjectDb.Models
+namespace GitObjectDb.Services
 {
     /// <summary>
     /// Resolves children from the property name.

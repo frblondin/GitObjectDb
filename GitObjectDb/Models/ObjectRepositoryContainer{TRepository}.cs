@@ -1,11 +1,8 @@
-using FluentValidation;
 using FluentValidation.Results;
-using FluentValidation.Validators;
-using GitObjectDb.Compare;
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
-using GitObjectDb.IO;
-using GitObjectDb.Validations;
+using GitObjectDb.Models.Compare;
+using GitObjectDb.Services;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;

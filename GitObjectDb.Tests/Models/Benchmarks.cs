@@ -1,8 +1,8 @@
 using AutoFixture;
-using GitObjectDb.Compare;
 using GitObjectDb.Git;
 using GitObjectDb.IO;
 using GitObjectDb.Models;
+using GitObjectDb.Services;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Utils;

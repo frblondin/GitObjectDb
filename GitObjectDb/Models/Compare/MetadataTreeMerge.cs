@@ -1,8 +1,9 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Git;
-using GitObjectDb.Migrations;
 using GitObjectDb.Models;
+using GitObjectDb.Models.Migration;
 using GitObjectDb.Reflection;
+using GitObjectDb.Services;
 using LibGit2Sharp;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -13,7 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Compare
+namespace GitObjectDb.Models.Compare
 {
     /// <inheritdoc/>
     [ExcludeFromGuardForNull]
