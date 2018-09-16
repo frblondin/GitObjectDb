@@ -53,6 +53,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 (container, description) => new MigrationScaffolder(s, container, description));
             source.AddSingleton<IValidatorFactory, ValidatorFactory>();
             source.AddSingleton<JsonSerializationValidator>();
+            source.AddSingleton<IObjectRepositorySearch, ObjectRepositorySearch>();
             AddCreatorParameterResolvers(source);
             return source;
         }
