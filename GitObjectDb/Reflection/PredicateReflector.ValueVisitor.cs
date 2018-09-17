@@ -38,7 +38,7 @@ namespace GitObjectDb.Reflection
                     case DefaultExpression @default:
                         return @default.Type.IsByRef ? null : Activator.CreateInstance(@default.Type);
                     default:
-                        throw new NotSupportedException("Could node extract a constant value out of the expression.");
+                        throw new GitObjectDbException("Could node extract a constant value out of the expression.");
                 }
             }
 
@@ -52,7 +52,7 @@ namespace GitObjectDb.Reflection
                     case PropertyInfo property:
                         return Expression.Constant(property.GetValue(ExtractValueImpl(node.Expression)), node.Type);
                     default:
-                        throw new NotSupportedException($"Unsupported member type {node.Member.GetType()}.");
+                        throw new GitObjectDbException($"Unsupported member type {node.Member.GetType()}.");
                 }
             }
 

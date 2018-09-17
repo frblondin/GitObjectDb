@@ -64,7 +64,7 @@ namespace GitObjectDb.Models
             {
                 if (Parent == null)
                 {
-                    throw new NotSupportedException($"Parent is not attached to {nameof(LazyLink<TLink>)}.");
+                    throw new GitObjectDbException($"Parent is not attached to {nameof(LazyLink<TLink>)}.");
                 }
 
                 if (_link != null)
@@ -99,9 +99,9 @@ namespace GitObjectDb.Models
         {
             if (_factory == null)
             {
-                throw new NotSupportedException("Factory cannot be null.");
+                throw new GitObjectDbException("Factory cannot be null.");
             }
-            return _factory(parent) ?? throw new NotSupportedException(_nullReturnedValueExceptionMessage);
+            return _factory(parent) ?? throw new ObjectNotFoundException(_nullReturnedValueExceptionMessage);
         }
 
         /// <inheritdoc />
@@ -114,7 +114,7 @@ namespace GitObjectDb.Models
 
             if (Parent != null && Parent != parent)
             {
-                throw new NotSupportedException("A single metadata object cannot be attached to two different parents.");
+                throw new GitObjectDbException("A single metadata object cannot be attached to two different parents.");
             }
 
             Parent = parent;

@@ -105,8 +105,8 @@ namespace GitObjectDb.Compare
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
-             let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in old repository.")
-             let newNode = newRepository.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in new repository.")
+             let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in old repository.")
+             let newNode = newRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in new repository.")
              select new MetadataTreeEntryChanges(c.Path, c.Status, oldNode, newNode))
             .ToImmutableList();
 
@@ -115,7 +115,7 @@ namespace GitObjectDb.Compare
              let newEntry = newCommit[c.Path]
              where newEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
-             let newNode = newRepository.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in new instance.")
+             let newNode = newRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in new instance.")
              select new MetadataTreeEntryChanges(c.Path, c.Status, null, newNode))
             .ToImmutableList();
 
@@ -124,7 +124,7 @@ namespace GitObjectDb.Compare
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
-             let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new NotSupportedException($"Node {path} could not be found in old instance.")
+             let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in old instance.")
              select new MetadataTreeEntryChanges(c.Path, c.Status, oldNode, null))
             .ToImmutableList();
 

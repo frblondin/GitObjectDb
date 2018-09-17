@@ -60,7 +60,7 @@ namespace GitObjectDb.Reflection
                 var visitor = new Visitor<TExpression>();
                 visitor.Visit(expression);
                 return visitor.Result ??
-                    throw new NotSupportedException($"Unable to find an expression of type {typeof(TExpression).Name} in expression.");
+                    throw new GitObjectDbException($"Unable to find an expression of type {typeof(TExpression).Name} in expression.");
             }
 
             public override Expression Visit(Expression node)
@@ -74,7 +74,7 @@ namespace GitObjectDb.Reflection
                 {
                     if (Result != null)
                     {
-                        throw new NotSupportedException($"Only one expression of type {nameof(TExpression)} expected.");
+                        throw new GitObjectDbException($"Only one expression of type {nameof(TExpression)} expected.");
                     }
                     Result = found;
                 }

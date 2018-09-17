@@ -106,7 +106,7 @@ namespace GitObjectDb.Models
                 var childProperty = dataAccessor.ChildProperties.TryGetWithValue(p => p.Name, propertyName);
                 if (childProperty == null)
                 {
-                    throw new NotSupportedException($"Unable to find property details for '{propertyName}'.");
+                    throw new GitObjectDbException($"Unable to find property details for '{propertyName}'.");
                 }
                 return LoadEntryChildren(container, commitId, path, childProperty);
             }

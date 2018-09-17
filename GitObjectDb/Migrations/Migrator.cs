@@ -69,7 +69,7 @@ namespace GitObjectDb.Migrations
         {
             if (Migrations.Any(m => !m.CanDowngrade))
             {
-                throw new NotSupportedException("One or more migrations do not support downgrading.");
+                throw new GitObjectDbException("One or more migrations do not support downgrading.");
             }
         }
     }

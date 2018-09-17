@@ -119,7 +119,7 @@ namespace GitObjectDb.Compare
         {
             if (MergeValue != null)
             {
-                throw new NotSupportedException("There is no conflict on this node.");
+                throw new GitObjectDbException("There is no conflict on this node.");
             }
 
             MergeValue = value ?? throw new ArgumentNullException(nameof(value));

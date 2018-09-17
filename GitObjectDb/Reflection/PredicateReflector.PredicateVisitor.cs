@@ -18,17 +18,17 @@ namespace GitObjectDb.Reflection
 
             static MemberInfo ExtractMember(Expression node)
             {
-                var memberExpression = node as MemberExpression ?? throw new NotSupportedException("Member expressions expected in predicate.");
+                var memberExpression = node as MemberExpression ?? throw new GitObjectDbException("Member expressions expected in predicate.");
                 if (!Attribute.IsDefined(memberExpression.Member, typeof(ModifiableAttribute)))
                 {
-                    throw new NotSupportedException($"Member expressions should be decorated with {nameof(ModifiableAttribute)} attribute.");
+                    throw new GitObjectDbException($"Member expressions should be decorated with {nameof(ModifiableAttribute)} attribute.");
                 }
 
                 return memberExpression.Member;
             }
 
             static void ThrowNotSupported(string nodeDetails) =>
-                throw new NotSupportedException($"Expression of type {nodeDetails} is not supported in predicate reflector.");
+                throw new GitObjectDbException($"Expression of type {nodeDetails} is not supported in predicate reflector.");
 
             protected override Expression VisitBinary(BinaryExpression node)
             {
@@ -79,9 +79,9 @@ namespace GitObjectDb.Reflection
             void VisitAddOrDeleteMethodCall(MethodCallExpression node, ChildChangeType changeType)
             {
                 var instance = node.Object as MemberExpression ??
-                    throw new NotSupportedException($"{changeType.ToString()} method is only supported when called on an object child property, eg. object.ChildProperty.{changeType.ToString()}(...).");
+                    throw new GitObjectDbException($"{changeType.ToString()} method is only supported when called on an object child property, eg. object.ChildProperty.{changeType.ToString()}(...).");
                 var value = ValueVisitor.ExtractValue(node.Arguments[0]) as IMetadataObject ??
-                    throw new NotSupportedException("The parameter provided for the Add method call could not be extracted as a non-nullable instance.");
+                    throw new GitObjectDbException("The parameter provided for the Add method call could not be extracted as a non-nullable instance.");
 
                 var changes = GetChildChangeList(instance.Member.Name);
                 changes.Add(new ChildChange(value, changeType));

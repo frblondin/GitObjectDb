@@ -134,7 +134,7 @@ namespace GitObjectDb.Reflection
         {
             // childProcessor(lazyChildren, result, childDataProvider)
             var property = dataProvider.ChildProperties.TryGetWithValue(p => p.Name, parameter.Name) ??
-                throw new NotSupportedException($"A property _{parameter.Name} was expected to be existing for argument {parameter.Name}.");
+                throw new GitObjectDbException($"A property _{parameter.Name} was expected to be existing for argument {parameter.Name}.");
 
             var childType = parameter.ParameterType.GetGenericArguments()[0];
             var childDataProvider = _dataAccessorProvider.Get(childType);
