@@ -67,8 +67,7 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public IEnumerable<IMetadataObject> Grep<TRepository>(IObjectRepositoryContainer<TRepository> container, string content)
-            where TRepository : IObjectRepository =>
+        public IEnumerable<IMetadataObject> Grep(IObjectRepositoryContainer container, string content) =>
             container.Repositories.SelectMany(r => Grep(r, content));
     }
 }

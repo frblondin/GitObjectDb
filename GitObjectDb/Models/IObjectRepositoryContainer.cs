@@ -18,6 +18,11 @@ namespace GitObjectDb.Models
         string Path { get; }
 
         /// <summary>
+        /// Gets the repositories being managed by the container.
+        /// </summary>
+        IEnumerable<IObjectRepository> Repositories { get; }
+
+        /// <summary>
         /// Tries to get an existing repository from its identifier.
         /// </summary>
         /// <param name="id">The identifier.</param>
@@ -42,7 +47,7 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Gets all repositories.
         /// </summary>
-        IImmutableSet<TRepository> Repositories { get; }
+        new IImmutableSet<TRepository> Repositories { get; }
 
         /// <summary>
         /// Gets the <typeparamref name="TRepository"/> with the specified identifier.
