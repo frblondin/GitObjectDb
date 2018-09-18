@@ -78,10 +78,7 @@ namespace GitObjectDb.Models
         {
             get
             {
-                if (Parent == null)
-                {
-                    throw new GitObjectDbException($"Parent is not attached to {nameof(LazyChildren<TChild>)}.");
-                }
+                ThrowIfNoParent();
 
                 try
                 {
@@ -108,6 +105,14 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         public TChild this[int index] => Children[index];
+
+        void ThrowIfNoParent()
+        {
+            if (Parent == null)
+            {
+                throw new GitObjectDbException($"Parent is not attached to {nameof(LazyChildren<TChild>)}.");
+            }
+        }
 
         IEnumerable<TChild> GetValueFromFactory(IMetadataObject parent)
         {
