@@ -28,5 +28,20 @@ namespace GitObjectDb.Tests.Models
             // Assert
             Assert.That(loadedLinkField.PageLink.Link.Id, Is.EqualTo(linkField.PageLink.Link.Id));
         }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        public void ResolveLinkRefererrs(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
+        {
+            // Arrange
+            sut = container.AddRepository(sut, signature, message);
+            var linkField = sut.Flatten().OfType<LinkField>().First();
+
+            // Act
+            var referrers = linkField.PageLink.Link.GetReferrers();
+
+            // Assert
+            Assert.That(referrers, Does.Contain(linkField));
+        }
     }
 }

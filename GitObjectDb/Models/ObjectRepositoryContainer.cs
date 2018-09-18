@@ -16,6 +16,9 @@ namespace GitObjectDb.Models
         /// <inheritdoc />
         public abstract string Path { get; }
 
+        /// <inheritdoc />
+        public IEnumerable<IObjectRepository> Repositories => GetRepositoriesCore();
+
         /// <summary>
         /// Reloads the repository and refreshes the reference in the container.
         /// </summary>
@@ -29,5 +32,11 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         public abstract ValidationResult Validate(ValidationRules rules = ValidationRules.All);
+
+        /// <summary>
+        /// Gets the repositories being managed by the container.
+        /// </summary>
+        /// <returns>The repositories.</returns>
+        protected abstract IEnumerable<IObjectRepository> GetRepositoriesCore();
     }
 }

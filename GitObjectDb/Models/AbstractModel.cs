@@ -3,6 +3,7 @@ using FluentValidation.Internal;
 using FluentValidation.Results;
 using GitObjectDb.Attributes;
 using GitObjectDb.Reflection;
+using GitObjectDb.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -28,6 +29,8 @@ namespace GitObjectDb.Models
         internal const string DebuggerDisplay = "Name = {Name}, Id = {Id}";
 
         readonly IValidatorFactory _validatorFactory;
+        readonly IObjectRepositorySearch _repositorySearch;
+        readonly IModelDataAccessorProvider _dataAccessorProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AbstractModel"/> class.
@@ -50,8 +53,9 @@ namespace GitObjectDb.Models
             }
 
             _validatorFactory = serviceProvider.GetRequiredService<IValidatorFactory>();
-            var dataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
-            DataAccessor = dataAccessorProvider.Get(GetType());
+            _repositorySearch = serviceProvider.GetRequiredService<IObjectRepositorySearch>();
+            _dataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
+            DataAccessor = _dataAccessorProvider.Get(GetType());
             if (id == Guid.Empty)
             {
                 throw new ArgumentNullException(nameof(id));
@@ -121,6 +125,26 @@ namespace GitObjectDb.Models
                 ValidatorOptions.ValidatorSelectors.RulesetValidatorSelectorFactory(rules.ToString().Split(',', ';'));
             var context = new ValidationContext(this, new PropertyChain(), selector);
             return validator.Validate(context);
+        }
+
+        /// <inheritdoc />
+        public IEnumerable<IMetadataObject> GetReferrers()
+        {
+            var isAsString = Id.ToString();
+            var candidates = _repositorySearch.Grep(Container, isAsString);
+            foreach (var node in candidates)
+            {
+                var accessor = _dataAccessorProvider.Get(node.GetType());
+                var linkValues = from p in accessor.ModifiableProperties
+                                 where p.IsLink
+                                 let link = (ILazyLink)p.Accessor(node)
+                                 where link.Path.Path.EndsWith(isAsString, StringComparison.OrdinalIgnoreCase)
+                                 select p;
+                if (linkValues.Any())
+                {
+                    yield return node;
+                }
+            }
         }
     }
 }

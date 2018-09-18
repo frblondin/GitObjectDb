@@ -23,6 +23,7 @@ namespace GitObjectDb.Reflection
         {
             Property = property ?? throw new ArgumentNullException(nameof(property));
             Accessor = CreateGetter(property).Compile();
+            IsLink = typeof(ILazyLink).IsAssignableFrom(Property.PropertyType);
         }
 
         /// <summary>
@@ -39,6 +40,14 @@ namespace GitObjectDb.Reflection
         /// Gets the name of the property.
         /// </summary>
         public string Name => Property.Name;
+
+        /// <summary>
+        /// Gets a value indicating whether this property is of type <see cref="ILazyLink"/>.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this property is a link; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsLink { get; }
 
         static Expression<Func<IMetadataObject, object>> CreateGetter(PropertyInfo property)
         {

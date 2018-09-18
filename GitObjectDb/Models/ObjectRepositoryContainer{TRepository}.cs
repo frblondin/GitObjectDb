@@ -53,7 +53,7 @@ namespace GitObjectDb.Models
         public override string Path { get; }
 
         /// <inheritdoc />
-        public IImmutableSet<TRepository> Repositories { get; private set; }
+        public new IImmutableSet<TRepository> Repositories { get; private set; }
 
         /// <inheritdoc />
         public TRepository this[Guid id] =>
@@ -62,6 +62,9 @@ namespace GitObjectDb.Models
         TRepository GetRepository(Guid id) =>
             Repositories.FirstOrDefault(r => r.Id == id) ??
             throw new ObjectNotFoundException("The repository could not be found.");
+
+        /// <inheritdoc />
+        protected override IEnumerable<IObjectRepository> GetRepositoriesCore() => Repositories;
 
         IImmutableSet<TRepository> LoadRepositories()
         {
