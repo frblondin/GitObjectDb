@@ -60,6 +60,9 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         public TRepository this[Guid id] =>
+            GetRepository(id);
+
+        TRepository GetRepository(Guid id) =>
             Repositories.FirstOrDefault(r => r.Id == id) ??
             throw new ObjectNotFoundException("The repository could not be found.");
 

@@ -62,10 +62,7 @@ namespace GitObjectDb.Models
         {
             get
             {
-                if (Parent == null)
-                {
-                    throw new GitObjectDbException($"Parent is not attached to {nameof(LazyLink<TLink>)}.");
-                }
+                ThrowIfNoParent();
 
                 if (_link != null)
                 {
@@ -87,6 +84,14 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         public bool IsLinkCreated => _link != null;
+
+        void ThrowIfNoParent()
+        {
+            if (Parent == null)
+            {
+                throw new GitObjectDbException($"Parent is not attached to {nameof(LazyLink<TLink>)}.");
+            }
+        }
 
         TLink CreateLink()
         {
