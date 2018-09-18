@@ -85,14 +85,17 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <exception cref="NotSupportedException">No parent repository has been set.</exception>
         public AbstractObjectRepository Repository =>
-            this.Root() as AbstractObjectRepository ??
-            throw new NotSupportedException("No parent repository has been set.");
+            GetRepository();
 
         /// <inheritdoc />
         IObjectRepository IMetadataObject.Repository => Repository;
 
         /// <inheritdoc />
         public virtual IObjectRepositoryContainer Container => Repository.Container;
+
+        AbstractObjectRepository GetRepository() =>
+            this.Root() as AbstractObjectRepository ??
+            throw new GitObjectDbException("No parent repository has been set.");
 
         /// <inheritdoc />
         public void AttachToParent(IMetadataObject parent)
@@ -103,7 +106,7 @@ namespace GitObjectDb.Models
             }
             if (Parent != null && Parent != parent)
             {
-                throw new NotSupportedException("A single metadata object cannot be attached to two different parents.");
+                throw new GitObjectDbException("A single metadata object cannot be attached to two different parents.");
             }
 
             Parent = parent;

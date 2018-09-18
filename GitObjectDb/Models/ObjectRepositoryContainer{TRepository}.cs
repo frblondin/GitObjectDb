@@ -60,8 +60,11 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         public TRepository this[Guid id] =>
+            GetRepository(id);
+
+        TRepository GetRepository(Guid id) =>
             Repositories.FirstOrDefault(r => r.Id == id) ??
-            throw new NotSupportedException("The repository could not be found.");
+            throw new ObjectNotFoundException("The repository could not be found.");
 
         IImmutableSet<TRepository> LoadRepositories()
         {
@@ -138,11 +141,11 @@ namespace GitObjectDb.Models
         {
             if (Repositories.Any(r => r.Id == repository.Id))
             {
-                throw new NotSupportedException($"A repository with the same id already exists in the container repositories.");
+                throw new GitObjectDbException($"A repository with the same id already exists in the container repositories.");
             }
             if (Directory.Exists(repositoryDescription.Path))
             {
-                throw new NotSupportedException($"A repository with the target path already exists on the filesystem.");
+                throw new GitObjectDbException($"A repository with the target path already exists on the filesystem.");
             }
         }
 
@@ -169,7 +172,7 @@ namespace GitObjectDb.Models
             {
                 if (!r.Head.Tip.Id.Equals(previousRepository.CommitId))
                 {
-                    throw new NotSupportedException("The current head commit id is different from the commit used by current instance.");
+                    throw new GitObjectDbException("The current head commit id is different from the commit used by current instance.");
                 }
 
                 var computeChanges = _computeTreeChangesFactory(this, repositoryDescription);
@@ -310,9 +313,9 @@ namespace GitObjectDb.Models
             {
                 if (Repositories.Any(r => r.Id == repository.Id))
                 {
-                    throw new NotSupportedException("The repository version is not currently managed by the container. This likely means that the repository was modified (commit, branch checkout...).");
+                    throw new GitObjectDbException("The repository version is not currently managed by the container. This likely means that the repository was modified (commit, branch checkout...).");
                 }
-                throw new NotSupportedException("The repository is not currently managed by the container.");
+                throw new GitObjectDbException("The repository is not currently managed by the container.");
             }
         }
 

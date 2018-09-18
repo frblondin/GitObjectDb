@@ -50,7 +50,7 @@ namespace GitObjectDb.Compare
             Container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
             Repository = repository ?? throw new ArgumentNullException(nameof(repository));
-            CommitId = repository.CommitId ?? throw new NotSupportedException("Repository has no commit.");
+            CommitId = repository.CommitId ?? throw new GitObjectDbException("Repository instance is not linked to any commit.");
             BranchName = branchName ?? throw new ArgumentNullException(nameof(branchName));
 
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
@@ -161,7 +161,7 @@ namespace GitObjectDb.Compare
         {
             if (!repository.Head.Tip.Id.Equals(CommitId))
             {
-                throw new NotSupportedException("The current head commit id is different from the commit used by current repository.");
+                throw new GitObjectDbException("The current head commit id is different from the commit used by current repository.");
             }
         }
 

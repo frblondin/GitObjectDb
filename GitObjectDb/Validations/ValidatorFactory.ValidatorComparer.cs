@@ -70,7 +70,7 @@ namespace GitObjectDb.Validations
                 {
                     if (GenericParameter != null)
                     {
-                        throw new NotSupportedException("No more than one generic parameter is supported while resolving validators.");
+                        throw new GitObjectDbException("No more than one generic parameter is supported while resolving validators.");
                     }
                     GenericParameter = validatorTypeChunk;
                     var index = genericParameters.IndexOf(validatorTypeChunk);

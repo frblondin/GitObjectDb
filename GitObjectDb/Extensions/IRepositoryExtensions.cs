@@ -1,3 +1,4 @@
+using GitObjectDb;
 using GitObjectDb.Compare;
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
@@ -64,7 +65,7 @@ namespace LibGit2Sharp
             {
                 if (repository.Head.Tip.Id != changes.OldRepository.CommitId)
                 {
-                    throw new NotSupportedException("Changes are not based on the HEAD commit.");
+                    throw new GitObjectDbException("Changes are not based on the HEAD commit.");
                 }
                 var startCommit = repository.Lookup<Commit>(changes.OldRepository.CommitId);
                 definition = TreeDefinition.From(startCommit);
@@ -75,7 +76,7 @@ namespace LibGit2Sharp
             }
             else
             {
-                throw new NotSupportedException("Changes are not based on the HEAD commit.");
+                throw new GitObjectDbException("Changes are not based on the HEAD commit.");
             }
 
             if (!hooks.OnCommitStarted(changes, message))

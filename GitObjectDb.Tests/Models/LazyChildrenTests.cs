@@ -54,7 +54,7 @@ namespace GitObjectDb.Tests.Models
             sut.AttachToParent(parent);
 
             // Assert
-            Assert.Throws<NotSupportedException>(() => sut.GetEnumerator());
+            Assert.Throws<GitObjectDbException>(() => sut.GetEnumerator());
         }
 
         [Test]
@@ -77,7 +77,7 @@ namespace GitObjectDb.Tests.Models
             var sut = new LazyChildren<IMetadataObject>(values.ToImmutableList());
 
             // Assert
-            Assert.Throws<NotSupportedException>(() => sut.GetEnumerator());
+            Assert.Throws<GitObjectDbException>(() => sut.GetEnumerator());
         }
 
         [Test]
@@ -89,7 +89,7 @@ namespace GitObjectDb.Tests.Models
             sut.AttachToParent(parent);
 
             // Assert
-            Assert.Throws<NotSupportedException>(() => sut.Add(child));
+            Assert.Throws<GitObjectDbException>(() => sut.Add(child));
         }
 
         [Test]
@@ -101,7 +101,7 @@ namespace GitObjectDb.Tests.Models
             sut.AttachToParent(parent);
 
             // Assert
-            Assert.Throws<NotSupportedException>(() => sut.Delete(values[0]));
+            Assert.Throws<GitObjectDbException>(() => sut.Delete(values[0]));
         }
 
         [Test]
@@ -125,7 +125,7 @@ namespace GitObjectDb.Tests.Models
             sut.AttachToParent(parent);
 
             // Assert
-            Assert.Throws<NotSupportedException>(() => sut.AttachToParent(otherParent));
+            Assert.Throws<GitObjectDbException>(() => sut.AttachToParent(otherParent));
         }
 
         [Test]

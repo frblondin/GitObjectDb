@@ -78,7 +78,7 @@ namespace GitObjectDb.Tests.Compare
             // Act
             var sut = new MetadataTreeMergeChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
             sut.Resolve(resolvedValue);
-            Assert.Throws<NotSupportedException>(() => sut.Resolve(resolvedValue));
+            Assert.Throws<GitObjectDbException>(() => sut.Resolve(resolvedValue));
         }
     }
 }

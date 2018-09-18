@@ -78,10 +78,7 @@ namespace GitObjectDb.Models
         {
             get
             {
-                if (Parent == null)
-                {
-                    throw new NotSupportedException($"Parent is not attached to {nameof(LazyChildren<TChild>)}.");
-                }
+                ThrowIfNoParent();
 
                 try
                 {
@@ -109,11 +106,19 @@ namespace GitObjectDb.Models
         /// <inheritdoc />
         public TChild this[int index] => Children[index];
 
+        void ThrowIfNoParent()
+        {
+            if (Parent == null)
+            {
+                throw new GitObjectDbException($"Parent is not attached to {nameof(LazyChildren<TChild>)}.");
+            }
+        }
+
         IEnumerable<TChild> GetValueFromFactory(IMetadataObject parent)
         {
             if (_factory != null)
             {
-                return _factory(parent) ?? throw new NotSupportedException(_nullReturnedValueExceptionMessage);
+                return _factory(parent) ?? throw new GitObjectDbException(_nullReturnedValueExceptionMessage);
             }
             else if (_factoryWithRepo != null)
             {
@@ -122,11 +127,11 @@ namespace GitObjectDb.Models
                     objectRepository.RepositoryDescription,
                     repository =>
                     {
-                        var nodes = _factoryWithRepo(parent, repository) ?? throw new NotSupportedException(_nullReturnedValueExceptionMessage);
+                        var nodes = _factoryWithRepo(parent, repository) ?? throw new GitObjectDbException(_nullReturnedValueExceptionMessage);
                         return nodes.Cast<TChild>();
                     });
             }
-            throw new NotSupportedException("Factory cannot be null.");
+            throw new GitObjectDbException("Factory cannot be null.");
         }
 
         void AttachChildrenToParentIfNeeded(IMetadataObject parent)
@@ -155,7 +160,7 @@ namespace GitObjectDb.Models
             return new LazyChildren<TChild>(parent =>
                 Children
                 .Except(deleted?.Cast<TChild>() ?? Enumerable.Empty<TChild>())
-                .Select(c => (TChild)update.Invoke(c) ?? throw new NotSupportedException("No child returned while cloning children."))
+                .Select(c => (TChild)update.Invoke(c) ?? throw new ObjectNotFoundException("No child returned while cloning children."))
                 .Union(added?.Cast<TChild>() ?? Enumerable.Empty<TChild>())
                 .ToImmutableList())
             {
@@ -173,7 +178,7 @@ namespace GitObjectDb.Models
 
             if (Parent != null && Parent != parent)
             {
-                throw new NotSupportedException("A single metadata object cannot be attached to two different parents.");
+                throw new GitObjectDbException("A single metadata object cannot be attached to two different parents.");
             }
 
             Parent = parent;
@@ -184,12 +189,12 @@ namespace GitObjectDb.Models
         /// <inheritdoc />
         [ExcludeFromGuardForNull]
         public bool Add(IMetadataObject child) =>
-            throw new NotSupportedException($"The {nameof(ILazyChildren.Add)} method should never by called. Its purpose is to be used within a With(...) predicate.");
+            throw new GitObjectDbException($"The {nameof(ILazyChildren.Add)} method should never by called. Its purpose is to be used within a With(...) predicate.");
 
         /// <inheritdoc />
         [ExcludeFromGuardForNull]
         public bool Delete(IMetadataObject child) =>
-            throw new NotSupportedException($"The {nameof(ILazyChildren.Delete)} method should never by called. Its purpose is to be used within a With(...) predicate.");
+            throw new GitObjectDbException($"The {nameof(ILazyChildren.Delete)} method should never by called. Its purpose is to be used within a With(...) predicate.");
 
         /// <inheritdoc />
         public IEnumerator<TChild> GetEnumerator() => Children.GetEnumerator();

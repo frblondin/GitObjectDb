@@ -24,8 +24,8 @@ namespace GitObjectDb.Validations
         /// <inheritdoc />
         protected override bool IsValid(PropertyValidatorContext context)
         {
-            var path = context.PropertyValue as ObjectPath ?? throw new NotSupportedException($"Property of type {nameof(ObjectPath)} expected.");
-            var lazyLink = context.Instance as ILazyLink ?? throw new NotSupportedException($"Instance of type {nameof(ILazyLink)} expected.");
+            var path = context.PropertyValue as ObjectPath ?? throw new GitObjectDbException($"Property of type {nameof(ObjectPath)} expected.");
+            var lazyLink = context.Instance as ILazyLink ?? throw new GitObjectDbException($"Instance of type {nameof(ILazyLink)} expected.");
             var instance = lazyLink.Parent;
 
             return IsValid(context, path, instance);
