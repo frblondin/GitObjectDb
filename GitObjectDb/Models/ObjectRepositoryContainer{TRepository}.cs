@@ -4,6 +4,7 @@ using GitObjectDb.Git.Hooks;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Services;
 using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;

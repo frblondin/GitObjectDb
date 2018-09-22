@@ -5,6 +5,7 @@ using GitObjectDb.Models.Migration;
 using GitObjectDb.Reflection;
 using GitObjectDb.Services;
 using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
