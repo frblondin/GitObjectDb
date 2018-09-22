@@ -26,6 +26,18 @@ namespace GitObjectDb.Reflection
         }
 
         /// <summary>
+        /// Extracts the <see cref="MethodInfo"/> out of the expression.
+        /// </summary>
+        /// <param name="expression">The expression.</param>
+        /// <param name="returnGenericDefinition">if set to <c>true</c> returns the generic method definition.</param>
+        /// <returns>The <see cref="MethodInfo"/>.</returns>
+        internal static MethodInfo GetMethod(Expression<Action> expression, bool returnGenericDefinition = false)
+        {
+            var found = Visitor<MethodCallExpression>.Lookup(expression);
+            return returnGenericDefinition ? found.Method.GetGenericMethodDefinition() : found.Method;
+        }
+
+        /// <summary>
         /// Extracts the <see cref="ConstructorInfo"/> out of the expression.
         /// </summary>
         /// <typeparam name="TSource">The type of the source.</typeparam>
@@ -47,6 +59,18 @@ namespace GitObjectDb.Reflection
         {
             var found = Visitor<MemberExpression>.Lookup(expression);
             return (PropertyInfo)found.Member;
+        }
+
+        /// <summary>
+        /// Extracts the <see cref="FieldInfo"/> out of the expression.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source.</typeparam>
+        /// <param name="expression">The expression.</param>
+        /// <returns>The <see cref="FieldInfo"/>.</returns>
+        internal static FieldInfo GetField<TSource>(Expression<Func<TSource, object>> expression)
+        {
+            var found = Visitor<MemberExpression>.Lookup(expression);
+            return (FieldInfo)found.Member;
         }
 
         [ExcludeFromGuardForNull]
