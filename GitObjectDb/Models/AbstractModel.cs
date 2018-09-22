@@ -4,6 +4,7 @@ using FluentValidation.Results;
 using GitObjectDb.Attributes;
 using GitObjectDb.Reflection;
 using GitObjectDb.Services;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;

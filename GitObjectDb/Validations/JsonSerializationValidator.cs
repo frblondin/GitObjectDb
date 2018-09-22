@@ -2,6 +2,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using FluentValidation.Validators;
 using GitObjectDb.JsonConverters;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
