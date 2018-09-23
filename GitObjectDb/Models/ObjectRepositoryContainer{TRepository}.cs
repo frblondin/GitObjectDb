@@ -20,8 +20,8 @@ namespace GitObjectDb.Models
     public class ObjectRepositoryContainer<TRepository> : ObjectRepositoryContainer, IObjectRepositoryContainer<TRepository>
         where TRepository : AbstractObjectRepository
     {
-        readonly Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> _computeTreeChangesFactory;
-        readonly Func<IObjectRepositoryContainer, RepositoryDescription, IObjectRepository, string, IMetadataTreeMerge> _metadataTreeMergeFactory;
+        readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
+        readonly MetadataTreeMergeFactory _metadataTreeMergeFactory;
         readonly IObjectRepositoryLoader _repositoryLoader;
         readonly IRepositoryProvider _repositoryProvider;
         readonly GitHooks _hooks;
@@ -39,8 +39,8 @@ namespace GitObjectDb.Models
             }
 
             _repositoryLoader = serviceProvider.GetRequiredService<IObjectRepositoryLoader>();
-            _computeTreeChangesFactory = serviceProvider.GetRequiredService<Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges>>();
-            _metadataTreeMergeFactory = serviceProvider.GetRequiredService<Func<IObjectRepositoryContainer, RepositoryDescription, IObjectRepository, string, IMetadataTreeMerge>>();
+            _computeTreeChangesFactory = serviceProvider.GetRequiredService<ComputeTreeChangesFactory>();
+            _metadataTreeMergeFactory = serviceProvider.GetRequiredService<MetadataTreeMergeFactory>();
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _hooks = serviceProvider.GetRequiredService<GitHooks>();
 

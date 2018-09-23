@@ -1,3 +1,4 @@
+using GitObjectDb.Git;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
 using GitObjectDb.Services;
@@ -6,6 +7,16 @@ using System.Collections.Generic;
 
 namespace GitObjectDb.Models.Compare
 {
+    /// <summary>
+    /// Creates a new instance implementing the <see cref="IMetadataTreeMerge"/> interface.
+    /// </summary>
+    /// <param name="container">The container.</param>
+    /// <param name="repositoryDescription">The repository description.</param>
+    /// <param name="repository">The repository on which to apply the merge.</param>
+    /// <param name="branchName">Name of the branch.</param>
+    /// <returns>The newly created instance.</returns>
+    public delegate IMetadataTreeMerge MetadataTreeMergeFactory(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, string branchName);
+
     /// <summary>
     /// Provides the ability to merge changes between two branches.
     /// </summary>

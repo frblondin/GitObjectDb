@@ -18,7 +18,7 @@ namespace GitObjectDb.Tests.Models
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void ResolveDiffsPageNameUpdate(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
+        public void ResolveDiffsPageNameUpdate(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
             sut = container.AddRepository(sut, signature, message, inMemoryBackend);
@@ -38,7 +38,7 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void ResolveDiffsFieldAddition(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Page page, Signature signature, string message, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
+        public void ResolveDiffsFieldAddition(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
             sut = container.AddRepository(sut, signature, message, inMemoryBackend);
@@ -59,7 +59,7 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void ResolveDiffsFieldDeletion(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
+        public void ResolveDiffsFieldDeletion(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
             sut = container.AddRepository(sut, signature, message, inMemoryBackend);
@@ -80,7 +80,7 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void ResolveDiffsPageDeletion(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Application application, Signature signature, string message, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
+        public void ResolveDiffsPageDeletion(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Application application, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
             sut = container.AddRepository(sut, signature, message, inMemoryBackend);

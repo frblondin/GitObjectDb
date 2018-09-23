@@ -28,6 +28,7 @@ namespace GitObjectDb.Services
         /// <param name="container">The container.</param>
         /// <param name="repositoryDescription">The repository description.</param>
         /// <exception cref="ArgumentNullException">serviceProvider</exception>
+        [ActivatorUtilitiesConstructor]
         public ComputeTreeChanges(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription)
         {
             if (serviceProvider == null)

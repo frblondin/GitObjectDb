@@ -15,10 +15,8 @@ using System.Text;
 
 namespace GitObjectDb.Services
 {
-    /// <summary>
-    /// Scaffolds migrations to apply pending model changes.
-    /// </summary>
-    public class MigrationScaffolder
+    /// <inheritdoc/>
+    public class MigrationScaffolder : IMigrationScaffolder
     {
         readonly JsonSerializer _serializer;
         readonly IRepositoryProvider _repositoryProvider;
@@ -35,6 +33,7 @@ namespace GitObjectDb.Services
         /// or
         /// repository
         /// </exception>
+        [ActivatorUtilitiesConstructor]
         public MigrationScaffolder(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription)
         {
             if (serviceProvider == null)
@@ -51,14 +50,8 @@ namespace GitObjectDb.Services
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
         }
 
-        /// <summary>
-        /// Scaffolds a code based migration to apply any pending model changes to the database.
-        /// </summary>
-        /// <param name="start">The start.</param>
-        /// <param name="end">The end.</param>
-        /// <param name="mode">The mode.</param>
-        /// <returns>The <see cref="Migrator"/> used to apply migrations.</returns>
-        public IImmutableList<Migrator> Scaffold(ObjectId start, ObjectId end, MigrationMode mode)
+        /// <inheritdoc/>
+        public IImmutableList<Migrator> Scaffold(ObjectId migrationStart, ObjectId migrationEnd, MigrationMode mode)
         {
             if (mode == MigrationMode.Downgrade)
             {
@@ -70,12 +63,12 @@ namespace GitObjectDb.Services
                 var log = repository.Commits.QueryBy(new CommitFilter
                 {
                     SortBy = CommitSortStrategies.Topological | CommitSortStrategies.Reverse,
-                    ExcludeReachableFrom = start,
-                    IncludeReachableFrom = end
+                    ExcludeReachableFrom = migrationStart,
+                    IncludeReachableFrom = migrationEnd
                 });
                 var deferred = new List<IMigration>();
                 var result = ImmutableList.CreateBuilder<Migrator>();
-                result.AddRange(GetLogMigrators(repository, log, deferred, repository.Lookup<Commit>(start), mode));
+                result.AddRange(GetLogMigrators(repository, log, deferred, repository.Lookup<Commit>(migrationStart), mode));
                 if (deferred.Any())
                 {
                     var uniqueDeferredMigrations = deferred.Distinct(MetadataObjectIdComparer<IMigration>.Instance);
@@ -87,7 +80,7 @@ namespace GitObjectDb.Services
                     }
                     else
                     {
-                        result.Add(new Migrator(uniqueDeferredMigrations.ToImmutableList(), mode, end));
+                        result.Add(new Migrator(uniqueDeferredMigrations.ToImmutableList(), mode, migrationEnd));
                     }
                 }
                 return result.ToImmutable();

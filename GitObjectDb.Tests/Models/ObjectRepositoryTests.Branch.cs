@@ -24,7 +24,7 @@ namespace GitObjectDb.Tests.Models
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void MergeTwoDifferentPropertiesChanged(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory)
+        public void MergeTwoDifferentPropertiesChanged(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // master:    A---C---D
             //             \     /
@@ -53,7 +53,7 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void MergeFileAdditionChange(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Page page, Signature signature, string message, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory)
+        public void MergeFileAdditionChange(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // master:    A---C---D
             //             \     /
@@ -81,7 +81,7 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void MergeFileDeletionChange(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory)
+        public void MergeFileDeletionChange(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // master:    A---C---D
             //             \     /
@@ -167,7 +167,7 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void MergeSamePropertyConflict(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory)
+        public void MergeSamePropertyConflict(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // master:    A---C---D
             //             \     /

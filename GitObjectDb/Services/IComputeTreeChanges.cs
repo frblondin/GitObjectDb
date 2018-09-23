@@ -1,3 +1,4 @@
+using GitObjectDb.Git;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using LibGit2Sharp;
@@ -5,6 +6,14 @@ using System;
 
 namespace GitObjectDb.Services
 {
+    /// <summary>
+    /// Creates a new instance implementing the <see cref="IComputeTreeChanges"/> interface.
+    /// </summary>
+    /// <param name="container">The container.</param>
+    /// <param name="description">The description.</param>
+    /// <returns>The newly created instance.</returns>
+    public delegate IComputeTreeChanges ComputeTreeChangesFactory(IObjectRepositoryContainer container, RepositoryDescription description);
+
     /// <summary>
     /// Compares to commits and computes the differences (additions, deletions...).
     /// </summary>

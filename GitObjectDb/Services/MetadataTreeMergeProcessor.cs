@@ -21,7 +21,7 @@ namespace GitObjectDb.Services
     internal sealed class MetadataTreeMergeProcessor
     {
         readonly IRepositoryProvider _repositoryProvider;
-        readonly Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> _computeTreeChangesFactory;
+        readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
         readonly RepositoryDescription _repositoryDescription;
         readonly Lazy<JsonSerializer> _serializer;
         readonly GitHooks _hooks;
@@ -52,7 +52,7 @@ namespace GitObjectDb.Services
             _metadataTreeMerge = metadataTreeMerge ?? throw new ArgumentNullException(nameof(metadataTreeMerge));
 
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
-            _computeTreeChangesFactory = serviceProvider.GetRequiredService<Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges>>();
+            _computeTreeChangesFactory = serviceProvider.GetRequiredService<ComputeTreeChangesFactory>();
             _serializer = new Lazy<JsonSerializer>(() => serviceProvider.GetRequiredService<IObjectRepositoryLoader>().GetJsonSerializer(metadataTreeMerge.Container));
             _hooks = serviceProvider.GetRequiredService<GitHooks>();
             _changes = _metadataTreeMerge.ModifiedChunks.ToLookup(c => c.Path, StringComparer.OrdinalIgnoreCase);
