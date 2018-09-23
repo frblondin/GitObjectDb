@@ -18,10 +18,9 @@ namespace GitObjectDb.Models
         static readonly string _nullReturnedValueExceptionMessage =
             $"Value returned by {nameof(LazyLink<TLink>)} was null.";
 
+        readonly TLink _link;
         readonly Func<IMetadataObject, TLink> _factory;
-        object _syncLock = new object();
         ObjectPath _path;
-        TLink _link;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LazyLink{TLink}"/> class.
@@ -64,14 +63,7 @@ namespace GitObjectDb.Models
             {
                 ThrowIfNoParent();
 
-                if (_link != null)
-                {
-                    return _link;
-                }
-
-                var initialized = false;
-                return LazyInitializer.EnsureInitialized(ref _link, ref initialized, ref _syncLock,
-                    CreateLink);
+                return _link ?? ResolveLink();
             }
         }
 
@@ -93,7 +85,13 @@ namespace GitObjectDb.Models
             }
         }
 
-        TLink CreateLink()
+        /// <summary>
+        /// Resolves the link. The result should not be stored in a cache (backing field)
+        /// since the target object might be stored in another repository that could change
+        /// over time (pull, branch...).
+        /// </summary>
+        /// <returns>Target linked object.</returns>
+        TLink ResolveLink()
         {
             var result = GetValueFromFactory(Parent);
             _path = new ObjectPath(result);
