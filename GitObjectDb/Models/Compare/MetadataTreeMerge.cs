@@ -24,7 +24,7 @@ namespace GitObjectDb.Models.Compare
         readonly IServiceProvider _serviceProvider;
         readonly IRepositoryProvider _repositoryProvider;
         readonly IModelDataAccessorProvider _modelDataProvider;
-        readonly Func<IObjectRepositoryContainer, RepositoryDescription, MigrationScaffolder> _migrationScaffolderFactory;
+        readonly MigrationScaffolderFactory _migrationScaffolderFactory;
         readonly RepositoryDescription _repositoryDescription;
 
         /// <summary>
@@ -46,6 +46,7 @@ namespace GitObjectDb.Models.Compare
         /// or
         /// merger
         /// </exception>
+        [ActivatorUtilitiesConstructor]
         public MetadataTreeMerge(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, string branchName)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
@@ -57,7 +58,7 @@ namespace GitObjectDb.Models.Compare
 
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _modelDataProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
-            _migrationScaffolderFactory = serviceProvider.GetRequiredService<Func<IObjectRepositoryContainer, RepositoryDescription, MigrationScaffolder>>();
+            _migrationScaffolderFactory = serviceProvider.GetRequiredService<MigrationScaffolderFactory>();
 
             Initialize();
         }

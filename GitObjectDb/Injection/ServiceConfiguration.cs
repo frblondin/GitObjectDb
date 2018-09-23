@@ -41,16 +41,13 @@ namespace Microsoft.Extensions.DependencyInjection
             source.AddSingleton<IObjectRepositoryLoader, ObjectRepositoryLoader>();
             source.AddSingleton<IModelDataAccessorProvider, ModelDataAccessorProvider>();
             source.AddSingleton<IConstructorSelector, MostParametersConstructorSelector>();
-            source.AddSingleton<Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges>>(s =>
-                (container, description) => new ComputeTreeChanges(s, container, description));
+            source.AddFactoryDelegate<ComputeTreeChangesFactory, ComputeTreeChanges>();
             source.AddSingleton<IRepositoryFactory, RepositoryFactory>();
             source.AddSingleton<IRepositoryProvider, RepositoryProvider>();
             source.AddSingleton<IModelDataAccessorProvider>(s =>
                 new CachedModelDataAccessorProvider(new ModelDataAccessorProvider(s)));
-            source.AddSingleton<Func<IObjectRepositoryContainer, RepositoryDescription, IObjectRepository, string, IMetadataTreeMerge>>(s =>
-                (container, description, repository, branchName) => new MetadataTreeMerge(s, container, description, repository, branchName));
-            source.AddSingleton<Func<IObjectRepositoryContainer, RepositoryDescription, MigrationScaffolder>>(s =>
-                (container, description) => new MigrationScaffolder(s, container, description));
+            source.AddFactoryDelegate<MetadataTreeMergeFactory, MetadataTreeMerge>();
+            source.AddFactoryDelegate<MigrationScaffolderFactory, MigrationScaffolder>();
             source.AddSingleton<IValidatorFactory, ValidatorFactory>();
             source.AddSingleton<JsonSerializationValidator>();
             source.AddSingleton<IObjectRepositorySearch, ObjectRepositorySearch>();

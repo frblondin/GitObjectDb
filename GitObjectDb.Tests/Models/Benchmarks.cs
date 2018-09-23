@@ -73,7 +73,7 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization))]
-        public void ComputeChangesInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader, Func<IObjectRepositoryContainer, RepositoryDescription, IComputeTreeChanges> computeTreeChangesFactory)
+        public void ComputeChangesInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // Arrange
             var sut = loader.LoadFrom<ObjectRepository>(container, RepositoryFixture.BenchmarkRepositoryDescription);
