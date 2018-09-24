@@ -34,6 +34,7 @@ namespace GitObjectDb.Models.Compare
         /// <param name="container">The container.</param>
         /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="repository">The repository on which to apply the merge.</param>
+        /// <param name="mergeCommitId">The commit to be merged.</param>
         /// <param name="branchName">Name of the branch.</param>
         /// <exception cref="ArgumentNullException">
         /// serviceProvider
@@ -47,13 +48,14 @@ namespace GitObjectDb.Models.Compare
         /// merger
         /// </exception>
         [ActivatorUtilitiesConstructor]
-        public MetadataTreeMerge(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, string branchName)
+        public MetadataTreeMerge(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, ObjectId mergeCommitId, string branchName)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             Container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
             Repository = repository ?? throw new ArgumentNullException(nameof(repository));
             CommitId = repository.CommitId ?? throw new GitObjectDbException("Repository instance is not linked to any commit.");
+            MergeCommitId = mergeCommitId ?? throw new ArgumentNullException(nameof(mergeCommitId));
             BranchName = branchName ?? throw new ArgumentNullException(nameof(branchName));
 
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
@@ -77,16 +79,19 @@ namespace GitObjectDb.Models.Compare
         public ObjectId CommitId { get; }
 
         /// <inheritdoc/>
-        public string BranchName { get; }
+        public ObjectId MergeCommitId { get; private set; }
 
         /// <inheritdoc/>
-        public ObjectId BranchTarget { get; private set; }
+        public string BranchName { get; }
 
         /// <inheritdoc/>
         public bool IsPartialMerge { get; private set; }
 
         /// <inheritdoc/>
         public Migrator RequiredMigrator { get; private set; }
+
+        /// <inheritdoc/>
+        public bool RequiresMergeCommit { get; private set; }
 
         /// <summary>
         /// Gets all impacted paths.
@@ -126,30 +131,29 @@ namespace GitObjectDb.Models.Compare
             {
                 EnsureHeadCommit(repository);
 
-                var branch = repository.Branches[BranchName];
-                var branchTip = branch.Tip;
-                BranchTarget = branchTip.Id;
+                var mergeCommit = repository.Lookup<Commit>(MergeCommitId);
                 var headTip = repository.Head.Tip;
-                var baseCommit = repository.ObjectDatabase.FindMergeBase(headTip, branchTip);
+                var baseCommit = repository.ObjectDatabase.FindMergeBase(headTip, mergeCommit);
+                RequiresMergeCommit = headTip.Id != baseCommit.Id;
 
                 var migrationScaffolder = _migrationScaffolderFactory(Container, _repositoryDescription);
-                var migrators = migrationScaffolder.Scaffold(baseCommit.Id, BranchTarget, MigrationMode.Upgrade);
+                var migrators = migrationScaffolder.Scaffold(baseCommit.Id, MergeCommitId, MigrationMode.Upgrade);
 
-                branchTip = ResolveRequiredMigrator(repository, branchTip, migrators);
+                mergeCommit = ResolveRequiredMigrator(repository, mergeCommit, migrators);
 
-                ComputeMerge(repository, baseCommit, branchTip, headTip);
+                ComputeMerge(repository, baseCommit, mergeCommit, headTip);
             });
         }
 
         Commit ResolveRequiredMigrator(IRepository repository, Commit branchTip, IImmutableList<Migrator> migrators)
         {
             RequiredMigrator = migrators.Count > 0 ? migrators[0] : null;
-            if (RequiredMigrator != null && RequiredMigrator.CommitId != BranchTarget)
+            if (RequiredMigrator != null && RequiredMigrator.CommitId != MergeCommitId)
             {
                 IsPartialMerge = true;
 
                 branchTip = repository.Lookup<Commit>(RequiredMigrator.CommitId);
-                BranchTarget = RequiredMigrator.CommitId;
+                MergeCommitId = RequiredMigrator.CommitId;
             }
 
             return branchTip;

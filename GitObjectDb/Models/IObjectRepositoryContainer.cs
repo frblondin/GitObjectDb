@@ -90,7 +90,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="repository">The repository.</param>
         /// <param name="branchName">Name of the branch.</param>
-        /// <returns>The <see cref="LibGit2Sharp.Branch"/>.</returns>
+        /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
         TRepository Checkout(TRepository repository, string branchName);
 
         /// <summary>
@@ -98,15 +98,38 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="id">The repository id.</param>
         /// <param name="branchName">Name of the branch.</param>
-        /// <returns>The <see cref="LibGit2Sharp.Branch"/>.</returns>
+        /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
         TRepository Checkout(Guid id, string branchName);
+
+        /// <summary>
+        /// Download objects and refs from the remote repository.
+        /// </summary>
+        /// <param name="repository">The repository.</param>
+        /// <param name="options">The options.</param>
+        /// <returns>The remote HEAD commit <typeparamref name="TRepository"/>.</returns>
+        TRepository Fetch(TRepository repository, FetchOptions options = null);
+
+        /// <summary>
+        /// Download objects and refs from all remote branches.
+        /// </summary>
+        /// <param name="repository">The repository.</param>
+        /// <param name="options">The options.</param>
+        void FetchAll(TRepository repository, FetchOptions options = null);
+
+        /// <summary>
+        /// Download objects and refs from the remote repository.
+        /// </summary>
+        /// <param name="repository">The repository.</param>
+        /// <param name="options">The options.</param>
+        /// <returns>The <see cref="IMetadataTreeMerge"/> instance used to apply the merge.</returns>
+        IMetadataTreeMerge Pull(TRepository repository, FetchOptions options = null);
 
         /// <summary>
         /// Creates a branch with the specified name. This branch will point at the current commit.
         /// </summary>
         /// <param name="repository">The repository.</param>
         /// <param name="branchName">The name of the branch to create.</param>
-        /// <returns>The newly created <see cref="LibGit2Sharp.Branch"/>.</returns>
+        /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
         TRepository Branch(TRepository repository, string branchName);
 
         /// <summary>
@@ -114,7 +137,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="id">The repository id.</param>
         /// <param name="branchName">The name of the branch to create.</param>
-        /// <returns>The newly created <see cref="LibGit2Sharp.Branch"/>.</returns>
+        /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
         TRepository Branch(Guid id, string branchName);
 
         /// <summary>

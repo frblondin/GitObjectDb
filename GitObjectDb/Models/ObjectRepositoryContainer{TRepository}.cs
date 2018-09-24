@@ -248,6 +248,52 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
+        public TRepository Fetch(TRepository repository, FetchOptions options = null)
+        {
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
+            }
+            if (options == null)
+            {
+                options = new FetchOptions();
+            }
+
+            return repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
+            {
+                var concrete = r as Repository ??
+                    throw new NotSupportedException($"Object of type {nameof(Repository)} expected.");
+                Commands.Fetch(concrete, r.Head.RemoteName, Array.Empty<string>(), options, null);
+
+                return _repositoryLoader.LoadFrom(this, repository.RepositoryDescription, r.Head.TrackedBranch.Tip.Id);
+            });
+        }
+
+        /// <inheritdoc />
+        public void FetchAll(TRepository repository, FetchOptions options = null)
+        {
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
+            }
+            if (options == null)
+            {
+                options = new FetchOptions();
+            }
+
+            repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
+            {
+                var concrete = r as Repository ??
+                    throw new NotSupportedException($"Object of type {nameof(Repository)} expected.");
+                foreach (var remote in r.Network.Remotes)
+                {
+                    var refSpecs = remote.FetchRefSpecs.Select(x => x.Specification);
+                    Commands.Fetch(concrete, remote.Name, refSpecs, options, null);
+                }
+            });
+        }
+
+        /// <inheritdoc />
         public TRepository Branch(TRepository repository, string branchName)
         {
             if (repository == null)
@@ -282,6 +328,30 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
+        public IMetadataTreeMerge Pull(TRepository repository, FetchOptions options = null)
+        {
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
+            }
+            if (options == null)
+            {
+                options = new FetchOptions();
+            }
+
+            AssertCurrentRepository(repository);
+            var (originTip, remoteBranch) = repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
+            {
+                var concrete = r as Repository ??
+                    throw new NotSupportedException($"Object of type {nameof(Repository)} expected.");
+                Commands.Fetch(concrete, r.Head.RemoteName, Array.Empty<string>(), options, null);
+
+                return (r.Head.TrackedBranch.Tip.Id, r.Head.TrackedBranch.FriendlyName);
+            });
+            return _metadataTreeMergeFactory(this, repository.RepositoryDescription, repository, originTip, remoteBranch);
+        }
+
+        /// <inheritdoc />
         public IMetadataTreeMerge Merge(TRepository repository, string branchName)
         {
             if (repository == null)
@@ -294,7 +364,9 @@ namespace GitObjectDb.Models
             }
 
             AssertCurrentRepository(repository);
-            return _metadataTreeMergeFactory(this, repository.RepositoryDescription, repository, branchName);
+            var commitId = repository.RepositoryProvider.Execute(repository.RepositoryDescription,
+                r => r.Branches[branchName].Tip.Id);
+            return _metadataTreeMergeFactory(this, repository.RepositoryDescription, repository, commitId, branchName);
         }
 
         /// <inheritdoc />
