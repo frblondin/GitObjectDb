@@ -103,14 +103,25 @@ namespace GitObjectDb.Services
         {
             var treeChanges = ComputeMergeResult();
 
-            var branch = repository.Branches[_metadataTreeMerge.BranchName];
-            var message = $"Merge branch {branch.FriendlyName} into {repository.Head.FriendlyName}";
-            var commit = repository.CommitChanges(treeChanges, message, merger, merger, hooks: _hooks, mergeParent: repository.Lookup<Commit>(_metadataTreeMerge.BranchTarget)).Id;
+            var commit = CommitChanges(merger, repository, treeChanges);
             if (_metadataTreeMerge.Repository.Container is ObjectRepositoryContainer container)
             {
                 container.ReloadRepository(_metadataTreeMerge.Repository, commit);
             }
             return commit;
+        }
+
+        ObjectId CommitChanges(Signature merger, IRepository repository, MetadataTreeChanges treeChanges)
+        {
+            if (_metadataTreeMerge.RequiresMergeCommit)
+            {
+                var message = $"Merge branch {_metadataTreeMerge.BranchName} into {repository.Head.FriendlyName}";
+                return repository.CommitChanges(treeChanges, message, merger, merger, hooks: _hooks, mergeParent: repository.Lookup<Commit>(_metadataTreeMerge.MergeCommitId)).Id;
+            }
+            else
+            {
+                return _metadataTreeMerge.MergeCommitId;
+            }
         }
 
         MetadataTreeChanges ComputeMergeResult()

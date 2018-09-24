@@ -13,9 +13,10 @@ namespace GitObjectDb.Models.Compare
     /// <param name="container">The container.</param>
     /// <param name="repositoryDescription">The repository description.</param>
     /// <param name="repository">The repository on which to apply the merge.</param>
+    /// <param name="mergeCommitId">The commit to be merged.</param>
     /// <param name="branchName">Name of the branch.</param>
     /// <returns>The newly created instance.</returns>
-    public delegate IMetadataTreeMerge MetadataTreeMergeFactory(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, string branchName);
+    public delegate IMetadataTreeMerge MetadataTreeMergeFactory(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, ObjectId mergeCommitId, string branchName);
 
     /// <summary>
     /// Provides the ability to merge changes between two branches.
@@ -28,14 +29,19 @@ namespace GitObjectDb.Models.Compare
         ObjectId CommitId { get; }
 
         /// <summary>
+        /// Gets the commit to be merged.
+        /// </summary>
+        ObjectId MergeCommitId { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether a merge commit will be required.
+        /// </summary>
+        bool RequiresMergeCommit { get; }
+
+        /// <summary>
         /// Gets the name of the merge source branch.
         /// </summary>
         string BranchName { get; }
-
-        /// <summary>
-        /// Gets the branch target.
-        /// </summary>
-        ObjectId BranchTarget { get; }
 
         /// <summary>
         /// Gets a value indicating whether this instance is a partial merge, that is other migration steps are required.
