@@ -57,7 +57,7 @@ namespace GitObjectDb.Validations
 
         void RuleFor(Predicate<PropertyInfo> predicate, Func<PropertyRule, IPropertyValidator> validator)
         {
-            foreach (var property in typeof(TMetadataObject).GetProperties())
+            foreach (var property in typeof(TMetadataObject).GetTypeInfo().GetProperties())
             {
                 if (!property.CanRead || !predicate(property))
                 {
@@ -72,7 +72,7 @@ namespace GitObjectDb.Validations
 
         void RuleForEach<TProperty>(Predicate<PropertyInfo> predicate)
         {
-            foreach (var property in typeof(TMetadataObject).GetProperties())
+            foreach (var property in typeof(TMetadataObject).GetTypeInfo().GetProperties())
             {
                 if (!property.CanRead || !predicate(property))
                 {

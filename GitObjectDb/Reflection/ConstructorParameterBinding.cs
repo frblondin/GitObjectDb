@@ -93,7 +93,7 @@ namespace GitObjectDb.Reflection
 
         Expression<Clone> ComputeValueRetrievers()
         {
-            var properties = Constructor.DeclaringType.GetProperties();
+            var properties = Constructor.DeclaringType.GetTypeInfo().GetProperties();
             var dataProvider = _dataAccessorProvider.Get(Constructor.DeclaringType);
             return Expression.Lambda<Clone>(
 #pragma warning disable S3220 // Method calls should not resolve ambiguously to overloads with "params"

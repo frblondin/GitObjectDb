@@ -48,7 +48,7 @@ namespace GitObjectDb.Reflection
             _modifiableProperties = new Lazy<IImmutableList<ModifiablePropertyInfo>>(GetModifiableProperties);
             _constructorBinding = new Lazy<ConstructorParameterBinding>(() =>
             {
-                var constructors = from c in Type.GetConstructors()
+                var constructors = from c in Type.GetTypeInfo().GetConstructors()
                                    select new ConstructorParameterBinding(serviceProvider, c);
                 return serviceProvider.GetRequiredService<IConstructorSelector>().SelectConstructorBinding(Type, constructors.ToArray());
             });
@@ -67,14 +67,14 @@ namespace GitObjectDb.Reflection
         public ConstructorParameterBinding ConstructorParameterBinding => _constructorBinding.Value;
 
         IImmutableList<ChildPropertyInfo> GetChildProperties() =>
-            (from p in Type.GetProperties()
+            (from p in Type.GetTypeInfo().GetProperties()
              let lazyChildrenType = LazyChildrenHelper.TryGetLazyChildrenInterface(p.PropertyType)
              where lazyChildrenType != null
              select new ChildPropertyInfo(p, lazyChildrenType.GetGenericArguments()[0]))
             .ToImmutableList();
 
         IImmutableList<ModifiablePropertyInfo> GetModifiableProperties() =>
-            (from p in Type.GetProperties()
+            (from p in Type.GetTypeInfo().GetProperties()
              where Attribute.IsDefined(p, typeof(ModifiableAttribute))
              select new ModifiablePropertyInfo(p))
             .ToImmutableList();

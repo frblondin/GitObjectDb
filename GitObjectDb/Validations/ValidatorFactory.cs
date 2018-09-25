@@ -82,13 +82,13 @@ namespace GitObjectDb.Validations
                 return (IValidator)singletonProperty.GetValue(null);
             }
 
-            var constructor = type.GetConstructor(new[] { typeof(IServiceProvider) });
+            var constructor = type.GetTypeInfo().GetConstructor(new[] { typeof(IServiceProvider) });
             if (constructor != null)
             {
                 return (IValidator)constructor.Invoke(new object[] { _serviceProvider });
             }
 
-            constructor = type.GetConstructor(Type.EmptyTypes);
+            constructor = type.GetTypeInfo().GetConstructor(Type.EmptyTypes);
             if (constructor != null)
             {
                 return (IValidator)constructor.Invoke(Array.Empty<object>());
