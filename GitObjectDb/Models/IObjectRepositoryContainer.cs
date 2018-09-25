@@ -86,6 +86,14 @@ namespace GitObjectDb.Models
         TRepository Commit(IObjectRepository repository, Signature signature, string message, CommitOptions options = null);
 
         /// <summary>
+        /// Update remote repository along with associated objects.
+        /// </summary>
+        /// <param name="repository">The repository.</param>
+        /// <param name="remoteName">Name of the remote.</param>
+        /// <param name="options">The options.</param>
+        void Push(IObjectRepository repository, string remoteName = null, PushOptions options = null);
+
+        /// <summary>
         /// Checkouts the specified branch name.
         /// </summary>
         /// <param name="repository">The repository.</param>

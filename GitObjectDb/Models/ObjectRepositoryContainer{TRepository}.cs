@@ -188,6 +188,49 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
+        public void Push(IObjectRepository repository, string remoteName = null, PushOptions options = null)
+        {
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
+            }
+            if (options == null)
+            {
+                options = new PushOptions();
+            }
+
+            AssertCurrentRepository(repository);
+            repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
+            {
+                EnsureHeadCommit(r, repository);
+
+                if (string.IsNullOrEmpty(remoteName))
+                {
+                    if (!r.Head.IsTracking)
+                    {
+                        throw new GitObjectDbException($"No remote name has been provided and the current branch is not linked to any remote.");
+                    }
+                    remoteName = r.Head.RemoteName;
+                }
+                var remote = r.Network.Remotes[remoteName];
+                r.Network.Push(remote, r.Head.CanonicalName, options);
+
+                SetRemoteBranchIfRequired(remoteName, r);
+            });
+        }
+
+        static void SetRemoteBranchIfRequired(string remoteName, IRepository r)
+        {
+            if (!r.Head.IsTracking)
+            {
+                var currentBranch = r.Head;
+                r.Branches.Update(currentBranch,
+                    b => b.Remote = remoteName,
+                    b => b.UpstreamBranch = currentBranch.CanonicalName);
+            }
+        }
+
+        /// <inheritdoc />
         internal override IObjectRepository ReloadRepository(IObjectRepository previousRepository, ObjectId commit) =>
             ReloadRepository(previousRepository.RepositoryDescription, commit);
 
