@@ -6,9 +6,9 @@ using System.ComponentModel;
 namespace GitObjectDb.Git.Hooks
 {
     /// <summary>
-    /// Provides data for a pre-commit event.
+    /// Provides data for a post-commit event.
     /// </summary>
-    /// <seealso cref="System.ComponentModel.CancelEventArgs" />
+    /// <seealso cref="System.EventArgs" />
     public class CommitCompletedEventArgs : EventArgs
     {
         /// <summary>

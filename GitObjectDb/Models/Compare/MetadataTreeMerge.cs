@@ -163,7 +163,7 @@ namespace GitObjectDb.Models.Compare
         /// Ensures that the head tip refers to the right commit.
         /// </summary>
         /// <param name="repository">The repository.</param>
-        /// <exception cref="NotSupportedException">The current head commit id is different from the commit used by current repository.</exception>
+        /// <exception cref="GitObjectDbException">The current head commit id is different from the commit used by current repository.</exception>
         internal void EnsureHeadCommit(IRepository repository)
         {
             if (!repository.Head.Tip.Id.Equals(CommitId))
