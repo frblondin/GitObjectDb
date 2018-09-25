@@ -120,6 +120,9 @@ namespace GitObjectDb.Services
             }
             else
             {
+                var commit = repository.Lookup<Commit>(_metadataTreeMerge.MergeCommitId);
+                var logMessage = commit.BuildCommitLogMessage(false, false, false);
+                repository.UpdateHeadAndTerminalReference(commit, logMessage);
                 return _metadataTreeMerge.MergeCommitId;
             }
         }
