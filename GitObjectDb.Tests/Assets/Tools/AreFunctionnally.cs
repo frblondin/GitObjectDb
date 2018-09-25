@@ -3,6 +3,7 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace GitObjectDb.Tests.Assets.Utils
 {
@@ -34,7 +35,7 @@ namespace GitObjectDb.Tests.Assets.Utils
         static Expression CompareModifiableProperties(Type type, Expression value, Expression expected, params string[] excludedProperties)
         {
             Expression result = null;
-            var modifiableProperties = from p in type.GetProperties()
+            var modifiableProperties = from p in type.GetTypeInfo().GetProperties()
                                        where !excludedProperties.Contains(p.Name, StringComparer.OrdinalIgnoreCase)
                                        where Attribute.IsDefined(p, typeof(ModifiableAttribute))
                                        select p;
@@ -49,14 +50,14 @@ namespace GitObjectDb.Tests.Assets.Utils
 
         static void CompareContainerProperties(Type type, Expression value, Expression expected, ref Expression result, params string[] excludedProperties)
         {
-            var containerProperties = from p in type.GetProperties()
+            var containerProperties = from p in type.GetTypeInfo().GetProperties()
                                       where !excludedProperties.Contains(p.Name, StringComparer.OrdinalIgnoreCase)
                                       where p.PropertyType.GetInterfaces().Prepend(p.PropertyType).Any(t =>
                                             t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IImmutableList<>))
                                       select p;
             foreach (var p in containerProperties)
             {
-                var countProperty = p.PropertyType.GetInterfaces().SelectMany(i => i.GetProperties()).First(pr => pr.Name == "Count");
+                var countProperty = p.PropertyType.GetInterfaces().SelectMany(i => i.GetTypeInfo().GetProperties()).First(pr => pr.Name == "Count");
                 var valueChildren = Expression.Property(value, p);
                 var expectedChildren = Expression.Property(expected, p);
                 var sameCount = Expression.Equal(
