@@ -171,10 +171,7 @@ namespace GitObjectDb.Models
             var repositoryDescription = previousRepository.RepositoryDescription;
             return previousRepository.RepositoryProvider.Execute(repositoryDescription, r =>
             {
-                if (!r.Head.Tip.Id.Equals(previousRepository.CommitId))
-                {
-                    throw new GitObjectDbException("The current head commit id is different from the commit used by current instance.");
-                }
+                EnsureHeadCommit(r, previousRepository);
 
                 var computeChanges = _computeTreeChangesFactory(this, repositoryDescription);
                 var changes = computeChanges.Compare(previousRepository, repository);

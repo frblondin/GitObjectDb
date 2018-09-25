@@ -32,6 +32,7 @@ namespace GitObjectDb.Tests.Models
             pullResult.Apply(signature);
 
             // Assert
+            ObjectRepositoryContainer.EnsureHeadCommit(clientContainer.Repositories.Single());
             Assert.That(pullResult.RequiresMergeCommit, Is.False);
             Assert.That(clientContainer.Repositories.Single().CommitId, Is.EqualTo(commitResult.CommitId));
         }
