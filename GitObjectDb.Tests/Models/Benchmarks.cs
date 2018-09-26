@@ -27,7 +27,7 @@ namespace GitObjectDb.Tests.Models
         public void CreateLargeRepository(IFixture fixture, Signature signature, string message)
         {
             // Arrange
-            DirectoryUtils.Delete(RepositoryFixture.BenchmarkRepositoryPath);
+            DirectoryUtils.Delete(RepositoryFixture.BenchmarkRepositoryPath, false);
             fixture.Customize(new MetadataCustomization(2, 200, 30, RepositoryFixture.BenchmarkRepositoryPath));
 
             // Act
@@ -41,7 +41,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization))]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
         public void LoadLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
@@ -56,7 +56,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization))]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
         public void SearchInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
@@ -72,7 +72,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization))]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
         public void ComputeChangesInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // Arrange

@@ -71,5 +71,19 @@ namespace GitObjectDb.Models
         /// <param name="path">The Git path.</param>
         /// <returns>The object, if any was found.</returns>
         IMetadataObject GetFromGitPath(string path);
+
+        /// <summary>
+        /// Returns the result of the provided function processing.
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result.</typeparam>
+        /// <param name="processor">The function.</param>
+        /// <returns>The result of the function call.</returns>
+        TResult Execute<TResult>(Func<IRepository, TResult> processor);
+
+        /// <summary>
+        /// Calls the provided function processing.
+        /// </summary>
+        /// <param name="processor">The function.</param>
+        void Execute(Action<IRepository> processor);
     }
 }

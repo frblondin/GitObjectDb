@@ -45,7 +45,7 @@ namespace GitObjectDb.Models
         /// <param name="current">The repository.</param>
         /// <exception cref="GitObjectDbException">The current head commit id is different from the commit used by current repository.</exception>
         internal static void EnsureHeadCommit(IObjectRepository current) =>
-            current.RepositoryProvider.Execute(current.RepositoryDescription, r => EnsureHeadCommit(r, current));
+            current.Execute(r => EnsureHeadCommit(r, current));
 
         /// <summary>
         /// Ensures that the head tip refers to the right commit.

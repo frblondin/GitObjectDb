@@ -50,10 +50,10 @@ namespace GitObjectDb.Tests.Models
 
         static (string, ObjectRepository) PushNewRemoteImpl(ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
-            var tempPath = RepositoryFixture.GetRepositoryPath(UniqueId.CreateNew().ToString());
+            var tempPath = RepositoryFixture.GetAvailableFolderPath();
             Repository.Init(tempPath, isBare: true);
             repository = container.AddRepository(repository, signature, message);
-            repository.RepositoryProvider.Execute(repository.RepositoryDescription, r => r.Network.Remotes.Add("origin", tempPath));
+            repository.Execute(r => r.Network.Remotes.Add("origin", tempPath));
 
             var change = repository.Applications[0].Pages[0].With(a => a.Description == "foo");
             repository = container.Commit(change.Repository, signature, message);
