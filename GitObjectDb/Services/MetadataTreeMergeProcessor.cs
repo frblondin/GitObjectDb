@@ -94,8 +94,13 @@ namespace GitObjectDb.Services
             {
                 _metadataTreeMerge.EnsureHeadCommit(repository);
 
+                var resultId = ApplyMerge(merger, repository);
+                if (resultId == null)
+                {
+                    return null;
+                }
                 _metadataTreeMerge.RequiredMigrator?.Apply();
-                return ApplyMerge(merger, repository);
+                return resultId;
             });
         }
 
@@ -103,11 +108,19 @@ namespace GitObjectDb.Services
         {
             var treeChanges = ComputeMergeResult();
 
+            if (!_hooks.OnMergeStarted(treeChanges))
+            {
+                return null;
+            }
+
             var commit = CommitChanges(merger, repository, treeChanges);
             if (_metadataTreeMerge.Repository.Container is ObjectRepositoryContainer container)
             {
                 container.ReloadRepository(_metadataTreeMerge.Repository, commit);
             }
+
+            _hooks.OnMergeCompleted(treeChanges, commit);
+
             return commit;
         }
 

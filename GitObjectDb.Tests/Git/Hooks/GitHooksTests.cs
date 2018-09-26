@@ -10,6 +10,7 @@ using LibGit2Sharp;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace GitObjectDb.Tests.Git.Hooks
@@ -67,6 +68,84 @@ namespace GitObjectDb.Tests.Git.Hooks
             // Assert
             Assert.That(lastEvent, Is.Not.Null);
             Assert.That(lastEvent.CommitId, Is.EqualTo(commit.CommitId));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        public void PreMergeGetsFiredWhenPulling(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IServiceProvider serviceProvider, Signature signature, string message, Guid id)
+        {
+            // Arrange - Create origin and local repositories
+            instance = origin.AddRepository(instance, signature, message);
+            var tempPath = RepositoryFixture.GetRepositoryPath(id.ToString());
+            var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
+            clientContainer.Clone(origin.Repositories.Single().RepositoryDescription.Path);
+
+            // Arrange - Commit change on origin
+            var change = instance.Applications[0].Pages[0].With(a => a.Description == "foo");
+            var commitResult = origin.Commit(change.Repository, signature, message);
+
+            // Arrange - suscribe to hook
+            MergeStartedEventArgs lastEvent = null;
+            sut.MergeStarted += (_, args) => lastEvent = args;
+
+            // Act - Pull commit from origin
+            var pullResult = clientContainer.Pull(clientContainer.Repositories.Single());
+            var result = pullResult.Apply(signature);
+
+            // Assert
+            Assert.That(lastEvent, Is.Not.Null);
+            Assert.That(result, Is.Not.Null);
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        public void PreMergeCancelsPullWhenRequested(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IServiceProvider serviceProvider, Signature signature, string message, Guid id)
+        {
+            // Arrange - Create origin and local repositories
+            instance = origin.AddRepository(instance, signature, message);
+            var tempPath = RepositoryFixture.GetRepositoryPath(id.ToString());
+            var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
+            clientContainer.Clone(origin.Repositories.Single().RepositoryDescription.Path);
+
+            // Arrange - Commit change on origin
+            var change = instance.Applications[0].Pages[0].With(a => a.Description == "foo");
+            var commitResult = origin.Commit(change.Repository, signature, message);
+
+            // Arrange - suscribe to hook
+            sut.MergeStarted += (_, args) => args.Cancel = true;
+
+            // Act - Pull commit from origin
+            var pullResult = clientContainer.Pull(clientContainer.Repositories.Single());
+            var result = pullResult.Apply(signature);
+
+            // Assert
+            Assert.That(result, Is.Null);
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        public void PostMergeGetsFiredWhenPulling(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IServiceProvider serviceProvider, Signature signature, string message, Guid id)
+        {
+            // Arrange - Create origin and local repositories
+            instance = origin.AddRepository(instance, signature, message);
+            var tempPath = RepositoryFixture.GetRepositoryPath(id.ToString());
+            var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
+            clientContainer.Clone(origin.Repositories.Single().RepositoryDescription.Path);
+
+            // Arrange - Commit change on origin
+            var change = instance.Applications[0].Pages[0].With(a => a.Description == "foo");
+            var commitResult = origin.Commit(change.Repository, signature, message);
+
+            // Arrange - suscribe to hook
+            MergeCompletedEventArgs lastEvent = null;
+            sut.MergeCompleted += (_, args) => lastEvent = args;
+
+            // Act - Pull commit from origin
+            var pullResult = clientContainer.Pull(clientContainer.Repositories.Single());
+            pullResult.Apply(signature);
+
+            // Assert
+            Assert.That(lastEvent, Is.Not.Null);
         }
     }
 }
