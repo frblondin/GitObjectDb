@@ -6,21 +6,19 @@ using System.ComponentModel;
 namespace GitObjectDb.Git.Hooks
 {
     /// <summary>
-    /// Provides data for a post-commit event.
+    /// Provides data for a post-merge event.
     /// </summary>
-    public class CommitCompletedEventArgs : EventArgs
+    public class MergeCompletedEventArgs : EventArgs
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CommitCompletedEventArgs"/> class.
+        /// Initializes a new instance of the <see cref="MergeCompletedEventArgs"/> class.
         /// </summary>
         /// <param name="changes">The changes.</param>
-        /// <param name="message">The message.</param>
         /// <param name="commitId">The commit identifier.</param>
         /// <exception cref="ArgumentNullException">message</exception>
-        public CommitCompletedEventArgs(MetadataTreeChanges changes, string message, ObjectId commitId)
+        public MergeCompletedEventArgs(MetadataTreeChanges changes, ObjectId commitId)
         {
             Changes = changes ?? throw new ArgumentNullException(nameof(changes));
-            Message = message ?? throw new ArgumentNullException(nameof(message));
             CommitId = commitId ?? throw new ArgumentNullException(nameof(commitId));
         }
 
@@ -28,11 +26,6 @@ namespace GitObjectDb.Git.Hooks
         /// Gets the changes.
         /// </summary>
         public MetadataTreeChanges Changes { get; }
-
-        /// <summary>
-        /// Gets the message.
-        /// </summary>
-        public string Message { get; }
 
         /// <summary>
         /// Gets the commit identifier.

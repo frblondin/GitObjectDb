@@ -18,9 +18,19 @@ namespace GitObjectDb.Git.Hooks
         public event EventHandler<CommitStartedEventArgs> CommitStarted;
 
         /// <summary>
-        /// Occurs when a commit is about to be made.
+        /// Occurs when a commit has been completed successfully.
         /// </summary>
         public event EventHandler<CommitCompletedEventArgs> CommitCompleted;
+
+        /// <summary>
+        /// Occurs when a merge is about to be processed.
+        /// </summary>
+        public event EventHandler<MergeStartedEventArgs> MergeStarted;
+
+        /// <summary>
+        /// Occurs when a merge has been completed successfully.
+        /// </summary>
+        public event EventHandler<MergeCompletedEventArgs> MergeCompleted;
 
         /// <summary>
         /// Called when a commit is about to be started.
@@ -41,7 +51,7 @@ namespace GitObjectDb.Git.Hooks
         }
 
         /// <summary>
-        /// Called when a commit is about to be started.
+        /// Called when a commit has been completed successfully.
         /// </summary>
         /// <param name="changes">The changes.</param>
         /// <param name="message">The message.</param>
@@ -55,6 +65,29 @@ namespace GitObjectDb.Git.Hooks
 
             var args = new CommitCompletedEventArgs(changes, message, commitId);
             CommitCompleted?.Invoke(this, args);
+        }
+
+        /// <summary>
+        /// Called when a merge is about to be processed.
+        /// </summary>
+        /// <param name="changes">The changes.</param>
+        /// <returns>The <see cref="CancelEventArgs"/>.</returns>
+        internal bool OnMergeStarted(MetadataTreeChanges changes)
+        {
+            var args = new MergeStartedEventArgs(changes);
+            MergeStarted?.Invoke(this, args);
+            return !args.Cancel;
+        }
+
+        /// <summary>
+        /// Called when a merge has been completed successfully.
+        /// </summary>
+        /// <param name="changes">The changes.</param>
+        /// <param name="commitId">The commit identifier.</param>
+        internal void OnMergeCompleted(MetadataTreeChanges changes, ObjectId commitId)
+        {
+            var args = new MergeCompletedEventArgs(changes, commitId);
+            MergeCompleted?.Invoke(this, args);
         }
     }
 }
