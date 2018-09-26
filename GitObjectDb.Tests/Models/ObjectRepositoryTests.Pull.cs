@@ -19,7 +19,7 @@ namespace GitObjectDb.Tests.Models
         {
             // Arrange
             sut = container.AddRepository(sut, signature, message);
-            var tempPath = RepositoryFixture.GetRepositoryPath(UniqueId.CreateNew().ToString());
+            var tempPath = RepositoryFixture.GetAvailableFolderPath();
             var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
             clientContainer.Clone(container.Repositories.Single().RepositoryDescription.Path);
 
@@ -43,7 +43,7 @@ namespace GitObjectDb.Tests.Models
         {
             // Arrange
             sut = container.AddRepository(sut, signature, message);
-            var tempPath = RepositoryFixture.GetRepositoryPath(UniqueId.CreateNew().ToString());
+            var tempPath = RepositoryFixture.GetAvailableFolderPath();
             var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
             clientContainer.Clone(container.Repositories.Single().RepositoryDescription.Path);
 

@@ -125,7 +125,7 @@ namespace GitObjectDb.Models
             EnsureNewRepository(repository, repositoryDescription);
             LibGit2Sharp.Repository.Init(repositoryDescription.Path, isBare);
 
-            return repository.RepositoryProvider.Execute(repositoryDescription, r =>
+            return _repositoryProvider.Execute(repositoryDescription, r =>
             {
                 var all = repository.Flatten().Select(o => new MetadataTreeEntryChanges(o.GetDataPath(), ChangeKind.Added, @new: o));
                 var changes = new MetadataTreeChanges(repository, all.ToImmutableList());
@@ -169,7 +169,7 @@ namespace GitObjectDb.Models
                 throw new NotImplementedException("The repository to update could not be found.");
 
             var repositoryDescription = previousRepository.RepositoryDescription;
-            return previousRepository.RepositoryProvider.Execute(repositoryDescription, r =>
+            return previousRepository.Execute(r =>
             {
                 EnsureHeadCommit(r, previousRepository);
 
@@ -199,8 +199,8 @@ namespace GitObjectDb.Models
                 options = new PushOptions();
             }
 
-            AssertCurrentRepository(repository);
-            repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
+            repository.EnsuresCurrentRepository();
+            repository.Execute(r =>
             {
                 EnsureHeadCommit(r, repository);
 
@@ -265,8 +265,8 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(branchName));
             }
 
-            AssertCurrentRepository(repository);
-            return repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
+            repository.EnsuresCurrentRepository();
+            return repository.Execute(r =>
             {
                 var branch = r.Branches[branchName];
                 r.Refs.MoveHeadTarget(branch.CanonicalName);
@@ -299,7 +299,7 @@ namespace GitObjectDb.Models
                 options = new FetchOptions();
             }
 
-            return repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
+            return repository.Execute(r =>
             {
                 var concrete = r as Repository ??
                     throw new NotSupportedException($"Object of type {nameof(Repository)} expected.");
@@ -334,7 +334,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public TRepository Branch(TRepository repository, string branchName)
+        public TRepository Branch(TRepository repository, string branchName, string committish = null)
         {
             if (repository == null)
             {
@@ -345,8 +345,8 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(branchName));
             }
 
-            AssertCurrentRepository(repository);
-            return repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
+            repository.EnsuresCurrentRepository();
+            return repository.Execute(r =>
             {
                 var branch = r.CreateBranch(branchName);
                 r.Refs.MoveHeadTarget(branch.CanonicalName);
@@ -357,7 +357,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public TRepository Branch(UniqueId id, string branchName)
+        public TRepository Branch(UniqueId id, string branchName, string committish = null)
         {
             if (branchName == null)
             {
@@ -379,8 +379,8 @@ namespace GitObjectDb.Models
                 options = new FetchOptions();
             }
 
-            AssertCurrentRepository(repository);
-            var (originTip, remoteBranch) = repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
+            repository.EnsuresCurrentRepository();
+            var (originTip, remoteBranch) = repository.Execute(r =>
             {
                 var concrete = r as Repository ??
                     throw new NotSupportedException($"Object of type {nameof(Repository)} expected.");
@@ -403,9 +403,8 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(branchName));
             }
 
-            AssertCurrentRepository(repository);
-            var commitId = repository.RepositoryProvider.Execute(repository.RepositoryDescription,
-                r => r.Branches[branchName].Tip.Id);
+            repository.EnsuresCurrentRepository();
+            var commitId = repository.Execute(r => r.Branches[branchName].Tip.Id);
             return _metadataTreeMergeFactory(this, repository.RepositoryDescription, repository, commitId, branchName);
         }
 
@@ -418,18 +417,6 @@ namespace GitObjectDb.Models
             }
 
             return Merge(this[id], branchName);
-        }
-
-        void AssertCurrentRepository(IObjectRepository repository)
-        {
-            if (!Repositories.Contains(repository))
-            {
-                if (Repositories.Any(r => r.Id == repository.Id))
-                {
-                    throw new GitObjectDbException("The repository version is not currently managed by the container. This likely means that the repository was modified (commit, branch checkout...).");
-                }
-                throw new GitObjectDbException("The repository is not currently managed by the container.");
-            }
         }
 
         /// <inheritdoc />

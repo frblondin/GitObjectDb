@@ -3,6 +3,7 @@ using GitObjectDb.IO;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -12,57 +13,39 @@ namespace GitObjectDb.Tests
     [SetUpFixture]
     public class RepositoryFixture
     {
-        static string _lastTest;
+        const string TempPath = @"C:\Temp";
 
-        public static bool IsNewTest
-        {
-            get
-            {
-                var current = TestContext.CurrentContext.Test.ID;
-                var result = !string.Equals(_lastTest, current, StringComparison.OrdinalIgnoreCase);
-                _lastTest = current;
-                return result;
-            }
-        }
-
-        public static string GitPath
-        {
-            get
-            {
-                var result = (string)TestContext.CurrentContext.Test.Properties?.Get(nameof(GitPath));
-                if (IsNewTest)
-                {
-                    DeleteTempPathImpl();
-                    result = null;
-                }
-
-                if (result == null)
-                {
-                    result = GetRepositoryPath(TestContext.CurrentContext.Test.ID);
-                    GitPath = result;
-                }
-                return result;
-            }
-            private set => TestContext.CurrentContext.Test.Properties.Set(nameof(GitPath), value);
-        }
+        static string WorkDirectory => Directory.Exists(TempPath) ? TempPath : TestContext.CurrentContext.WorkDirectory;
 
         public static string BenchmarkRepositoryPath =>
-            Path.Combine(TestContext.CurrentContext.WorkDirectory, "Repos", "Benchmark");
+            Path.Combine(WorkDirectory, "Repos", "Benchmark");
 
         public static string TempRepoPath =>
-            Path.Combine(TestContext.CurrentContext.WorkDirectory, "TempRepos");
+            Path.Combine(WorkDirectory, "TempRepos");
 
         public static RepositoryDescription BenchmarkRepositoryDescription =>
             new RepositoryDescription(BenchmarkRepositoryPath);
 
         public static string SmallRepositoryPath =>
-            Path.Combine(TestContext.CurrentContext.WorkDirectory, "Repos", "Small");
-
-        public static RepositoryDescription SmallRepositoryDescription =>
-            new RepositoryDescription(SmallRepositoryPath);
+            Path.Combine(WorkDirectory, "Repos", "Small");
 
         public static string GetRepositoryPath(string name) =>
             Path.Combine(TempRepoPath, name);
+
+        public static string GetAvailableFolderPath()
+        {
+            var i = 1;
+            string result;
+            while (true)
+            {
+                result = Path.Combine(TempRepoPath, i.ToString(CultureInfo.InvariantCulture));
+                if (!Directory.Exists(result))
+                {
+                    return result;
+                }
+                i++;
+            }
+        }
 
         [OneTimeSetUp]
         public void RestoreRepositories()
@@ -82,7 +65,7 @@ namespace GitObjectDb.Tests
 
         static void DeleteTempPathImpl()
         {
-            DirectoryUtils.Delete(TempRepoPath);
+            DirectoryUtils.Delete(TempRepoPath, true);
         }
     }
 }

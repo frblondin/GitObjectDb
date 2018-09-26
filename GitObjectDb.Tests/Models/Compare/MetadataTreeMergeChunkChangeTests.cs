@@ -17,8 +17,11 @@ namespace GitObjectDb.Tests.Models.Compare
 
         [Test]
         [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void MetadataTreeMergeChunkChangePropertiesAreMatchingEntryParameterValues(string path, JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue)
+        public void MetadataTreeMergeChunkChangePropertiesAreMatchingEntryParameterValues(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue)
         {
+            // Arrange
+            var path = RepositoryFixture.GetAvailableFolderPath();
+
             // Act
             var sut = new MetadataTreeMergeChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
 
@@ -35,8 +38,11 @@ namespace GitObjectDb.Tests.Models.Compare
 
         [Test]
         [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void MetadataTreeMergeChunkChangeShouldNotBeInConflictIfHeadValuesAreSame(string path, JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue)
+        public void MetadataTreeMergeChunkChangeShouldNotBeInConflictIfHeadValuesAreSame(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue)
         {
+            // Arrange
+            var path = RepositoryFixture.GetAvailableFolderPath();
+
             // Act
             var sut = new MetadataTreeMergeChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, mergeBaseValue);
 
@@ -47,8 +53,11 @@ namespace GitObjectDb.Tests.Models.Compare
 
         [Test]
         [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void MetadataTreeMergeChunkChangeShouldBeInConflictIfValuesAreDifferent(string path, JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue)
+        public void MetadataTreeMergeChunkChangeShouldBeInConflictIfValuesAreDifferent(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue)
         {
+            // Arrange
+            var path = RepositoryFixture.GetAvailableFolderPath();
+
             // Act
             var sut = new MetadataTreeMergeChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
 
@@ -59,8 +68,11 @@ namespace GitObjectDb.Tests.Models.Compare
 
         [Test]
         [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void MetadataTreeMergeChunkChangeResolveConflict(string path, JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue, JToken resolvedValue)
+        public void MetadataTreeMergeChunkChangeResolveConflict(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue, JToken resolvedValue)
         {
+            // Arrange
+            var path = RepositoryFixture.GetAvailableFolderPath();
+
             // Act
             var sut = new MetadataTreeMergeChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
             sut.Resolve(resolvedValue);
@@ -73,8 +85,11 @@ namespace GitObjectDb.Tests.Models.Compare
 
         [Test]
         [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void MetadataTreeMergeChunkChangeResolveConflictOnlyOnce(string path, JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue, JToken resolvedValue)
+        public void MetadataTreeMergeChunkChangeResolveConflictOnlyOnce(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue, JToken resolvedValue)
         {
+            // Arrange
+            var path = RepositoryFixture.GetAvailableFolderPath();
+
             // Act
             var sut = new MetadataTreeMergeChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
             sut.Resolve(resolvedValue);

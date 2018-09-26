@@ -14,29 +14,40 @@ namespace GitObjectDb.IO
         /// Deletes the specified target dir and all its children recursively.
         /// </summary>
         /// <param name="targetDir">The target dir.</param>
-        internal static void Delete(string targetDir)
+        /// <param name="continueOnError">if set to <c>true</c> [continue on error].</param>
+        internal static void Delete(string targetDir, bool continueOnError)
         {
             if (!Directory.Exists(targetDir))
             {
                 return;
             }
 
-            File.SetAttributes(targetDir, FileAttributes.Normal);
-
-            var files = Directory.GetFiles(targetDir);
-            foreach (string file in files)
+            try
             {
-                File.SetAttributes(file, FileAttributes.Normal);
-                File.Delete(file);
-            }
+                File.SetAttributes(targetDir, FileAttributes.Normal);
 
-            var dirs = Directory.GetDirectories(targetDir);
-            foreach (string dir in dirs)
+                var files = Directory.GetFiles(targetDir);
+                foreach (string file in files)
+                {
+                    File.SetAttributes(file, FileAttributes.Normal);
+                    File.Delete(file);
+                }
+
+                var dirs = Directory.GetDirectories(targetDir);
+                foreach (string dir in dirs)
+                {
+                    Delete(dir, continueOnError);
+                }
+
+                Directory.Delete(targetDir, false);
+            }
+            catch
             {
-                Delete(dir);
+                if (!continueOnError)
+                {
+                    throw;
+                }
             }
-
-            Directory.Delete(targetDir, false);
         }
     }
 }

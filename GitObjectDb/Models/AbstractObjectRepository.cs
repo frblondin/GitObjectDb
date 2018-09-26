@@ -151,5 +151,33 @@ namespace GitObjectDb.Models
             RepositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
             CommitId = commitId ?? throw new ArgumentNullException(nameof(commitId));
         }
+
+        /// <inheritdoc />
+        public TResult Execute<TResult>(Func<IRepository, TResult> processor)
+        {
+            if (processor == null)
+            {
+                throw new ArgumentNullException(nameof(processor));
+            }
+            if (RepositoryDescription == null)
+            {
+                throw new GitObjectDbException($"No {nameof(RepositoryDescription)} has been set on this instance.");
+            }
+            return RepositoryProvider.Execute(RepositoryDescription, processor);
+        }
+
+        /// <inheritdoc />
+        public void Execute(Action<IRepository> processor)
+        {
+            if (processor == null)
+            {
+                throw new ArgumentNullException(nameof(processor));
+            }
+            if (RepositoryDescription == null)
+            {
+                throw new GitObjectDbException($"No {nameof(RepositoryDescription)} has been set on this instance.");
+            }
+            RepositoryProvider.Execute(RepositoryDescription, processor);
+        }
     }
 }

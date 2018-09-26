@@ -42,7 +42,7 @@ namespace GitObjectDb.Tests.Assets.Customizations
 
             var serviceProvider = fixture.Create<IServiceProvider>();
 
-            var path = ContainerPath ?? RepositoryFixture.GetRepositoryPath(UniqueId.CreateNew().ToString());
+            var path = ContainerPath ?? RepositoryFixture.GetAvailableFolderPath();
             var container = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, path);
             fixture.Inject(container);
             fixture.Inject<IObjectRepositoryContainer<ObjectRepository>>(container);

@@ -137,16 +137,18 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="repository">The repository.</param>
         /// <param name="branchName">The name of the branch to create.</param>
+        /// <param name="committish">Revparse spec for the target commit.</param>
         /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
-        TRepository Branch(TRepository repository, string branchName);
+        TRepository Branch(TRepository repository, string branchName, string committish = null);
 
         /// <summary>
         /// Creates a branch with the specified name. This branch will point at the current commit.
         /// </summary>
         /// <param name="id">The repository id.</param>
         /// <param name="branchName">The name of the branch to create.</param>
+        /// <param name="committish">Revparse spec for the target commit.</param>
         /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
-        TRepository Branch(UniqueId id, string branchName);
+        TRepository Branch(UniqueId id, string branchName, string committish = null);
 
         /// <summary>
         /// Merges changes from branch into the branch pointed at by HEAD..

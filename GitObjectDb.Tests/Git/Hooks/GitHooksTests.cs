@@ -76,13 +76,13 @@ namespace GitObjectDb.Tests.Git.Hooks
         {
             // Arrange - Create origin and local repositories
             instance = origin.AddRepository(instance, signature, message);
-            var tempPath = RepositoryFixture.GetRepositoryPath(UniqueId.CreateNew().ToString());
+            var tempPath = RepositoryFixture.GetAvailableFolderPath();
             var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
             clientContainer.Clone(origin.Repositories.Single().RepositoryDescription.Path);
 
             // Arrange - Commit change on origin
             var change = instance.Applications[0].Pages[0].With(a => a.Description == "foo");
-            var commitResult = origin.Commit(change.Repository, signature, message);
+            origin.Commit(change.Repository, signature, message);
 
             // Arrange - suscribe to hook
             MergeStartedEventArgs lastEvent = null;
@@ -103,13 +103,13 @@ namespace GitObjectDb.Tests.Git.Hooks
         {
             // Arrange - Create origin and local repositories
             instance = origin.AddRepository(instance, signature, message);
-            var tempPath = RepositoryFixture.GetRepositoryPath(UniqueId.CreateNew().ToString());
+            var tempPath = RepositoryFixture.GetAvailableFolderPath();
             var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
             clientContainer.Clone(origin.Repositories.Single().RepositoryDescription.Path);
 
             // Arrange - Commit change on origin
             var change = instance.Applications[0].Pages[0].With(a => a.Description == "foo");
-            var commitResult = origin.Commit(change.Repository, signature, message);
+            origin.Commit(change.Repository, signature, message);
 
             // Arrange - suscribe to hook
             sut.MergeStarted += (_, args) => args.Cancel = true;
@@ -128,13 +128,13 @@ namespace GitObjectDb.Tests.Git.Hooks
         {
             // Arrange - Create origin and local repositories
             instance = origin.AddRepository(instance, signature, message);
-            var tempPath = RepositoryFixture.GetRepositoryPath(UniqueId.CreateNew().ToString());
+            var tempPath = RepositoryFixture.GetAvailableFolderPath();
             var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
             clientContainer.Clone(origin.Repositories.Single().RepositoryDescription.Path);
 
             // Arrange - Commit change on origin
             var change = instance.Applications[0].Pages[0].With(a => a.Description == "foo");
-            var commitResult = origin.Commit(change.Repository, signature, message);
+            origin.Commit(change.Repository, signature, message);
 
             // Arrange - suscribe to hook
             MergeCompletedEventArgs lastEvent = null;
