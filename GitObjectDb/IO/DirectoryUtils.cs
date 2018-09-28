@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace GitObjectDb.IO
@@ -14,32 +15,37 @@ namespace GitObjectDb.IO
         /// Deletes the specified target dir and all its children recursively.
         /// </summary>
         /// <param name="targetDir">The target dir.</param>
-        /// <param name="continueOnError">if set to <c>true</c> [continue on error].</param>
-        internal static void Delete(string targetDir, bool continueOnError)
+        /// <param name="continueOnError">if set to <c>true</c> ignore errors.</param>
+        /// <param name="exclusionList">File/directory exclusion list.</param>
+        /// <returns><code>true</code> if all files and directories could be deleted, <code>true</code> otherwise.</returns>
+        internal static bool Delete(string targetDir, bool continueOnError, params string[] exclusionList)
+        {
+            var fixedExclusionList = exclusionList.Select(p => Path.GetFullPath(p)).ToArray();
+            return DeleteImpl(targetDir, continueOnError, fixedExclusionList);
+        }
+
+        static bool DeleteImpl(string targetDir, bool continueOnError, params string[] fixedExclusionList)
         {
             if (!Directory.Exists(targetDir))
             {
-                return;
+                return true;
+            }
+            if (fixedExclusionList.Contains(Path.GetFullPath(targetDir)))
+            {
+                return false;
             }
 
+            var result = true;
             try
             {
-                File.SetAttributes(targetDir, FileAttributes.Normal);
+                result &= DeleteNestedFiles(targetDir, continueOnError, fixedExclusionList);
+                result &= DeleteNestedDirectories(targetDir, continueOnError, fixedExclusionList);
 
-                var files = Directory.GetFiles(targetDir);
-                foreach (string file in files)
+                if (result)
                 {
-                    File.SetAttributes(file, FileAttributes.Normal);
-                    File.Delete(file);
+                    File.SetAttributes(targetDir, FileAttributes.Normal);
+                    Directory.Delete(targetDir, false);
                 }
-
-                var dirs = Directory.GetDirectories(targetDir);
-                foreach (string dir in dirs)
-                {
-                    Delete(dir, continueOnError);
-                }
-
-                Directory.Delete(targetDir, false);
             }
             catch
             {
@@ -47,7 +53,58 @@ namespace GitObjectDb.IO
                 {
                     throw;
                 }
+                result = false;
             }
+            return result;
+        }
+
+        static bool DeleteNestedFiles(string targetDir, bool continueOnError, string[] fixedExclusionList)
+        {
+            var result = true;
+            var files = Directory.GetFiles(targetDir);
+            foreach (var file in files)
+            {
+                if (fixedExclusionList.Contains(file))
+                {
+                    continue;
+                }
+                try
+                {
+                    File.SetAttributes(file, FileAttributes.Normal);
+                    File.Delete(file);
+                }
+                catch
+                {
+                    if (!continueOnError)
+                    {
+                        throw;
+                    }
+                    result = false;
+                }
+            }
+            return result;
+        }
+
+        static bool DeleteNestedDirectories(string targetDir, bool continueOnError, string[] fixedExclusionList)
+        {
+            var result = true;
+            try
+            {
+                var dirs = Directory.GetDirectories(targetDir);
+                foreach (var dir in dirs)
+                {
+                    result &= DeleteImpl(dir, continueOnError, fixedExclusionList);
+                }
+            }
+            catch
+            {
+                if (!continueOnError)
+                {
+                    throw;
+                }
+                result = false;
+            }
+            return result;
         }
     }
 }

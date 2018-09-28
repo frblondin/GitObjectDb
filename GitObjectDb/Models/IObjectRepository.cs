@@ -1,5 +1,6 @@
 using GitObjectDb.Git;
 using GitObjectDb.Models.Migration;
+using GitObjectDb.Models.Rebase;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -43,6 +44,11 @@ namespace GitObjectDb.Models
         /// Gets the repository description.
         /// </summary>
         RepositoryDescription RepositoryDescription { get; }
+
+        /// <summary>
+        /// Gets access to rebase functionality for a repository.
+        /// </summary>
+        IObjectRepositoryRebase Rebase { get; }
 
         /// <summary>
         /// Tries getting a nested object from an <see cref="ObjectPath"/>.

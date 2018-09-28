@@ -231,10 +231,10 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        internal override IObjectRepository ReloadRepository(IObjectRepository previousRepository, ObjectId commit) =>
+        internal override IObjectRepository ReloadRepository(IObjectRepository previousRepository, ObjectId commit = null) =>
             ReloadRepository(previousRepository.RepositoryDescription, commit);
 
-        TRepository ReloadRepository(RepositoryDescription repositoryDescription, ObjectId commit)
+        TRepository ReloadRepository(RepositoryDescription repositoryDescription, ObjectId commit = null)
         {
             var result = _repositoryLoader.LoadFrom(this, repositoryDescription, commit);
             return AddOrReplace(result);
@@ -348,7 +348,11 @@ namespace GitObjectDb.Models
             repository.EnsuresCurrentRepository();
             return repository.Execute(r =>
             {
-                var branch = r.CreateBranch(branchName);
+                var head = r.Head;
+                var reflogName = committish ??
+                    (r.Refs.Head is SymbolicReference ? head.FriendlyName : head.Tip.Sha);
+
+                var branch = r.CreateBranch(branchName, reflogName);
                 r.Refs.MoveHeadTarget(branch.CanonicalName);
 
                 var newRepository = _repositoryLoader.LoadFrom(this, repository.RepositoryDescription, branch.Tip.Id);
@@ -364,7 +368,7 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(branchName));
             }
 
-            return Branch(this[id], branchName);
+            return Branch(this[id], branchName, committish);
         }
 
         /// <inheritdoc />

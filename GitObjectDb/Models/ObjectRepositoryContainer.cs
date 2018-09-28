@@ -1,4 +1,5 @@
 using FluentValidation.Results;
+using GitObjectDb.Git;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -25,7 +26,7 @@ namespace GitObjectDb.Models
         /// <param name="previousRepository">The previous repository.</param>
         /// <param name="commit">The commit.</param>
         /// <returns>The loaded repository.</returns>
-        internal abstract IObjectRepository ReloadRepository(IObjectRepository previousRepository, ObjectId commit);
+        internal abstract IObjectRepository ReloadRepository(IObjectRepository previousRepository, ObjectId commit = null);
 
         /// <inheritdoc />
         public abstract IObjectRepository TryGetRepository(UniqueId id);

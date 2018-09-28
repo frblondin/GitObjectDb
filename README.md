@@ -55,14 +55,16 @@ Here's a simple example:
         var modifiedPage = page.With(p => p.Name == "modified");
         container.Commit(modifiedPage.Repository, signature, message);
         ```
-    - [Branch management](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Models/ObjectRepositoryTests.Branch.cs)
+    - Branch management:
+        
+        See [branch & merges](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Models/ObjectRepositoryTests.Branch.cs) and [rebase](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Models/ObjectRepositoryTests.Rebase.cs) unit tests.
     - Migrations:
         
         Migrations allows to define any action that must be executed when the commit containing the migration will be processed by a pull. See the [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Migrations/MigrationTests.cs) for more details.
-    - [Pre/post commit hook](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Git/Hooks/GitHooksTests.cs)
+    - [Pre/post commit & merge hook](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Git/Hooks/GitHooksTests.cs)
 	- Validation using [FluentValidation](https://github.com/JeremySkinner/FluentValidation).
         
-        See [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Validations/ModelValidationTests.cs) for more information
+        See [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Validations/ModelValidationTests.cs) for more information.
 
 ## Prerequisites
 
