@@ -4,6 +4,7 @@ using GitObjectDb.Git.Hooks;
 using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
+using GitObjectDb.Models.Rebase;
 using GitObjectDb.Reflection;
 using GitObjectDb.Services;
 using GitObjectDb.Validations;
@@ -51,6 +52,7 @@ namespace Microsoft.Extensions.DependencyInjection
             source.AddSingleton<IValidatorFactory, ValidatorFactory>();
             source.AddSingleton<JsonSerializationValidator>();
             source.AddSingleton<IObjectRepositorySearch, ObjectRepositorySearch>();
+            source.AddFactoryDelegate<ObjectRepositoryRebaseFactory, ObjectRepositoryRebase>();
             AddCreatorParameterResolvers(source);
             return source;
         }

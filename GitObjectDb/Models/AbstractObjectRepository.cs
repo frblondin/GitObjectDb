@@ -1,6 +1,7 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Git;
 using GitObjectDb.Models.Migration;
+using GitObjectDb.Models.Rebase;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -29,6 +30,8 @@ namespace GitObjectDb.Models
         /// </summary>
         internal const string MigrationFolder = "$Migrations";
 
+        readonly ObjectRepositoryRebaseFactory _objectRepositoryRebaseFactory;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AbstractObjectRepository"/> class.
         /// </summary>
@@ -54,6 +57,7 @@ namespace GitObjectDb.Models
             Migrations = (migrations ?? throw new ArgumentNullException(nameof(migrations))).AttachToParent(this);
 
             RepositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
+            _objectRepositoryRebaseFactory = serviceProvider.GetRequiredService<ObjectRepositoryRebaseFactory>();
         }
 
         /// <inheritdoc />
@@ -80,6 +84,9 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         public RepositoryDescription RepositoryDescription { get; private set; }
+
+        /// <inheritdoc />
+        public IObjectRepositoryRebase Rebase => _objectRepositoryRebaseFactory(this, () => (Container as ObjectRepositoryContainer)?.ReloadRepository(this));
 
         /// <inheritdoc />
         public IMetadataObject TryGetFromGitPath(ObjectPath path)

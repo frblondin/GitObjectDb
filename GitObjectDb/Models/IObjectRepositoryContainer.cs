@@ -137,7 +137,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="repository">The repository.</param>
         /// <param name="branchName">The name of the branch to create.</param>
-        /// <param name="committish">Revparse spec for the target commit.</param>
+        /// <param name="committish">The revparse spec for the target commit.</param>
         /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
         TRepository Branch(TRepository repository, string branchName, string committish = null);
 
@@ -146,7 +146,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="id">The repository id.</param>
         /// <param name="branchName">The name of the branch to create.</param>
-        /// <param name="committish">Revparse spec for the target commit.</param>
+        /// <param name="committish">The revparse spec for the target commit.</param>
         /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
         TRepository Branch(UniqueId id, string branchName, string committish = null);
 
