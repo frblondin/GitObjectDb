@@ -35,6 +35,8 @@ namespace GitObjectDb.Tests.Assets.Customizations
 
         public void Customize(IFixture fixture)
         {
+            fixture.Register(() => UniqueId.Create());
+
             var serviceProvider = fixture.Create<IServiceProvider>();
 
             var tempPath = RepositoryFixture.GetRepositoryPath(fixture.Create<Guid>().ToString());
