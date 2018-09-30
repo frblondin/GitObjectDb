@@ -42,7 +42,7 @@ namespace GitObjectDb.Tests.Models
         {
             // Arrange
             sut = container.AddRepository(sut, signature, message, inMemoryBackend);
-            var field = new Field(serviceProvider, Guid.NewGuid(), "foo");
+            var field = new Field(serviceProvider, UniqueId.CreateNew(), "foo");
             var modifiedPage = page.With(p => p.Fields.Add(field));
             var commit = container.Commit(modifiedPage.Repository, signature, message);
 

@@ -15,7 +15,7 @@ namespace GitObjectDb.Tests.Assets.Models
     [DataContract]
     public class Page : AbstractModel
     {
-        public Page(IServiceProvider serviceProvider, Guid id, string name, string description, ILazyChildren<Field> fields)
+        public Page(IServiceProvider serviceProvider, UniqueId id, string name, string description, ILazyChildren<Field> fields)
             : base(serviceProvider, id, name)
         {
             Description = description ?? throw new ArgumentNullException(nameof(description));

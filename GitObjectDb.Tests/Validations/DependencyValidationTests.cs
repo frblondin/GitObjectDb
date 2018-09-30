@@ -18,7 +18,7 @@ namespace GitObjectDb.Tests.Validations
         public void ThrowIfMissingDependency(ObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, Signature signature, string message)
         {
             // Arrange
-            var wrongDependency = new RepositoryDependency(Guid.NewGuid(), "foo", new System.Version(1, 0));
+            var wrongDependency = new RepositoryDependency(UniqueId.CreateNew(), "foo", new System.Version(1, 0));
             repository = repository.With(r => r.Dependencies == repository.Dependencies.Add(wrongDependency));
             container.AddRepository(repository, signature, message);
 

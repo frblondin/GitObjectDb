@@ -19,7 +19,7 @@ namespace GitObjectDb.Models
         /// <param name="path">The path.</param>
         /// <exception cref="ArgumentNullException">path</exception>
         [JsonConstructor]
-        public ObjectPath(Guid repository, string path)
+        public ObjectPath(UniqueId repository, string path)
         {
             Repository = repository;
             Path = path ?? throw new ArgumentNullException(nameof(path));
@@ -38,7 +38,7 @@ namespace GitObjectDb.Models
         /// Gets the repository containing the object.
         /// </summary>
         [DataMember]
-        public Guid Repository { get; }
+        public UniqueId Repository { get; }
 
         /// <summary>
         /// Gets the path to the object.

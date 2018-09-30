@@ -36,7 +36,7 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Gets the unique identifier.
         /// </summary>
-        Guid Id { get; }
+        UniqueId Id { get; }
 
         /// <summary>
         /// Gets the name.

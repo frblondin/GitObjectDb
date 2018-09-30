@@ -72,11 +72,11 @@ namespace GitObjectDb.Tests.Git.Hooks
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void PreMergeGetsFiredWhenPulling(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IServiceProvider serviceProvider, Signature signature, string message, Guid id)
+        public void PreMergeGetsFiredWhenPulling(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange - Create origin and local repositories
             instance = origin.AddRepository(instance, signature, message);
-            var tempPath = RepositoryFixture.GetRepositoryPath(id.ToString());
+            var tempPath = RepositoryFixture.GetRepositoryPath(UniqueId.CreateNew().ToString());
             var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
             clientContainer.Clone(origin.Repositories.Single().RepositoryDescription.Path);
 
@@ -99,11 +99,11 @@ namespace GitObjectDb.Tests.Git.Hooks
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void PreMergeCancelsPullWhenRequested(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IServiceProvider serviceProvider, Signature signature, string message, Guid id)
+        public void PreMergeCancelsPullWhenRequested(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange - Create origin and local repositories
             instance = origin.AddRepository(instance, signature, message);
-            var tempPath = RepositoryFixture.GetRepositoryPath(id.ToString());
+            var tempPath = RepositoryFixture.GetRepositoryPath(UniqueId.CreateNew().ToString());
             var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
             clientContainer.Clone(origin.Repositories.Single().RepositoryDescription.Path);
 
@@ -124,11 +124,11 @@ namespace GitObjectDb.Tests.Git.Hooks
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void PostMergeGetsFiredWhenPulling(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IServiceProvider serviceProvider, Signature signature, string message, Guid id)
+        public void PostMergeGetsFiredWhenPulling(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange - Create origin and local repositories
             instance = origin.AddRepository(instance, signature, message);
-            var tempPath = RepositoryFixture.GetRepositoryPath(id.ToString());
+            var tempPath = RepositoryFixture.GetRepositoryPath(UniqueId.CreateNew().ToString());
             var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
             clientContainer.Clone(origin.Repositories.Single().RepositoryDescription.Path);
 

@@ -1,3 +1,4 @@
+using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -9,7 +10,7 @@ namespace GitObjectDb.Tests.Assets.Models.Migration
     [DataContract]
     public class DummyMigration : GitObjectDb.Models.Migration.AbstractMigration
     {
-        public DummyMigration(IServiceProvider serviceProvider, Guid id, string name, bool canDowngrade, bool isIdempotent, string formula)
+        public DummyMigration(IServiceProvider serviceProvider, UniqueId id, string name, bool canDowngrade, bool isIdempotent, string formula)
             : base(serviceProvider, id, name)
         {
             CanDowngrade = canDowngrade;

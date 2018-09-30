@@ -40,7 +40,7 @@ namespace GitObjectDb.Models
         /// <param name="dependencies">The repository dependencies.</param>
         /// <param name="migrations">The repository migrations.</param>
         [JsonConstructor]
-        protected AbstractObjectRepository(IServiceProvider serviceProvider, IObjectRepositoryContainer container, Guid id, string name, System.Version version, IImmutableList<RepositoryDependency> dependencies, ILazyChildren<IMigration> migrations)
+        protected AbstractObjectRepository(IServiceProvider serviceProvider, IObjectRepositoryContainer container, UniqueId id, string name, System.Version version, IImmutableList<RepositoryDependency> dependencies, ILazyChildren<IMigration> migrations)
             : base(serviceProvider, id, name)
         {
             if (serviceProvider == null)
@@ -130,8 +130,8 @@ namespace GitObjectDb.Models
                 }
 
                 var children = propertyInfo.Accessor(result);
-                result = Guid.TryParse(chunks[i + 1], out var guid) ?
-                    children.FirstOrDefault(c => c.Id == guid) :
+                result = UniqueId.TryParse(chunks[i + 1], out var id) ?
+                    children.FirstOrDefault(c => c.Id == id) :
                     null;
             }
             return result;

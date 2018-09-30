@@ -14,7 +14,7 @@ namespace GitObjectDb.Tests.Assets.Models
     [DataContract]
     public class LinkField : Field
     {
-        public LinkField(IServiceProvider serviceProvider, Guid id, string name, ILazyLink<Page> pageLink)
+        public LinkField(IServiceProvider serviceProvider, UniqueId id, string name, ILazyLink<Page> pageLink)
             : base(serviceProvider, id, name)
         {
             PageLink = (pageLink ?? throw new ArgumentNullException(nameof(pageLink))).AttachToParent(this);

@@ -47,7 +47,7 @@ namespace GitObjectDb.Tests.Reflection
         [DataContract]
         public class MissingProperty : AbstractModel
         {
-            public MissingProperty(IServiceProvider serviceProvider, Guid id, string name, string someName)
+            public MissingProperty(IServiceProvider serviceProvider, UniqueId id, string name, string someName)
                 : base(serviceProvider, id, name)
             {
                 NonMatchingName = someName ?? throw new ArgumentNullException(nameof(someName));
@@ -60,7 +60,7 @@ namespace GitObjectDb.Tests.Reflection
         [DataContract]
         public class PropertyNotSerializable : AbstractModel
         {
-            public PropertyNotSerializable(IServiceProvider serviceProvider, Guid id, string name, string notSerialized)
+            public PropertyNotSerializable(IServiceProvider serviceProvider, UniqueId id, string name, string notSerialized)
                 : base(serviceProvider, id, name)
             {
                 NotSerialized = notSerialized ?? throw new ArgumentNullException(nameof(notSerialized));
@@ -72,7 +72,7 @@ namespace GitObjectDb.Tests.Reflection
         [DataContract]
         public class PropertyTypeNotMatching : AbstractModel
         {
-            public PropertyTypeNotMatching(IServiceProvider serviceProvider, Guid id, string name, List<string> values)
+            public PropertyTypeNotMatching(IServiceProvider serviceProvider, UniqueId id, string name, List<string> values)
                 : base(serviceProvider, id, name)
             {
                 Values = values ?? throw new ArgumentNullException(nameof(values));

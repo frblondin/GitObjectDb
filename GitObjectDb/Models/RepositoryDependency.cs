@@ -24,7 +24,7 @@ namespace GitObjectDb.Models
         /// version
         /// </exception>
         [JsonConstructor]
-        public RepositoryDependency(Guid id, string name, Version version)
+        public RepositoryDependency(UniqueId id, string name, Version version)
         {
             Id = id;
             Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -53,7 +53,7 @@ namespace GitObjectDb.Models
         /// Gets the unique identifier.
         /// </summary>
         [DataMember]
-        public Guid Id { get; }
+        public UniqueId Id { get; }
 
         /// <summary>
         /// Gets the name.

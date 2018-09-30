@@ -27,7 +27,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <returns>Found <see cref="IObjectRepository"/>, if any.</returns>
-        IObjectRepository TryGetRepository(Guid id);
+        IObjectRepository TryGetRepository(UniqueId id);
 
         /// <summary>
         /// Validates the specified rules.
@@ -53,7 +53,7 @@ namespace GitObjectDb.Models
         /// Gets the <typeparamref name="TRepository"/> with the specified identifier.
         /// </summary>
         /// <param name="id">The identifier.</param>
-        TRepository this[Guid id] { get; }
+        TRepository this[UniqueId id] { get; }
 
         /// <summary>
         /// Stores the content of this instance and all its children in a new Git repository.
@@ -107,7 +107,7 @@ namespace GitObjectDb.Models
         /// <param name="id">The repository id.</param>
         /// <param name="branchName">Name of the branch.</param>
         /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
-        TRepository Checkout(Guid id, string branchName);
+        TRepository Checkout(UniqueId id, string branchName);
 
         /// <summary>
         /// Download objects and refs from the remote repository.
@@ -146,7 +146,7 @@ namespace GitObjectDb.Models
         /// <param name="id">The repository id.</param>
         /// <param name="branchName">The name of the branch to create.</param>
         /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
-        TRepository Branch(Guid id, string branchName);
+        TRepository Branch(UniqueId id, string branchName);
 
         /// <summary>
         /// Merges changes from branch into the branch pointed at by HEAD..
@@ -162,6 +162,6 @@ namespace GitObjectDb.Models
         /// <param name="id">The repository id.</param>
         /// <param name="branchName">Name of the branch.</param>
         /// <returns>The <see cref="IMetadataTreeMerge"/> instance used to apply the merge.</returns>
-        IMetadataTreeMerge Merge(Guid id, string branchName);
+        IMetadataTreeMerge Merge(UniqueId id, string branchName);
     }
 }

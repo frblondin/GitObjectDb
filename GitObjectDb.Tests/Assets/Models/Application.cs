@@ -14,7 +14,7 @@ namespace GitObjectDb.Tests.Assets.Models
     [DataContract]
     public class Application : AbstractModel
     {
-        public Application(IServiceProvider serviceProvider, Guid id, string name, ILazyChildren<Page> pages)
+        public Application(IServiceProvider serviceProvider, UniqueId id, string name, ILazyChildren<Page> pages)
             : base(serviceProvider, id, name)
         {
             Pages = (pages ?? throw new ArgumentNullException(nameof(pages))).AttachToParent(this);

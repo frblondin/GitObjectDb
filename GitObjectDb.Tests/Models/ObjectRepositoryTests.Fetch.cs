@@ -15,11 +15,11 @@ namespace GitObjectDb.Tests.Models
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void Fetch(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Signature signature, string message, Guid id)
+        public void Fetch(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange
             sut = container.AddRepository(sut, signature, message);
-            var tempPath = RepositoryFixture.GetRepositoryPath(id.ToString());
+            var tempPath = RepositoryFixture.GetRepositoryPath(UniqueId.CreateNew().ToString());
             var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
             clientContainer.Clone(container.Repositories.Single().RepositoryDescription.Path);
 
