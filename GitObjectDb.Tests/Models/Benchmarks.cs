@@ -18,6 +18,7 @@ using System.Text;
 
 namespace GitObjectDb.Tests.Models
 {
+    [Parallelizable(ParallelScope.All)]
     public class Benchmarks
     {
         [Ignore("Only used to create large repository. Quite long, normal as we want the load time to be short not necessarily the creation time.")]
