@@ -45,5 +45,16 @@ namespace GitObjectDb.Tests.Models
             // Assert
             PAssert.IsTrue(AreFunctionnally.Equivalent<Page>(() => page == modified, nameof(Page.Name)));
         }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        public void CloneableParametersGetCloned(LinkField linkField, string newName)
+        {
+            // Act
+            var modified = linkField.With(l => l.Name == newName);
+
+            // Assert
+            Assert.That(modified.PageLink, Is.Not.SameAs(linkField.PageLink));
+        }
     }
 }

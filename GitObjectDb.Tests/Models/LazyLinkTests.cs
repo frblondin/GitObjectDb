@@ -33,5 +33,20 @@ namespace GitObjectDb.Tests.Models
             Assert.That(yetAgainResolved, Is.SameAs(page));
             Assert.That(count, Is.EqualTo(2));
         }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        public void LazyLinkDoesNotCopyParent(Field parent, Page page)
+        {
+            // Arrange
+            var sut = new LazyLink<Page>(_ => page);
+            sut.AttachToParent(parent);
+
+            // Act
+            var clone = (LazyLink<Page>)sut.Clone();
+
+            // Assert
+            Assert.That(clone.Parent, Is.Null);
+        }
     }
 }

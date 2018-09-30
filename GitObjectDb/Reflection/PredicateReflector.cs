@@ -58,17 +58,12 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(argumentType));
             }
 
-            if (instance != Instance)
-            {
-                return fallback is ICloneable cloneable ? cloneable.Clone() : fallback;
-            }
-
-            if (_visitor != null && _visitor.Values.TryGetValue(name, out var value))
+            if (instance == Instance && _visitor != null && _visitor.Values.TryGetValue(name, out var value))
             {
                 return value;
             }
 
-            return fallback;
+            return fallback is ICloneable cloneable ? cloneable.Clone() : fallback;
         }
 
         /// <inheritdoc/>
