@@ -1,5 +1,6 @@
 using AutoFixture.NUnit3;
 using GitObjectDb.Git.Hooks;
+using GitObjectDb.Models;
 using LibGit2Sharp;
 using NUnit.Framework;
 using StackExchange.Redis;
@@ -47,7 +48,7 @@ namespace GitObjectDb.Tests.Git.Backends
         }
 
         static string GetTempPath() =>
-            Path.Combine(Path.GetTempPath(), "Repos", Guid.NewGuid().ToString());
+            Path.Combine(Path.GetTempPath(), "Repos", UniqueId.CreateNew().ToString());
 
         static bool IsRedisRunning()
         {

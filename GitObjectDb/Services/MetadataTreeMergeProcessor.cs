@@ -27,7 +27,7 @@ namespace GitObjectDb.Services
         readonly GitHooks _hooks;
 
         readonly MetadataTreeMerge _metadataTreeMerge;
-        readonly ISet<Guid> _forceVisit;
+        readonly ISet<UniqueId> _forceVisit;
         readonly ILookup<string, MetadataTreeMergeChunkChange> _changes;
 
         /// <summary>
@@ -57,12 +57,12 @@ namespace GitObjectDb.Services
             _hooks = serviceProvider.GetRequiredService<GitHooks>();
             _changes = _metadataTreeMerge.ModifiedChunks.ToLookup(c => c.Path, StringComparer.OrdinalIgnoreCase);
 
-            Guid tempGuid;
-            _forceVisit = new HashSet<Guid>(from path in _metadataTreeMerge.AllImpactedPaths
-                                            from part in path.Split('/')
-                                            where Guid.TryParse(part, out tempGuid)
-                                            let guid = tempGuid
-                                            select guid);
+            var tempId = default(UniqueId);
+            _forceVisit = new HashSet<UniqueId>(from path in _metadataTreeMerge.AllImpactedPaths
+                                                from part in path.Split('/')
+                                                where UniqueId.TryParse(part, out tempId)
+                                                let id = tempId
+                                                select id);
         }
 
         static Regex GetChildPathRegex(IMetadataObject node, ChildPropertyInfo childProperty)
@@ -168,9 +168,9 @@ namespace GitObjectDb.Services
                              where pathWithProperty.IsMatch(o.Path)
                              let objectType = Type.GetType(o.BranchNode.Value<string>("$type"))
                              select (IMetadataObject)o.BranchNode.ToObject(childProperty.ItemType, _serializer.Value)).ToList();
-            var deleted = new HashSet<Guid>(from o in _metadataTreeMerge.DeletedObjects
-                                            where pathWithProperty.IsMatch(o.Path)
-                                            select o.BranchNode["Id"].ToObject<Guid>());
+            var deleted = new HashSet<UniqueId>(from o in _metadataTreeMerge.DeletedObjects
+                                                where pathWithProperty.IsMatch(o.Path)
+                                                select o.BranchNode["Id"].ToObject<UniqueId>());
             var deletions = childProperty.Accessor(node).Where(n => deleted.Contains(n.Id)).ToList();
 
             return (additions, deletions);

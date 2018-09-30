@@ -28,7 +28,7 @@ namespace GitObjectDb.Models
         internal abstract IObjectRepository ReloadRepository(IObjectRepository previousRepository, ObjectId commit);
 
         /// <inheritdoc />
-        public abstract IObjectRepository TryGetRepository(Guid id);
+        public abstract IObjectRepository TryGetRepository(UniqueId id);
 
         /// <inheritdoc />
         public abstract ValidationResult Validate(ValidationRules rules = ValidationRules.All);

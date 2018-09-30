@@ -26,9 +26,8 @@ namespace GitObjectDb.Tests.Models
         public void CreateLargeRepository(IFixture fixture, Signature signature, string message)
         {
             // Arrange
-            var targetDir = RepositoryFixture.GetRepositoryPath("Benchmark");
-            DirectoryUtils.Delete(targetDir);
-            fixture.Customize(new MetadataCustomization(2, 200, 30));
+            DirectoryUtils.Delete(RepositoryFixture.BenchmarkRepositoryPath);
+            fixture.Customize(new MetadataCustomization(2, 200, 30, RepositoryFixture.BenchmarkRepositoryPath));
 
             // Act
             var container = fixture.Create<IObjectRepositoryContainer<ObjectRepository>>();
@@ -37,7 +36,7 @@ namespace GitObjectDb.Tests.Models
 
             // Assert
             // No assertion, the goal of this test is to create a repository to update Assets\Benchmark.zip
-            Console.WriteLine($"Repository created at '{targetDir}'.");
+            Console.WriteLine($"Repository created at '{RepositoryFixture.BenchmarkRepositoryPath}'.");
         }
 
         [Test]
@@ -48,7 +47,7 @@ namespace GitObjectDb.Tests.Models
             var stopwatch = Stopwatch.StartNew();
 
             // Act
-            loader.LoadFrom<ObjectRepository>(container, RepositoryFixture.BenchmarkRepositoryDescription);
+            loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
 
             // Assert
             // Child loading is lazy so root load time should be really short
@@ -60,7 +59,7 @@ namespace GitObjectDb.Tests.Models
         public void SearchInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
-            var sut = loader.LoadFrom<ObjectRepository>(container, RepositoryFixture.BenchmarkRepositoryDescription);
+            var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
             var stopwatch = Stopwatch.StartNew();
 
             // Act
@@ -76,7 +75,7 @@ namespace GitObjectDb.Tests.Models
         public void ComputeChangesInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // Arrange
-            var sut = loader.LoadFrom<ObjectRepository>(container, RepositoryFixture.BenchmarkRepositoryDescription);
+            var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
             var fieldToModify = sut
                 .Applications.PickRandom()
                 .Pages.PickRandom()

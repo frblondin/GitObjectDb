@@ -57,10 +57,10 @@ namespace GitObjectDb.Models
         public new IImmutableSet<TRepository> Repositories { get; private set; }
 
         /// <inheritdoc />
-        public TRepository this[Guid id] =>
+        public TRepository this[UniqueId id] =>
             GetRepository(id);
 
-        TRepository GetRepository(Guid id) =>
+        TRepository GetRepository(UniqueId id) =>
             Repositories.FirstOrDefault(r => r.Id == id) ??
             throw new ObjectNotFoundException("The repository could not be found.");
 
@@ -82,7 +82,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public override IObjectRepository TryGetRepository(Guid id) =>
+        public override IObjectRepository TryGetRepository(UniqueId id) =>
             Repositories.FirstOrDefault(r => r.Id == id);
 
         /// <inheritdoc />
@@ -94,7 +94,7 @@ namespace GitObjectDb.Models
             }
 
             // Clone & load in a temp folder to extract the repository id
-            var tempPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString());
+            var tempPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), UniqueId.CreateNew().ToString());
             var tempRepoDescription = new RepositoryDescription(tempPath, backend);
             var cloned = _repositoryLoader.Clone(this, repository, tempRepoDescription, commitId);
             _repositoryProvider.Evict(tempRepoDescription);
@@ -277,7 +277,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public TRepository Checkout(Guid id, string branchName)
+        public TRepository Checkout(UniqueId id, string branchName)
         {
             if (branchName == null)
             {
@@ -357,7 +357,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public TRepository Branch(Guid id, string branchName)
+        public TRepository Branch(UniqueId id, string branchName)
         {
             if (branchName == null)
             {
@@ -410,7 +410,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public IMetadataTreeMerge Merge(Guid id, string branchName)
+        public IMetadataTreeMerge Merge(UniqueId id, string branchName)
         {
             if (branchName == null)
             {

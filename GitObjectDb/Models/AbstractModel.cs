@@ -46,7 +46,7 @@ namespace GitObjectDb.Models
         /// or
         /// name
         /// </exception>
-        protected AbstractModel(IServiceProvider serviceProvider, Guid id, string name)
+        protected AbstractModel(IServiceProvider serviceProvider, UniqueId id, string name)
         {
             if (serviceProvider == null)
             {
@@ -57,7 +57,7 @@ namespace GitObjectDb.Models
             _repositorySearch = serviceProvider.GetRequiredService<IObjectRepositorySearch>();
             _dataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             DataAccessor = _dataAccessorProvider.Get(GetType());
-            if (id == Guid.Empty)
+            if (id == UniqueId.Empty)
             {
                 throw new ArgumentNullException(nameof(id));
             }
@@ -71,7 +71,7 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         [DataMember]
-        public Guid Id { get; }
+        public UniqueId Id { get; }
 
         /// <inheritdoc />
         [DataMember]

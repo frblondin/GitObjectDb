@@ -17,7 +17,7 @@ namespace GitObjectDb.Models.Migration
         /// <param name="serviceProvider">The service provider.</param>
         /// <param name="id">The identifier.</param>
         /// <param name="name">The name.</param>
-        protected AbstractMigration(IServiceProvider serviceProvider, Guid id, string name)
+        protected AbstractMigration(IServiceProvider serviceProvider, UniqueId id, string name)
             : base(serviceProvider, id, name)
         {
         }

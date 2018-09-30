@@ -13,7 +13,7 @@ namespace GitObjectDb.Tests.Assets.Models
     [DataContract]
     public class Field : AbstractModel
     {
-        public Field(IServiceProvider serviceProvider, Guid id, string name)
+        public Field(IServiceProvider serviceProvider, UniqueId id, string name)
             : base(serviceProvider, id, name)
         {
         }

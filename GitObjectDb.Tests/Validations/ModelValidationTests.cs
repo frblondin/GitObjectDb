@@ -50,7 +50,7 @@ namespace GitObjectDb.Tests.Validations
         public void LinkWithWrongRepositoryIsDetected(LinkField linkField)
         {
             // Act
-            var modified = linkField.With(f => f.PageLink == new LazyLink<Page>(new ObjectPath(Guid.NewGuid(), "foo")));
+            var modified = linkField.With(f => f.PageLink == new LazyLink<Page>(new ObjectPath(UniqueId.CreateNew(), "foo")));
             var result = modified.Repository.Validate();
 
             // Assert

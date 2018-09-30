@@ -12,7 +12,7 @@ namespace GitObjectDb.Tests.Assets.Models
 {
     public class ObjectRepository : AbstractObjectRepository
     {
-        public ObjectRepository(IServiceProvider serviceProvider, IObjectRepositoryContainer container, Guid id, string name, Version version, IImmutableList<RepositoryDependency> dependencies, ILazyChildren<IMigration> migrations, ILazyChildren<Application> applications)
+        public ObjectRepository(IServiceProvider serviceProvider, IObjectRepositoryContainer container, UniqueId id, string name, Version version, IImmutableList<RepositoryDependency> dependencies, ILazyChildren<IMigration> migrations, ILazyChildren<Application> applications)
             : base(serviceProvider, container, id, name, version, dependencies, migrations)
         {
             Applications = (applications ?? throw new ArgumentNullException(nameof(applications))).AttachToParent(this);
