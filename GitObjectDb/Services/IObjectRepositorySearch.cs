@@ -16,7 +16,7 @@ namespace GitObjectDb.Services
         /// <param name="repository">The repository.</param>
         /// <param name="content">The content.</param>
         /// <returns>All objects containing the <paramref name="content"/> value.</returns>
-        IEnumerable<IMetadataObject> Grep(IObjectRepository repository, string content);
+        IEnumerable<IModelObject> Grep(IObjectRepository repository, string content);
 
         /// <summary>
         /// Searches for the specified content in the repository.
@@ -24,6 +24,6 @@ namespace GitObjectDb.Services
         /// <param name="container">The container.</param>
         /// <param name="content">The content.</param>
         /// <returns>All objects containing the <paramref name="content"/> value.</returns>
-        IEnumerable<IMetadataObject> Grep(IObjectRepositoryContainer container, string content);
+        IEnumerable<IModelObject> Grep(IObjectRepositoryContainer container, string content);
     }
 }

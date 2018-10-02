@@ -23,7 +23,7 @@ namespace GitObjectDb.Reflection
         /// </summary>
         /// <param name="instance">The instance.</param>
         /// <param name="predicate">The predicate.</param>
-        public PredicateReflector(IMetadataObject instance, Expression predicate)
+        public PredicateReflector(IModelObject instance, Expression predicate)
         {
             Instance = instance ?? throw new ArgumentNullException(nameof(instance));
             _predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
@@ -33,7 +33,7 @@ namespace GitObjectDb.Reflection
         /// <summary>
         /// Gets the instance.
         /// </summary>
-        public IMetadataObject Instance { get; }
+        public IModelObject Instance { get; }
 
         static PredicateVisitor CreateVisitor(Expression predicate)
         {
@@ -43,7 +43,7 @@ namespace GitObjectDb.Reflection
         }
 
         /// <inheritdoc/>
-        public object ProcessArgument(IMetadataObject instance, string name, Type argumentType, object fallback = null)
+        public object ProcessArgument(IModelObject instance, string name, Type argumentType, object fallback = null)
         {
             if (name == null)
             {
@@ -58,7 +58,7 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(argumentType));
             }
 
-            if (instance == Instance && _visitor != null && _visitor.Values.TryGetValue(name, out var value))
+            if (instance.Id == Instance.Id && _visitor != null && _visitor.Values.TryGetValue(name, out var value))
             {
                 return value;
             }
@@ -67,7 +67,7 @@ namespace GitObjectDb.Reflection
         }
 
         /// <inheritdoc/>
-        public (IEnumerable<IMetadataObject> Additions, IEnumerable<IMetadataObject> Deletions) GetChildChanges(IMetadataObject instance, ChildPropertyInfo childProperty)
+        public (IEnumerable<IModelObject> Additions, IEnumerable<IModelObject> Deletions) GetChildChanges(IModelObject instance, ChildPropertyInfo childProperty)
         {
             if (instance == null)
             {
@@ -84,6 +84,17 @@ namespace GitObjectDb.Reflection
                 childChanges?.Where(c => c.Type == ChildChangeType.Add).Select(c => c.Child),
                 childChanges?.Where(c => c.Type == ChildChangeType.Delete).Select(c => c.Child)
             );
+        }
+
+        /// <inheritdoc/>
+        public bool MustForceVisit(IModelObject node)
+        {
+            if (node == null)
+            {
+                throw new ArgumentNullException(nameof(node));
+            }
+
+            return node.IsParentOf(Instance);
         }
     }
 }

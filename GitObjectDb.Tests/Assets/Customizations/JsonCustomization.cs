@@ -1,4 +1,5 @@
 using AutoFixture;
+using GitObjectDb.Models;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace GitObjectDb.Tests.Assets.Customizations
     {
         public void Customize(IFixture fixture)
         {
-            fixture.Register(() => JObject.Parse($@"{{""{fixture.Create<string>()}"": ""{fixture.Create<string>()}""}}"));
+            fixture.Register(() => JObject.Parse($@"{{""{fixture.Create<string>()}"": ""{fixture.Create<string>()}"", ""{nameof(IModelObject.Id)}"": ""{UniqueId.CreateNew()}""}}"));
             fixture.Register<JToken>(() => fixture.Create<JObject>());
         }
     }

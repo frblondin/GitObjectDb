@@ -23,17 +23,17 @@ namespace GitObjectDb.Tests.Models.Compare
             var path = RepositoryFixture.GetAvailableFolderPath();
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
+            var sut = new ObjectRepositoryChunkChange(path, _property, mergeBaseNode, mergeBaseValue, branchNode, branchValue, headNode, headValue);
 
             // Assert
             Assert.That(sut.Path, Is.SameAs(path));
-            Assert.That(sut.MergeBaseNode, Is.SameAs(mergeBaseNode));
-            Assert.That(sut.BranchNode, Is.SameAs(branchNode));
-            Assert.That(sut.HeadNode, Is.SameAs(headNode));
+            Assert.That(sut.Ancestor, Is.SameAs(mergeBaseNode));
+            Assert.That(sut.Theirs, Is.SameAs(branchNode));
+            Assert.That(sut.Ours, Is.SameAs(headNode));
             Assert.That(sut.Property, Is.SameAs(_property));
-            Assert.That(sut.MergeBaseValue, Is.SameAs(mergeBaseValue));
-            Assert.That(sut.BranchValue, Is.SameAs(branchValue));
-            Assert.That(sut.HeadValue, Is.SameAs(headValue));
+            Assert.That(sut.AncestorValue, Is.SameAs(mergeBaseValue));
+            Assert.That(sut.TheirsValue, Is.SameAs(branchValue));
+            Assert.That(sut.OursValue, Is.SameAs(headValue));
         }
 
         [Test]
@@ -44,7 +44,7 @@ namespace GitObjectDb.Tests.Models.Compare
             var path = RepositoryFixture.GetAvailableFolderPath();
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, mergeBaseValue);
+            var sut = new ObjectRepositoryChunkChange(path, _property, mergeBaseNode, mergeBaseValue, branchNode, branchValue, headNode, mergeBaseValue);
 
             // Assert
             Assert.That(sut.IsInConflict, Is.False);
@@ -59,7 +59,7 @@ namespace GitObjectDb.Tests.Models.Compare
             var path = RepositoryFixture.GetAvailableFolderPath();
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
+            var sut = new ObjectRepositoryChunkChange(path, _property, mergeBaseNode, mergeBaseValue, branchNode, branchValue, headNode, headValue);
 
             // Assert
             Assert.That(sut.IsInConflict, Is.True);
@@ -74,7 +74,7 @@ namespace GitObjectDb.Tests.Models.Compare
             var path = RepositoryFixture.GetAvailableFolderPath();
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
+            var sut = new ObjectRepositoryChunkChange(path, _property, mergeBaseNode, mergeBaseValue, branchNode, branchValue, headNode, headValue);
             sut.Resolve(resolvedValue);
 
             // Assert
@@ -91,7 +91,7 @@ namespace GitObjectDb.Tests.Models.Compare
             var path = RepositoryFixture.GetAvailableFolderPath();
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
+            var sut = new ObjectRepositoryChunkChange(path, _property, mergeBaseNode, mergeBaseValue, branchNode, branchValue, headNode, headValue);
             sut.Resolve(resolvedValue);
             Assert.Throws<GitObjectDbException>(() => sut.Resolve(resolvedValue));
         }

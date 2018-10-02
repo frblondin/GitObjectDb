@@ -14,7 +14,7 @@ namespace GitObjectDb.Tests.Validations
     public class ValidatorFactoryTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization))]
         public void GenericValidatorIsRetrieved(ValidatorFactory sut)
         {
             // Assert

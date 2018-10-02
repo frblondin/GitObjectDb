@@ -1,5 +1,7 @@
 using FluentValidation.Results;
 using GitObjectDb.Models.Compare;
+using GitObjectDb.Models.Merge;
+using GitObjectDb.Models.Rebase;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -151,7 +153,7 @@ namespace GitObjectDb.Models
         TRepository Branch(UniqueId id, string branchName, string committish = null);
 
         /// <summary>
-        /// Merges changes from branch into the branch pointed at by HEAD..
+        /// Merges changes from branch into the branch pointed at by HEAD.
         /// </summary>
         /// <param name="repository">The repository.</param>
         /// <param name="branchName">Name of the branch.</param>
@@ -159,11 +161,27 @@ namespace GitObjectDb.Models
         IObjectRepositoryMerge Merge(TRepository repository, string branchName);
 
         /// <summary>
-        /// Merges changes from branch into the branch pointed at by HEAD..
+        /// Merges changes from branch into the branch pointed at by HEAD.
         /// </summary>
         /// <param name="id">The repository id.</param>
         /// <param name="branchName">Name of the branch.</param>
         /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
         IObjectRepositoryMerge Merge(UniqueId id, string branchName);
+
+        /// <summary>
+        /// Rebases changes from branch into the branch pointed at by HEAD.
+        /// </summary>
+        /// <param name="repository">The repository.</param>
+        /// <param name="branchName">Name of the branch.</param>
+        /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
+        IObjectRepositoryRebase Rebase(TRepository repository, string branchName);
+
+        /// <summary>
+        /// Rebases changes from branch into the branch pointed at by HEAD.
+        /// </summary>
+        /// <param name="id">The repository id.</param>
+        /// <param name="branchName">Name of the branch.</param>
+        /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
+        IObjectRepositoryRebase Rebase(UniqueId id, string branchName);
     }
 }

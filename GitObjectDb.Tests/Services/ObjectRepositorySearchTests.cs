@@ -16,7 +16,7 @@ namespace GitObjectDb.Tests.Services
     public class ObjectRepositorySearchTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void Search(IObjectRepositorySearch search, ObjectRepository repository, Field field, ObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // Arrange

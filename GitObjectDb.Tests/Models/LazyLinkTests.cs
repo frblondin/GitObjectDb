@@ -12,7 +12,7 @@ namespace GitObjectDb.Tests.Models
     public class LazyLinkTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void LazyLinkDoesNotCacheLambdaResult(Field parent, Page page)
         {
             // Arrange
@@ -35,7 +35,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void LazyLinkDoesNotCopyParent(Field parent, Page page)
         {
             // Arrange

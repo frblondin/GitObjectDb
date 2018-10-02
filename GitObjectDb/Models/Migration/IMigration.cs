@@ -6,7 +6,7 @@ namespace GitObjectDb.Models.Migration
     /// <summary>
     /// Represents the interface for migrations.
     /// </summary>
-    public interface IMigration : IMetadataObject
+    public interface IMigration : IModelObject
     {
         /// <summary>
         /// Gets a value indicating whether this instance supports downgrade.

@@ -112,7 +112,7 @@ namespace LibGit2Sharp
             var parents = RetrieveParentsOfTheCommitBeingCreated(repository, options.AmendPreviousCommit, mergeParent).ToList();
             var tree = repository.ObjectDatabase.CreateTree(definition);
             var commit = repository.ObjectDatabase.CreateCommit(author, committer, message, tree, parents, false);
-            var logMessage = BuildCommitLogMessage(commit, options.AmendPreviousCommit, repository.Info.IsHeadUnborn, parents.Count > 1);
+            var logMessage = commit.BuildCommitLogMessage(options.AmendPreviousCommit, repository.Info.IsHeadUnborn, parents.Count > 1);
             UpdateHeadAndTerminalReference(repository, commit, logMessage);
             return commit;
         }
@@ -182,20 +182,21 @@ namespace LibGit2Sharp
 
             while (true)
             {
-                if (reference is DirectReference)
+                switch (reference)
                 {
-                    repository.Refs.UpdateTarget(reference, commit.Id, reflogMessage);
-                    return;
-                }
-
-                var symRef = (SymbolicReference)reference;
-
-                reference = symRef.Target;
-
-                if (reference == null)
-                {
-                    repository.Refs.Add(symRef.TargetIdentifier, commit.Id, reflogMessage);
-                    return;
+                    case DirectReference direct:
+                        repository.Refs.UpdateTarget(direct, commit.Id, reflogMessage);
+                        return;
+                    case SymbolicReference symRef:
+                        reference = symRef.Target;
+                        if (reference == null)
+                        {
+                            repository.Refs.Add(symRef.TargetIdentifier, commit.Id, reflogMessage);
+                            return;
+                        }
+                        break;
+                    default:
+                        throw new NotSupportedException($"The reference type {reference?.GetType().ToString() ?? "null"} is not supported.");
                 }
             }
         }

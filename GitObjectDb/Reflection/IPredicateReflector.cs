@@ -17,7 +17,7 @@ namespace GitObjectDb.Reflection
         /// <param name="argumentType">The argument type.</param>
         /// <param name="fallback">The fallback value.</param>
         /// <returns>The final value to be used for the parameter.</returns>
-        object ProcessArgument(IMetadataObject instance, string name, Type argumentType, object fallback = null);
+        object ProcessArgument(IModelObject instance, string name, Type argumentType, object fallback = null);
 
         /// <summary>
         /// Gets the child changes collected by the reflector.
@@ -25,6 +25,13 @@ namespace GitObjectDb.Reflection
         /// <param name="instance">The instance.</param>
         /// <param name="childProperty">The child property.</param>
         /// <returns>A list of changes.</returns>
-        (IEnumerable<IMetadataObject> Additions, IEnumerable<IMetadataObject> Deletions) GetChildChanges(IMetadataObject instance, ChildPropertyInfo childProperty);
+        (IEnumerable<IModelObject> Additions, IEnumerable<IModelObject> Deletions) GetChildChanges(IModelObject instance, ChildPropertyInfo childProperty);
+
+        /// <summary>
+        /// Returns a value indicating whether the node must be visited.
+        /// </summary>
+        /// <param name="node">The node.</param>
+        /// <returns><code>true</code> if the node must be visited, <code>false</code> otherwise.</returns>
+        bool MustForceVisit(IModelObject node);
     }
 }

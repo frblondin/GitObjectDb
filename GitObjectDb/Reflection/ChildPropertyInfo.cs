@@ -49,12 +49,12 @@ namespace GitObjectDb.Reflection
         /// <summary>
         /// Gets the children accessor.
         /// </summary>
-        public Func<IMetadataObject, IEnumerable<IMetadataObject>> Accessor { get; }
+        public Func<IModelObject, IEnumerable<IModelObject>> Accessor { get; }
 
         /// <summary>
         /// Gets whether children should be visited.
         /// </summary>
-        public Func<IMetadataObject, bool> ShouldVisitChildren { get; }
+        public Func<IModelObject, bool> ShouldVisitChildren { get; }
 
         /// <summary>
         /// Gets the name of the child property container.
@@ -66,25 +66,25 @@ namespace GitObjectDb.Reflection
         /// </summary>
         public string FolderName => _childPropertyNameAttribute?.Name ?? Name;
 
-        static Expression<Func<IMetadataObject, IEnumerable<IMetadataObject>>> CreateGetter(PropertyInfo property)
+        static Expression<Func<IModelObject, IEnumerable<IModelObject>>> CreateGetter(PropertyInfo property)
         {
-            var instanceParam = Expression.Parameter(typeof(IMetadataObject), "instance");
-            return Expression.Lambda<Func<IMetadataObject, IEnumerable<IMetadataObject>>>(
+            var instanceParam = Expression.Parameter(typeof(IModelObject), "instance");
+            return Expression.Lambda<Func<IModelObject, IEnumerable<IModelObject>>>(
                 Expression.Convert(
                     Expression.Property(
                         Expression.Convert(instanceParam, property.DeclaringType),
                         property),
-                    typeof(IEnumerable<IMetadataObject>)),
+                    typeof(IEnumerable<IModelObject>)),
                 instanceParam);
         }
 
-        static Expression<Func<IMetadataObject, bool>> GetShouldVisitChildrenGetter(PropertyInfo property)
+        static Expression<Func<IModelObject, bool>> GetShouldVisitChildrenGetter(PropertyInfo property)
         {
-            var instanceParam = Expression.Parameter(typeof(IMetadataObject), "instance");
+            var instanceParam = Expression.Parameter(typeof(IModelObject), "instance");
             var lazyChildren = Expression.Convert(
                 Expression.Property(Expression.Convert(instanceParam, property.DeclaringType), property),
                 typeof(ILazyChildren));
-            return Expression.Lambda<Func<IMetadataObject, bool>>(
+            return Expression.Lambda<Func<IModelObject, bool>>(
                 Expression.OrElse(
                     Expression.Property(lazyChildren, nameof(ILazyChildren.AreChildrenLoaded)),
                     Expression.Property(lazyChildren, nameof(ILazyChildren.ForceVisit))),

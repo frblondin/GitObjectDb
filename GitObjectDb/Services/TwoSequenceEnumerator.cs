@@ -9,7 +9,7 @@ namespace GitObjectDb.Services
 {
 #pragma warning disable SA1600 // Elements must be documented
     internal sealed class TwoSequenceEnumerator<T> : IDisposable
-        where T : class, IMetadataObject
+        where T : class, IModelObject
     {
         readonly IEnumerator<T> _leftEnumerator;
         readonly IEnumerator<T> _rightEnumerator;

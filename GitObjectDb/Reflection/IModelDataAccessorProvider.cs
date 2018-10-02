@@ -3,7 +3,7 @@ using System;
 namespace GitObjectDb.Reflection
 {
     /// <summary>
-    /// Provides information about metadata objects.
+    /// Provides information about model objects.
     /// </summary>
     public interface IModelDataAccessorProvider
     {

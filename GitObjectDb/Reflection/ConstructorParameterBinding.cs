@@ -18,7 +18,7 @@ namespace GitObjectDb.Reflection
         static readonly MethodInfo _serviceProviderGetServiceMethod = ExpressionReflector.GetMethod<IServiceProvider>(s => s.GetService(default));
         static readonly MethodInfo _childProcessorInvokeMethod = ExpressionReflector.GetMethod<ChildProcessor>(p => p.Invoke(default, default, default, default));
 
-        static readonly ParameterExpression _sourceObjectArg = Expression.Parameter(typeof(IMetadataObject), "sourceObject");
+        static readonly ParameterExpression _sourceObjectArg = Expression.Parameter(typeof(IModelObject), "sourceObject");
         static readonly ParameterExpression _processArgumentArg = Expression.Parameter(typeof(ProcessArgument), "processArgument");
         static readonly ParameterExpression _childProcessorArg = Expression.Parameter(typeof(ChildProcessor), "childProcessor");
 
@@ -60,16 +60,16 @@ namespace GitObjectDb.Reflection
         /// <param name="new">The new.</param>
         /// <param name="dataAccessor">The data accessor.</param>
         /// <returns>The new <see cref="ILazyChildren"/>.</returns>
-        internal delegate ILazyChildren ChildProcessor(ChildPropertyInfo childProperty, ILazyChildren children, IMetadataObject @new, IModelDataAccessor dataAccessor);
+        internal delegate ILazyChildren ChildProcessor(ChildPropertyInfo childProperty, ILazyChildren children, IModelObject @new, IModelDataAccessor dataAccessor);
 
         /// <summary>
-        /// Clones an existing <see cref="IMetadataObject"/> into a new instance after applying the changes contained in a predicate.
+        /// Clones an existing <see cref="IModelObject"/> into a new instance after applying the changes contained in a predicate.
         /// </summary>
         /// <param name="object">The object.</param>
         /// <param name="processArgument">The argument processor.</param>
         /// <param name="processor">The processor.</param>
         /// <returns>The newly created instance.</returns>
-        internal delegate IMetadataObject Clone(IMetadataObject @object, ProcessArgument processArgument, ChildProcessor processor);
+        internal delegate IModelObject Clone(IModelObject @object, ProcessArgument processArgument, ChildProcessor processor);
 
         /// <summary>
         /// Gets the constructor.

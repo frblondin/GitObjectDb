@@ -11,5 +11,5 @@ namespace GitObjectDb.Reflection
     /// <param name="instance">The instance.</param>
     /// <param name="childProperty">Child property info.</param>
     /// <returns>The child additions and deletions.</returns>
-    public delegate (IEnumerable<IMetadataObject> Additions, IEnumerable<IMetadataObject> Deletions) ChildChangesGetter(IMetadataObject instance, ChildPropertyInfo childProperty);
+    public delegate (IEnumerable<IModelObject> Additions, IEnumerable<IModelObject> Deletions) ChildChangesGetter(IModelObject instance, ChildPropertyInfo childProperty);
 }

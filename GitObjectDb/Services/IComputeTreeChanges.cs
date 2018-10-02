@@ -3,6 +3,7 @@ using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using LibGit2Sharp;
 using System;
+using System.Collections.Generic;
 
 namespace GitObjectDb.Services
 {
@@ -32,12 +33,22 @@ namespace GitObjectDb.Services
         /// </summary>
         /// <param name="original">The original.</param>
         /// <param name="newRepository">The new.</param>
-        /// <returns>The <see cref="TreeDefinition"/> and <code>true</code> is any change was detected between the two versions.</returns>
+        /// <returns>A <see cref="ObjectRepositoryChanges"/> containing all computed changes.</returns>
         /// <exception cref="ArgumentNullException">
         /// original
         /// or
         /// new
         /// </exception>
         ObjectRepositoryChanges Compare(IObjectRepository original, IObjectRepository newRepository);
-    }
+
+        /// <summary>
+        /// Computes the changes applied on the specified repository.
+        /// </summary>
+        /// <param name="repository">The repository.</param>
+        /// <param name="modifiedChunks">The modified chunks.</param>
+        /// <param name="addedObjects">The added objects.</param>
+        /// <param name="deletedObjects">The deleted objects.</param>
+        /// <returns>A <see cref="ObjectRepositoryChanges"/> containing all computed changes.</returns>
+        ObjectRepositoryChanges Compute(IObjectRepository repository, IList<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects);
+}
 }

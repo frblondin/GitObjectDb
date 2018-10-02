@@ -17,7 +17,7 @@ namespace GitObjectDb.Tests.Migrations
     public class MigratorTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void MigrationScaffolderDetectsRequiredChanges(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IFixture fixture, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange

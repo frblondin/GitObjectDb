@@ -17,7 +17,7 @@ namespace GitObjectDb.Reflection
             /// </summary>
             /// <param name="child">The child.</param>
             /// <param name="type">The type.</param>
-            public ChildChange(IMetadataObject child, ChildChangeType type)
+            public ChildChange(IModelObject child, ChildChangeType type)
             {
                 Type = type;
                 Child = child ?? throw new ArgumentNullException(nameof(child));
@@ -31,7 +31,7 @@ namespace GitObjectDb.Reflection
             /// <summary>
             /// Gets concerned child.
             /// </summary>
-            internal IMetadataObject Child { get; }
+            internal IModelObject Child { get; }
         }
     }
 }

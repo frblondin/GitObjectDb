@@ -15,7 +15,7 @@ namespace GitObjectDb.Tests.Reflection
     public class ModelDataAccessorTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization))]
         public void ThrowIfMissingProperty(IServiceProvider serviceProvider)
         {
             // Assert
@@ -25,7 +25,7 @@ namespace GitObjectDb.Tests.Reflection
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization))]
         public void ThrowIfMissingSerializableProperty(IServiceProvider serviceProvider)
         {
             // Assert
@@ -35,7 +35,7 @@ namespace GitObjectDb.Tests.Reflection
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization))]
         public void ThrowIfDifferentPropertyType(IServiceProvider serviceProvider)
         {
             // Assert

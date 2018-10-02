@@ -23,10 +23,10 @@ namespace GitObjectDb.JsonConverters
         /// <summary>
         /// Resolves the specified json property.
         /// </summary>
-        /// <param name="converter">The metadata converter.</param>
+        /// <param name="converter">The model object converter.</param>
         /// <param name="property">The json property.</param>
         /// <param name="instanceType">Type of the instance.</param>
         /// <returns>The resolved value.</returns>
-        object Resolve(MetadataObjectConverter converter, JsonProperty property, Type instanceType);
+        object Resolve(ModelObjectConverter converter, JsonProperty property, Type instanceType);
     }
 }

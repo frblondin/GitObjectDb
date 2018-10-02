@@ -1,3 +1,4 @@
+using GitObjectDb.Attributes;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
 using Newtonsoft.Json.Linq;
@@ -10,49 +11,56 @@ using System.Text;
 namespace GitObjectDb.Models.Compare
 {
     /// <summary>
-    /// Represents a chunk change in a <see cref="IMetadataObject"/> while performing a merge.
+    /// Represents a chunk change in a <see cref="IModelObject"/> while performing a merge.
     /// </summary>
     [DebuggerDisplay("Property = {Property.Name}, Path = {Path}")]
+    [ExcludeFromGuardForNull]
     public class ObjectRepositoryChunkChange
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryChunkChange"/> class.
         /// </summary>
         /// <param name="path">The path.</param>
-        /// <param name="mergeBaseNode">The merge base node.</param>
-        /// <param name="branchNode">The branch node.</param>
-        /// <param name="headNode">The head node.</param>
         /// <param name="property">The property.</param>
-        /// <param name="mergeBaseValue">The merge base value.</param>
-        /// <param name="branchValue">The branch value.</param>
-        /// <param name="headValue">The head value.</param>
+        /// <param name="ancestor">The ancestor.</param>
+        /// <param name="ancestorValue">The ancestor value.</param>
+        /// <param name="theirs">Their node.</param>
+        /// <param name="theirsValue">Their value.</param>
+        /// <param name="ours">Our node.</param>
+        /// <param name="oursValue">Our value.</param>
         /// <exception cref="ArgumentNullException">
         /// path
         /// or
-        /// mergeBaseNode
-        /// or
-        /// branchNode
-        /// or
-        /// headNode
-        /// or
         /// property
         /// or
-        /// value
+        /// ancestor
+        /// or
+        /// ancestorValue
+        /// or
+        /// theirs
+        /// or
+        /// theirsValue
+        /// or
+        /// ours
+        /// or
+        /// oursValue
         /// </exception>
-        public ObjectRepositoryChunkChange(string path, JObject mergeBaseNode, JObject branchNode, JObject headNode, ModifiablePropertyInfo property, JToken mergeBaseValue, JToken branchValue, JToken headValue)
+        public ObjectRepositoryChunkChange(string path, ModifiablePropertyInfo property, JObject ancestor, JToken ancestorValue, JObject theirs, JToken theirsValue, JObject ours, JToken oursValue)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));
-            MergeBaseNode = mergeBaseNode ?? throw new ArgumentNullException(nameof(mergeBaseNode));
-            BranchNode = branchNode ?? throw new ArgumentNullException(nameof(branchNode));
-            HeadNode = headNode ?? throw new ArgumentNullException(nameof(headNode));
             Property = property ?? throw new ArgumentNullException(nameof(property));
-            MergeBaseValue = mergeBaseValue ?? throw new ArgumentNullException(nameof(mergeBaseValue));
-            BranchValue = branchValue ?? throw new ArgumentNullException(nameof(branchValue));
-            HeadValue = headValue ?? throw new ArgumentNullException(nameof(headValue));
+            Ancestor = ancestor ?? throw new ArgumentNullException(nameof(ancestor));
+            AncestorValue = ancestorValue ?? throw new ArgumentNullException(nameof(ancestorValue));
+            Theirs = theirs ?? throw new ArgumentNullException(nameof(theirs));
+            TheirsValue = theirsValue ?? throw new ArgumentNullException(nameof(theirsValue));
+            Ours = ours ?? throw new ArgumentNullException(nameof(ours));
+            OursValue = oursValue ?? throw new ArgumentNullException(nameof(oursValue));
+
+            Id = ancestor[nameof(IModelObject.Id)].ToObject<UniqueId>();
 
             if (!IsInConflict)
             {
-                MergeValue = BranchValue;
+                MergeValue = TheirsValue;
             }
         }
 
@@ -62,19 +70,19 @@ namespace GitObjectDb.Models.Compare
         public string Path { get; }
 
         /// <summary>
-        /// Gets the merge base node.
+        /// Gets the ancestor.
         /// </summary>
-        public JObject MergeBaseNode { get; }
+        public JObject Ancestor { get; }
 
         /// <summary>
-        /// Gets the branch node.
+        /// Gets their node.
         /// </summary>
-        public JObject BranchNode { get; }
+        public JObject Theirs { get; }
 
         /// <summary>
-        /// Gets the head node.
+        /// Gets our node.
         /// </summary>
-        public JObject HeadNode { get; }
+        public JObject Ours { get; }
 
         /// <summary>
         /// Gets the property.
@@ -82,19 +90,19 @@ namespace GitObjectDb.Models.Compare
         public ModifiablePropertyInfo Property { get; }
 
         /// <summary>
-        /// Gets the merge base value.
+        /// Gets the ancestor value.
         /// </summary>
-        public JToken MergeBaseValue { get; }
+        public JToken AncestorValue { get; }
 
         /// <summary>
-        /// Gets the value.
+        /// Gets their value.
         /// </summary>
-        public JToken BranchValue { get; }
+        public JToken TheirsValue { get; }
 
         /// <summary>
-        /// Gets the head value.
+        /// Gets our value.
         /// </summary>
-        public JToken HeadValue { get; }
+        public JToken OursValue { get; }
 
         /// <summary>
         /// Gets a value indicating whether the change is in conflict change.
@@ -104,7 +112,7 @@ namespace GitObjectDb.Models.Compare
         /// <summary>
         /// Gets a value indicating whether the change was in conflict change.
         /// </summary>
-        public bool WasInConflict => !JToken.DeepEquals(MergeBaseValue, HeadValue) && !JToken.DeepEquals(BranchValue, HeadValue);
+        public bool WasInConflict => !JToken.DeepEquals(AncestorValue, OursValue) && !JToken.DeepEquals(TheirsValue, OursValue);
 
         /// <summary>
         /// Gets the merge value.
@@ -112,10 +120,15 @@ namespace GitObjectDb.Models.Compare
         public JToken MergeValue { get; private set; }
 
         /// <summary>
+        /// Gets the unique id.
+        /// </summary>
+        public UniqueId Id { get; }
+
+        /// <summary>
         /// Resolves the conflict by assigning the merge value.
         /// </summary>
         /// <param name="value">The merge value.</param>
-        public void Resolve(JToken value)
+        public virtual void Resolve(JToken value)
         {
             if (MergeValue != null)
             {

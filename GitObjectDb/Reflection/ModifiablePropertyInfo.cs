@@ -34,7 +34,7 @@ namespace GitObjectDb.Reflection
         /// <summary>
         /// Gets the property value accessor.
         /// </summary>
-        public Func<IMetadataObject, object> Accessor { get; }
+        public Func<IModelObject, object> Accessor { get; }
 
         /// <summary>
         /// Gets the name of the property.
@@ -49,10 +49,10 @@ namespace GitObjectDb.Reflection
         /// </value>
         public bool IsLink { get; }
 
-        static Expression<Func<IMetadataObject, object>> CreateGetter(PropertyInfo property)
+        static Expression<Func<IModelObject, object>> CreateGetter(PropertyInfo property)
         {
-            var instanceParam = Expression.Parameter(typeof(IMetadataObject), "instance");
-            return Expression.Lambda<Func<IMetadataObject, object>>(
+            var instanceParam = Expression.Parameter(typeof(IModelObject), "instance");
+            return Expression.Lambda<Func<IModelObject, object>>(
                 Expression.Convert(
                     Expression.Property(
                         Expression.Convert(instanceParam, property.DeclaringType),
@@ -72,7 +72,7 @@ namespace GitObjectDb.Reflection
         /// or
         /// new
         /// </exception>
-        public bool AreSame(IMetadataObject old, IMetadataObject @new)
+        public bool AreSame(IModelObject old, IModelObject @new)
         {
             if (old == null)
             {

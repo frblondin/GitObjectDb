@@ -2,6 +2,7 @@ using GitObjectDb.JsonConverters;
 using GitObjectDb.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,9 +13,9 @@ using System.Text;
 namespace GitObjectDb.Models
 {
     /// <summary>
-    /// A set of methods for instances of <see cref="IMetadataObject"/>.
+    /// A set of methods for instances of <see cref="IModelObject"/>.
     /// </summary>
-    public static class IMetadataObjectExtensions
+    public static class IModelObjectExtensions
     {
         static readonly JsonSerializer _jsonSerializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
         {
@@ -31,7 +32,7 @@ namespace GitObjectDb.Models
         /// <param name="predicate">The predicate.</param>
         /// <returns>The newly created copy. Both parents and children nodes have been cloned as well.</returns>
         public static TModel With<TModel>(this TModel source, Expression<Predicate<TModel>> predicate = null)
-            where TModel : IMetadataObject
+            where TModel : IModelObject
         {
             return With(source, new PredicateReflector(source, predicate));
         }
@@ -44,7 +45,7 @@ namespace GitObjectDb.Models
         /// <param name="predicate">The predicate.</param>
         /// <returns>The newly created copy. Both parents and children nodes have been cloned as well.</returns>
         public static TModel With<TModel>(this TModel source, IPredicateReflector predicate)
-            where TModel : IMetadataObject
+            where TModel : IModelObject
         {
             if (predicate == null)
             {
@@ -58,9 +59,9 @@ namespace GitObjectDb.Models
         /// Gets the root repository of the specified node.
         /// </summary>
         /// <param name="node">The node.</param>
-        /// <returns>The root <see cref="IMetadataObject"/> instance.</returns>
+        /// <returns>The root <see cref="IModelObject"/> instance.</returns>
         /// <exception cref="ArgumentNullException">node</exception>
-        internal static IMetadataObject Root(this IMetadataObject node)
+        internal static IModelObject Root(this IModelObject node)
         {
             if (node == null)
             {
@@ -83,7 +84,7 @@ namespace GitObjectDb.Models
         /// <returns>
         ///   <c>true</c> if the node is a parent of the specified instance; otherwise, <c>false</c>.
         /// </returns>
-        public static bool IsParentOf(this IMetadataObject source, IMetadataObject instance)
+        public static bool IsParentOf(this IModelObject source, IModelObject instance)
         {
             if (source == null)
             {
@@ -107,11 +108,11 @@ namespace GitObjectDb.Models
         }
 
         /// <summary>
-        /// Gets an <see cref="IEnumerable{IMetadataObject}"/> containing all parents of this node.
+        /// Gets an <see cref="IEnumerable{IModelObject}"/> containing all parents of this node.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <returns>All parent nodes from nearest to farest.</returns>
-        public static IEnumerable<IMetadataObject> Parents(this IMetadataObject source)
+        public static IEnumerable<IModelObject> Parents(this IModelObject source)
         {
             if (source == null)
             {
@@ -121,7 +122,7 @@ namespace GitObjectDb.Models
             return ParentsIterator(source);
         }
 
-        static IEnumerable<IMetadataObject> ParentsIterator(IMetadataObject source)
+        static IEnumerable<IModelObject> ParentsIterator(IModelObject source)
         {
             var node = source;
             while (node != null)
@@ -136,7 +137,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="source">The source.</param>
         /// <returns>An enumerable containing the source and its nested children.</returns>
-        internal static IEnumerable<IMetadataObject> Flatten(this IMetadataObject source)
+        internal static IEnumerable<IModelObject> Flatten(this IModelObject source)
         {
             yield return source;
             foreach (var child in source.Children)
@@ -153,7 +154,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="source">The node.</param>
         /// <returns>A <see cref="string"/> value containing the path to the folder.</returns>
-        internal static string GetFolderPath(this IMetadataObject source)
+        internal static string GetFolderPath(this IModelObject source)
         {
             var result = new StringBuilder();
             GetFolderPath(source, result);
@@ -165,7 +166,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="source">The node.</param>
         /// <returns>A <see cref="string"/> value containing the path to the data file.</returns>
-        internal static string GetDataPath(this IMetadataObject source)
+        internal static string GetDataPath(this IModelObject source)
         {
             var result = new StringBuilder();
             GetFolderPath(source, result);
@@ -177,7 +178,7 @@ namespace GitObjectDb.Models
             return result.ToString();
         }
 
-        static void GetFolderPath(IMetadataObject node, StringBuilder builder)
+        static void GetFolderPath(IModelObject node, StringBuilder builder)
         {
             if (node.Parent != null)
             {
@@ -201,7 +202,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="stringBuilder">The string builder.</param>
-        internal static void ToJson(this IMetadataObject source, StringBuilder stringBuilder)
+        internal static void ToJson(this IModelObject source, StringBuilder stringBuilder)
         {
             stringBuilder.Clear();
             using (var writer = new StringWriter(stringBuilder))
@@ -209,5 +210,13 @@ namespace GitObjectDb.Models
                 _jsonSerializer.Serialize(writer, source);
             }
         }
+
+        /// <summary>
+        /// Creates a <see cref="JObject"/> from a node.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <returns>A <see cref="JObject"/> with the values of the specified node.</returns>
+        internal static JObject ToJObject(this IModelObject source) =>
+            JObject.FromObject(source, _jsonSerializer);
     }
 }

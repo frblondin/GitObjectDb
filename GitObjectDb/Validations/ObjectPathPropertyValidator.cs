@@ -31,7 +31,7 @@ namespace GitObjectDb.Validations
             return IsValid(context, path, instance);
         }
 
-        static bool IsValid(PropertyValidatorContext context, ObjectPath path, IMetadataObject instance)
+        static bool IsValid(PropertyValidatorContext context, ObjectPath path, IModelObject instance)
         {
             if (instance.Repository != null)
             {
@@ -50,11 +50,11 @@ namespace GitObjectDb.Validations
             return true;
         }
 
-        static bool IsValidRepositoryDependency(ObjectPath path, IMetadataObject instance) =>
+        static bool IsValidRepositoryDependency(ObjectPath path, IModelObject instance) =>
             path.Repository == instance.Repository.Id ||
             instance.Repository.Dependencies.Select(d => d.Id).Contains(path.Repository);
 
-        static bool IsReferencedObjectExisting(ObjectPath path, IMetadataObject instance) =>
+        static bool IsReferencedObjectExisting(ObjectPath path, IModelObject instance) =>
             instance.Repository.TryGetFromGitPath(path) != null;
     }
 }

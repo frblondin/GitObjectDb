@@ -9,9 +9,9 @@ using System.Linq.Expressions;
 namespace GitObjectDb.Models
 {
     /// <summary>
-    /// Metadata tree node.
+    /// Model tree node.
     /// </summary>
-    public interface IMetadataObject
+    public interface IModelObject
     {
         /// <summary>
         /// Gets the data accessor.
@@ -31,7 +31,7 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Gets the parent.
         /// </summary>
-        IMetadataObject Parent { get; }
+        IModelObject Parent { get; }
 
         /// <summary>
         /// Gets the unique identifier.
@@ -46,14 +46,14 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Gets the children.
         /// </summary>
-        IEnumerable<IMetadataObject> Children { get; }
+        IEnumerable<IModelObject> Children { get; }
 
         /// <summary>
         /// Attaches to instance to a given parent.
         /// </summary>
         /// <param name="parent">The parent.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        void AttachToParent(IMetadataObject parent);
+        void AttachToParent(IModelObject parent);
 
         /// <summary>
         /// Validates the specified rules.
@@ -66,6 +66,6 @@ namespace GitObjectDb.Models
         /// Gets the objects having a reference to this instance.
         /// </summary>
         /// <returns>All objects having a link whose target is the current instance.</returns>
-        IEnumerable<IMetadataObject> GetReferrers();
+        IEnumerable<IModelObject> GetReferrers();
     }
 }

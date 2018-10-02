@@ -8,11 +8,11 @@ using System.Text;
 
 namespace GitObjectDb.Tests.Assets.Customizations
 {
-    public class DefaultMetadataContainerCustomization : ICustomization, ISpecimenBuilder
+    public class DefaultContainerCustomization : ICustomization, ISpecimenBuilder
     {
         readonly IServiceProvider _serviceProvider;
 
-        public DefaultMetadataContainerCustomization()
+        public DefaultContainerCustomization()
         {
             var services = new ServiceCollection();
             services.AddGitObjectDb();

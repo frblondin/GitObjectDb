@@ -10,10 +10,10 @@ using System.Text;
 namespace GitObjectDb.Models
 {
     /// <summary>
-    /// Root node of a metadata tree.
+    /// Root node of a model tree.
     /// </summary>
-    /// <seealso cref="IMetadataObject" />
-    public interface IObjectRepository : IMetadataObject
+    /// <seealso cref="IModelObject" />
+    public interface IObjectRepository : IModelObject
     {
         /// <summary>
         /// Gets the version.
@@ -46,37 +46,32 @@ namespace GitObjectDb.Models
         RepositoryDescription RepositoryDescription { get; }
 
         /// <summary>
-        /// Gets access to rebase functionality for a repository.
-        /// </summary>
-        IObjectRepositoryRebase Rebase { get; }
-
-        /// <summary>
         /// Tries getting a nested object from an <see cref="ObjectPath"/>.
         /// </summary>
         /// <param name="path">The path.</param>
         /// <returns>The object, if any was found.</returns>
-        IMetadataObject TryGetFromGitPath(ObjectPath path);
+        IModelObject TryGetFromGitPath(ObjectPath path);
 
         /// <summary>
         /// Gets a nested object from an <see cref="ObjectPath"/>.
         /// </summary>
         /// <param name="path">The path.</param>
         /// <returns>The object, if any was found.</returns>
-        IMetadataObject GetFromGitPath(ObjectPath path);
+        IModelObject GetFromGitPath(ObjectPath path);
 
         /// <summary>
         /// Tries getting a nested object from its Git path.
         /// </summary>
         /// <param name="path">The Git path.</param>
         /// <returns>The object, if any was found.</returns>
-        IMetadataObject TryGetFromGitPath(string path);
+        IModelObject TryGetFromGitPath(string path);
 
         /// <summary>
         /// Gets a nested object from its Git path.
         /// </summary>
         /// <param name="path">The Git path.</param>
         /// <returns>The object, if any was found.</returns>
-        IMetadataObject GetFromGitPath(string path);
+        IModelObject GetFromGitPath(string path);
 
         /// <summary>
         /// Returns the result of the provided function processing.

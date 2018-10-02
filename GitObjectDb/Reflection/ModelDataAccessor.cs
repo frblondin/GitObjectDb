@@ -80,7 +80,7 @@ namespace GitObjectDb.Reflection
             .ToImmutableList();
 
         /// <inheritdoc />
-        public IMetadataObject With(IMetadataObject source, IPredicateReflector predicate)
+        public IModelObject With(IModelObject source, IPredicateReflector predicate)
         {
             if (source == null)
             {
@@ -95,22 +95,22 @@ namespace GitObjectDb.Reflection
                 source.Repository,
                 predicate.ProcessArgument,
                 predicate.GetChildChanges,
-                n => n.IsParentOf(source));
+                predicate.MustForceVisit);
             return newInstance.TryGetFromGitPath(source.GetDataPath());
         }
 
         /// <inheritdoc />
-        public IObjectRepository DeepClone(IObjectRepository instance, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IMetadataObject, bool> mustForceVisit)
+        public IObjectRepository DeepClone(IObjectRepository instance, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IModelObject, bool> mustForceVisit)
         {
             if (instance == null)
             {
                 throw new ArgumentNullException(nameof(instance));
             }
 
-            return (IObjectRepository)DeepClone((IMetadataObject)instance, processArgument, childChangesGetter, mustForceVisit);
+            return (IObjectRepository)DeepClone((IModelObject)instance, processArgument, childChangesGetter, mustForceVisit);
         }
 
-        IMetadataObject DeepClone(IMetadataObject node, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IMetadataObject, bool> mustForceVisit)
+        IModelObject DeepClone(IModelObject node, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IModelObject, bool> mustForceVisit)
         {
             if (node == null)
             {
@@ -129,7 +129,7 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(mustForceVisit));
             }
 
-            ILazyChildren ProcessChildren(ChildPropertyInfo childProperty, ILazyChildren children, IMetadataObject @new, IModelDataAccessor childDataAccessor)
+            ILazyChildren ProcessChildren(ChildPropertyInfo childProperty, ILazyChildren children, IModelObject @new, IModelDataAccessor childDataAccessor)
             {
                 var childChanges = childChangesGetter.Invoke(node, childProperty);
                 return children.Clone(

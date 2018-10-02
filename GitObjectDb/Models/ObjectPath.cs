@@ -29,7 +29,7 @@ namespace GitObjectDb.Models
         /// Initializes a new instance of the <see cref="ObjectPath"/> class.
         /// </summary>
         /// <param name="node">The object.</param>
-        public ObjectPath(IMetadataObject node)
+        public ObjectPath(IModelObject node)
             : this(node.Repository.Id, node.GetFolderPath())
         {
         }
