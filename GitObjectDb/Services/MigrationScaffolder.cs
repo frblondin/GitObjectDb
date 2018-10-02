@@ -71,7 +71,7 @@ namespace GitObjectDb.Services
                 result.AddRange(GetLogMigrators(repository, log, deferred, repository.Lookup<Commit>(migrationStart), mode));
                 if (deferred.Any())
                 {
-                    var uniqueDeferredMigrations = deferred.Distinct(MetadataObjectIdComparer<IMigration>.Instance);
+                    var uniqueDeferredMigrations = deferred.Distinct(ObjectRepositoryIdComparer<IMigration>.Instance);
                     if (result.Any())
                     {
                         var toUpdate = result[result.Count - 1];

@@ -14,15 +14,15 @@ namespace GitObjectDb.Models.Compare
     /// Holds the result of a diff between two trees.
     /// </summary>
     [DebuggerDisplay("+{Added.Count} ~{Modified.Count} -{Deleted.Count}")]
-    public class MetadataTreeChanges : IReadOnlyList<MetadataTreeEntryChanges>
+    public class ObjectRepositoryChanges : IReadOnlyList<ObjectRepositoryEntryChanges>
     {
-        readonly IImmutableList<MetadataTreeEntryChanges> _changes;
+        readonly IImmutableList<ObjectRepositoryEntryChanges> _changes;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MetadataTreeChanges"/> class.
+        /// Initializes a new instance of the <see cref="ObjectRepositoryChanges"/> class.
         /// </summary>
         /// <param name="newRepository">The new repository.</param>
-        /// <param name="changed">The list of <see cref="MetadataTreeEntryChanges" /> that have been been changed.</param>
+        /// <param name="changed">The list of <see cref="ObjectRepositoryEntryChanges" /> that have been been changed.</param>
         /// <param name="oldRepository">The old repository.</param>
         /// <exception cref="ArgumentNullException">
         /// modified
@@ -31,7 +31,7 @@ namespace GitObjectDb.Models.Compare
         /// or
         /// deleted
         /// </exception>
-        public MetadataTreeChanges(IObjectRepository newRepository, IImmutableList<MetadataTreeEntryChanges> changed, IObjectRepository oldRepository = null)
+        public ObjectRepositoryChanges(IObjectRepository newRepository, IImmutableList<ObjectRepositoryEntryChanges> changed, IObjectRepository oldRepository = null)
         {
             NewRepository = newRepository ?? throw new ArgumentNullException(nameof(newRepository));
             _changes = changed ?? throw new ArgumentNullException(nameof(changed));
@@ -53,28 +53,28 @@ namespace GitObjectDb.Models.Compare
         public IObjectRepository NewRepository { get; }
 
         /// <summary>
-        /// Gets the list of <see cref="MetadataTreeEntryChanges" /> that have been been added.
+        /// Gets the list of <see cref="ObjectRepositoryEntryChanges" /> that have been been added.
         /// </summary>
-        public IReadOnlyList<MetadataTreeEntryChanges> Added { get; }
+        public IReadOnlyList<ObjectRepositoryEntryChanges> Added { get; }
 
         /// <summary>
-        /// Gets the list of <see cref="MetadataTreeEntryChanges" /> that have been been modified.
+        /// Gets the list of <see cref="ObjectRepositoryEntryChanges" /> that have been been modified.
         /// </summary>
-        public IReadOnlyList<MetadataTreeEntryChanges> Modified { get; }
+        public IReadOnlyList<ObjectRepositoryEntryChanges> Modified { get; }
 
         /// <summary>
-        /// Gets the list of <see cref="MetadataTreeEntryChanges" /> that have been been deleted.
+        /// Gets the list of <see cref="ObjectRepositoryEntryChanges" /> that have been been deleted.
         /// </summary>
-        public IReadOnlyList<MetadataTreeEntryChanges> Deleted { get; }
+        public IReadOnlyList<ObjectRepositoryEntryChanges> Deleted { get; }
 
         /// <inheritdoc/>
         public int Count => _changes.Count;
 
         /// <inheritdoc/>
-        public MetadataTreeEntryChanges this[int index] => _changes[index];
+        public ObjectRepositoryEntryChanges this[int index] => _changes[index];
 
         /// <inheritdoc/>
-        public IEnumerator<MetadataTreeEntryChanges> GetEnumerator() => _changes.GetEnumerator();
+        public IEnumerator<ObjectRepositoryEntryChanges> GetEnumerator() => _changes.GetEnumerator();
 
         /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

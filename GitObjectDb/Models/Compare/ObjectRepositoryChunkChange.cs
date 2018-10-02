@@ -13,10 +13,10 @@ namespace GitObjectDb.Models.Compare
     /// Represents a chunk change in a <see cref="IMetadataObject"/> while performing a merge.
     /// </summary>
     [DebuggerDisplay("Property = {Property.Name}, Path = {Path}")]
-    public class MetadataTreeMergeChunkChange
+    public class ObjectRepositoryChunkChange
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="MetadataTreeMergeChunkChange"/> class.
+        /// Initializes a new instance of the <see cref="ObjectRepositoryChunkChange"/> class.
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="mergeBaseNode">The merge base node.</param>
@@ -39,7 +39,7 @@ namespace GitObjectDb.Models.Compare
         /// or
         /// value
         /// </exception>
-        public MetadataTreeMergeChunkChange(string path, JObject mergeBaseNode, JObject branchNode, JObject headNode, ModifiablePropertyInfo property, JToken mergeBaseValue, JToken branchValue, JToken headValue)
+        public ObjectRepositoryChunkChange(string path, JObject mergeBaseNode, JObject branchNode, JObject headNode, ModifiablePropertyInfo property, JToken mergeBaseValue, JToken branchValue, JToken headValue)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));
             MergeBaseNode = mergeBaseNode ?? throw new ArgumentNullException(nameof(mergeBaseNode));

@@ -129,8 +129,8 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="repository">The repository.</param>
         /// <param name="options">The options.</param>
-        /// <returns>The <see cref="IMetadataTreeMerge"/> instance used to apply the merge.</returns>
-        IMetadataTreeMerge Pull(TRepository repository, FetchOptions options = null);
+        /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
+        IObjectRepositoryMerge Pull(TRepository repository, FetchOptions options = null);
 
         /// <summary>
         /// Creates a branch with the specified name. This branch will point at the current commit.
@@ -155,15 +155,15 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="repository">The repository.</param>
         /// <param name="branchName">Name of the branch.</param>
-        /// <returns>The <see cref="IMetadataTreeMerge"/> instance used to apply the merge.</returns>
-        IMetadataTreeMerge Merge(TRepository repository, string branchName);
+        /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
+        IObjectRepositoryMerge Merge(TRepository repository, string branchName);
 
         /// <summary>
         /// Merges changes from branch into the branch pointed at by HEAD..
         /// </summary>
         /// <param name="id">The repository id.</param>
         /// <param name="branchName">Name of the branch.</param>
-        /// <returns>The <see cref="IMetadataTreeMerge"/> instance used to apply the merge.</returns>
-        IMetadataTreeMerge Merge(UniqueId id, string branchName);
+        /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
+        IObjectRepositoryMerge Merge(UniqueId id, string branchName);
     }
 }

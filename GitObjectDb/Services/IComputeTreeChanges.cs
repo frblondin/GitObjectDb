@@ -24,8 +24,8 @@ namespace GitObjectDb.Services
         /// </summary>
         /// <param name="oldCommitId">The old commit id.</param>
         /// <param name="newCommitId">The new commit id.</param>
-        /// <returns>A <see cref="MetadataTreeChanges"/> containing all computed changes.</returns>
-        MetadataTreeChanges Compare(ObjectId oldCommitId, ObjectId newCommitId);
+        /// <returns>A <see cref="ObjectRepositoryChanges"/> containing all computed changes.</returns>
+        ObjectRepositoryChanges Compare(ObjectId oldCommitId, ObjectId newCommitId);
 
         /// <summary>
         /// Compares two <see cref="AbstractObjectRepository"/> instances and generates a new <see cref="TreeDefinition"/> instance containing the tree changes to be committed.
@@ -38,6 +38,6 @@ namespace GitObjectDb.Services
         /// or
         /// new
         /// </exception>
-        MetadataTreeChanges Compare(IObjectRepository original, IObjectRepository newRepository);
+        ObjectRepositoryChanges Compare(IObjectRepository original, IObjectRepository newRepository);
     }
 }

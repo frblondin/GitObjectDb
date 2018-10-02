@@ -9,17 +9,17 @@ namespace GitObjectDb.Models.Compare
     /// Holds the changes between two versions of a tree entry.
     /// </summary>
     [DebuggerDisplay("Status = {Status}, Old = {Old?.Id}, New = {New?.Id}")]
-    public class MetadataTreeEntryChanges
+    public class ObjectRepositoryEntryChanges
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="MetadataTreeEntryChanges"/> class.
+        /// Initializes a new instance of the <see cref="ObjectRepositoryEntryChanges"/> class.
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="status">The change type.</param>
         /// <param name="old">The old value.</param>
         /// <param name="new">The new value.</param>
         /// <exception cref="ArgumentNullException">old</exception>
-        public MetadataTreeEntryChanges(string path, ChangeKind status, IMetadataObject old = null, IMetadataObject @new = null)
+        public ObjectRepositoryEntryChanges(string path, ChangeKind status, IMetadataObject old = null, IMetadataObject @new = null)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));
             Status = status;

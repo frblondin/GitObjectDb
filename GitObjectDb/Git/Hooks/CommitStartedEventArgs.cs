@@ -16,7 +16,7 @@ namespace GitObjectDb.Git.Hooks
         /// <param name="changes">The changes.</param>
         /// <param name="message">The message.</param>
         /// <exception cref="ArgumentNullException">message</exception>
-        public CommitStartedEventArgs(MetadataTreeChanges changes, string message)
+        public CommitStartedEventArgs(ObjectRepositoryChanges changes, string message)
         {
             Changes = changes ?? throw new ArgumentNullException(nameof(changes));
             Message = message ?? throw new ArgumentNullException(nameof(message));
@@ -25,7 +25,7 @@ namespace GitObjectDb.Git.Hooks
         /// <summary>
         /// Gets the changes.
         /// </summary>
-        public MetadataTreeChanges Changes { get; }
+        public ObjectRepositoryChanges Changes { get; }
 
         /// <summary>
         /// Gets the message.

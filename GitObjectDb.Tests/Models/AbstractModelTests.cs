@@ -37,7 +37,7 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
-        public void WithDuplicatesImmutableMetadataTree(Page page, string newName)
+        public void WithDuplicatesImmutableObjectRepository(Page page, string newName)
         {
             // Act
             var modified = page.With(p => p.Name == newName);
