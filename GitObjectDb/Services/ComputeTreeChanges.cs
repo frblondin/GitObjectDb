@@ -43,19 +43,19 @@ namespace GitObjectDb.Services
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
         }
 
-        static void UpdateNodeIfNeeded(IMetadataObject original, IMetadataObject @new, Stack<string> stack, IModelDataAccessor accessor, IList<MetadataTreeEntryChanges> changes)
+        static void UpdateNodeIfNeeded(IMetadataObject original, IMetadataObject @new, Stack<string> stack, IModelDataAccessor accessor, IList<ObjectRepositoryEntryChanges> changes)
         {
             if (accessor.ModifiableProperties.Any(p => !p.AreSame(original, @new)))
             {
                 var path = stack.ToDataPath();
-                changes.Add(new MetadataTreeEntryChanges(path, ChangeKind.Modified, original, @new));
+                changes.Add(new ObjectRepositoryEntryChanges(path, ChangeKind.Modified, original, @new));
             }
         }
 
-        void RemoveNode(IMetadataObject left, IList<MetadataTreeEntryChanges> changed, Stack<string> stack)
+        void RemoveNode(IMetadataObject left, IList<ObjectRepositoryEntryChanges> changed, Stack<string> stack)
         {
             var path = stack.ToDataPath();
-            changed.Add(new MetadataTreeEntryChanges(path, ChangeKind.Deleted, old: left));
+            changed.Add(new ObjectRepositoryEntryChanges(path, ChangeKind.Deleted, old: left));
             var dataAccessor = _modelDataProvider.Get(left.GetType());
             foreach (var childProperty in dataAccessor.ChildProperties)
             {
@@ -71,7 +71,7 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public MetadataTreeChanges Compare(ObjectId oldCommitId, ObjectId newCommitId)
+        public ObjectRepositoryChanges Compare(ObjectId oldCommitId, ObjectId newCommitId)
         {
             if (oldCommitId == null)
             {
@@ -96,37 +96,37 @@ namespace GitObjectDb.Services
                     var modified = CollectModifiedNodes(oldRepository, newRepository, changes, oldCommit);
                     var added = CollectAddedNodes(newRepository, changes, newCommit);
                     var deleted = CollectDeletedNodes(oldRepository, changes, oldCommit);
-                    return new MetadataTreeChanges(newRepository, added.Concat(modified).Concat(deleted).ToImmutableList(), oldRepository);
+                    return new ObjectRepositoryChanges(newRepository, added.Concat(modified).Concat(deleted).ToImmutableList(), oldRepository);
                 }
             });
         }
 
-        static IImmutableList<MetadataTreeEntryChanges> CollectModifiedNodes(AbstractObjectRepository oldRepository, AbstractObjectRepository newRepository, TreeChanges changes, Commit oldCommit) =>
+        static IImmutableList<ObjectRepositoryEntryChanges> CollectModifiedNodes(AbstractObjectRepository oldRepository, AbstractObjectRepository newRepository, TreeChanges changes, Commit oldCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Modified)
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
              let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in old repository.")
              let newNode = newRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in new repository.")
-             select new MetadataTreeEntryChanges(c.Path, c.Status, oldNode, newNode))
+             select new ObjectRepositoryEntryChanges(c.Path, c.Status, oldNode, newNode))
             .ToImmutableList();
 
-        static IImmutableList<MetadataTreeEntryChanges> CollectAddedNodes(AbstractObjectRepository newRepository, TreeChanges changes, Commit newCommit) =>
+        static IImmutableList<ObjectRepositoryEntryChanges> CollectAddedNodes(AbstractObjectRepository newRepository, TreeChanges changes, Commit newCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Added)
              let newEntry = newCommit[c.Path]
              where newEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
              let newNode = newRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in new instance.")
-             select new MetadataTreeEntryChanges(c.Path, c.Status, null, newNode))
+             select new ObjectRepositoryEntryChanges(c.Path, c.Status, null, newNode))
             .ToImmutableList();
 
-        static IImmutableList<MetadataTreeEntryChanges> CollectDeletedNodes(AbstractObjectRepository oldRepository, TreeChanges changes, Commit oldCommit) =>
+        static IImmutableList<ObjectRepositoryEntryChanges> CollectDeletedNodes(AbstractObjectRepository oldRepository, TreeChanges changes, Commit oldCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Deleted)
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
              let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in old instance.")
-             select new MetadataTreeEntryChanges(c.Path, c.Status, oldNode, null))
+             select new ObjectRepositoryEntryChanges(c.Path, c.Status, oldNode, null))
             .ToImmutableList();
 
         static void ThrowIfNonSupportedChangeTypes(TreeChanges changes)
@@ -150,7 +150,7 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public MetadataTreeChanges Compare(IObjectRepository original, IObjectRepository newRepository)
+        public ObjectRepositoryChanges Compare(IObjectRepository original, IObjectRepository newRepository)
         {
             if (original == null)
             {
@@ -161,12 +161,12 @@ namespace GitObjectDb.Services
                 throw new ArgumentNullException(nameof(newRepository));
             }
 
-            var changes = new List<MetadataTreeEntryChanges>();
+            var changes = new List<ObjectRepositoryEntryChanges>();
             CompareNode(original, newRepository, changes, new Stack<string>());
-            return new MetadataTreeChanges(newRepository, changes.ToImmutableList(), original);
+            return new ObjectRepositoryChanges(newRepository, changes.ToImmutableList(), original);
         }
 
-        void CompareNode(IMetadataObject original, IMetadataObject @new, IList<MetadataTreeEntryChanges> changes, Stack<string> stack)
+        void CompareNode(IMetadataObject original, IMetadataObject @new, IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack)
         {
             var accessor = _modelDataProvider.Get(original.GetType());
             UpdateNodeIfNeeded(original, @new, stack, accessor, changes);
@@ -185,7 +185,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        void CompareNodeChildren(IMetadataObject original, IMetadataObject @new, IList<MetadataTreeEntryChanges> changes, Stack<string> stack, ChildPropertyInfo childProperty)
+        void CompareNodeChildren(IMetadataObject original, IMetadataObject @new, IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack, ChildPropertyInfo childProperty)
         {
             using (var enumerator = new TwoSequenceEnumerator<IMetadataObject>(
                 childProperty.Accessor(original),
@@ -198,7 +198,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        void CompareNodeChildren(IList<MetadataTreeEntryChanges> changes, Stack<string> stack, TwoSequenceEnumerator<IMetadataObject> enumerator)
+        void CompareNodeChildren(IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack, TwoSequenceEnumerator<IMetadataObject> enumerator)
         {
             if (enumerator.NodeIsStillThere)
             {
@@ -214,7 +214,7 @@ namespace GitObjectDb.Services
             {
                 stack.Push(enumerator.Right.Id.ToString());
                 var path = stack.ToDataPath();
-                changes.Add(new MetadataTreeEntryChanges(path, ChangeKind.Added, @new: enumerator.Right));
+                changes.Add(new ObjectRepositoryEntryChanges(path, ChangeKind.Added, @new: enumerator.Right));
                 stack.Pop();
                 enumerator.MoveNextRight();
                 return;

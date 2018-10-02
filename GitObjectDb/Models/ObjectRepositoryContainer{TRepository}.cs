@@ -21,7 +21,7 @@ namespace GitObjectDb.Models
         where TRepository : AbstractObjectRepository
     {
         readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
-        readonly MetadataTreeMergeFactory _metadataTreeMergeFactory;
+        readonly ObjectRepositoryMergeFactory _objectRepositoryMergeFactory;
         readonly IObjectRepositoryLoader _repositoryLoader;
         readonly IRepositoryProvider _repositoryProvider;
         readonly GitHooks _hooks;
@@ -40,7 +40,7 @@ namespace GitObjectDb.Models
 
             _repositoryLoader = serviceProvider.GetRequiredService<IObjectRepositoryLoader>();
             _computeTreeChangesFactory = serviceProvider.GetRequiredService<ComputeTreeChangesFactory>();
-            _metadataTreeMergeFactory = serviceProvider.GetRequiredService<MetadataTreeMergeFactory>();
+            _objectRepositoryMergeFactory = serviceProvider.GetRequiredService<ObjectRepositoryMergeFactory>();
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _hooks = serviceProvider.GetRequiredService<GitHooks>();
 
@@ -69,7 +69,7 @@ namespace GitObjectDb.Models
 
         IImmutableSet<TRepository> LoadRepositories()
         {
-            var builder = ImmutableSortedSet.CreateBuilder(MetadataObjectIdComparer<TRepository>.Instance);
+            var builder = ImmutableSortedSet.CreateBuilder(ObjectRepositoryIdComparer<TRepository>.Instance);
             foreach (var repositoryPath in Directory.EnumerateDirectories(Path))
             {
                 if (Repository.IsValid(repositoryPath))
@@ -127,8 +127,8 @@ namespace GitObjectDb.Models
 
             return _repositoryProvider.Execute(repositoryDescription, r =>
             {
-                var all = repository.Flatten().Select(o => new MetadataTreeEntryChanges(o.GetDataPath(), ChangeKind.Added, @new: o));
-                var changes = new MetadataTreeChanges(repository, all.ToImmutableList());
+                var all = repository.Flatten().Select(o => new ObjectRepositoryEntryChanges(o.GetDataPath(), ChangeKind.Added, @new: o));
+                var changes = new ObjectRepositoryChanges(repository, all.ToImmutableList());
                 var commit = r.CommitChanges(changes, message, signature, signature, _hooks);
                 if (commit == null)
                 {
@@ -372,7 +372,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public IMetadataTreeMerge Pull(TRepository repository, FetchOptions options = null)
+        public IObjectRepositoryMerge Pull(TRepository repository, FetchOptions options = null)
         {
             if (repository == null)
             {
@@ -392,11 +392,11 @@ namespace GitObjectDb.Models
 
                 return (r.Head.TrackedBranch.Tip.Id, r.Head.TrackedBranch.FriendlyName);
             });
-            return _metadataTreeMergeFactory(this, repository.RepositoryDescription, repository, originTip, remoteBranch);
+            return _objectRepositoryMergeFactory(this, repository.RepositoryDescription, repository, originTip, remoteBranch);
         }
 
         /// <inheritdoc />
-        public IMetadataTreeMerge Merge(TRepository repository, string branchName)
+        public IObjectRepositoryMerge Merge(TRepository repository, string branchName)
         {
             if (repository == null)
             {
@@ -409,11 +409,11 @@ namespace GitObjectDb.Models
 
             repository.EnsuresCurrentRepository();
             var commitId = repository.Execute(r => r.Branches[branchName].Tip.Id);
-            return _metadataTreeMergeFactory(this, repository.RepositoryDescription, repository, commitId, branchName);
+            return _objectRepositoryMergeFactory(this, repository.RepositoryDescription, repository, commitId, branchName);
         }
 
         /// <inheritdoc />
-        public IMetadataTreeMerge Merge(UniqueId id, string branchName)
+        public IObjectRepositoryMerge Merge(UniqueId id, string branchName)
         {
             if (branchName == null)
             {

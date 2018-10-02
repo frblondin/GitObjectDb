@@ -18,7 +18,7 @@ namespace GitObjectDb.Services
     /// <summary>
     /// Applies the merge changes.
     /// </summary>
-    internal sealed class MetadataTreeMergeProcessor
+    internal sealed class ObjectRepositoryMergeProcessor
     {
         readonly IRepositoryProvider _repositoryProvider;
         readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
@@ -26,22 +26,22 @@ namespace GitObjectDb.Services
         readonly Lazy<JsonSerializer> _serializer;
         readonly GitHooks _hooks;
 
-        readonly MetadataTreeMerge _metadataTreeMerge;
+        readonly ObjectRepositoryMerge _objectRepositoryMerge;
         readonly ISet<UniqueId> _forceVisit;
-        readonly ILookup<string, MetadataTreeMergeChunkChange> _changes;
+        readonly ILookup<string, ObjectRepositoryChunkChange> _changes;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MetadataTreeMergeProcessor"/> class.
+        /// Initializes a new instance of the <see cref="ObjectRepositoryMergeProcessor"/> class.
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
         /// <param name="repositoryDescription">The repository description.</param>
-        /// <param name="metadataTreeMerge">The metadata tree merge.</param>
+        /// <param name="objectRepositoryMerge">The object repository merge.</param>
         /// <exception cref="ArgumentNullException">
         /// serviceProvider
         /// or
         /// repositoryDescription
         /// </exception>
-        internal MetadataTreeMergeProcessor(IServiceProvider serviceProvider, RepositoryDescription repositoryDescription, MetadataTreeMerge metadataTreeMerge)
+        internal ObjectRepositoryMergeProcessor(IServiceProvider serviceProvider, RepositoryDescription repositoryDescription, ObjectRepositoryMerge objectRepositoryMerge)
         {
             if (serviceProvider == null)
             {
@@ -49,16 +49,16 @@ namespace GitObjectDb.Services
             }
 
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
-            _metadataTreeMerge = metadataTreeMerge ?? throw new ArgumentNullException(nameof(metadataTreeMerge));
+            _objectRepositoryMerge = objectRepositoryMerge ?? throw new ArgumentNullException(nameof(objectRepositoryMerge));
 
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _computeTreeChangesFactory = serviceProvider.GetRequiredService<ComputeTreeChangesFactory>();
-            _serializer = new Lazy<JsonSerializer>(() => serviceProvider.GetRequiredService<IObjectRepositoryLoader>().GetJsonSerializer(metadataTreeMerge.Container));
+            _serializer = new Lazy<JsonSerializer>(() => serviceProvider.GetRequiredService<IObjectRepositoryLoader>().GetJsonSerializer(objectRepositoryMerge.Container));
             _hooks = serviceProvider.GetRequiredService<GitHooks>();
-            _changes = _metadataTreeMerge.ModifiedChunks.ToLookup(c => c.Path, StringComparer.OrdinalIgnoreCase);
+            _changes = _objectRepositoryMerge.ModifiedChunks.ToLookup(c => c.Path, StringComparer.OrdinalIgnoreCase);
 
             var tempId = default(UniqueId);
-            _forceVisit = new HashSet<UniqueId>(from path in _metadataTreeMerge.AllImpactedPaths
+            _forceVisit = new HashSet<UniqueId>(from path in _objectRepositoryMerge.AllImpactedPaths
                                                 from part in path.Split('/')
                                                 where UniqueId.TryParse(part, out tempId)
                                                 let id = tempId
@@ -84,7 +84,7 @@ namespace GitObjectDb.Services
             {
                 throw new ArgumentNullException(nameof(merger));
             }
-            var remainingConflicts = _metadataTreeMerge.ModifiedChunks.Where(c => c.IsInConflict).ToList();
+            var remainingConflicts = _objectRepositoryMerge.ModifiedChunks.Where(c => c.IsInConflict).ToList();
             if (remainingConflicts.Any())
             {
                 throw new RemainingConflictsException(remainingConflicts);
@@ -92,14 +92,14 @@ namespace GitObjectDb.Services
 
             return _repositoryProvider.Execute(_repositoryDescription, repository =>
             {
-                _metadataTreeMerge.EnsureHeadCommit(repository);
+                _objectRepositoryMerge.EnsureHeadCommit(repository);
 
                 var resultId = ApplyMerge(merger, repository);
                 if (resultId == null)
                 {
                     return null;
                 }
-                _metadataTreeMerge.RequiredMigrator?.Apply();
+                _objectRepositoryMerge.RequiredMigrator?.Apply();
                 return resultId;
             });
         }
@@ -114,9 +114,9 @@ namespace GitObjectDb.Services
             }
 
             var commit = CommitChanges(merger, repository, treeChanges);
-            if (_metadataTreeMerge.Repository.Container is ObjectRepositoryContainer container)
+            if (_objectRepositoryMerge.Repository.Container is ObjectRepositoryContainer container)
             {
-                container.ReloadRepository(_metadataTreeMerge.Repository, commit);
+                container.ReloadRepository(_objectRepositoryMerge.Repository, commit);
             }
 
             _hooks.OnMergeCompleted(treeChanges, commit);
@@ -124,27 +124,27 @@ namespace GitObjectDb.Services
             return commit;
         }
 
-        ObjectId CommitChanges(Signature merger, IRepository repository, MetadataTreeChanges treeChanges)
+        ObjectId CommitChanges(Signature merger, IRepository repository, ObjectRepositoryChanges treeChanges)
         {
-            if (_metadataTreeMerge.RequiresMergeCommit)
+            if (_objectRepositoryMerge.RequiresMergeCommit)
             {
-                var message = $"Merge branch {_metadataTreeMerge.BranchName} into {repository.Head.FriendlyName}";
-                return repository.CommitChanges(treeChanges, message, merger, merger, hooks: _hooks, mergeParent: repository.Lookup<Commit>(_metadataTreeMerge.MergeCommitId)).Id;
+                var message = $"Merge branch {_objectRepositoryMerge.BranchName} into {repository.Head.FriendlyName}";
+                return repository.CommitChanges(treeChanges, message, merger, merger, hooks: _hooks, mergeParent: repository.Lookup<Commit>(_objectRepositoryMerge.MergeCommitId)).Id;
             }
             else
             {
-                var commit = repository.Lookup<Commit>(_metadataTreeMerge.MergeCommitId);
+                var commit = repository.Lookup<Commit>(_objectRepositoryMerge.MergeCommitId);
                 var logMessage = commit.BuildCommitLogMessage(false, false, false);
                 repository.UpdateHeadAndTerminalReference(commit, logMessage);
-                return _metadataTreeMerge.MergeCommitId;
+                return _objectRepositoryMerge.MergeCommitId;
             }
         }
 
-        MetadataTreeChanges ComputeMergeResult()
+        ObjectRepositoryChanges ComputeMergeResult()
         {
-            var mergeResult = _metadataTreeMerge.Repository.DataAccessor.DeepClone(_metadataTreeMerge.Repository, ProcessProperty, ChildChangesGetter, n => _forceVisit.Contains(n.Id));
-            var computeChanges = _computeTreeChangesFactory(_metadataTreeMerge.Container, _repositoryDescription);
-            return computeChanges.Compare(_metadataTreeMerge.Repository, mergeResult);
+            var mergeResult = _objectRepositoryMerge.Repository.DataAccessor.DeepClone(_objectRepositoryMerge.Repository, ProcessProperty, ChildChangesGetter, n => _forceVisit.Contains(n.Id));
+            var computeChanges = _computeTreeChangesFactory(_objectRepositoryMerge.Container, _repositoryDescription);
+            return computeChanges.Compare(_objectRepositoryMerge.Repository, mergeResult);
         }
 
         object ProcessProperty(IMetadataObject node, string name, Type argumentType, object fallback)
@@ -164,11 +164,11 @@ namespace GitObjectDb.Services
         (IEnumerable<IMetadataObject> Additions, IEnumerable<IMetadataObject> Deletions) ChildChangesGetter(IMetadataObject node, ChildPropertyInfo childProperty)
         {
             var pathWithProperty = GetChildPathRegex(node, childProperty);
-            var additions = (from o in _metadataTreeMerge.AddedObjects
+            var additions = (from o in _objectRepositoryMerge.AddedObjects
                              where pathWithProperty.IsMatch(o.Path)
                              let objectType = Type.GetType(o.BranchNode.Value<string>("$type"))
                              select (IMetadataObject)o.BranchNode.ToObject(childProperty.ItemType, _serializer.Value)).ToList();
-            var deleted = new HashSet<UniqueId>(from o in _metadataTreeMerge.DeletedObjects
+            var deleted = new HashSet<UniqueId>(from o in _objectRepositoryMerge.DeletedObjects
                                                 where pathWithProperty.IsMatch(o.Path)
                                                 select o.BranchNode["Id"].ToObject<UniqueId>());
             var deletions = childProperty.Accessor(node).Where(n => deleted.Contains(n.Id)).ToList();

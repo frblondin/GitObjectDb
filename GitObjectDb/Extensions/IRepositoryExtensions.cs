@@ -57,7 +57,7 @@ namespace LibGit2Sharp
         /// <param name="options">The options.</param>
         /// <param name="mergeParent">The parent commit for a merge.</param>
         /// <returns>The created <see cref="LibGit2Sharp.Commit" />.</returns>
-        internal static Commit CommitChanges(this IRepository repository, MetadataTreeChanges changes, string message, Signature author, Signature committer, GitHooks hooks, CommitOptions options = null, Commit mergeParent = null)
+        internal static Commit CommitChanges(this IRepository repository, ObjectRepositoryChanges changes, string message, Signature author, Signature committer, GitHooks hooks, CommitOptions options = null, Commit mergeParent = null)
         {
             TreeDefinition definition;
             if (changes.OldRepository?.CommitId != null)

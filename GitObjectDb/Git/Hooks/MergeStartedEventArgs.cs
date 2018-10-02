@@ -15,7 +15,7 @@ namespace GitObjectDb.Git.Hooks
         /// </summary>
         /// <param name="changes">The changes.</param>
         /// <exception cref="ArgumentNullException">message</exception>
-        public MergeStartedEventArgs(MetadataTreeChanges changes)
+        public MergeStartedEventArgs(ObjectRepositoryChanges changes)
         {
             Changes = changes ?? throw new ArgumentNullException(nameof(changes));
         }
@@ -23,6 +23,6 @@ namespace GitObjectDb.Git.Hooks
         /// <summary>
         /// Gets the changes.
         /// </summary>
-        public MetadataTreeChanges Changes { get; }
+        public ObjectRepositoryChanges Changes { get; }
     }
 }

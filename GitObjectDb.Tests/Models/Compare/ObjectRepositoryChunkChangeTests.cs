@@ -11,19 +11,19 @@ using System.Text;
 
 namespace GitObjectDb.Tests.Models.Compare
 {
-    public class MetadataTreeMergeChunkChangeTests
+    public class ObjectRepositoryChunkChangeTests
     {
         readonly ModifiablePropertyInfo _property = new ModifiablePropertyInfo(ExpressionReflector.GetProperty<Page>(p => p.Name));
 
         [Test]
         [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void MetadataTreeMergeChunkChangePropertiesAreMatchingEntryParameterValues(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue)
+        public void ObjectRepositoryMergeChunkChangePropertiesAreMatchingEntryParameterValues(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue)
         {
             // Arrange
             var path = RepositoryFixture.GetAvailableFolderPath();
 
             // Act
-            var sut = new MetadataTreeMergeChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
+            var sut = new ObjectRepositoryChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
 
             // Assert
             Assert.That(sut.Path, Is.SameAs(path));
@@ -38,13 +38,13 @@ namespace GitObjectDb.Tests.Models.Compare
 
         [Test]
         [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void MetadataTreeMergeChunkChangeShouldNotBeInConflictIfHeadValuesAreSame(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue)
+        public void ObjectRepositoryMergeChunkChangeShouldNotBeInConflictIfHeadValuesAreSame(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue)
         {
             // Arrange
             var path = RepositoryFixture.GetAvailableFolderPath();
 
             // Act
-            var sut = new MetadataTreeMergeChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, mergeBaseValue);
+            var sut = new ObjectRepositoryChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, mergeBaseValue);
 
             // Assert
             Assert.That(sut.IsInConflict, Is.False);
@@ -53,13 +53,13 @@ namespace GitObjectDb.Tests.Models.Compare
 
         [Test]
         [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void MetadataTreeMergeChunkChangeShouldBeInConflictIfValuesAreDifferent(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue)
+        public void ObjectRepositoryMergeChunkChangeShouldBeInConflictIfValuesAreDifferent(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue)
         {
             // Arrange
             var path = RepositoryFixture.GetAvailableFolderPath();
 
             // Act
-            var sut = new MetadataTreeMergeChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
+            var sut = new ObjectRepositoryChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
 
             // Assert
             Assert.That(sut.IsInConflict, Is.True);
@@ -68,13 +68,13 @@ namespace GitObjectDb.Tests.Models.Compare
 
         [Test]
         [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void MetadataTreeMergeChunkChangeResolveConflict(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue, JToken resolvedValue)
+        public void ObjectRepositoryMergeChunkChangeResolveConflict(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue, JToken resolvedValue)
         {
             // Arrange
             var path = RepositoryFixture.GetAvailableFolderPath();
 
             // Act
-            var sut = new MetadataTreeMergeChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
+            var sut = new ObjectRepositoryChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
             sut.Resolve(resolvedValue);
 
             // Assert
@@ -85,13 +85,13 @@ namespace GitObjectDb.Tests.Models.Compare
 
         [Test]
         [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void MetadataTreeMergeChunkChangeResolveConflictOnlyOnce(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue, JToken resolvedValue)
+        public void ObjectRepositoryMergeChunkChangeResolveConflictOnlyOnce(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue, JToken resolvedValue)
         {
             // Arrange
             var path = RepositoryFixture.GetAvailableFolderPath();
 
             // Act
-            var sut = new MetadataTreeMergeChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
+            var sut = new ObjectRepositoryChunkChange(path, mergeBaseNode, branchNode, headNode, _property, mergeBaseValue, branchValue, headValue);
             sut.Resolve(resolvedValue);
             Assert.Throws<GitObjectDbException>(() => sut.Resolve(resolvedValue));
         }

@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace GitObjectDb.Models.Compare
 {
     /// <summary>
-    /// Creates a new instance implementing the <see cref="IMetadataTreeMerge"/> interface.
+    /// Creates a new instance implementing the <see cref="IObjectRepositoryMerge"/> interface.
     /// </summary>
     /// <param name="container">The container.</param>
     /// <param name="repositoryDescription">The repository description.</param>
@@ -16,12 +16,12 @@ namespace GitObjectDb.Models.Compare
     /// <param name="mergeCommitId">The commit to be merged.</param>
     /// <param name="branchName">Name of the branch.</param>
     /// <returns>The newly created instance.</returns>
-    public delegate IMetadataTreeMerge MetadataTreeMergeFactory(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, ObjectId mergeCommitId, string branchName);
+    public delegate IObjectRepositoryMerge ObjectRepositoryMergeFactory(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, ObjectId mergeCommitId, string branchName);
 
     /// <summary>
     /// Provides the ability to merge changes between two branches.
     /// </summary>
-    public interface IMetadataTreeMerge
+    public interface IObjectRepositoryMerge
     {
         /// <summary>
         /// Gets the commit identifier.
@@ -56,17 +56,17 @@ namespace GitObjectDb.Models.Compare
         /// <summary>
         /// Gets the modified chunks.
         /// </summary>
-        IList<MetadataTreeMergeChunkChange> ModifiedChunks { get; }
+        IList<ObjectRepositoryChunkChange> ModifiedChunks { get; }
 
         /// <summary>
         /// Gets the added objects.
         /// </summary>
-        IList<MetadataTreeMergeObjectAdd> AddedObjects { get; }
+        IList<ObjectRepositoryAdd> AddedObjects { get; }
 
         /// <summary>
         /// Gets the deleted objects.
         /// </summary>
-        IList<MetadataTreeMergeObjectDelete> DeletedObjects { get; }
+        IList<ObjectRepositoryDelete> DeletedObjects { get; }
 
         /// <summary>
         /// Applies the changes in the repository.

@@ -13,10 +13,10 @@ namespace GitObjectDb.Models.Compare
     /// Represents a chunk change in a <see cref="IMetadataObject"/> while performing a merge.
     /// </summary>
     [DebuggerDisplay("Path = {Path}")]
-    public class MetadataTreeMergeObjectAdd
+    public class ObjectRepositoryAdd
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="MetadataTreeMergeObjectAdd"/> class.
+        /// Initializes a new instance of the <see cref="ObjectRepositoryAdd"/> class.
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="branchNode">The branch node.</param>
@@ -25,7 +25,7 @@ namespace GitObjectDb.Models.Compare
         /// or
         /// branchNode
         /// </exception>
-        public MetadataTreeMergeObjectAdd(string path, JObject branchNode)
+        public ObjectRepositoryAdd(string path, JObject branchNode)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));
             BranchNode = branchNode ?? throw new ArgumentNullException(nameof(branchNode));

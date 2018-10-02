@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.DependencyInjection
             source.AddSingleton<IRepositoryProvider, RepositoryProvider>();
             source.AddSingleton<IModelDataAccessorProvider>(s =>
                 new CachedModelDataAccessorProvider(new ModelDataAccessorProvider(s)));
-            source.AddFactoryDelegate<MetadataTreeMergeFactory, MetadataTreeMerge>();
+            source.AddFactoryDelegate<ObjectRepositoryMergeFactory, ObjectRepositoryMerge>();
             source.AddFactoryDelegate<MigrationScaffolderFactory, MigrationScaffolder>();
             source.AddSingleton<IValidatorFactory, ValidatorFactory>();
             source.AddSingleton<JsonSerializationValidator>();

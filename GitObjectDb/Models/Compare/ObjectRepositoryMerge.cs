@@ -19,7 +19,7 @@ namespace GitObjectDb.Models.Compare
 {
     /// <inheritdoc/>
     [ExcludeFromGuardForNull]
-    public sealed class MetadataTreeMerge : IMetadataTreeMerge
+    public sealed class ObjectRepositoryMerge : IObjectRepositoryMerge
     {
         readonly IServiceProvider _serviceProvider;
         readonly IRepositoryProvider _repositoryProvider;
@@ -28,7 +28,7 @@ namespace GitObjectDb.Models.Compare
         readonly RepositoryDescription _repositoryDescription;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MetadataTreeMerge"/> class.
+        /// Initializes a new instance of the <see cref="ObjectRepositoryMerge"/> class.
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
         /// <param name="container">The container.</param>
@@ -48,7 +48,7 @@ namespace GitObjectDb.Models.Compare
         /// merger
         /// </exception>
         [ActivatorUtilitiesConstructor]
-        public MetadataTreeMerge(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, ObjectId mergeCommitId, string branchName)
+        public ObjectRepositoryMerge(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, ObjectId mergeCommitId, string branchName)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             Container = container ?? throw new ArgumentNullException(nameof(container));
@@ -102,13 +102,13 @@ namespace GitObjectDb.Models.Compare
             .Union(DeletedObjects.Select(d => d.Path), StringComparer.OrdinalIgnoreCase);
 
         /// <inheritdoc/>
-        public IList<MetadataTreeMergeChunkChange> ModifiedChunks { get; } = new List<MetadataTreeMergeChunkChange>();
+        public IList<ObjectRepositoryChunkChange> ModifiedChunks { get; } = new List<ObjectRepositoryChunkChange>();
 
         /// <inheritdoc/>
-        public IList<MetadataTreeMergeObjectAdd> AddedObjects { get; } = new List<MetadataTreeMergeObjectAdd>();
+        public IList<ObjectRepositoryAdd> AddedObjects { get; } = new List<ObjectRepositoryAdd>();
 
         /// <inheritdoc/>
-        public IList<MetadataTreeMergeObjectDelete> DeletedObjects { get; } = new List<MetadataTreeMergeObjectDelete>();
+        public IList<ObjectRepositoryDelete> DeletedObjects { get; } = new List<ObjectRepositoryDelete>();
 
         static JObject GetContent(Commit mergeBase, string path, string branchInfo)
         {
@@ -217,7 +217,7 @@ namespace GitObjectDb.Models.Compare
             }
 
             var branchObject = GetContent(branchTip, change.Path, "branch tip");
-            AddedObjects.Add(new MetadataTreeMergeObjectAdd(change.Path, branchObject));
+            AddedObjects.Add(new ObjectRepositoryAdd(change.Path, branchObject));
         }
 
         void ComputeMerge_Deleted(Commit mergeBase, PatchEntryChanges change, Patch headChanges)
@@ -229,7 +229,7 @@ namespace GitObjectDb.Models.Compare
             }
 
             var mergeBaseObject = GetContent(mergeBase, change.Path, "branch tip");
-            DeletedObjects.Add(new MetadataTreeMergeObjectDelete(change.Path, mergeBaseObject));
+            DeletedObjects.Add(new ObjectRepositoryDelete(change.Path, mergeBaseObject));
         }
 
         void AddModifiedChunks(PatchEntryChanges branchChange, JObject mergeBaseObject, JObject newObject, JObject headObject, PatchEntryChanges headChange)
@@ -247,7 +247,7 @@ namespace GitObjectDb.Models.Compare
                           let mergeBaseValue = mergeBaseObject[kvp.Key]
                           where mergeBaseValue == null || !JToken.DeepEquals(kvp.Value, mergeBaseValue)
                           let headValue = TryGetToken(headObject, kvp)
-                          select new MetadataTreeMergeChunkChange(branchChange.Path, mergeBaseObject, newObject, headObject, p, mergeBaseValue, kvp.Value, headValue);
+                          select new ObjectRepositoryChunkChange(branchChange.Path, mergeBaseObject, newObject, headObject, p, mergeBaseValue, kvp.Value, headValue);
 
             foreach (var modifiedProperty in changes)
             {
@@ -256,6 +256,6 @@ namespace GitObjectDb.Models.Compare
         }
 
         /// <inheritdoc/>
-        public ObjectId Apply(Signature merger) => new MetadataTreeMergeProcessor(_serviceProvider, _repositoryDescription, this).Apply(merger);
+        public ObjectId Apply(Signature merger) => new ObjectRepositoryMergeProcessor(_serviceProvider, _repositoryDescription, this).Apply(merger);
     }
 }
