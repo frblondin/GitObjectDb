@@ -14,10 +14,10 @@ namespace GitObjectDb.Tests.Models
     {
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenReturnUnchangedEntryChildrenIfProvided(IList<IMetadataObject> values, IMetadataObject parent)
+        public void LazyChildrenReturnUnchangedEntryChildrenIfProvided(IList<IModelObject> values, IModelObject parent)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(values.ToImmutableList());
+            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
             sut.AttachToParent(parent);
 
             // Assert
@@ -30,10 +30,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenReturnUnchangedLambdaReturnedValues(IList<IMetadataObject> values, IMetadataObject parent)
+        public void LazyChildrenReturnUnchangedLambdaReturnedValues(IList<IModelObject> values, IModelObject parent)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(_ => values.ToImmutableList());
+            var sut = new LazyChildren<IModelObject>(_ => values.ToImmutableList());
             sut.AttachToParent(parent);
 
             // Assert
@@ -47,10 +47,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenThrowsErrorIfLambdaReturnsNull(IMetadataObject parent)
+        public void LazyChildrenThrowsErrorIfLambdaReturnsNull(IModelObject parent)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(_ => null);
+            var sut = new LazyChildren<IModelObject>(_ => null);
             sut.AttachToParent(parent);
 
             // Assert
@@ -59,10 +59,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenForceVisitIsFalseByDefault(IList<IMetadataObject> values, IMetadataObject parent)
+        public void LazyChildrenForceVisitIsFalseByDefault(IList<IModelObject> values, IModelObject parent)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(values.ToImmutableList());
+            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
             sut.AttachToParent(parent);
 
             // Assert
@@ -71,10 +71,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenChildrenAccessThrowErrorIfNoParentAttached(IList<IMetadataObject> values)
+        public void LazyChildrenChildrenAccessThrowErrorIfNoParentAttached(IList<IModelObject> values)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(values.ToImmutableList());
+            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
 
             // Assert
             Assert.Throws<GitObjectDbException>(() => sut.GetEnumerator());
@@ -82,10 +82,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenThrowsErrorWhenAddGetsCalledDirectly(IList<IMetadataObject> values, IMetadataObject parent, IMetadataObject child)
+        public void LazyChildrenThrowsErrorWhenAddGetsCalledDirectly(IList<IModelObject> values, IModelObject parent, IModelObject child)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(values.ToImmutableList());
+            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
             sut.AttachToParent(parent);
 
             // Assert
@@ -94,10 +94,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenThrowsErrorWhenDeleteGetsCalledDirectly(IList<IMetadataObject> values, IMetadataObject parent)
+        public void LazyChildrenThrowsErrorWhenDeleteGetsCalledDirectly(IList<IModelObject> values, IModelObject parent)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(values.ToImmutableList());
+            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
             sut.AttachToParent(parent);
 
             // Assert
@@ -106,10 +106,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenAttachToSameParentTwiceIsIgnored(IList<IMetadataObject> values, IMetadataObject parent)
+        public void LazyChildrenAttachToSameParentTwiceIsIgnored(IList<IModelObject> values, IModelObject parent)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(values.ToImmutableList());
+            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
             sut.AttachToParent(parent);
 
             // Assert
@@ -118,10 +118,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenAttachToOnlyOneParent(IList<IMetadataObject> values, IMetadataObject parent, IMetadataObject otherParent)
+        public void LazyChildrenAttachToOnlyOneParent(IList<IModelObject> values, IModelObject parent, IModelObject otherParent)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(values.ToImmutableList());
+            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
             sut.AttachToParent(parent);
 
             // Assert
@@ -130,10 +130,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenAttachToNullParentThrowsException(IList<IMetadataObject> values)
+        public void LazyChildrenAttachToNullParentThrowsException(IList<IModelObject> values)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(values.ToImmutableList());
+            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
 
             // Assert
             Assert.Throws<ArgumentNullException>(() => sut.AttachToParent(null));
@@ -141,15 +141,15 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenCloneCallsUpdateLambda(IFixture fixture, IList<IMetadataObject> values, IMetadataObject parent)
+        public void LazyChildrenCloneCallsUpdateLambda(IFixture fixture, IList<IModelObject> values, IModelObject parent)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(values.ToImmutableList());
+            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
             sut.AttachToParent(parent);
-            var newValues = new List<IMetadataObject>();
-            var clone = (LazyChildren<IMetadataObject>)sut.Clone(true, _ =>
+            var newValues = new List<IModelObject>();
+            var clone = (LazyChildren<IModelObject>)sut.Clone(true, _ =>
             {
-                var o = fixture.Create<IMetadataObject>();
+                var o = fixture.Create<IModelObject>();
                 newValues.Add(o);
                 return o;
             });
@@ -164,12 +164,12 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenCloneContainsAddedValues(IList<IMetadataObject> values, IMetadataObject parent, IMetadataObject added)
+        public void LazyChildrenCloneContainsAddedValues(IList<IModelObject> values, IModelObject parent, IModelObject added)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(values.ToImmutableList());
+            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
             sut.AttachToParent(parent);
-            var clone = (LazyChildren<IMetadataObject>)sut.Clone(true, o => o, added: new[] { added });
+            var clone = (LazyChildren<IModelObject>)sut.Clone(true, o => o, added: new[] { added });
 
             // Assert
             clone.AttachToParent(parent);
@@ -179,12 +179,12 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenCloneDoesNotContainDeletedValues(IList<IMetadataObject> values, IMetadataObject parent)
+        public void LazyChildrenCloneDoesNotContainDeletedValues(IList<IModelObject> values, IModelObject parent)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(values.ToImmutableList());
+            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
             sut.AttachToParent(parent);
-            var clone = (LazyChildren<IMetadataObject>)sut.Clone(true, o => o, deleted: new[] { values[0] });
+            var clone = (LazyChildren<IModelObject>)sut.Clone(true, o => o, deleted: new[] { values[0] });
 
             // Assert
             clone.AttachToParent(parent);
@@ -194,10 +194,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenCloneNullLambdaThrowsException(IList<IMetadataObject> values)
+        public void LazyChildrenCloneNullLambdaThrowsException(IList<IModelObject> values)
         {
             // Act
-            var sut = new LazyChildren<IMetadataObject>(values.ToImmutableList());
+            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
 
             // Assert
             Assert.Throws<ArgumentNullException>(() => sut.Clone(true, null));

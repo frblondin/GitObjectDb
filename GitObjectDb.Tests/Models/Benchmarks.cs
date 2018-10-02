@@ -23,12 +23,12 @@ namespace GitObjectDb.Tests.Models
     {
         [Ignore("Only used to create large repository. Quite long, normal as we want the load time to be short not necessarily the creation time.")]
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization))]
         public void CreateLargeRepository(IFixture fixture, Signature signature, string message)
         {
             // Arrange
             DirectoryUtils.Delete(RepositoryFixture.BenchmarkRepositoryPath, false);
-            fixture.Customize(new MetadataCustomization(2, 200, 30, RepositoryFixture.BenchmarkRepositoryPath));
+            fixture.Customize(new ModelCustomization(2, 200, 30, RepositoryFixture.BenchmarkRepositoryPath));
 
             // Act
             var container = fixture.Create<IObjectRepositoryContainer<ObjectRepository>>();
@@ -41,7 +41,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void LoadLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
@@ -56,7 +56,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void SearchInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
@@ -72,7 +72,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void ComputeChangesInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // Arrange

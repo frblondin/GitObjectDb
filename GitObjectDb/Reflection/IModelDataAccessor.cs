@@ -38,7 +38,7 @@ namespace GitObjectDb.Reflection
         /// <param name="source">The object.</param>
         /// <param name="predicate">The predicate.</param>
         /// <returns>The newly created copy. Both parents and children nodes have been cloned as well.</returns>
-        IMetadataObject With(IMetadataObject source, IPredicateReflector predicate);
+        IModelObject With(IModelObject source, IPredicateReflector predicate);
 #pragma warning restore CA1716 // Identifiers should not match keywords
 
         /// <summary>
@@ -49,6 +49,6 @@ namespace GitObjectDb.Reflection
         /// <param name="childChangesGetter">The child changes getter.</param>
         /// <param name="mustForceVisit">The must force visit.</param>
         /// <returns>The cloned instance.</returns>
-        IObjectRepository DeepClone(IObjectRepository instance, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IMetadataObject, bool> mustForceVisit);
+        IObjectRepository DeepClone(IObjectRepository instance, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IModelObject, bool> mustForceVisit);
     }
 }

@@ -14,7 +14,7 @@ namespace GitObjectDb.Tests.Models
     public class AbstractModelTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void WithModifiesValue(Page page, string newName)
         {
             // Act
@@ -25,7 +25,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void WithModifiesLink(LinkField field, Page newLinkedPage)
         {
             // Act
@@ -36,7 +36,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void WithDuplicatesImmutableObjectRepository(Page page, string newName)
         {
             // Act
@@ -47,7 +47,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void CloneableParametersGetCloned(LinkField linkField, string newName)
         {
             // Act

@@ -13,20 +13,20 @@ namespace GitObjectDb.Models
     [DebuggerDisplay("IsLinkCreated = {IsLinkCreated}")]
     [DataContract]
     public sealed class LazyLink<TLink> : ILazyLink<TLink>, IEquatable<LazyLink<TLink>>
-        where TLink : class, IMetadataObject
+        where TLink : class, IModelObject
     {
         static readonly string _nullReturnedValueExceptionMessage =
             $"Value returned by {nameof(LazyLink<TLink>)} was null.";
 
         readonly TLink _link;
-        readonly Func<IMetadataObject, TLink> _factory;
+        readonly Func<IModelObject, TLink> _factory;
         ObjectPath _path;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LazyLink{TLink}"/> class.
         /// </summary>
         /// <param name="factory">The factory.</param>
-        public LazyLink(Func<IMetadataObject, TLink> factory)
+        public LazyLink(Func<IModelObject, TLink> factory)
         {
             _factory = factory ?? throw new ArgumentNullException(nameof(factory));
         }
@@ -53,7 +53,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public IMetadataObject Parent { get; private set; }
+        public IModelObject Parent { get; private set; }
 
         /// <inheritdoc />
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -68,7 +68,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        IMetadataObject ILazyLink.Link => Link;
+        IModelObject ILazyLink.Link => Link;
 
         /// <inheritdoc />
         [DataMember]
@@ -98,7 +98,7 @@ namespace GitObjectDb.Models
             return result;
         }
 
-        TLink GetValueFromFactory(IMetadataObject parent)
+        TLink GetValueFromFactory(IModelObject parent)
         {
             if (_factory == null)
             {
@@ -108,7 +108,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public ILazyLink<TLink> AttachToParent(IMetadataObject parent)
+        public ILazyLink<TLink> AttachToParent(IModelObject parent)
         {
             if (parent == null)
             {
@@ -117,7 +117,7 @@ namespace GitObjectDb.Models
 
             if (Parent != null && Parent != parent)
             {
-                throw new GitObjectDbException("A single metadata object cannot be attached to two different parents.");
+                throw new GitObjectDbException("A single model object cannot be attached to two different parents.");
             }
 
             Parent = parent;

@@ -80,7 +80,7 @@ namespace GitObjectDb.Reflection
             {
                 var instance = node.Object as MemberExpression ??
                     throw new GitObjectDbException($"{changeType.ToString()} method is only supported when called on an object child property, eg. object.ChildProperty.{changeType.ToString()}(...).");
-                var value = ValueVisitor.ExtractValue(node.Arguments[0]) as IMetadataObject ??
+                var value = ValueVisitor.ExtractValue(node.Arguments[0]) as IModelObject ??
                     throw new GitObjectDbException("The parameter provided for the Add method call could not be extracted as a non-nullable instance.");
 
                 var changes = GetChildChangeList(instance.Member.Name);

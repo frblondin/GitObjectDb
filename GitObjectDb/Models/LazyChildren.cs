@@ -15,13 +15,13 @@ namespace GitObjectDb.Models
     /// <inheritdoc />
     [DebuggerDisplay("AreChildrenLoaded = {AreChildrenLoaded}")]
     public sealed class LazyChildren<TChild> : ILazyChildren<TChild>
-        where TChild : class, IMetadataObject
+        where TChild : class, IModelObject
     {
         static readonly string _nullReturnedValueExceptionMessage =
             $"Value returned by {nameof(LazyChildren<TChild>)} was null.";
 
-        readonly Func<IMetadataObject, IRepository, IEnumerable<IMetadataObject>> _factoryWithRepo;
-        readonly Func<IMetadataObject, IEnumerable<TChild>> _factory;
+        readonly Func<IModelObject, IRepository, IEnumerable<IModelObject>> _factoryWithRepo;
+        readonly Func<IModelObject, IEnumerable<TChild>> _factory;
         IImmutableList<TChild> _children;
         bool _parentAttachedInChildren;
 
@@ -30,7 +30,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="factory">The factory.</param>
         /// <exception cref="ArgumentNullException">factory</exception>
-        public LazyChildren(Func<IMetadataObject, IRepository, IEnumerable<IMetadataObject>> factory)
+        public LazyChildren(Func<IModelObject, IRepository, IEnumerable<IModelObject>> factory)
         {
             _factoryWithRepo = factory ?? throw new ArgumentNullException(nameof(factory));
         }
@@ -40,7 +40,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="factory">The factory.</param>
         /// <exception cref="ArgumentNullException">factory</exception>
-        public LazyChildren(Func<IMetadataObject, IImmutableList<TChild>> factory)
+        public LazyChildren(Func<IModelObject, IImmutableList<TChild>> factory)
         {
             _factory = factory ?? throw new ArgumentNullException(nameof(factory));
         }
@@ -65,7 +65,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public IMetadataObject Parent { get; private set; }
+        public IModelObject Parent { get; private set; }
 
         /// <inheritdoc />
         public bool AreChildrenLoaded => _children != null;
@@ -114,7 +114,7 @@ namespace GitObjectDb.Models
             }
         }
 
-        IEnumerable<TChild> GetValueFromFactory(IMetadataObject parent)
+        IEnumerable<TChild> GetValueFromFactory(IModelObject parent)
         {
             if (_factory != null)
             {
@@ -134,7 +134,7 @@ namespace GitObjectDb.Models
             throw new GitObjectDbException("Factory cannot be null.");
         }
 
-        void AttachChildrenToParentIfNeeded(IMetadataObject parent)
+        void AttachChildrenToParentIfNeeded(IModelObject parent)
         {
             if (_parentAttachedInChildren || _children == null)
             {
@@ -150,7 +150,7 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         [ExcludeFromGuardForNull]
-        public ILazyChildren Clone(bool forceVisit, Func<IMetadataObject, IMetadataObject> update, IEnumerable<IMetadataObject> added = null, IEnumerable<IMetadataObject> deleted = null)
+        public ILazyChildren Clone(bool forceVisit, Func<IModelObject, IModelObject> update, IEnumerable<IModelObject> added = null, IEnumerable<IModelObject> deleted = null)
         {
             if (update == null)
             {
@@ -169,7 +169,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public ILazyChildren<TChild> AttachToParent(IMetadataObject parent)
+        public ILazyChildren<TChild> AttachToParent(IModelObject parent)
         {
             if (parent == null)
             {
@@ -178,7 +178,7 @@ namespace GitObjectDb.Models
 
             if (Parent != null && Parent != parent)
             {
-                throw new GitObjectDbException("A single metadata object cannot be attached to two different parents.");
+                throw new GitObjectDbException("A single model object cannot be attached to two different parents.");
             }
 
             Parent = parent;
@@ -188,12 +188,12 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         [ExcludeFromGuardForNull]
-        public bool Add(IMetadataObject child) =>
+        public bool Add(IModelObject child) =>
             throw new GitObjectDbException($"The {nameof(ILazyChildren.Add)} method should never by called. Its purpose is to be used within a With(...) predicate.");
 
         /// <inheritdoc />
         [ExcludeFromGuardForNull]
-        public bool Delete(IMetadataObject child) =>
+        public bool Delete(IModelObject child) =>
             throw new GitObjectDbException($"The {nameof(ILazyChildren.Delete)} method should never by called. Its purpose is to be used within a With(...) predicate.");
 
         /// <inheritdoc />

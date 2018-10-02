@@ -17,12 +17,12 @@ using System.Runtime.Serialization;
 namespace GitObjectDb.Models
 {
     /// <summary>
-    /// Abstract type that any <see cref="IMetadataObject"/> implementation should derive from.
+    /// Abstract type that any <see cref="IModelObject"/> implementation should derive from.
     /// </summary>
-    /// <seealso cref="IMetadataObject" />
+    /// <seealso cref="IModelObject" />
     [DebuggerDisplay(DebuggerDisplay)]
     [DataContract]
-    public abstract class AbstractModel : IMetadataObject
+    public abstract class AbstractModel : IModelObject
     {
         /// <summary>
         /// The debugger display used by models.
@@ -80,10 +80,10 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public IEnumerable<IMetadataObject> Children => DataAccessor.ChildProperties.SelectMany(p => p.Accessor(this));
+        public IEnumerable<IModelObject> Children => DataAccessor.ChildProperties.SelectMany(p => p.Accessor(this));
 
         /// <inheritdoc />
-        public IMetadataObject Parent { get; private set; }
+        public IModelObject Parent { get; private set; }
 
         /// <summary>
         /// Gets the parent instance.
@@ -93,7 +93,7 @@ namespace GitObjectDb.Models
             GetRepository();
 
         /// <inheritdoc />
-        IObjectRepository IMetadataObject.Repository => Repository;
+        IObjectRepository IModelObject.Repository => Repository;
 
         /// <inheritdoc />
         public virtual IObjectRepositoryContainer Container => Repository.Container;
@@ -103,7 +103,7 @@ namespace GitObjectDb.Models
             throw new GitObjectDbException("No parent repository has been set.");
 
         /// <inheritdoc />
-        public void AttachToParent(IMetadataObject parent)
+        public void AttachToParent(IModelObject parent)
         {
             if (parent == null)
             {
@@ -111,7 +111,7 @@ namespace GitObjectDb.Models
             }
             if (Parent != null && Parent != parent)
             {
-                throw new GitObjectDbException("A single metadata object cannot be attached to two different parents.");
+                throw new GitObjectDbException("A single model object cannot be attached to two different parents.");
             }
 
             Parent = parent;
@@ -129,7 +129,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public IEnumerable<IMetadataObject> GetReferrers()
+        public IEnumerable<IModelObject> GetReferrers()
         {
             var isAsString = Id.ToString();
             var candidates = _repositorySearch.Grep(Container, isAsString);

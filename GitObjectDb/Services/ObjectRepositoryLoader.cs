@@ -100,7 +100,7 @@ namespace GitObjectDb.Services
             return (TRepository)LoadFrom((IObjectRepositoryContainer)container, repositoryDescription, commitId);
         }
 
-        IMetadataObject LoadEntry(IObjectRepositoryContainer container, ObjectId commitId, TreeEntry entry, string path)
+        IModelObject LoadEntry(IObjectRepositoryContainer container, ObjectId commitId, TreeEntry entry, string path)
         {
             ILazyChildren ResolveChildren(Type type, string propertyName)
             {
@@ -116,7 +116,7 @@ namespace GitObjectDb.Services
             var blob = (Blob)entry.Target;
             var jobject = blob.GetContentStream().ToJson<JObject>(serializer);
             var objectType = Type.GetType(jobject.Value<string>("$type"));
-            return (IMetadataObject)jobject.ToObject(objectType, serializer);
+            return (IModelObject)jobject.ToObject(objectType, serializer);
         }
 
         /// <inheritdoc />
@@ -137,7 +137,7 @@ namespace GitObjectDb.Services
                 TypeNameHandling = TypeNameHandling.Objects,
                 Formatting = Formatting.Indented
             };
-            serializer.Converters.Add(new MetadataObjectConverter(_serviceProvider, childrenResolver, container));
+            serializer.Converters.Add(new ModelObjectConverter(_serviceProvider, childrenResolver, container));
             serializer.Converters.Add(new VersionConverter());
 
             // Optimization: prevent reflection for each new object!
@@ -150,7 +150,7 @@ namespace GitObjectDb.Services
         {
             var dataAccessor = _dataAccessorProvider.Get(parentType);
             var childProperty = dataAccessor.ChildProperties.TryGetWithValue(p => p.Name, propertyName);
-            return LazyChildrenHelper.Create(childProperty, (o, r) => Enumerable.Empty<IMetadataObject>());
+            return LazyChildrenHelper.Create(childProperty, (o, r) => Enumerable.Empty<IModelObject>());
         }
 
         ILazyChildren LoadEntryChildren(IObjectRepositoryContainer container, ObjectId commitId, string path, ChildPropertyInfo childProperty) =>
@@ -161,15 +161,15 @@ namespace GitObjectDb.Services
                 var entry = commit[childPath];
                 if (entry == null)
                 {
-                    return Enumerable.Empty<IMetadataObject>();
+                    return Enumerable.Empty<IModelObject>();
                 }
                 var subTree = (Tree)entry.Target;
                 return subTree.Any() ?
                     LoadEntryChildren(container, commitId, childPath, subTree) :
-                    Enumerable.Empty<IMetadataObject>();
+                    Enumerable.Empty<IModelObject>();
             });
 
-        IEnumerable<IMetadataObject> LoadEntryChildren(IObjectRepositoryContainer container, ObjectId commitId, string childPath, Tree subTree) =>
+        IEnumerable<IModelObject> LoadEntryChildren(IObjectRepositoryContainer container, ObjectId commitId, string childPath, Tree subTree) =>
             from c in subTree
             where c.TargetType == TreeEntryTargetType.Tree
             let childTree = (Tree)c.Target

@@ -17,7 +17,7 @@ using System.Text;
 namespace GitObjectDb.Models
 {
     /// <summary>
-    /// Abstract root model containing nested <see cref="IMetadataObject"/> children.
+    /// Abstract root model containing nested <see cref="IModelObject"/> children.
     /// </summary>
     /// <seealso cref="AbstractModel" />
     /// <seealso cref="IObjectRepository" />
@@ -29,8 +29,6 @@ namespace GitObjectDb.Models
         /// The migration folder.
         /// </summary>
         internal const string MigrationFolder = "$Migrations";
-
-        readonly ObjectRepositoryRebaseFactory _objectRepositoryRebaseFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AbstractObjectRepository"/> class.
@@ -57,7 +55,6 @@ namespace GitObjectDb.Models
             Migrations = (migrations ?? throw new ArgumentNullException(nameof(migrations))).AttachToParent(this);
 
             RepositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
-            _objectRepositoryRebaseFactory = serviceProvider.GetRequiredService<ObjectRepositoryRebaseFactory>();
         }
 
         /// <inheritdoc />
@@ -86,10 +83,7 @@ namespace GitObjectDb.Models
         public RepositoryDescription RepositoryDescription { get; private set; }
 
         /// <inheritdoc />
-        public IObjectRepositoryRebase Rebase => _objectRepositoryRebaseFactory(this, () => (Container as ObjectRepositoryContainer)?.ReloadRepository(this));
-
-        /// <inheritdoc />
-        public IMetadataObject TryGetFromGitPath(ObjectPath path)
+        public IModelObject TryGetFromGitPath(ObjectPath path)
         {
             if (path == null)
             {
@@ -103,11 +97,11 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public IMetadataObject GetFromGitPath(ObjectPath path) =>
+        public IModelObject GetFromGitPath(ObjectPath path) =>
             TryGetFromGitPath(path) ?? throw new NotFoundException($"The element with path '{path}' could not be found.");
 
         /// <inheritdoc />
-        public IMetadataObject TryGetFromGitPath(string path)
+        public IModelObject TryGetFromGitPath(string path)
         {
             if (path == null)
             {
@@ -125,7 +119,7 @@ namespace GitObjectDb.Models
                 return null;
             }
 
-            IMetadataObject result = this;
+            IModelObject result = this;
             for (int i = 0; result != null && i < chunks.Length - 1; i += 2)
             {
                 var propertyInfo = result.DataAccessor.ChildProperties.TryGetWithValue(
@@ -145,7 +139,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public IMetadataObject GetFromGitPath(string path) =>
+        public IModelObject GetFromGitPath(string path) =>
             TryGetFromGitPath(path) ?? throw new NotFoundException($"The element with path '{path}' could not be found.");
 
         /// <summary>

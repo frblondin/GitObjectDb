@@ -18,7 +18,7 @@ namespace GitObjectDb.Tests.Validations
     public class ModelValidationTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void FullValidationDoesNotFail(ObjectRepository sut)
         {
             sut.Validate(ValidationRules.All);
@@ -34,7 +34,7 @@ namespace GitObjectDb.Tests.Validations
             services.AddSingleton<IValidatorFactory, CustomValidatorFactory<Field>>();
             var serviceProvider = services.BuildServiceProvider();
             fixture.Inject<IServiceProvider>(serviceProvider);
-            fixture.Customize(new MetadataCustomization());
+            fixture.Customize(new ModelCustomization());
             var repository = fixture.Create<ObjectRepository>();
 
             // Act
@@ -46,7 +46,7 @@ namespace GitObjectDb.Tests.Validations
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void LinkWithWrongRepositoryIsDetected(LinkField linkField)
         {
             // Act
@@ -59,7 +59,7 @@ namespace GitObjectDb.Tests.Validations
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void LinkWithWrongObjectPathIsDetected(LinkField linkField)
         {
             // Act
@@ -97,7 +97,7 @@ namespace GitObjectDb.Tests.Validations
         {
             public TargetValidation(IServiceProvider serviceProvider)
             {
-                Include(new MetadataObjectValidator<TTarget>(serviceProvider));
+                Include(new ModelObjectValidator<TTarget>(serviceProvider));
                 RuleFor(p => p.Name).Equal("foo");
             }
 

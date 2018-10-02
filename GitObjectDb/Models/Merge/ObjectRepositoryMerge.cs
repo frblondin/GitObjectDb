@@ -1,6 +1,7 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Git;
 using GitObjectDb.Models;
+using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Reflection;
 using GitObjectDb.Services;
@@ -15,7 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Models.Compare
+namespace GitObjectDb.Models.Merge
 {
     /// <inheritdoc/>
     [ExcludeFromGuardForNull]
@@ -54,7 +55,7 @@ namespace GitObjectDb.Models.Compare
             Container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
             Repository = repository ?? throw new ArgumentNullException(nameof(repository));
-            CommitId = repository.CommitId ?? throw new GitObjectDbException("Repository instance is not linked to any commit.");
+            HeadCommitId = repository.CommitId ?? throw new GitObjectDbException("Repository instance is not linked to any commit.");
             MergeCommitId = mergeCommitId ?? throw new ArgumentNullException(nameof(mergeCommitId));
             BranchName = branchName ?? throw new ArgumentNullException(nameof(branchName));
 
@@ -76,7 +77,7 @@ namespace GitObjectDb.Models.Compare
         public IObjectRepository Repository { get; }
 
         /// <inheritdoc/>
-        public ObjectId CommitId { get; }
+        public ObjectId HeadCommitId { get; }
 
         /// <inheritdoc/>
         public ObjectId MergeCommitId { get; private set; }
@@ -93,14 +94,6 @@ namespace GitObjectDb.Models.Compare
         /// <inheritdoc/>
         public bool RequiresMergeCommit { get; private set; }
 
-        /// <summary>
-        /// Gets all impacted paths.
-        /// </summary>
-        internal IEnumerable<string> AllImpactedPaths =>
-            ModifiedChunks.Select(c => c.Path)
-            .Union(AddedObjects.Select(a => a.Path), StringComparer.OrdinalIgnoreCase)
-            .Union(DeletedObjects.Select(d => d.Path), StringComparer.OrdinalIgnoreCase);
-
         /// <inheritdoc/>
         public IList<ObjectRepositoryChunkChange> ModifiedChunks { get; } = new List<ObjectRepositoryChunkChange>();
 
@@ -113,9 +106,8 @@ namespace GitObjectDb.Models.Compare
         static JObject GetContent(Commit mergeBase, string path, string branchInfo)
         {
             var blob = mergeBase[path]?.Target as Blob;
-            var content = blob?.GetContentText() ??
+            return blob?.GetContentStream().ToJson<JObject>(JsonSerializer.CreateDefault()) ??
                 throw new NotImplementedException($"Could not find node {path} in {branchInfo} tree.");
-            return JsonConvert.DeserializeObject<JObject>(content);
         }
 
         static JToken TryGetToken(JObject headObject, KeyValuePair<string, JToken> kvp)
@@ -166,7 +158,7 @@ namespace GitObjectDb.Models.Compare
         /// <exception cref="GitObjectDbException">The current head commit id is different from the commit used by current repository.</exception>
         internal void EnsureHeadCommit(IRepository repository)
         {
-            if (!repository.Head.Tip.Id.Equals(CommitId))
+            if (!repository.Head.Tip.Id.Equals(HeadCommitId))
             {
                 throw new GitObjectDbException("The current head commit id is different from the commit used by current repository.");
             }
@@ -217,7 +209,8 @@ namespace GitObjectDb.Models.Compare
             }
 
             var branchObject = GetContent(branchTip, change.Path, "branch tip");
-            AddedObjects.Add(new ObjectRepositoryAdd(change.Path, branchObject));
+            var parentId = change.Path.GetDataParentId(Repository);
+            AddedObjects.Add(new ObjectRepositoryAdd(change.Path, branchObject, parentId));
         }
 
         void ComputeMerge_Deleted(Commit mergeBase, PatchEntryChanges change, Patch headChanges)
@@ -229,7 +222,8 @@ namespace GitObjectDb.Models.Compare
             }
 
             var mergeBaseObject = GetContent(mergeBase, change.Path, "branch tip");
-            DeletedObjects.Add(new ObjectRepositoryDelete(change.Path, mergeBaseObject));
+            var id = mergeBaseObject[nameof(IModelObject.Id)].ToObject<UniqueId>();
+            DeletedObjects.Add(new ObjectRepositoryDelete(change.Path, id));
         }
 
         void AddModifiedChunks(PatchEntryChanges branchChange, JObject mergeBaseObject, JObject newObject, JObject headObject, PatchEntryChanges headChange)
@@ -247,7 +241,7 @@ namespace GitObjectDb.Models.Compare
                           let mergeBaseValue = mergeBaseObject[kvp.Key]
                           where mergeBaseValue == null || !JToken.DeepEquals(kvp.Value, mergeBaseValue)
                           let headValue = TryGetToken(headObject, kvp)
-                          select new ObjectRepositoryChunkChange(branchChange.Path, mergeBaseObject, newObject, headObject, p, mergeBaseValue, kvp.Value, headValue);
+                          select new ObjectRepositoryChunkChange(branchChange.Path, p, mergeBaseObject, mergeBaseValue, newObject, kvp.Value, headObject, headValue);
 
             foreach (var modifiedProperty in changes)
             {
@@ -256,6 +250,6 @@ namespace GitObjectDb.Models.Compare
         }
 
         /// <inheritdoc/>
-        public ObjectId Apply(Signature merger) => new ObjectRepositoryMergeProcessor(_serviceProvider, _repositoryDescription, this).Apply(merger);
+        public ObjectId Apply(Signature merger) => new MergeProcessor(_serviceProvider, this).Apply(merger);
     }
 }

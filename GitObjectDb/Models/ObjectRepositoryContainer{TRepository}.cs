@@ -2,6 +2,8 @@ using FluentValidation.Results;
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
 using GitObjectDb.Models.Compare;
+using GitObjectDb.Models.Merge;
+using GitObjectDb.Models.Rebase;
 using GitObjectDb.Services;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +24,7 @@ namespace GitObjectDb.Models
     {
         readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
         readonly ObjectRepositoryMergeFactory _objectRepositoryMergeFactory;
+        readonly ObjectRepositoryRebaseFactory _objectRepositoryRebaseFactory;
         readonly IObjectRepositoryLoader _repositoryLoader;
         readonly IRepositoryProvider _repositoryProvider;
         readonly GitHooks _hooks;
@@ -41,6 +44,7 @@ namespace GitObjectDb.Models
             _repositoryLoader = serviceProvider.GetRequiredService<IObjectRepositoryLoader>();
             _computeTreeChangesFactory = serviceProvider.GetRequiredService<ComputeTreeChangesFactory>();
             _objectRepositoryMergeFactory = serviceProvider.GetRequiredService<ObjectRepositoryMergeFactory>();
+            _objectRepositoryRebaseFactory = serviceProvider.GetRequiredService<ObjectRepositoryRebaseFactory>();
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _hooks = serviceProvider.GetRequiredService<GitHooks>();
 
@@ -421,6 +425,34 @@ namespace GitObjectDb.Models
             }
 
             return Merge(this[id], branchName);
+        }
+
+        /// <inheritdoc />
+        public IObjectRepositoryRebase Rebase(TRepository repository, string branchName)
+        {
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
+            }
+            if (branchName == null)
+            {
+                throw new ArgumentNullException(nameof(branchName));
+            }
+
+            repository.EnsuresCurrentRepository();
+            var commitId = repository.Execute(r => r.Branches[branchName].Tip.Id);
+            return _objectRepositoryRebaseFactory(this, repository.RepositoryDescription, repository, commitId, branchName);
+        }
+
+        /// <inheritdoc />
+        public IObjectRepositoryRebase Rebase(UniqueId id, string branchName)
+        {
+            if (branchName == null)
+            {
+                throw new ArgumentNullException(nameof(branchName));
+            }
+
+            return Rebase(this[id], branchName);
         }
 
         /// <inheritdoc />

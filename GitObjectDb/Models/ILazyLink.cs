@@ -6,11 +6,11 @@ using System.Text;
 namespace GitObjectDb.Models
 {
     /// <summary>
-    /// Provides support for lazy link to another <see cref="IMetadataObject"/>.
+    /// Provides support for lazy link to another <see cref="IModelObject"/>.
     /// </summary>
     /// <typeparam name="TLink">The type of the link.</typeparam>
     public interface ILazyLink<out TLink> : ILazyLink
-        where TLink : class, IMetadataObject
+        where TLink : class, IModelObject
     {
         /// <summary>
         /// Gets the value.
@@ -23,23 +23,23 @@ namespace GitObjectDb.Models
         /// <param name="parent">The parent.</param>
         /// <returns>The same instance, allowing simpled chained calls if needed.</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        ILazyLink<TLink> AttachToParent(IMetadataObject parent);
+        ILazyLink<TLink> AttachToParent(IModelObject parent);
     }
 
     /// <summary>
-    /// Provides support for lazy link to another <see cref="IMetadataObject"/>.
+    /// Provides support for lazy link to another <see cref="IModelObject"/>.
     /// </summary>
     public interface ILazyLink : ICloneable
     {
         /// <summary>
         /// Gets the parent.
         /// </summary>
-        IMetadataObject Parent { get; }
+        IModelObject Parent { get; }
 
         /// <summary>
         /// Gets the value.
         /// </summary>
-        IMetadataObject Link { get; }
+        IModelObject Link { get; }
 
         /// <summary>
         /// Gets the path.

@@ -4,11 +4,13 @@ using GitObjectDb.Models.Compare;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace GitObjectDb.Services
 {
@@ -18,6 +20,8 @@ namespace GitObjectDb.Services
         readonly IModelDataAccessorProvider _modelDataProvider;
         readonly IObjectRepositoryLoader _objectRepositoryLoader;
         readonly IRepositoryProvider _repositoryProvider;
+        readonly Lazy<JsonSerializer> _serializer;
+
         readonly IObjectRepositoryContainer _container;
         readonly RepositoryDescription _repositoryDescription;
 
@@ -41,9 +45,10 @@ namespace GitObjectDb.Services
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
+            _serializer = new Lazy<JsonSerializer>(() => serviceProvider.GetRequiredService<IObjectRepositoryLoader>().GetJsonSerializer(container));
         }
 
-        static void UpdateNodeIfNeeded(IMetadataObject original, IMetadataObject @new, Stack<string> stack, IModelDataAccessor accessor, IList<ObjectRepositoryEntryChanges> changes)
+        static void UpdateNodeIfNeeded(IModelObject original, IModelObject @new, Stack<string> stack, IModelDataAccessor accessor, IList<ObjectRepositoryEntryChanges> changes)
         {
             if (accessor.ModifiableProperties.Any(p => !p.AreSame(original, @new)))
             {
@@ -52,7 +57,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        void RemoveNode(IMetadataObject left, IList<ObjectRepositoryEntryChanges> changed, Stack<string> stack)
+        void RemoveNode(IModelObject left, IList<ObjectRepositoryEntryChanges> changed, Stack<string> stack)
         {
             var path = stack.ToDataPath();
             changed.Add(new ObjectRepositoryEntryChanges(path, ChangeKind.Deleted, old: left));
@@ -166,7 +171,7 @@ namespace GitObjectDb.Services
             return new ObjectRepositoryChanges(newRepository, changes.ToImmutableList(), original);
         }
 
-        void CompareNode(IMetadataObject original, IMetadataObject @new, IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack)
+        void CompareNode(IModelObject original, IModelObject @new, IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack)
         {
             var accessor = _modelDataProvider.Get(original.GetType());
             UpdateNodeIfNeeded(original, @new, stack, accessor, changes);
@@ -185,9 +190,9 @@ namespace GitObjectDb.Services
             }
         }
 
-        void CompareNodeChildren(IMetadataObject original, IMetadataObject @new, IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack, ChildPropertyInfo childProperty)
+        void CompareNodeChildren(IModelObject original, IModelObject @new, IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack, ChildPropertyInfo childProperty)
         {
-            using (var enumerator = new TwoSequenceEnumerator<IMetadataObject>(
+            using (var enumerator = new TwoSequenceEnumerator<IModelObject>(
                 childProperty.Accessor(original),
                 childProperty.Accessor(@new)))
             {
@@ -198,7 +203,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        void CompareNodeChildren(IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack, TwoSequenceEnumerator<IMetadataObject> enumerator)
+        void CompareNodeChildren(IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack, TwoSequenceEnumerator<IModelObject> enumerator)
         {
             if (enumerator.NodeIsStillThere)
             {
@@ -228,6 +233,61 @@ namespace GitObjectDb.Services
                 return;
             }
             throw new NotSupportedException("Unexpected child changes.");
+        }
+
+        /// <inheritdoc/>
+        public ObjectRepositoryChanges Compute(IObjectRepository repository, IList<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects)
+        {
+            var changes = modifiedChunks.ToLookup(c => c.Path, StringComparer.OrdinalIgnoreCase);
+            var allImpactedPaths =
+                modifiedChunks.Select(c => c.Path)
+                .Union(addedObjects.Select(a => a.Path), StringComparer.OrdinalIgnoreCase)
+                .Union(deletedObjects.Select(d => d.Path), StringComparer.OrdinalIgnoreCase);
+            var tempId = default(UniqueId);
+            var forceVisit = new HashSet<UniqueId>(from path in allImpactedPaths
+                                                from part in path.Split('/')
+                                                where UniqueId.TryParse(part, out tempId)
+                                                let id = tempId
+                                                select id);
+            object ProcessProperty(IModelObject node, string name, Type argumentType, object fallback)
+            {
+                var path = node.GetDataPath();
+                var propertyChange = changes[path].TryGetWithValue(c => c.Property.Name, name);
+                if (propertyChange != null)
+                {
+                    return propertyChange.MergeValue.ToObject(argumentType, _serializer.Value);
+                }
+                else
+                {
+                    return fallback is ICloneable cloneable ? cloneable.Clone() : fallback;
+                }
+            }
+
+            (IEnumerable<IModelObject> Additions, IEnumerable<IModelObject> Deletions) ChildChangesGetter(IModelObject node, ChildPropertyInfo childProperty)
+            {
+                var pathWithProperty = GetChildPathRegex(node, childProperty);
+                var additions = (from o in addedObjects
+                                 where pathWithProperty.IsMatch(o.Path)
+                                 let objectType = Type.GetType(o.Node.Value<string>("$type"))
+                                 select (IModelObject)o.Node.ToObject(childProperty.ItemType, _serializer.Value)).ToList();
+                var deleted = new HashSet<UniqueId>(from o in deletedObjects
+                                                    where pathWithProperty.IsMatch(o.Path)
+                                                    select o.Id);
+                var deletions = childProperty.Accessor(node).Where(n => deleted.Contains(n.Id)).ToList();
+
+                return (additions, deletions);
+            }
+
+            var mergeResult = repository.DataAccessor.DeepClone(repository, ProcessProperty, ChildChangesGetter, n => forceVisit.Contains(n.Id));
+            return Compare(repository, mergeResult);
+        }
+
+        static Regex GetChildPathRegex(IModelObject node, ChildPropertyInfo childProperty)
+        {
+            var path = node.GetFolderPath();
+            return string.IsNullOrEmpty(path) ?
+                new Regex($@"{childProperty.FolderName}/[\w-]+/{FileSystemStorage.DataFile}", RegexOptions.IgnoreCase) :
+                new Regex($@"{path}/{childProperty.FolderName}/[\w-]+/{FileSystemStorage.DataFile}", RegexOptions.IgnoreCase);
         }
     }
 }

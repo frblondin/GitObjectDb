@@ -18,7 +18,7 @@ namespace GitObjectDb.Tests.Git.Hooks
     public class GitHooksTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void PreCommitWhenPropertyChangeGetsFired(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> container, Page page, LinkField field, Page newLinkedPage, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Arrange
@@ -39,7 +39,7 @@ namespace GitObjectDb.Tests.Git.Hooks
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void PreCommitCancelsCommitIfRequested(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Arrange
@@ -53,7 +53,7 @@ namespace GitObjectDb.Tests.Git.Hooks
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void PostCommitWhenPropertyChangeGetsFired(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Arrange
@@ -71,7 +71,7 @@ namespace GitObjectDb.Tests.Git.Hooks
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void PreMergeGetsFiredWhenPulling(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange - Create origin and local repositories
@@ -98,7 +98,7 @@ namespace GitObjectDb.Tests.Git.Hooks
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void PreMergeCancelsPullWhenRequested(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange - Create origin and local repositories
@@ -123,7 +123,7 @@ namespace GitObjectDb.Tests.Git.Hooks
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void PostMergeGetsFiredWhenPulling(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange - Create origin and local repositories

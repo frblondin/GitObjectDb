@@ -9,6 +9,7 @@ using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Models.Migration;
 using GitObjectDb.Tests.Assets.Utils;
 using LibGit2Sharp;
+using Newtonsoft.Json.Linq;
 using NSubstitute;
 using NUnit.Framework;
 using System;
@@ -22,7 +23,7 @@ namespace GitObjectDb.Tests.Git
 {
     public class GuardClauseTests
     {
-        static Assembly Assembly { get; } = typeof(IMetadataObject).Assembly;
+        static Assembly Assembly { get; } = typeof(IModelObject).Assembly;
 
         /// <summary>
         /// Add missing type to <see cref="CommonTypeProviderCustomization"/> as needed in case of errors.
@@ -30,7 +31,7 @@ namespace GitObjectDb.Tests.Git
         /// <param name="fixture">The fixture.</param>
         /// <param name="assertion">The assertion.</param>
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(CommonTypeProviderCustomization), typeof(JsonCustomization), typeof(NSubstituteForAbstractTypesCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(CommonTypeProviderCustomization), typeof(JsonCustomization), typeof(NSubstituteForAbstractTypesCustomization))]
         public void VerifyGuardForNullClauses(IFixture fixture, GuardClauseAssertion assertion)
         {
             fixture.Customizations.OfType<NSubstituteForAbstractTypesCustomization>().Single().ExcludeEnumerableTypes = false;
@@ -56,8 +57,9 @@ namespace GitObjectDb.Tests.Git
 
                 CustomizeModelObjects(fixture);
                 CustomizeExpressionObjects(fixture);
-                CustomizeIMetadataObject(fixture);
+                CustomizeIModelObject(fixture);
                 CustomizeGitObjects(fixture);
+                CustomizeJsonObjects(fixture);
             }
 
             static void CustomizeModelObjects(IFixture fixture)
@@ -80,11 +82,15 @@ namespace GitObjectDb.Tests.Git
                 fixture.Inject((LambdaExpression)Expression.Lambda<Action>(Expression.Empty()));
             }
 
-            static void CustomizeIMetadataObject(IFixture fixture)
+            static void CustomizeIModelObject(IFixture fixture)
             {
-                var metadataObject = Substitute.For<IMetadataObject>();
-                metadataObject.Parent.Returns(default(IMetadataObject));
-                fixture.Inject(metadataObject);
+                var modelObject = Substitute.For<IModelObject>();
+                modelObject.Parent.Returns(default(IModelObject));
+                fixture.Inject(modelObject);
+
+                var objectRepository = Substitute.For<IObjectRepository>();
+                objectRepository.CommitId.Returns(new ObjectId("5aac67e2cd74bb5df7e3ae23d803412b1004d12d"));
+                fixture.Inject(objectRepository);
             }
 
             static void CustomizeGitObjects(IFixture fixture)
@@ -93,6 +99,13 @@ namespace GitObjectDb.Tests.Git
                 fixture.Inject(new ObjectId("2fa2540fecec8c4908fb0ccba825cdb903f09440"));
                 fixture.Inject(Substitute.For<PatchEntryChanges>());
                 fixture.Inject(Substitute.For<TreeEntryChanges>());
+            }
+
+            static void CustomizeJsonObjects(IFixture fixture)
+            {
+                var jobject = new JObject();
+                jobject["Id"] = JToken.FromObject(UniqueId.CreateNew());
+                fixture.Inject(jobject);
             }
         }
 

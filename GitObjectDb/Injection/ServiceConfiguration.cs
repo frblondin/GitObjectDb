@@ -4,6 +4,7 @@ using GitObjectDb.Git.Hooks;
 using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
+using GitObjectDb.Models.Merge;
 using GitObjectDb.Models.Rebase;
 using GitObjectDb.Reflection;
 using GitObjectDb.Services;

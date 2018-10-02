@@ -9,18 +9,18 @@ using System.Linq;
 
 namespace GitObjectDb.Tests.Assets.Customizations
 {
-    public class MetadataCustomization : ICustomization
+    public class ModelCustomization : ICustomization
     {
         public const int DefaultApplicationCount = 2;
         public const int DefaultPagePerApplicationCount = 3;
         public const int DefaultFieldPerPageCount = 10;
 
-        public MetadataCustomization()
+        public ModelCustomization()
             : this(DefaultApplicationCount, DefaultPagePerApplicationCount, DefaultFieldPerPageCount)
         {
         }
 
-        public MetadataCustomization(int applicationCount, int pagePerApplicationCount, int fieldPerPageCount, string containerPath = null)
+        public ModelCustomization(int applicationCount, int pagePerApplicationCount, int fieldPerPageCount, string containerPath = null)
         {
             ApplicationCount = applicationCount;
             PagePerApplicationCount = pagePerApplicationCount;
@@ -56,7 +56,7 @@ namespace GitObjectDb.Tests.Assets.Customizations
                 var page = new Page(serviceProvider, UniqueId.CreateNew(), $"Page {position}", $"Description for {position}", new LazyChildren<Field>(
                     Enumerable.Range(1, FieldPerPageCount).Select(f =>
                         CreateField(f))
-                    .ToImmutableList()));
+                    .OrderBy(f => f.Id).ToImmutableList()));
                 createdPages.Add(page);
                 return page;
             }
@@ -73,8 +73,8 @@ namespace GitObjectDb.Tests.Assets.Customizations
                         new Application(serviceProvider, UniqueId.CreateNew(), $"Application {a}", new LazyChildren<Page>(
                             Enumerable.Range(1, PagePerApplicationCount).Select(p =>
                                 CreatePage(p))
-                            .ToImmutableList())))
-                    .ToImmutableList()));
+                            .OrderBy(p => p.Id).ToImmutableList())))
+                    .OrderBy(a => a.Id).ToImmutableList()));
                 return lastModule;
             }
 

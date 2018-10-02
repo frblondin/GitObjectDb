@@ -14,20 +14,20 @@ using System.Reflection;
 namespace GitObjectDb.JsonConverters
 {
     /// <summary>
-    /// Converts <see cref="IMetadataObject"/> objects.
+    /// Converts <see cref="IModelObject"/> objects.
     /// </summary>
     /// <seealso cref="JsonConverter" />
-    internal class MetadataObjectConverter : JsonConverter
+    internal class ModelObjectConverter : JsonConverter
     {
         readonly IEnumerable<ICreatorParameterResolver> _creatorParameterResolvers;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MetadataObjectConverter"/> class.
+        /// Initializes a new instance of the <see cref="ModelObjectConverter"/> class.
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
         /// <param name="childResolver">The child resolver.</param>
         /// <param name="repositoryContainer">The repository container.</param>
-        public MetadataObjectConverter(IServiceProvider serviceProvider, ChildrenResolver childResolver, IObjectRepositoryContainer repositoryContainer)
+        public ModelObjectConverter(IServiceProvider serviceProvider, ChildrenResolver childResolver, IObjectRepositoryContainer repositoryContainer)
         {
             if (serviceProvider == null)
             {
@@ -78,7 +78,7 @@ namespace GitObjectDb.JsonConverters
                 throw new ArgumentNullException(nameof(objectType));
             }
 
-            return typeof(IMetadataObject).IsAssignableFrom(objectType);
+            return typeof(IModelObject).IsAssignableFrom(objectType);
         }
 
         /// <inheritdoc />

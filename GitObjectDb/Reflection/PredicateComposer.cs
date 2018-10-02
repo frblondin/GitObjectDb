@@ -22,14 +22,14 @@ namespace GitObjectDb.Reflection
         /// <param name="predicate">The predicate.</param>
         /// <returns>The instance itself to allow chained calls.</returns>
         public PredicateComposer And<TModel>(TModel node, Expression<Func<TModel, bool>> predicate)
-            where TModel : IMetadataObject
+            where TModel : IModelObject
         {
             _reflectors.Add(new PredicateReflector(node, predicate));
             return this;
         }
 
         /// <inheritdoc/>
-        public object ProcessArgument(IMetadataObject instance, string name, Type argumentType, object fallback = null)
+        public object ProcessArgument(IModelObject instance, string name, Type argumentType, object fallback = null)
         {
             if (instance == null)
             {
@@ -44,7 +44,7 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(argumentType));
             }
 
-            var matchingPredicate = _reflectors.FirstOrDefault(r => r.Instance == instance);
+            var matchingPredicate = _reflectors.FirstOrDefault(r => r.Instance.Id == instance.Id);
             if (matchingPredicate != null)
             {
                 return matchingPredicate.ProcessArgument(instance, name, argumentType, fallback);
@@ -53,7 +53,7 @@ namespace GitObjectDb.Reflection
         }
 
         /// <inheritdoc/>
-        public (IEnumerable<IMetadataObject> Additions, IEnumerable<IMetadataObject> Deletions) GetChildChanges(IMetadataObject instance, ChildPropertyInfo childProperty)
+        public (IEnumerable<IModelObject> Additions, IEnumerable<IModelObject> Deletions) GetChildChanges(IModelObject instance, ChildPropertyInfo childProperty)
         {
             if (instance == null)
             {
@@ -69,7 +69,18 @@ namespace GitObjectDb.Reflection
             {
                 return matchingPredicate.GetChildChanges(instance, childProperty);
             }
-            return (Enumerable.Empty<IMetadataObject>(), Enumerable.Empty<IMetadataObject>());
+            return (Enumerable.Empty<IModelObject>(), Enumerable.Empty<IModelObject>());
+        }
+
+        /// <inheritdoc/>
+        public bool MustForceVisit(IModelObject node)
+        {
+            if (node == null)
+            {
+                throw new ArgumentNullException(nameof(node));
+            }
+
+            return _reflectors.Any(r => r.MustForceVisit(node));
         }
     }
 }

@@ -17,7 +17,7 @@ namespace GitObjectDb.Tests.Models
     public partial class ObjectRepositoryTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void ResolveDiffsPageNameUpdate(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
@@ -37,7 +37,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void ResolveDiffsFieldAddition(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
@@ -58,7 +58,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void ResolveDiffsFieldDeletion(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
@@ -79,7 +79,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void ResolveDiffsPageDeletion(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Application application, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
         {
             // Arrange
@@ -95,7 +95,7 @@ namespace GitObjectDb.Tests.Models
             // Assert
             Assert.That(changes.Modified, Is.Empty);
             Assert.That(changes.Added, Is.Empty);
-            Assert.That(changes, Has.Count.EqualTo(MetadataCustomization.DefaultFieldPerPageCount + 1));
+            Assert.That(changes, Has.Count.EqualTo(ModelCustomization.DefaultFieldPerPageCount + 1));
             var pageDeletion = changes.Deleted.FirstOrDefault(o => o.Old is Page);
             Assert.That(pageDeletion, Is.Not.Null);
             Assert.That(pageDeletion.New, Is.Null);

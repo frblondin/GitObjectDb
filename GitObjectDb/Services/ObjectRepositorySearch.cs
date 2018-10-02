@@ -15,7 +15,7 @@ namespace GitObjectDb.Services
     internal class ObjectRepositorySearch : IObjectRepositorySearch
     {
         /// <inheritdoc/>
-        public IEnumerable<IMetadataObject> Grep(IObjectRepository repository, string content)
+        public IEnumerable<IModelObject> Grep(IObjectRepository repository, string content)
         {
             return repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
             {
@@ -28,7 +28,7 @@ namespace GitObjectDb.Services
             });
         }
 
-        IEnumerable<IMetadataObject> Grep(IObjectRepository repository, Tree tree, string content) =>
+        IEnumerable<IModelObject> Grep(IObjectRepository repository, Tree tree, string content) =>
             tree.SelectMany(child =>
             {
                 switch (child.TargetType)
@@ -44,7 +44,7 @@ namespace GitObjectDb.Services
                         var subTree = (Tree)child.Target;
                         return Grep(repository, subTree, content);
                 }
-                return Enumerable.Empty<IMetadataObject>();
+                return Enumerable.Empty<IModelObject>();
             });
 
         static bool ContainsString(Blob blob, string content)
@@ -67,7 +67,7 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public IEnumerable<IMetadataObject> Grep(IObjectRepositoryContainer container, string content) =>
+        public IEnumerable<IModelObject> Grep(IObjectRepositoryContainer container, string content) =>
             container.Repositories.SelectMany(r => Grep(r, content));
     }
 }

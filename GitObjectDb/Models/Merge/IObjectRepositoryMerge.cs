@@ -1,11 +1,12 @@
 using GitObjectDb.Git;
 using GitObjectDb.Models;
+using GitObjectDb.Models.Compare;
 using GitObjectDb.Reflection;
 using GitObjectDb.Services;
 using LibGit2Sharp;
 using System.Collections.Generic;
 
-namespace GitObjectDb.Models.Compare
+namespace GitObjectDb.Models.Merge
 {
     /// <summary>
     /// Creates a new instance implementing the <see cref="IObjectRepositoryMerge"/> interface.
@@ -24,9 +25,9 @@ namespace GitObjectDb.Models.Compare
     public interface IObjectRepositoryMerge
     {
         /// <summary>
-        /// Gets the commit identifier.
+        /// Gets the head commit identifier.
         /// </summary>
-        ObjectId CommitId { get; }
+        ObjectId HeadCommitId { get; }
 
         /// <summary>
         /// Gets the commit to be merged.

@@ -13,7 +13,7 @@ namespace GitObjectDb.Models
     /// <seealso cref="GitObjectDb.Models.ILazyChildren" />
     /// <seealso cref="System.Collections.Generic.IReadOnlyList{TChild}" />
     public interface ILazyChildren<TChild> : ILazyChildren, IReadOnlyList<TChild>
-        where TChild : class, IMetadataObject
+        where TChild : class, IModelObject
     {
         /// <summary>
         /// Attaches the instance to its parent.
@@ -21,7 +21,7 @@ namespace GitObjectDb.Models
         /// <param name="parent">The parent.</param>
         /// <returns>The same instance, allowing simpled chained calls if needed.</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        ILazyChildren<TChild> AttachToParent(IMetadataObject parent);
+        ILazyChildren<TChild> AttachToParent(IModelObject parent);
     }
 
     /// <summary>
@@ -32,7 +32,7 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Gets the parent.
         /// </summary>
-        IMetadataObject Parent { get; }
+        IModelObject Parent { get; }
 
         /// <summary>
         /// Gets a value indicating whether the children have been loaded.
@@ -52,20 +52,20 @@ namespace GitObjectDb.Models
         /// <param name="added">Nodes that must be added.</param>
         /// <param name="deleted">Nodes that must be deleted.</param>
         /// <returns>The new <see cref="ILazyChildren"/> instance containing the result of the transformations.</returns>
-        ILazyChildren Clone(bool forceVisit, Func<IMetadataObject, IMetadataObject> update, IEnumerable<IMetadataObject> added = null, IEnumerable<IMetadataObject> deleted = null);
+        ILazyChildren Clone(bool forceVisit, Func<IModelObject, IModelObject> update, IEnumerable<IModelObject> added = null, IEnumerable<IModelObject> deleted = null);
 
         /// <summary>
-        /// Adds the specified child. This method should only be used within <see cref="IMetadataObjectExtensions.With{TModel}(TModel, Expression{Predicate{TModel}})"/>.
+        /// Adds the specified child. This method should only be used within <see cref="IModelObjectExtensions.With{TModel}(TModel, Expression{Predicate{TModel}})"/>.
         /// </summary>
         /// <param name="child">The child.</param>
         /// <returns>Return type required to return a predicate.</returns>
-        bool Add(IMetadataObject child);
+        bool Add(IModelObject child);
 
         /// <summary>
-        /// Deletes the specified child. This method should only be used within <see cref="IMetadataObjectExtensions.With{TModel}(TModel, Expression{Predicate{TModel}})"/>.
+        /// Deletes the specified child. This method should only be used within <see cref="IModelObjectExtensions.With{TModel}(TModel, Expression{Predicate{TModel}})"/>.
         /// </summary>
         /// <param name="child">The child.</param>
         /// <returns>Return type required to return a predicate.</returns>
-        bool Delete(IMetadataObject child);
+        bool Delete(IModelObject child);
     }
 }

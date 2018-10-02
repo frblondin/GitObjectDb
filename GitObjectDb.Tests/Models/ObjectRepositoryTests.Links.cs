@@ -14,7 +14,7 @@ namespace GitObjectDb.Tests.Models
     public partial class ObjectRepositoryTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void LoadLinkField(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, LinkField linkField, Signature signature, string message)
         {
             // Arrange
@@ -30,7 +30,7 @@ namespace GitObjectDb.Tests.Models
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void ResolveLinkRefererrs(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // Arrange

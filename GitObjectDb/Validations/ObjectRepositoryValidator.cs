@@ -21,7 +21,7 @@ namespace GitObjectDb.Validations
         /// <param name="serviceProvider">The service provider.</param>
         public ObjectRepositoryValidator(IServiceProvider serviceProvider)
         {
-            Include(new MetadataObjectValidator<TRepository>(serviceProvider));
+            Include(new ModelObjectValidator<TRepository>(serviceProvider));
             RuleSet(nameof(ValidationRules.Dependency), () =>
                 RuleForEach(r => r.Dependencies)
                     .Must(ValidateDependency)

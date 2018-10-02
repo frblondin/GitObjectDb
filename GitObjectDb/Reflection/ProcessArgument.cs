@@ -13,5 +13,5 @@ namespace GitObjectDb.Reflection
     /// <param name="type">The argument type.</param>
     /// <param name="fallback">The fallback.</param>
     /// <returns>The new argument value.</returns>
-    public delegate object ProcessArgument(IMetadataObject instance, string propertyName, Type type, object fallback);
+    public delegate object ProcessArgument(IModelObject instance, string propertyName, Type type, object fallback);
 }

@@ -14,7 +14,7 @@ namespace GitObjectDb.Tests.Validations
     public class DependencyValidationTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void ThrowIfMissingDependency(ObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, Signature signature, string message)
         {
             // Arrange
@@ -30,7 +30,7 @@ namespace GitObjectDb.Tests.Validations
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void ThrowIfWrongDependencyVersion(ObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, ObjectRepository dependency, Signature signature, string message)
         {
             // Arrange
@@ -47,7 +47,7 @@ namespace GitObjectDb.Tests.Validations
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultMetadataContainerCustomization), typeof(MetadataCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void NoValidationErrorIfVersionIsLowerOrEqual(ObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, ObjectRepository dependency, Signature signature, string message)
         {
             // Arrange

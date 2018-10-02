@@ -29,7 +29,7 @@ namespace GitObjectDb.JsonConverters
             _serviceProvider.GetService(property.PropertyType) != null;
 
         /// <inheritdoc/>
-        public object Resolve(MetadataObjectConverter converter, JsonProperty property, Type instanceType) =>
+        public object Resolve(ModelObjectConverter converter, JsonProperty property, Type instanceType) =>
             _serviceProvider.GetService(property.PropertyType);
     }
 }

@@ -19,7 +19,7 @@ namespace GitObjectDb.JsonConverters
             typeof(ILazyChildren).IsAssignableFrom(property.PropertyType);
 
         /// <inheritdoc/>
-        public object Resolve(MetadataObjectConverter converter, JsonProperty property, Type instanceType) =>
+        public object Resolve(ModelObjectConverter converter, JsonProperty property, Type instanceType) =>
             converter.ChildResolver(instanceType, property.PropertyName);
     }
 }

@@ -17,7 +17,7 @@ namespace GitObjectDb.Models
         /// <param name="propertyInfo">The property information.</param>
         /// <param name="factory">The factory.</param>
         /// <returns>The new lazy children instance.</returns>
-        internal static ILazyChildren Create(ChildPropertyInfo propertyInfo, Func<IMetadataObject, IRepository, IEnumerable<IMetadataObject>> factory)
+        internal static ILazyChildren Create(ChildPropertyInfo propertyInfo, Func<IModelObject, IRepository, IEnumerable<IModelObject>> factory)
         {
             var targetType = typeof(LazyChildren<>).MakeGenericType(propertyInfo.ItemType);
             return (ILazyChildren)Activator.CreateInstance(targetType, factory);

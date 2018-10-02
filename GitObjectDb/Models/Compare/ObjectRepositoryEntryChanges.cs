@@ -19,7 +19,7 @@ namespace GitObjectDb.Models.Compare
         /// <param name="old">The old value.</param>
         /// <param name="new">The new value.</param>
         /// <exception cref="ArgumentNullException">old</exception>
-        public ObjectRepositoryEntryChanges(string path, ChangeKind status, IMetadataObject old = null, IMetadataObject @new = null)
+        public ObjectRepositoryEntryChanges(string path, ChangeKind status, IModelObject old = null, IModelObject @new = null)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));
             Status = status;
@@ -36,12 +36,12 @@ namespace GitObjectDb.Models.Compare
         /// <summary>
         /// Gets the old object.
         /// </summary>
-        public IMetadataObject Old { get; }
+        public IModelObject Old { get; }
 
         /// <summary>
         /// Gets the new object.
         /// </summary>
-        public IMetadataObject New { get; }
+        public IModelObject New { get; }
 
         /// <summary>
         /// Gets the new path.
