@@ -1,4 +1,4 @@
-version: 1.0.{build}
+version: 0.0.{build}
 pull_requests:
   do_not_increment_build_number: true
 branches:
@@ -33,3 +33,15 @@ build_script:
         dotnet pack GitObjectDb --no-build --configuration Release /p:Version="$ENV:APPVEYOR_BUILD_VERSION" -o ..\Artifacts --include-symbols --include-source
         Get-ChildItem Artifacts\*.nupkg | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
       }
+deploy:
+  provider: GitHub
+  tag: $(appveyor_build_version)
+  release: GitObjectDb v$(appveyor_build_version)
+  description: ''
+  auth_token:
+    secure: PSEMQITxvJW1J/gjkbgXmr9W0GWEtqHkaHjPHKwShuUL4OJiqC+o9ExosP0z3mjc # your encrypted token from GitHub
+  artifact: /.*\.nupkg/            # upload all NuGet packages to release assets
+  draft: false
+  prerelease: false
+  on:
+    branch: master                 # release from master branch only
