@@ -15,9 +15,9 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Tests.Models
+namespace GitObjectDb.Tests.Services
 {
-    public partial class ObjectRepositoryTests
+    public class RebaseProcessorTests
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
@@ -71,11 +71,11 @@ namespace GitObjectDb.Tests.Models
 
             // Act
             var application = sut.Applications[0];
-            var updateName = application.With(app => app.Pages.Delete(application.Pages[0]));
+            var updateName = application.With(app => app.Name == "modified name");
             var b = container.Commit(updateName.Repository, signature, message); // B
             container.Branch(a.Id, "newBranch", "HEAD~1");
-            var updateDescription = application.With(app => app.Name == "modified name");
-            container.Commit(updateDescription.Repository, signature, message); // C
+            var deletePage = application.With(app => app.Pages.Delete(application.Pages[0]));
+            container.Commit(deletePage.Repository, signature, message); // C
             var rebase = container.Rebase(sut.Id, "master");
 
             // Assert
@@ -111,12 +111,12 @@ namespace GitObjectDb.Tests.Models
 
             // Act
             var application = sut.Applications[0];
-            var page = new Page(serviceProvider, UniqueId.CreateNew(), "name", "description", new LazyChildren<Field>());
-            var updateName = application.With(app => app.Pages.Add(page));
+            var updateName = application.With(app => app.Name == "modified name");
             var b = container.Commit(updateName.Repository, signature, message); // B
             container.Branch(a.Id, "newBranch", "HEAD~1");
-            var updateDescription = application.With(app => app.Name == "modified name");
-            container.Commit(updateDescription.Repository, signature, message); // C
+            var page = new Page(serviceProvider, UniqueId.CreateNew(), "name", "description", new LazyChildren<Field>());
+            var addPAge = application.With(app => app.Pages.Add(page));
+            container.Commit(addPAge.Repository, signature, message); // C
             var rebase = container.Rebase(sut.Id, "master");
 
             // Assert
