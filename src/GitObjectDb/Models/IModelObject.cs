@@ -1,5 +1,5 @@
-using FluentValidation.Results;
 using GitObjectDb.Reflection;
+using GitObjectDb.Validations;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -61,11 +61,5 @@ namespace GitObjectDb.Models
         /// <param name="rules">The rules.</param>
         /// <returns>A <see cref="ValidationResult"/> object containing any validation failures.</returns>
         ValidationResult Validate(ValidationRules rules = ValidationRules.All);
-
-        /// <summary>
-        /// Gets the objects having a reference to this instance.
-        /// </summary>
-        /// <returns>All objects having a link whose target is the current instance.</returns>
-        IEnumerable<IModelObject> GetReferrers();
     }
 }

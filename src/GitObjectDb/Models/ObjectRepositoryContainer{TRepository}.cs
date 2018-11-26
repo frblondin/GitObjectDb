@@ -1,10 +1,11 @@
-using FluentValidation.Results;
+using GitObjectDb.Attributes;
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Merge;
 using GitObjectDb.Models.Rebase;
 using GitObjectDb.Services;
+using GitObjectDb.Validations;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -20,7 +21,7 @@ namespace GitObjectDb.Models
     /// <inheritdoc />
     [DebuggerDisplay("Path = {Path}, Repositories = {Repositories.Count}")]
     public class ObjectRepositoryContainer<TRepository> : ObjectRepositoryContainer, IObjectRepositoryContainer<TRepository>
-        where TRepository : AbstractObjectRepository
+        where TRepository : class, IObjectRepository
     {
         readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
         readonly ObjectRepositoryMergeFactory _objectRepositoryMergeFactory;
@@ -457,6 +458,6 @@ namespace GitObjectDb.Models
 
         /// <inheritdoc />
         public override ValidationResult Validate(ValidationRules rules = ValidationRules.All) =>
-            new ValidationResult(Repositories.SelectMany(r => r.Validate(rules).Errors));
+            new ValidationResult(Repositories.SelectMany(r => r.Validate(rules).Errors).ToList());
     }
 }

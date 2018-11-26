@@ -122,7 +122,7 @@ namespace GitObjectDb.Models
             }
             else if (_factoryWithRepo != null)
             {
-                var objectRepository = (AbstractObjectRepository)parent.Repository;
+                var objectRepository = parent.Repository;
                 return objectRepository.RepositoryProvider.Execute(
                     objectRepository.RepositoryDescription,
                     repository =>

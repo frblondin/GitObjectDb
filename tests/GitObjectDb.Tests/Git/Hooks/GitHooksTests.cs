@@ -19,18 +19,21 @@ namespace GitObjectDb.Tests.Git.Hooks
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void PreCommitWhenPropertyChangeGetsFired(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> container, Page page, LinkField field, Page newLinkedPage, Signature signature, string message, InMemoryBackend inMemoryBackend)
+        public void PreCommitWhenPropertyChangeGetsFired(GitHooks sut, ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, Page page, Page newLinkedPage, Signature signature, string message, InMemoryBackend inMemoryBackend)
         {
             // Arrange
             CommitStartedEventArgs lastEvent = null;
             sut.CommitStarted += (_, args) => lastEvent = args;
+            var field = repository.Flatten().OfType<Field>().First(
+                f => f.Content.MatchOrDefault(matchLink: l => true));
 
             // Act
-            container.AddRepository(instance, signature, message, inMemoryBackend);
+            container.AddRepository(repository, signature, message, inMemoryBackend);
             var composer = new PredicateComposer()
-                .And(field, f => f.Name == "modified field name" && f.PageLink == new LazyLink<Page>(newLinkedPage))
+                .And(field, f => f.Name == "modified field name" &&
+                                 f.Content == FieldContent.NewLink(new FieldLinkContent(new LazyLink<Page>(container, newLinkedPage))))
                 .And(page, p => p.Name == "modified page name");
-            var modified = field.With(composer);
+            var modified = repository.With(composer);
             container.Commit(modified.Repository, signature, message);
 
             // Assert

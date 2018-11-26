@@ -20,6 +20,19 @@ namespace Newtonsoft.Json
         /// <returns>The instance of <typeparamref name="T"/> being deserialized.</returns>
         internal static T ToJson<T>(this Stream stream, JsonSerializer serializer)
         {
+            return (T)stream.ToJson(typeof(T), serializer);
+        }
+
+        /// <summary>
+        /// Deserializes data contained in the <see cref="Stream"/> into an instance
+        /// of type <paramref name="objectType"/>.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="objectType">The <see cref="Type"/> of object being deserialized.</param>
+        /// <param name="serializer">The serializer.</param>
+        /// <returns>The instance of <paramref name="objectType" /> being deserialized.</returns>
+        internal static object ToJson(this Stream stream, Type objectType, JsonSerializer serializer)
+        {
             if (serializer == null)
             {
                 throw new ArgumentNullException(nameof(serializer));
@@ -27,7 +40,7 @@ namespace Newtonsoft.Json
 
             using (var streamReader = new StreamReader(stream))
             {
-                return (T)serializer.Deserialize(streamReader, typeof(T));
+                return serializer.Deserialize(streamReader, objectType);
             }
         }
     }

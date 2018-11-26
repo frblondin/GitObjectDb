@@ -1,5 +1,5 @@
-using FluentValidation.Results;
 using GitObjectDb.Git;
+using GitObjectDb.Validations;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -61,5 +61,20 @@ namespace GitObjectDb.Models
                 throw new GitObjectDbException("The current head commit id is different from the commit used by current instance.");
             }
         }
+
+        /// <inheritdoc />
+        public GitObjectDb.Models.IModelObject TryGetFromGitPath(GitObjectDb.Models.ObjectPath path)
+        {
+            if (path == null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            return TryGetRepository(path.Repository)?.TryGetFromGitPath(path.Path);
+        }
+
+        /// <inheritdoc />
+        public GitObjectDb.Models.IModelObject GetFromGitPath(GitObjectDb.Models.ObjectPath path) =>
+            TryGetFromGitPath(path) ?? throw new LibGit2Sharp.NotFoundException($"The element with path '{path}' could not be found.");
     }
 }

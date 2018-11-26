@@ -1,8 +1,9 @@
-using FluentValidation;
 using GitObjectDb.Attributes;
+using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Validations;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -20,6 +21,8 @@ namespace GitObjectDb.Reflection
         readonly Lazy<IImmutableList<ChildPropertyInfo>> _childProperties;
         readonly Lazy<IImmutableList<ModifiablePropertyInfo>> _modifiableProperties;
         readonly Lazy<ConstructorParameterBinding> _constructorBinding;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ModelObjectSpecialValueProvider _specialValueProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ModelDataAccessor"/> class.
@@ -35,23 +38,20 @@ namespace GitObjectDb.Reflection
         /// </exception>
         public ModelDataAccessor(IServiceProvider serviceProvider, Type type)
         {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
-
             Type = type ?? throw new ArgumentNullException(nameof(type));
 
-            serviceProvider.GetRequiredService<JsonSerializationValidator>().ValidateAndThrow(type);
-
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _childProperties = new Lazy<IImmutableList<ChildPropertyInfo>>(GetChildProperties);
             _modifiableProperties = new Lazy<IImmutableList<ModifiablePropertyInfo>>(GetModifiableProperties);
             _constructorBinding = new Lazy<ConstructorParameterBinding>(() =>
             {
                 var constructors = from c in Type.GetTypeInfo().GetConstructors()
                                    select new ConstructorParameterBinding(serviceProvider, c);
-                return serviceProvider.GetRequiredService<IConstructorSelector>().SelectConstructorBinding(Type, constructors.ToArray());
+                return _serviceProvider.GetRequiredService<IConstructorSelector>().SelectConstructorBinding(Type, constructors.ToArray());
             });
+            _specialValueProvider = _serviceProvider.GetRequiredService<ModelObjectSpecialValueProvider>();
+
+            ValidateSerializable();
         }
 
         /// <inheritdoc />
@@ -66,7 +66,40 @@ namespace GitObjectDb.Reflection
         /// <inheritdoc />
         public ConstructorParameterBinding ConstructorParameterBinding => _constructorBinding.Value;
 
-        IImmutableList<ChildPropertyInfo> GetChildProperties() =>
+        private void ValidateSerializable()
+        {
+            var contract = (JsonObjectContract)JsonSerializerProvider.Default.ContractResolver.ResolveContract(Type);
+            var missingMatchingProperties = contract.CreatorParameters.SelectMany(GetParameterErrors).ToList();
+            if (missingMatchingProperties.Any())
+            {
+                throw new NotSupportedException(
+                    $"The type {Type.Name} contains invalid constructor parameters:\n\t" +
+                    string.Join("\n\t", missingMatchingProperties));
+            }
+
+            IEnumerable<string> GetParameterErrors(JsonProperty constructorParameter)
+            {
+                if (_specialValueProvider.TryGetInjector(Type, constructorParameter) != null)
+                {
+                    yield break;
+                }
+                var matching = contract.Properties.TryGetWithValue(p => p.PropertyName, constructorParameter.PropertyName);
+                if (matching == null)
+                {
+                    yield return $"No property named '{constructorParameter.PropertyName}' could be found.";
+                }
+                if (matching.Ignored)
+                {
+                    yield return $"The property named '{constructorParameter.PropertyName}' is not serialized.";
+                }
+                if (matching.PropertyType != constructorParameter.PropertyType)
+                {
+                    yield return $"The property type '{matching.PropertyType}' does not match.";
+                }
+            }
+        }
+
+        private IImmutableList<ChildPropertyInfo> GetChildProperties() =>
             (from p in Type.GetTypeInfo().GetProperties()
              let lazyChildrenType = LazyChildrenHelper.TryGetLazyChildrenInterface(p.PropertyType)
              where lazyChildrenType != null

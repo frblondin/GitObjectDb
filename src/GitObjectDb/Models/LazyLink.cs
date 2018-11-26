@@ -1,4 +1,3 @@
-using LibGit2Sharp;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -18,15 +17,18 @@ namespace GitObjectDb.Models
         static readonly string _nullReturnedValueExceptionMessage =
             $"Value returned by {nameof(LazyLink<TLink>)} was null.";
 
-        readonly TLink _link;
-        readonly Func<IModelObject, TLink> _factory;
         ObjectPath _path;
+        private readonly TLink _link;
+        private readonly Func<TLink> _factory;
+        private readonly IObjectRepositoryContainer _container;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LazyLink{TLink}"/> class.
         /// </summary>
+        /// <param name="container">The container.</param>
         /// <param name="factory">The factory.</param>
-        public LazyLink(Func<IModelObject, TLink> factory)
+        public LazyLink(IObjectRepositoryContainer container, Func<TLink> factory)
+            : this(container)
         {
             _factory = factory ?? throw new ArgumentNullException(nameof(factory));
         }
@@ -34,9 +36,11 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Initializes a new instance of the <see cref="LazyLink{TLink}"/> class.
         /// </summary>
+        /// <param name="container">The container.</param>
         /// <param name="value">The value.</param>
         /// <exception cref="ArgumentNullException">value</exception>
-        public LazyLink(TLink value)
+        public LazyLink(IObjectRepositoryContainer container, TLink value)
+            : this(container)
         {
             _link = value ?? throw new ArgumentNullException(nameof(value));
         }
@@ -44,28 +48,24 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Initializes a new instance of the <see cref="LazyLink{TLink}"/> class.
         /// </summary>
+        /// <param name="container">The container.</param>
         /// <param name="path">The path.</param>
         [JsonConstructor]
-        public LazyLink(ObjectPath path)
-            : this(parent => (TLink)parent.Repository.GetFromGitPath(path))
+        public LazyLink(IObjectRepositoryContainer container, ObjectPath path)
+            : this(container)
         {
-            _path = path;
+            _path = path ?? throw new ArgumentNullException(nameof(path));
+            _factory = () => (TLink)_container.GetFromGitPath(path);
         }
 
-        /// <inheritdoc />
-        public IModelObject Parent { get; private set; }
+        private LazyLink(IObjectRepositoryContainer container)
+        {
+            _container = container ?? throw new ArgumentNullException(nameof(container));
+        }
 
         /// <inheritdoc />
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public TLink Link
-        {
-            get
-            {
-                ThrowIfNoParent();
-
-                return _link ?? ResolveLink();
-            }
-        }
+        public TLink Link => _link ?? ResolveLink();
 
         /// <inheritdoc />
         IModelObject ILazyLink.Link => Link;
@@ -77,14 +77,6 @@ namespace GitObjectDb.Models
         /// <inheritdoc />
         public bool IsLinkCreated => _link != null;
 
-        void ThrowIfNoParent()
-        {
-            if (Parent == null)
-            {
-                throw new GitObjectDbException($"Parent is not attached to {nameof(LazyLink<TLink>)}.");
-            }
-        }
-
         /// <summary>
         /// Resolves the link. The result should not be stored in a cache (backing field)
         /// since the target object might be stored in another repository that could change
@@ -93,41 +85,24 @@ namespace GitObjectDb.Models
         /// <returns>Target linked object.</returns>
         TLink ResolveLink()
         {
-            var result = GetValueFromFactory(Parent);
+            var result = GetValueFromFactory();
             _path = new ObjectPath(result);
             return result;
         }
 
-        TLink GetValueFromFactory(IModelObject parent)
+        private TLink GetValueFromFactory()
         {
             if (_factory == null)
             {
                 throw new GitObjectDbException("Factory cannot be null.");
             }
-            return _factory(parent) ?? throw new ObjectNotFoundException(_nullReturnedValueExceptionMessage);
-        }
-
-        /// <inheritdoc />
-        public ILazyLink<TLink> AttachToParent(IModelObject parent)
-        {
-            if (parent == null)
-            {
-                throw new ArgumentNullException(nameof(parent));
-            }
-
-            if (Parent != null && Parent != parent)
-            {
-                throw new GitObjectDbException("A single model object cannot be attached to two different parents.");
-            }
-
-            Parent = parent;
-            return this;
+            return _factory() ?? throw new ObjectNotFoundException(_nullReturnedValueExceptionMessage);
         }
 
         /// <inheritdoc />
         public object Clone() => _factory != null ?
-                                 new LazyLink<TLink>(_factory) :
-                                 new LazyLink<TLink>(Path);
+                                 new LazyLink<TLink>(_container, _factory) :
+                                 new LazyLink<TLink>(_container, Path);
 
         /// <inheritdoc />
         public bool Equals(LazyLink<TLink> other)

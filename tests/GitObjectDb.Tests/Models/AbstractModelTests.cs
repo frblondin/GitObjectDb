@@ -7,6 +7,7 @@ using NUnit.Framework;
 using NUnit.Framework.Constraints;
 using PowerAssert;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace GitObjectDb.Tests.Models
@@ -26,13 +27,18 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void WithModifiesLink(LinkField field, Page newLinkedPage)
+        public void WithModifiesLink(ObjectRepository repository, Page newLinkedPage)
         {
+            // Arrange
+            var field = repository.Flatten().OfType<Field>().First(
+                f => f.Content.Match(() => false, matchLink: l => true));
+
             // Act
-            var modified = field.With(f => f.PageLink == new LazyLink<Page>(newLinkedPage));
+            var modified = field.With(f => f.Content == FieldContent.NewLink(new FieldLinkContent(new LazyLink<Page>(repository.Container, newLinkedPage))));
+            var link = modified.Content.MatchOrDefault(matchLink: l => l.Target);
 
             // Assert
-            Assert.That(modified.PageLink.Link, Is.EqualTo(newLinkedPage));
+            Assert.That(link.Link, Is.EqualTo(newLinkedPage));
         }
 
         [Test]
@@ -48,13 +54,18 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void CloneableParametersGetCloned(LinkField linkField, string newName)
+        public void CloneableParametersGetCloned(ObjectRepository repository, string newName)
         {
+            // Arrange
+            var linkField = repository.Flatten().OfType<Field>().First(f => f.Content.IsLink);
+
             // Act
             var modified = linkField.With(l => l.Name == newName);
 
             // Assert
-            Assert.That(modified.PageLink, Is.Not.SameAs(linkField.PageLink));
+            var oldLink = linkField.Content.MatchOrDefault(matchLink: l => l.Target);
+            var newLink = modified.Content.MatchOrDefault(matchLink: l => l.Target);
+            Assert.That(newLink.Link, Is.Not.SameAs(oldLink));
         }
     }
 }

@@ -1,7 +1,9 @@
 using GitObjectDb.Git;
+using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,6 +16,17 @@ namespace GitObjectDb.Services
     /// <inheritdoc/>
     internal class ObjectRepositorySearch : IObjectRepositorySearch
     {
+        private readonly IModelDataAccessorProvider _dataAccessorProvider;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ObjectRepositorySearch"/> class.
+        /// </summary>
+        /// <param name="serviceProvider">The service provider.</param>
+        public ObjectRepositorySearch(IServiceProvider serviceProvider)
+        {
+            _dataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
+        }
+
         /// <inheritdoc/>
         public IEnumerable<IModelObject> Grep(IObjectRepository repository, string content)
         {
@@ -69,5 +82,13 @@ namespace GitObjectDb.Services
         /// <inheritdoc/>
         public IEnumerable<IModelObject> Grep(IObjectRepositoryContainer container, string content) =>
             container.Repositories.SelectMany(r => Grep(r, content));
+
+        /// <inheritdoc/>
+        public IEnumerable<IModelObject> GetReferrers<TModel>(TModel node)
+            where TModel : class, IModelObject
+        {
+            var target = $@"""path"": ""{node.GetFolderPath()}""";
+            return Grep(node.Container, target);
+        }
     }
 }

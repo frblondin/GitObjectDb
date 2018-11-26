@@ -17,13 +17,6 @@ namespace GitObjectDb.Models
     /// </summary>
     public static class IModelObjectExtensions
     {
-        static readonly JsonSerializer _jsonSerializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
-        {
-            TypeNameHandling = TypeNameHandling.Objects,
-            Formatting = Formatting.Indented,
-            Converters = new JsonConverter[] { new VersionConverter() }
-        });
-
         /// <summary>
         /// Creates a copy of the repository and apply changes according to the new test values provided in the predicate.
         /// </summary>
@@ -61,7 +54,7 @@ namespace GitObjectDb.Models
         /// <param name="node">The node.</param>
         /// <returns>The root <see cref="IModelObject"/> instance.</returns>
         /// <exception cref="ArgumentNullException">node</exception>
-        internal static IModelObject Root(this IModelObject node)
+        public static IModelObject Root(this IModelObject node)
         {
             if (node == null)
             {
@@ -122,7 +115,7 @@ namespace GitObjectDb.Models
             return ParentsIterator(source);
         }
 
-        static IEnumerable<IModelObject> ParentsIterator(IModelObject source)
+        private static IEnumerable<IModelObject> ParentsIterator(IModelObject source)
         {
             var node = source;
             while (node != null)
@@ -178,7 +171,7 @@ namespace GitObjectDb.Models
             return result.ToString();
         }
 
-        static void GetFolderPath(IModelObject node, StringBuilder builder)
+        private static void GetFolderPath(IModelObject node, StringBuilder builder)
         {
             if (node.Parent != null)
             {
@@ -207,7 +200,7 @@ namespace GitObjectDb.Models
             stringBuilder.Clear();
             using (var writer = new StringWriter(stringBuilder))
             {
-                _jsonSerializer.Serialize(writer, source);
+                JsonSerializerProvider.Default.Serialize(writer, source);
             }
         }
 
@@ -217,6 +210,6 @@ namespace GitObjectDb.Models
         /// <param name="source">The source.</param>
         /// <returns>A <see cref="JObject"/> with the values of the specified node.</returns>
         internal static JObject ToJObject(this IModelObject source) =>
-            JObject.FromObject(source, _jsonSerializer);
+            JObject.FromObject(source, JsonSerializerProvider.Default);
     }
 }

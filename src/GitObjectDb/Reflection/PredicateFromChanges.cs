@@ -1,3 +1,4 @@
+using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Services;
@@ -18,12 +19,13 @@ namespace GitObjectDb.Reflection
     /// <seealso cref="GitObjectDb.Reflection.IPredicateReflector" />
     internal class PredicateFromChanges : IPredicateReflector
     {
-        readonly ILookup<UniqueId, ObjectRepositoryChunkChange> _modifiedChunks;
-        readonly ILookup<UniqueId, ObjectRepositoryAdd> _addedObjects;
-        readonly ISet<UniqueId> _deletedObjects;
-        readonly IEnumerable<string> _impactedPaths;
-
-        readonly Lazy<JsonSerializer> _serializer;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ModelObjectContractResolverFactory _contractResolverFactory;
+        private readonly IObjectRepositoryContainer _container;
+        private readonly ILookup<UniqueId, ObjectRepositoryChunkChange> _modifiedChunks;
+        private readonly ILookup<UniqueId, ObjectRepositoryAdd> _addedObjects;
+        private readonly ISet<UniqueId> _deletedObjects;
+        private readonly IEnumerable<string> _impactedPaths;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PredicateFromChanges"/> class.
@@ -48,6 +50,9 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(deletedObjects));
             }
 
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _contractResolverFactory = _serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
+            _container = container ?? throw new ArgumentNullException(nameof(container));
             _modifiedChunks = modifiedChunks.ToLookup(c => c.Id);
             _addedObjects = addedObjects.ToLookup(o => o.ParentId);
             _deletedObjects = new HashSet<UniqueId>(deletedObjects.Select(o => o.Id));
@@ -56,8 +61,6 @@ namespace GitObjectDb.Reflection
                 .Concat(deletedObjects.Select(o => o.Path))
                 .Distinct()
                 .ToList();
-
-            _serializer = new Lazy<JsonSerializer>(() => serviceProvider.GetRequiredService<IObjectRepositoryLoader>().GetJsonSerializer(container));
         }
 
         /// <inheritdoc/>
@@ -72,16 +75,18 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(childProperty));
             }
 
-            return (GetAdditions(instance), GetDeletions(instance, childProperty));
+            var context = new ModelObjectSerializationContext(_container);
+            var serializer = _contractResolverFactory(context).Serializer;
+            return (GetAdditions(instance, serializer), GetDeletions(instance, childProperty));
         }
 
-        IEnumerable<IModelObject> GetAdditions(IModelObject instance) =>
-            _addedObjects[instance.Id].Select(o => Parse(o.Node));
+        private IEnumerable<IModelObject> GetAdditions(IModelObject instance, JsonSerializer serializer) =>
+            _addedObjects[instance.Id].Select(o => Parse(o.Node, serializer));
 
-        IModelObject Parse(JObject jObject)
+        private static IModelObject Parse(JObject jObject, JsonSerializer serializer)
         {
             var type = Type.GetType(jObject.Value<string>("$type"));
-            return (IModelObject)jObject.ToObject(type, _serializer.Value);
+            return (IModelObject)jObject.ToObject(type, serializer);
         }
 
         IEnumerable<IModelObject> GetDeletions(IModelObject instance, ChildPropertyInfo childProperty)
@@ -97,7 +102,7 @@ namespace GitObjectDb.Reflection
             }
         }
 
-        bool IsDeleted(IModelObject instance)
+        private bool IsDeleted(IModelObject instance)
         {
             if (_deletedObjects.Contains(instance.Id))
             {

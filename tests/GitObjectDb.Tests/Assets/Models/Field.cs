@@ -1,3 +1,4 @@
+using GitObjectDb.Attributes;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
 using System;
@@ -10,14 +11,13 @@ using System.Runtime.Serialization;
 
 namespace GitObjectDb.Tests.Assets.Models
 {
-    [DataContract]
-    public class Field : AbstractModel
+    [Model]
+    public partial class Field
     {
-        public Field(IServiceProvider serviceProvider, UniqueId id, string name)
-            : base(serviceProvider, id, name)
-        {
-        }
-
         public Page Page => (Page)Parent ?? throw new NotSupportedException("No parent has been set.");
+
+        [DataMember]
+        [Modifiable]
+        public FieldContent Content { get; }
     }
 }

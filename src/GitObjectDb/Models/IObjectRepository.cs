@@ -46,18 +46,12 @@ namespace GitObjectDb.Models
         RepositoryDescription RepositoryDescription { get; }
 
         /// <summary>
-        /// Tries getting a nested object from an <see cref="ObjectPath"/>.
+        /// Sets the repository data.
         /// </summary>
-        /// <param name="path">The path.</param>
-        /// <returns>The object, if any was found.</returns>
-        IModelObject TryGetFromGitPath(ObjectPath path);
-
-        /// <summary>
-        /// Gets a nested object from an <see cref="ObjectPath"/>.
-        /// </summary>
-        /// <param name="path">The path.</param>
-        /// <returns>The object, if any was found.</returns>
-        IModelObject GetFromGitPath(ObjectPath path);
+        /// <param name="repositoryDescription">The repository description.</param>
+        /// <param name="commitId">The commit the repository is referring to.</param>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        void SetRepositoryData(RepositoryDescription repositoryDescription, ObjectId commitId);
 
         /// <summary>
         /// Tries getting a nested object from its Git path.
@@ -74,17 +68,12 @@ namespace GitObjectDb.Models
         IModelObject GetFromGitPath(string path);
 
         /// <summary>
-        /// Returns the result of the provided function processing.
+        /// Gets the objects having a reference to this instance.
         /// </summary>
-        /// <typeparam name="TResult">The type of the result.</typeparam>
-        /// <param name="processor">The function.</param>
-        /// <returns>The result of the function call.</returns>
-        TResult Execute<TResult>(Func<IRepository, TResult> processor);
-
-        /// <summary>
-        /// Calls the provided function processing.
-        /// </summary>
-        /// <param name="processor">The function.</param>
-        void Execute(Action<IRepository> processor);
+        /// <typeparam name="TModel">The type of the model.</typeparam>
+        /// <param name="node">The object.</param>
+        /// <returns>All objects having a link whose target is the <paramref name="node"/>.</returns>
+        IEnumerable<IModelObject> GetReferrers<TModel>(TModel node)
+            where TModel : class, IModelObject;
     }
 }

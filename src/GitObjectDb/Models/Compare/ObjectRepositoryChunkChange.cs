@@ -56,7 +56,7 @@ namespace GitObjectDb.Models.Compare
             Ours = ours ?? throw new ArgumentNullException(nameof(ours));
             OursValue = oursValue ?? throw new ArgumentNullException(nameof(oursValue));
 
-            Id = ancestor[nameof(IModelObject.Id)].ToObject<UniqueId>();
+            Id = ancestor.GetValue(nameof(IModelObject.Id), StringComparison.OrdinalIgnoreCase).ToObject<UniqueId>();
 
             if (!IsInConflict)
             {

@@ -29,7 +29,7 @@ namespace GitObjectDb.Services
         ObjectRepositoryChanges Compare(ObjectId oldCommitId, ObjectId newCommitId);
 
         /// <summary>
-        /// Compares two <see cref="AbstractObjectRepository"/> instances and generates a new <see cref="TreeDefinition"/> instance containing the tree changes to be committed.
+        /// Compares two <see cref="IObjectRepository"/> instances and generates a new <see cref="TreeDefinition"/> instance containing the tree changes to be committed.
         /// </summary>
         /// <param name="original">The original.</param>
         /// <param name="newRepository">The new.</param>

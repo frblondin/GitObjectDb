@@ -1,4 +1,3 @@
-using FluentValidation;
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
 using GitObjectDb.JsonConverters;
@@ -9,6 +8,7 @@ using GitObjectDb.Models.Rebase;
 using GitObjectDb.Reflection;
 using GitObjectDb.Services;
 using GitObjectDb.Validations;
+using GitObjectDb.Validations.PropertyValidators;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -50,19 +50,19 @@ namespace Microsoft.Extensions.DependencyInjection
                 new CachedModelDataAccessorProvider(new ModelDataAccessorProvider(s)));
             source.AddFactoryDelegate<ObjectRepositoryMergeFactory, ObjectRepositoryMerge>();
             source.AddFactoryDelegate<MigrationScaffolderFactory, MigrationScaffolder>();
-            source.AddSingleton<IValidatorFactory, ValidatorFactory>();
-            source.AddSingleton<JsonSerializationValidator>();
             source.AddSingleton<IObjectRepositorySearch, ObjectRepositorySearch>();
             source.AddFactoryDelegate<ObjectRepositoryRebaseFactory, ObjectRepositoryRebase>();
-            AddCreatorParameterResolvers(source);
-            return source;
-        }
 
-        static void AddCreatorParameterResolvers(IServiceCollection source)
-        {
-            source.AddSingleton<ICreatorParameterResolver, CreatorParameterChildrenResolver>();
-            source.AddSingleton<ICreatorParameterResolver, CreatorParameterFromServiceProviderResolver>();
-            source.AddSingleton<ICreatorParameterResolver, CreatorRepositoryContainerParameterResolver>();
+            source.AddFactoryDelegate<ModelObjectContractResolverFactory, ModelObjectContractResolver>();
+            source.AddSingleton<ModelObjectContractCache>();
+            source.AddSingleton<ModelObjectSpecialValueProvider>();
+
+            source.AddSingleton<IPropertyValidator, DependencyPropertyValidator>();
+            source.AddSingleton<IPropertyValidator, LazyLinkPropertyValidator>();
+            source.AddSingleton<IPropertyValidator, ObjectPathPropertyValidator>();
+            source.AddSingleton<IValidator, Validator>();
+
+            return source;
         }
     }
 }

@@ -7,18 +7,10 @@ using System;
 namespace GitObjectDb.Services
 {
     /// <summary>
-    /// Loads a <see cref="AbstractObjectRepository"/> instance from a Git repository.
+    /// Loads a <see cref="IObjectRepository"/> instance from a Git repository.
     /// </summary>
     public interface IObjectRepositoryLoader
     {
-        /// <summary>
-        /// Gets the json serializer.
-        /// </summary>
-        /// <param name="container">The container.</param>
-        /// <param name="childrenResolver">The children resolver.</param>
-        /// <returns>A new <see cref="JsonSerializer"/>.</returns>
-        JsonSerializer GetJsonSerializer(IObjectRepositoryContainer container, ChildrenResolver childrenResolver = null);
-
         /// <summary>
         /// Loads the instance from a Git repository.
         /// </summary>
@@ -27,7 +19,7 @@ namespace GitObjectDb.Services
         /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="commitId">The commit to load, HEAD tip is loaded if not provided.</param>
         /// <returns>The loaded instance.</returns>
-        AbstractObjectRepository Clone(IObjectRepositoryContainer container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null);
+        IObjectRepository Clone(IObjectRepositoryContainer container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null);
 
         /// <summary>
         /// Loads the instance from a Git repository.
@@ -39,7 +31,7 @@ namespace GitObjectDb.Services
         /// <param name="commitId">The commit, HEAD tip is loaded if not provided.</param>
         /// <returns>The loaded instance.</returns>
         TRepository Clone<TRepository>(IObjectRepositoryContainer<TRepository> container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
-            where TRepository : AbstractObjectRepository;
+            where TRepository : IObjectRepository;
 
         /// <summary>
         /// Loads the instance from a Git repository.
@@ -48,7 +40,7 @@ namespace GitObjectDb.Services
         /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="commitId">The commit to load, HEAD tip is loaded if not provided.</param>
         /// <returns>The loaded instance.</returns>
-        AbstractObjectRepository LoadFrom(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, ObjectId commitId = null);
+        IObjectRepository LoadFrom(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, ObjectId commitId = null);
 
         /// <summary>
         /// Loads the instance from a Git repository.
@@ -59,6 +51,6 @@ namespace GitObjectDb.Services
         /// <param name="commitId">The commit to load, HEAD tip is loaded if not provided.</param>
         /// <returns>The loaded instance.</returns>
         TRepository LoadFrom<TRepository>(IObjectRepositoryContainer<TRepository> container, RepositoryDescription repositoryDescription, ObjectId commitId = null)
-            where TRepository : AbstractObjectRepository;
+            where TRepository : IObjectRepository;
     }
 }

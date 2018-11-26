@@ -15,30 +15,36 @@ namespace GitObjectDb.Tests.Models
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void LoadLinkField(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, LinkField linkField, Signature signature, string message)
+        public void LoadLinkField(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange
             container.AddRepository(sut, signature, message);
+            var linkField = sut.Flatten().OfType<Field>().First(
+                f => f.Content.MatchOrDefault(matchLink: l => true));
 
             // Act
             var newContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, container.Path);
             var loaded = newContainer.Repositories.Single();
-            var loadedLinkField = (LinkField)loaded.GetFromGitPath(linkField.GetFolderPath());
+            var loadedLinkField = (Field)loaded.GetFromGitPath(linkField.GetFolderPath());
 
             // Assert
-            Assert.That(loadedLinkField.PageLink.Link.Id, Is.EqualTo(linkField.PageLink.Link.Id));
+            var target = linkField.Content.MatchOrDefault(matchLink: c => c.Target).Link;
+            var newTarget = loadedLinkField.Content.MatchOrDefault(matchLink: c => c.Target).Link;
+            Assert.That(newTarget.Id, Is.EqualTo(target.Id));
         }
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ResolveLinkRefererrs(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
+        public void ResolveLinkReferers(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // Arrange
             sut = container.AddRepository(sut, signature, message);
-            var linkField = sut.Flatten().OfType<LinkField>().First();
+            var linkField = sut.Flatten().OfType<Field>().First(
+                f => f.Content.MatchOrDefault(matchLink: l => true));
 
             // Act
-            var referrers = linkField.PageLink.Link.GetReferrers();
+            var target = linkField.Content.MatchOrDefault(matchLink: c => c.Target).Link;
+            var referrers = sut.GetReferrers(target);
 
             // Assert
             Assert.That(referrers, Does.Contain(linkField));

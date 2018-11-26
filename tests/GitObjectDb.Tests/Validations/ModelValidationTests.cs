@@ -1,7 +1,5 @@
 using AutoFixture;
 using AutoFixture.NUnit3;
-using FluentValidation;
-using FluentValidation.Results;
 using GitObjectDb.Models;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
@@ -11,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace GitObjectDb.Tests.Validations
@@ -21,91 +20,55 @@ namespace GitObjectDb.Tests.Validations
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void FullValidationDoesNotFail(ObjectRepository sut)
         {
-            sut.Validate(ValidationRules.All);
+            // Act
+            var result = sut.Validate(ValidationRules.All);
+
+            // Assert
+            Assert.That(result.IsValid, Is.True);
         }
 
         [Test]
-        [AutoData]
-        public void ValidationFailsForNestedObject(IFixture fixture)
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
+        public void LinkWithWrongRepositoryIsDetected(IObjectRepositoryContainer container, ObjectRepository repository)
         {
             // Arrange
-            var services = new ServiceCollection();
-            services.AddGitObjectDb();
-            services.AddSingleton<IValidatorFactory, CustomValidatorFactory<Field>>();
-            var serviceProvider = services.BuildServiceProvider();
-            fixture.Inject<IServiceProvider>(serviceProvider);
-            fixture.Customize(new ModelCustomization());
-            var repository = fixture.Create<ObjectRepository>();
+            var linkField = repository.Flatten().OfType<Field>().FirstOrDefault(
+                f => f.Content.MatchOrDefault(matchLink: l => true));
 
             // Act
-            var result = repository.Validate();
-
-            // Assert
-            Assert.That(result, Has.Property(nameof(ValidationResult.IsValid)).False);
-            Assert.That(result.ToString(), Does.Contain("'Name' should be equal to 'foo'."));
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void LinkWithWrongRepositoryIsDetected(LinkField linkField)
-        {
-            // Act
-            var modified = linkField.With(f => f.PageLink == new LazyLink<Page>(new ObjectPath(UniqueId.CreateNew(), "foo")));
+            var failingLink = new LazyLink<Page>(container, new ObjectPath(UniqueId.CreateNew(), "foo"));
+            var modified = linkField.With(f => f.Content == FieldContent.NewLink(new FieldLinkContent(failingLink)));
             var result = modified.Repository.Validate();
 
             // Assert
             Assert.That(result, Has.Property(nameof(ValidationResult.IsValid)).False);
-            Assert.That(result.ToString(), Does.Contain("which is not added to the dependencies"));
+            Assert.That(result.Errors, Has.Exactly(1).Items);
+            Assert.That(result.ToString(), Does.Contain("is not added to the dependencies"));
+            Assert.That(result.Errors[0], Has.Property(nameof(ValidationFailure.PropertyName)).EqualTo("propertyName.Path"));
+            Assert.That(result.Errors[0].Context.Instance, Is.EqualTo(modified));
+            Assert.That(result.Errors[0].Context.Parent.Instance, Is.EqualTo(modified.Parent));
         }
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void LinkWithWrongObjectPathIsDetected(LinkField linkField)
+        public void LinkWithWrongObjectPathIsDetected(IObjectRepositoryContainer container, ObjectRepository repository)
         {
+            // Arrange
+            var linkField = repository.Flatten().OfType<Field>().FirstOrDefault(
+                f => f.Content.MatchOrDefault(matchLink: l => true));
+
             // Act
-            var modified = linkField.With(f => f.PageLink == new LazyLink<Page>(new ObjectPath(linkField.Repository.Id, "foo")));
+            var failingLink = new LazyLink<Page>(container, new ObjectPath(linkField.Repository.Id, "foo"));
+            var modified = linkField.With(f => f.Content == FieldContent.NewLink(new FieldLinkContent(failingLink)));
             var result = modified.Repository.Validate();
 
             // Assert
             Assert.That(result, Has.Property(nameof(ValidationResult.IsValid)).False);
-            Assert.That(result.ToString(), Does.Contain("Path is referring an unexisting object"));
-        }
-
-        public class CustomValidatorFactory<TTarget> : ValidatorFactory
-            where TTarget : AbstractModel
-        {
-            readonly IServiceProvider _serviceProvider;
-
-            public CustomValidatorFactory(IServiceProvider serviceProvider)
-                : base(serviceProvider)
-            {
-                _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            }
-
-            protected override IValidator Resolve(Type targetType)
-            {
-                if (targetType == typeof(TTarget))
-                {
-                    return new TargetValidation<TTarget>(_serviceProvider);
-                }
-                return base.Resolve(targetType);
-            }
-        }
-
-        class TargetValidation<TTarget> : AbstractValidator<TTarget>
-            where TTarget : AbstractModel
-        {
-            public TargetValidation(IServiceProvider serviceProvider)
-            {
-                Include(new ModelObjectValidator<TTarget>(serviceProvider));
-                RuleFor(p => p.Name).Equal("foo");
-            }
-
-            public override ValidationResult Validate(ValidationContext<TTarget> context)
-            {
-                context.GetType();
-                return base.Validate(context);
-            }
+            Assert.That(result.Errors, Has.Exactly(1).Items);
+            Assert.That(result.ToString(), Does.Contain("Unexisting object"));
+            Assert.That(result.Errors[0], Has.Property(nameof(ValidationFailure.PropertyName)).EqualTo("propertyName.Path"));
+            Assert.That(result.Errors[0].Context.Instance, Is.EqualTo(modified));
+            Assert.That(result.Errors[0].Context.Parent.Instance, Is.EqualTo(modified.Parent));
         }
     }
 }

@@ -16,14 +16,6 @@ namespace GitObjectDb.Models
         /// Gets the value.
         /// </summary>
         new TLink Link { get; }
-
-        /// <summary>
-        /// Attaches the instance to its parent.
-        /// </summary>
-        /// <param name="parent">The parent.</param>
-        /// <returns>The same instance, allowing simpled chained calls if needed.</returns>
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        ILazyLink<TLink> AttachToParent(IModelObject parent);
     }
 
     /// <summary>
@@ -31,11 +23,6 @@ namespace GitObjectDb.Models
     /// </summary>
     public interface ILazyLink : ICloneable
     {
-        /// <summary>
-        /// Gets the parent.
-        /// </summary>
-        IModelObject Parent { get; }
-
         /// <summary>
         /// Gets the value.
         /// </summary>

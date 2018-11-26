@@ -77,7 +77,8 @@ namespace GitObjectDb.Tests.Models
         {
             // Arrange
             var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
-            var fieldToModify = sut.Flatten().OfType<LinkField>().First();
+            var fieldToModify = sut.Flatten().OfType<Field>().First(
+                f => f.Content.MatchOrDefault(matchLink: l => true));
             var computeTreeChanges = computeTreeChangesFactory(container, RepositoryFixture.BenchmarkRepositoryDescription);
             var stopwatch = Stopwatch.StartNew();
 

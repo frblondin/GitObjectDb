@@ -1,4 +1,5 @@
 using GitObjectDb.Git;
+using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Reflection;
@@ -17,13 +18,13 @@ namespace GitObjectDb.Services
     /// <inheritdoc/>
     internal class ComputeTreeChanges : IComputeTreeChanges
     {
-        readonly IModelDataAccessorProvider _modelDataProvider;
-        readonly IObjectRepositoryLoader _objectRepositoryLoader;
-        readonly IRepositoryProvider _repositoryProvider;
-        readonly Lazy<JsonSerializer> _serializer;
-
-        readonly IObjectRepositoryContainer _container;
-        readonly RepositoryDescription _repositoryDescription;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IModelDataAccessorProvider _modelDataProvider;
+        private readonly IObjectRepositoryLoader _objectRepositoryLoader;
+        private readonly IRepositoryProvider _repositoryProvider;
+        private readonly IObjectRepositoryContainer _container;
+        private readonly RepositoryDescription _repositoryDescription;
+        private readonly ModelObjectContractResolverFactory _contractResolverFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeTreeChanges"/> class.
@@ -35,20 +36,16 @@ namespace GitObjectDb.Services
         [ActivatorUtilitiesConstructor]
         public ComputeTreeChanges(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription)
         {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
-
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _modelDataProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             _objectRepositoryLoader = serviceProvider.GetRequiredService<IObjectRepositoryLoader>();
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
-            _serializer = new Lazy<JsonSerializer>(() => serviceProvider.GetRequiredService<IObjectRepositoryLoader>().GetJsonSerializer(container));
+            _contractResolverFactory = _serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
         }
 
-        static void UpdateNodeIfNeeded(IModelObject original, IModelObject @new, Stack<string> stack, IModelDataAccessor accessor, IList<ObjectRepositoryEntryChanges> changes)
+        private static void UpdateNodeIfNeeded(IModelObject original, IModelObject @new, Stack<string> stack, IModelDataAccessor accessor, IList<ObjectRepositoryEntryChanges> changes)
         {
             if (accessor.ModifiableProperties.Any(p => !p.AreSame(original, @new)))
             {
@@ -238,6 +235,23 @@ namespace GitObjectDb.Services
         /// <inheritdoc/>
         public ObjectRepositoryChanges Compute(IObjectRepository repository, IList<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects)
         {
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
+            }
+            if (modifiedChunks == null)
+            {
+                throw new ArgumentNullException(nameof(modifiedChunks));
+            }
+            if (addedObjects == null)
+            {
+                throw new ArgumentNullException(nameof(addedObjects));
+            }
+            if (deletedObjects == null)
+            {
+                throw new ArgumentNullException(nameof(deletedObjects));
+            }
+
             var changes = modifiedChunks.ToLookup(c => c.Path, StringComparer.OrdinalIgnoreCase);
             var allImpactedPaths =
                 modifiedChunks.Select(c => c.Path)
@@ -249,13 +263,15 @@ namespace GitObjectDb.Services
                                                 where UniqueId.TryParse(part, out tempId)
                                                 let id = tempId
                                                 select id);
+            var context = new ModelObjectSerializationContext(_container);
+            var serializer = _contractResolverFactory(context).Serializer;
             object ProcessProperty(IModelObject node, string name, Type argumentType, object fallback)
             {
                 var path = node.GetDataPath();
                 var propertyChange = changes[path].TryGetWithValue(c => c.Property.Name, name);
                 if (propertyChange != null)
                 {
-                    return propertyChange.MergeValue.ToObject(argumentType, _serializer.Value);
+                    return propertyChange.MergeValue.ToObject(argumentType, serializer);
                 }
                 else
                 {
@@ -267,9 +283,9 @@ namespace GitObjectDb.Services
             {
                 var pathWithProperty = GetChildPathRegex(node, childProperty);
                 var additions = (from o in addedObjects
-                                 where pathWithProperty.IsMatch(o.Path)
-                                 let objectType = Type.GetType(o.Node.Value<string>("$type"))
-                                 select (IModelObject)o.Node.ToObject(childProperty.ItemType, _serializer.Value)).ToList();
+                                    where pathWithProperty.IsMatch(o.Path)
+                                    let objectType = Type.GetType(o.Node.Value<string>("$type"))
+                                    select (IModelObject)o.Node.ToObject(childProperty.ItemType, serializer)).ToList();
                 var deleted = new HashSet<UniqueId>(from o in deletedObjects
                                                     where pathWithProperty.IsMatch(o.Path)
                                                     select o.Id);

@@ -1,4 +1,3 @@
-using FluentValidation.Results;
 using GitObjectDb.Models;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
@@ -60,7 +59,7 @@ namespace GitObjectDb.Tests.Validations
             var result = container.Validate();
 
             // Assert
-            Assert.That(result, Has.Property(nameof(ValidationResult.IsValid)).True);
+            Assert.That(result.IsValid, Is.True);
         }
     }
 }

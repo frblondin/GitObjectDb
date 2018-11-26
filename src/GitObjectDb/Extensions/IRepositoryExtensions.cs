@@ -117,7 +117,7 @@ namespace LibGit2Sharp
             return commit;
         }
 
-        static IEnumerable<Commit> RetrieveParentsOfTheCommitBeingCreated(IRepository repository, bool amendPreviousCommit, Commit mergeParent = null)
+        private static IEnumerable<Commit> RetrieveParentsOfTheCommitBeingCreated(IRepository repository, bool amendPreviousCommit, Commit mergeParent = null)
         {
             if (amendPreviousCommit)
             {

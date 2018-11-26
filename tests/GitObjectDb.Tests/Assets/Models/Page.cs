@@ -12,18 +12,9 @@ using System.Runtime.Serialization;
 
 namespace GitObjectDb.Tests.Assets.Models
 {
-    [DataContract]
-    public class Page : AbstractModel
+    [Model]
+    public partial class Page
     {
-        public Page(IServiceProvider serviceProvider, UniqueId id, string name, string description, ILazyChildren<Field> fields)
-            : base(serviceProvider, id, name)
-        {
-            Description = description ?? throw new ArgumentNullException(nameof(description));
-            Fields = (fields ?? throw new ArgumentNullException(nameof(fields))).AttachToParent(this);
-        }
-
-        public new ObjectRepository Repository => (ObjectRepository)base.Repository;
-
         public Application Application =>
             (Application)Parent ?? throw new NotSupportedException("No parent has been set.");
 

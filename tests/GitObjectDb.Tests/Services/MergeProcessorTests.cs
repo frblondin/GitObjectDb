@@ -64,7 +64,7 @@ namespace GitObjectDb.Tests.Services
 
             // Act
             container.Branch(sut, "newBranch");
-            var updateName = page.With(p => p.Fields.Add(new Field(serviceProvider, UniqueId.CreateNew(), "new field")));
+            var updateName = page.With(p => p.Fields.Add(new Field(serviceProvider, UniqueId.CreateNew(), "new field", FieldContent.Default)));
             container.Commit(updateName.Repository, signature, message); // B
             container.Checkout(sut.Id, "master");
             var updateDescription = page.With(p => p.Description == "modified description");

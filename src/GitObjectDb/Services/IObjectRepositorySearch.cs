@@ -25,5 +25,14 @@ namespace GitObjectDb.Services
         /// <param name="content">The content.</param>
         /// <returns>All objects containing the <paramref name="content"/> value.</returns>
         IEnumerable<IModelObject> Grep(IObjectRepositoryContainer container, string content);
+
+        /// <summary>
+        /// Gets the objects having a reference to this instance.
+        /// </summary>
+        /// <typeparam name="TModel">The type of the model.</typeparam>
+        /// <param name="node">The object.</param>
+        /// <returns>All objects having a link whose target is the <paramref name="node"/>.</returns>
+        IEnumerable<IModelObject> GetReferrers<TModel>(TModel node)
+            where TModel : class, IModelObject;
     }
 }

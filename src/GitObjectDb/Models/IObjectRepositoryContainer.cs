@@ -1,7 +1,6 @@
-using FluentValidation.Results;
-using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Merge;
 using GitObjectDb.Models.Rebase;
+using GitObjectDb.Validations;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -30,6 +29,20 @@ namespace GitObjectDb.Models
         /// <param name="id">The identifier.</param>
         /// <returns>Found <see cref="IObjectRepository"/>, if any.</returns>
         IObjectRepository TryGetRepository(UniqueId id);
+
+        /// <summary>
+        /// Tries getting a nested object from an <see cref="ObjectPath"/>.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <returns>The object, if any was found.</returns>
+        IModelObject TryGetFromGitPath(ObjectPath path);
+
+        /// <summary>
+        /// Gets a nested object from an <see cref="ObjectPath"/>.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <returns>The object, if any was found.</returns>
+        IModelObject GetFromGitPath(ObjectPath path);
 
         /// <summary>
         /// Validates the specified rules.

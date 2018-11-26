@@ -32,7 +32,7 @@ namespace GitObjectDb.Models.Compare
             Node = node ?? throw new ArgumentNullException(nameof(node));
             ParentId = parentId;
 
-            Id = node[nameof(IModelObject.Id)].ToObject<UniqueId>();
+            Id = node.GetValue(nameof(IModelObject.Id), StringComparison.OrdinalIgnoreCase).ToObject<UniqueId>();
         }
 
         /// <summary>

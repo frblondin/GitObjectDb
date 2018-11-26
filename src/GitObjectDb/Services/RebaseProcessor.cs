@@ -216,7 +216,7 @@ namespace GitObjectDb.Services
             }
 
             var mergeBaseObject = GetContent(repository.Lookup<Blob>(change.OldOid));
-            var id = mergeBaseObject[nameof(IModelObject.Id)].ToObject<UniqueId>();
+            var id = mergeBaseObject.GetValue(nameof(IModelObject.Id), StringComparison.OrdinalIgnoreCase).ToObject<UniqueId>();
             _rebase.DeletedObjects.Add(new ObjectRepositoryDelete(change.Path, id));
         }
     }

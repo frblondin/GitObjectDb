@@ -1,4 +1,5 @@
 using GitObjectDb.Git;
+using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Migration;
@@ -18,9 +19,11 @@ namespace GitObjectDb.Services
     /// <inheritdoc/>
     public class MigrationScaffolder : IMigrationScaffolder
     {
-        readonly JsonSerializer _serializer;
-        readonly IRepositoryProvider _repositoryProvider;
-        readonly RepositoryDescription _repositoryDescription;
+        private readonly IRepositoryProvider _repositoryProvider;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IObjectRepositoryContainer _container;
+        private readonly RepositoryDescription _repositoryDescription;
+        private readonly ModelObjectContractResolverFactory _contractResolverFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MigrationScaffolder"/> class.
@@ -36,23 +39,25 @@ namespace GitObjectDb.Services
         [ActivatorUtilitiesConstructor]
         public MigrationScaffolder(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription)
         {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            _serializer = serviceProvider.GetRequiredService<IObjectRepositoryLoader>().GetJsonSerializer(container);
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
+            _container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
+            _contractResolverFactory = _serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
         }
 
         /// <inheritdoc/>
         public IImmutableList<Migrator> Scaffold(ObjectId migrationStart, ObjectId migrationEnd, MigrationMode mode)
         {
+            if (migrationStart == null)
+            {
+                throw new ArgumentNullException(nameof(migrationStart));
+            }
+            if (migrationEnd == null)
+            {
+                throw new ArgumentNullException(nameof(migrationEnd));
+            }
+
             if (mode == MigrationMode.Downgrade)
             {
                 throw new NotImplementedException(MigrationMode.Downgrade.ToString());
@@ -89,11 +94,13 @@ namespace GitObjectDb.Services
 
         IEnumerable<Migrator> GetLogMigrators(IRepository repository, ICommitLog log, List<IMigration> deferred, Commit previousCommit, MigrationMode mode)
         {
+            var context = new ModelObjectSerializationContext(_container);
+            var serializer = _contractResolverFactory(context).Serializer;
             foreach (var commit in log)
             {
                 if (previousCommit != null)
                 {
-                    var migrations = GetCommitMigrations(repository, previousCommit, commit).ToList();
+                    var migrations = GetCommitMigrations(repository, previousCommit, commit, serializer).ToList();
 
                     deferred.AddRange(migrations.Where(m => m.IsIdempotent));
 
@@ -111,12 +118,10 @@ namespace GitObjectDb.Services
         {
             using (var changes = repository.Diff.Compare<TreeChanges>(previousCommit.Tree, commit.Tree))
             {
-                foreach (var change in changes.Where(c => c.Path.StartsWith(AbstractObjectRepository.MigrationFolder, StringComparison.OrdinalIgnoreCase) && (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))
+                foreach (var change in changes.Where(c => c.Path.StartsWith(FileSystemStorage.MigrationFolder, StringComparison.OrdinalIgnoreCase) && (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))
                 {
                     var blob = (Blob)commit[change.Path].Target;
-                    var jobject = blob.GetContentStream().ToJson<JObject>(_serializer);
-                    var objectType = Type.GetType(jobject.Value<string>("$type"));
-                    yield return (IMigration)jobject.ToObject(objectType, _serializer);
+                    yield return blob.GetContentStream().ToJson<IMigration>(serializer);
                 }
             }
         }

@@ -1,6 +1,7 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Models;
 using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq.Expressions;
@@ -24,6 +25,7 @@ namespace GitObjectDb.Reflection
             Property = property ?? throw new ArgumentNullException(nameof(property));
             Accessor = CreateGetter(property).Compile();
             IsLink = typeof(ILazyLink).IsAssignableFrom(Property.PropertyType);
+            IsDiscriminatedUnion = property.PropertyType.IsDiscriminatedUnion();
         }
 
         /// <summary>
@@ -49,7 +51,15 @@ namespace GitObjectDb.Reflection
         /// </value>
         public bool IsLink { get; }
 
-        static Expression<Func<IModelObject, object>> CreateGetter(PropertyInfo property)
+        /// <summary>
+        /// Gets a value indicating whether this instance is discriminated union.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is discriminated union; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsDiscriminatedUnion { get; }
+
+        private static Expression<Func<IModelObject, object>> CreateGetter(PropertyInfo property)
         {
             var instanceParam = Expression.Parameter(typeof(IModelObject), "instance");
             return Expression.Lambda<Func<IModelObject, object>>(

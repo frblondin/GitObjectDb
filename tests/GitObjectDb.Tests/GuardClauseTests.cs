@@ -1,6 +1,7 @@
 using AutoFixture;
 using AutoFixture.Idioms;
 using GitObjectDb.Attributes;
+using GitObjectDb.Git;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Reflection;
@@ -8,6 +9,7 @@ using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Models.Migration;
 using GitObjectDb.Tests.Assets.Utils;
+using GitObjectDb.Validations;
 using LibGit2Sharp;
 using Newtonsoft.Json.Linq;
 using NSubstitute;
@@ -39,7 +41,7 @@ namespace GitObjectDb.Tests.Git
                         where !t.IsEnum
                         where !typeof(Delegate).IsAssignableFrom(t)
                         where !Attribute.IsDefined(t, typeof(ExcludeFromGuardForNullAttribute))
-                        where !typeof(FluentValidation.IValidator).IsAssignableFrom(t) && !typeof(FluentValidation.Validators.IPropertyValidator).IsAssignableFrom(t)
+                        where !t.Name.Contains("Template")
                         select t;
             assertion.Verify(types);
         }
@@ -60,17 +62,20 @@ namespace GitObjectDb.Tests.Git
                 CustomizeIModelObject(fixture);
                 CustomizeGitObjects(fixture);
                 CustomizeJsonObjects(fixture);
+                CustomizeValidationObjects(fixture);
             }
 
             static void CustomizeModelObjects(IFixture fixture)
             {
+                fixture.Inject(new RepositoryDescription(RepositoryFixture.SmallRepositoryPath));
                 fixture.Register(UniqueId.CreateNew);
-                fixture.Register<AbstractObjectRepository>(fixture.Create<ObjectRepository>);
-                fixture.Register<AbstractMigration>(fixture.Create<DummyMigration>);
-                fixture.Register<AbstractModel>(fixture.Create<ObjectRepository>);
+                fixture.Register<IObjectRepository>(fixture.Create<ObjectRepository>);
+                fixture.Register<IMigration>(fixture.Create<DummyMigration>);
+                fixture.Register<IModelObject>(fixture.Create<ObjectRepository>);
                 fixture.Inject(new ModelDataAccessor(fixture.Create<IServiceProvider>(), typeof(Page)));
                 fixture.Inject<ConstructorParameterBinding.ChildProcessor>((name, children, @new, dataAccessor) => children);
                 fixture.Inject<ConstructorParameterBinding.Clone>((@object, predicateReflector, processor) => @object);
+                fixture.Inject<ObjectRepositoryContainer>(new ObjectRepositoryContainer<ObjectRepository>(fixture.Create<IServiceProvider>(), RepositoryFixture.SmallRepositoryPath));
             }
 
             static void CustomizeExpressionObjects(IFixture fixture)
@@ -106,6 +111,11 @@ namespace GitObjectDb.Tests.Git
                 var jobject = new JObject();
                 jobject["Id"] = JToken.FromObject(UniqueId.CreateNew());
                 fixture.Inject(jobject);
+            }
+
+            private static void CustomizeValidationObjects(IFixture fixture)
+            {
+                fixture.Register(() => new ValidationContext(fixture.Create<IModelObject>(), ValidationChain.Empty, ValidationRules.All));
             }
         }
 
@@ -158,7 +168,9 @@ namespace GitObjectDb.Tests.Git
             static bool IsPropertySetToBeIgnored(IGuardClauseCommand command)
             {
                 var propertySetCommand = TryGetCommand<PropertySetCommand>(command);
-                return propertySetCommand != null && ExcludeType(propertySetCommand.PropertyInfo.ReflectedType);
+                return propertySetCommand != null &&
+                    (ExcludeType(propertySetCommand.PropertyInfo.ReflectedType) ||
+                    propertySetCommand.PropertyInfo.DeclaringType.Assembly != Assembly);
             }
 
             static TGuardClauseCommand TryGetCommand<TGuardClauseCommand>(IGuardClauseCommand command)

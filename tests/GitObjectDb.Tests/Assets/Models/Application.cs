@@ -11,15 +11,9 @@ using System.Runtime.Serialization;
 
 namespace GitObjectDb.Tests.Assets.Models
 {
-    [DataContract]
-    public class Application : AbstractModel
+    [Model]
+    public partial class Application
     {
-        public Application(IServiceProvider serviceProvider, UniqueId id, string name, ILazyChildren<Page> pages)
-            : base(serviceProvider, id, name)
-        {
-            Pages = (pages ?? throw new ArgumentNullException(nameof(pages))).AttachToParent(this);
-        }
-
         public ILazyChildren<Page> Pages { get; }
     }
 }
