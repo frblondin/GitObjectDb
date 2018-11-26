@@ -23,12 +23,12 @@ namespace GitObjectDb.Models
     public class ObjectRepositoryContainer<TRepository> : ObjectRepositoryContainer, IObjectRepositoryContainer<TRepository>
         where TRepository : class, IObjectRepository
     {
-        readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
-        readonly ObjectRepositoryMergeFactory _objectRepositoryMergeFactory;
-        readonly ObjectRepositoryRebaseFactory _objectRepositoryRebaseFactory;
-        readonly IObjectRepositoryLoader _repositoryLoader;
-        readonly IRepositoryProvider _repositoryProvider;
-        readonly GitHooks _hooks;
+        private readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
+        private readonly ObjectRepositoryMergeFactory _objectRepositoryMergeFactory;
+        private readonly ObjectRepositoryRebaseFactory _objectRepositoryRebaseFactory;
+        private readonly IObjectRepositoryLoader _repositoryLoader;
+        private readonly IRepositoryProvider _repositoryProvider;
+        private readonly GitHooks _hooks;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryContainer{TRepository}"/> class.
@@ -72,7 +72,7 @@ namespace GitObjectDb.Models
         /// <inheritdoc />
         protected override IEnumerable<IObjectRepository> GetRepositoriesCore() => Repositories;
 
-        IImmutableSet<TRepository> LoadRepositories()
+        private IImmutableSet<TRepository> LoadRepositories()
         {
             var builder = ImmutableSortedSet.CreateBuilder(ObjectRepositoryIdComparer<TRepository>.Instance);
             foreach (var repositoryPath in Directory.EnumerateDirectories(Path))
@@ -143,7 +143,7 @@ namespace GitObjectDb.Models
             });
         }
 
-        void EnsureNewRepository(IObjectRepository repository, RepositoryDescription repositoryDescription)
+        private void EnsureNewRepository(IObjectRepository repository, RepositoryDescription repositoryDescription)
         {
             if (Repositories.Any(r => r.Id == repository.Id))
             {
@@ -224,7 +224,7 @@ namespace GitObjectDb.Models
             });
         }
 
-        static void SetRemoteBranchIfRequired(string remoteName, IRepository r)
+        private static void SetRemoteBranchIfRequired(string remoteName, IRepository r)
         {
             if (!r.Head.IsTracking)
             {
@@ -239,13 +239,13 @@ namespace GitObjectDb.Models
         internal override IObjectRepository ReloadRepository(IObjectRepository previousRepository, ObjectId commit = null) =>
             ReloadRepository(previousRepository.RepositoryDescription, commit);
 
-        TRepository ReloadRepository(RepositoryDescription repositoryDescription, ObjectId commit = null)
+        private TRepository ReloadRepository(RepositoryDescription repositoryDescription, ObjectId commit = null)
         {
             var result = _repositoryLoader.LoadFrom(this, repositoryDescription, commit);
             return AddOrReplace(result);
         }
 
-        TRepository AddOrReplace(TRepository newRepository)
+        private TRepository AddOrReplace(TRepository newRepository)
         {
             if (Repositories.TryGetValue(newRepository, out var old))
             {

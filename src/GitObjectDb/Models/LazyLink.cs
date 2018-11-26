@@ -14,13 +14,13 @@ namespace GitObjectDb.Models
     public sealed class LazyLink<TLink> : ILazyLink<TLink>, IEquatable<LazyLink<TLink>>
         where TLink : class, IModelObject
     {
-        static readonly string _nullReturnedValueExceptionMessage =
+        private static readonly string _nullReturnedValueExceptionMessage =
             $"Value returned by {nameof(LazyLink<TLink>)} was null.";
 
-        ObjectPath _path;
         private readonly TLink _link;
         private readonly Func<TLink> _factory;
         private readonly IObjectRepositoryContainer _container;
+        private ObjectPath _path;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LazyLink{TLink}"/> class.
@@ -83,7 +83,7 @@ namespace GitObjectDb.Models
         /// over time (pull, branch...).
         /// </summary>
         /// <returns>Target linked object.</returns>
-        TLink ResolveLink()
+        private TLink ResolveLink()
         {
             var result = GetValueFromFactory();
             _path = new ObjectPath(result);

@@ -26,12 +26,12 @@ namespace GitObjectDb.Models
                                /// </summary>
         public static readonly UniqueId Empty = default;
 #pragma warning restore IDE1006 // Naming Styles
-        static readonly IImmutableList<char> _validChars =
+        private static readonly IImmutableList<char> _validChars =
             Enumerable.Range('a', 26).Select(i => (char)i)
             .Concat(Enumerable.Range('0', 10).Select(i => (char)i))
             .ToImmutableList();
 
-        readonly string _sha;
+        private readonly string _sha;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UniqueId"/> struct.
@@ -97,7 +97,7 @@ namespace GitObjectDb.Models
             return new UniqueId(new string(chars));
         }
 
-        static char[] CreateNewCharArray()
+        private static char[] CreateNewCharArray()
         {
 #pragma warning disable S2245 // Using pseudorandom number generators (PRNGs) is security-sensitive
             var random = new Random();
@@ -131,12 +131,12 @@ namespace GitObjectDb.Models
             }
         }
 
-        static bool IsShaValid(string sha) =>
+        private static bool IsShaValid(string sha) =>
             sha != null &&
             sha.Length == ShaLength &&
             sha.All(c => IsShaValidChat(c));
 
-        static bool IsShaValidChat(char c) =>
+        private static bool IsShaValidChat(char c) =>
             (c >= 'a' && c <= 'a' + 26) ||
             (c >= '0' && c <= '9');
 

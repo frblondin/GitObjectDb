@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return ConfigureServices(source);
         }
 
-        static IServiceCollection ConfigureServices(IServiceCollection source)
+        private static IServiceCollection ConfigureServices(IServiceCollection source)
         {
             source.AddSingleton<GitHooks>();
             source.AddSingleton<IObjectRepositoryLoader, ObjectRepositoryLoader>();

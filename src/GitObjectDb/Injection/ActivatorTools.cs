@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new InvalidOperationException($"A suitable constructor for type '{instanceType.Name}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor decorated with {nameof(ActivatorUtilitiesConstructorAttribute)}.");
         }
 
-        static bool TryCreateParameterMap(ParameterInfo[] constructorParameters, Type[] argumentTypes, out int?[] parameterMap)
+        private static bool TryCreateParameterMap(ParameterInfo[] constructorParameters, Type[] argumentTypes, out int?[] parameterMap)
         {
             parameterMap = new int?[constructorParameters.Length];
             for (int i = 0; i < argumentTypes.Length; i++)
@@ -68,12 +68,12 @@ namespace Microsoft.Extensions.DependencyInjection
             return true;
         }
 
-        static void ThrowMultipleCtorsMarkedWithAttributeException()
+        private static void ThrowMultipleCtorsMarkedWithAttributeException()
         {
             throw new InvalidOperationException($"Multiple constructors were marked with {nameof(ActivatorUtilitiesConstructorAttribute)}.");
         }
 
-        static void ThrowMarkedCtorDoesNotTakeAllProvidedArguments()
+        private static void ThrowMarkedCtorDoesNotTakeAllProvidedArguments()
         {
             throw new InvalidOperationException($"Constructor marked with {nameof(ActivatorUtilitiesConstructorAttribute)} does not accept all given argument types.");
         }

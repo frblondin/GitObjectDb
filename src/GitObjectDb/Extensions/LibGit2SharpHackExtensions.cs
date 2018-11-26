@@ -12,7 +12,7 @@ namespace LibGit2Sharp
     /// </summary>
     internal static class LibGit2SharpHackExtensions
     {
-        static readonly MethodInfo _referenceCollectionMoveHeadTarget =
+        private static readonly MethodInfo _referenceCollectionMoveHeadTarget =
             (from m in typeof(ReferenceCollection).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
              where m.Name == "MoveHeadTarget" && m.IsGenericMethodDefinition
              select m).Single();

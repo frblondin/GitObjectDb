@@ -11,10 +11,10 @@ namespace GitObjectDb.Services
     internal sealed class TwoSequenceEnumerator<T> : IDisposable
         where T : class, IModelObject
     {
-        readonly IEnumerator<T> _leftEnumerator;
-        readonly IEnumerator<T> _rightEnumerator;
-        bool _leftCompleted;
-        bool _rightCompleted;
+        private readonly IEnumerator<T> _leftEnumerator;
+        private readonly IEnumerator<T> _rightEnumerator;
+        private bool _leftCompleted;
+        private bool _rightCompleted;
 
         public TwoSequenceEnumerator(IEnumerable<T> leftElements, IEnumerable<T> rightElements)
         {

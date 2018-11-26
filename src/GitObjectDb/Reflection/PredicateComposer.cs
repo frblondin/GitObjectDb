@@ -12,7 +12,7 @@ namespace GitObjectDb.Reflection
     /// </summary>
     public class PredicateComposer : IPredicateReflector
     {
-        readonly IList<PredicateReflector> _reflectors = new List<PredicateReflector>();
+        private readonly IList<PredicateReflector> _reflectors = new List<PredicateReflector>();
 
         /// <summary>
         /// Adds a new <see cref="PredicateReflector"/>.

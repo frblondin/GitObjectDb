@@ -18,13 +18,13 @@ namespace GitObjectDb.Services
     /// </summary>
     internal class RebaseProcessor
     {
-        static readonly JsonSerializer _serializer = JsonSerializer.CreateDefault();
+        private static readonly JsonSerializer _serializer = JsonSerializer.CreateDefault();
 
-        readonly IServiceProvider _serviceProvider;
-        readonly ObjectRepositoryRebase _rebase;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ObjectRepositoryRebase _rebase;
 
-        readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
-        readonly IModelDataAccessorProvider _modelDataProvider;
+        private readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
+        private readonly IModelDataAccessorProvider _modelDataProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RebaseProcessor"/> class.
@@ -45,7 +45,7 @@ namespace GitObjectDb.Services
             _modelDataProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
         }
 
-        IObjectRepository CurrentTransformedRepository => _rebase.Transformations.LastOrDefault() ?? _rebase.StartRepository;
+        private IObjectRepository CurrentTransformedRepository => _rebase.Transformations.LastOrDefault() ?? _rebase.StartRepository;
 
         /// <summary>
         /// Continues the rebase operation.
@@ -84,7 +84,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        RebaseStatus CompleteStep(IRepository repository)
+        private RebaseStatus CompleteStep(IRepository repository)
         {
             var predicate = new PredicateFromChanges(_serviceProvider, _rebase.Container, _rebase.ModifiedChunks, _rebase.AddedObjects, _rebase.DeletedObjects);
             var transformed = CurrentTransformedRepository.With(predicate);
@@ -103,7 +103,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        RebaseStatus CompleteRebase(IRepository r)
+        private RebaseStatus CompleteRebase(IRepository r)
         {
             var computeChanges = _computeTreeChangesFactory(_rebase.Container, _rebase.Repository.RepositoryDescription);
             var previous = _rebase.StartRepository;
@@ -129,7 +129,7 @@ namespace GitObjectDb.Services
             return RebaseStatus.Complete;
         }
 
-        void ComputeChanges(IRepository repository)
+        private void ComputeChanges(IRepository repository)
         {
             _rebase.ClearChanges();
             var previousCommit = _rebase.CompletedStepCount == 0 ? _rebase.MergeBaseCommitId : _rebase.ReplayedCommits[_rebase.CompletedStepCount];
@@ -158,7 +158,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        void ComputeChanges_Modified(IRepository repository, PatchEntryChanges change)
+        private void ComputeChanges_Modified(IRepository repository, PatchEntryChanges change)
         {
             var currentObject = CurrentTransformedRepository.GetFromGitPath(change.Path) ??
                 throw new NotImplementedException($"Conflict as a modified node {change.Path} has been deleted in current rebase state.");
@@ -181,16 +181,16 @@ namespace GitObjectDb.Services
             }
         }
 
-        static JObject GetContent(Blob blob) => blob?.GetContentStream().ToJson<JObject>(_serializer);
+        private static JObject GetContent(Blob blob) => blob?.GetContentStream().ToJson<JObject>(_serializer);
 
-        static JToken TryGetToken(JObject headObject, KeyValuePair<string, JToken> kvp)
+        private static JToken TryGetToken(JObject headObject, KeyValuePair<string, JToken> kvp)
         {
             return headObject.TryGetValue(kvp.Key, StringComparison.OrdinalIgnoreCase, out var headValue) ?
                 headValue :
                 null;
         }
 
-        void ComputeChanges_Added(IRepository repository, PatchEntryChanges change)
+        private void ComputeChanges_Added(IRepository repository, PatchEntryChanges change)
         {
             if (CurrentTransformedRepository.TryGetFromGitPath(change.Path) != null)
             {
@@ -207,7 +207,7 @@ namespace GitObjectDb.Services
             _rebase.AddedObjects.Add(new ObjectRepositoryAdd(change.Path, @new, parentId));
         }
 
-        void ComputeChanges_Deleted(IRepository repository, PatchEntryChanges change)
+        private void ComputeChanges_Deleted(IRepository repository, PatchEntryChanges change)
         {
             var folder = change.Path.Replace($"/{FileSystemStorage.DataFile}", string.Empty);
             if (_rebase.ModifiedUpstreamBranchEntries.Any(c => c.Path.Equals(folder, StringComparison.OrdinalIgnoreCase) && (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))

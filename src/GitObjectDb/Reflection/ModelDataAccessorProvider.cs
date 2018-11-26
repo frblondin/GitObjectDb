@@ -7,7 +7,7 @@ namespace GitObjectDb.Reflection
     /// <inheritdoc />
     internal class ModelDataAccessorProvider : IModelDataAccessorProvider
     {
-        readonly IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ModelDataAccessorProvider"/> class.

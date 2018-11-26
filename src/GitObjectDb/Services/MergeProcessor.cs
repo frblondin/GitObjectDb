@@ -21,10 +21,10 @@ namespace GitObjectDb.Services
     /// </summary>
     internal sealed class MergeProcessor
     {
-        readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
-        readonly GitHooks _hooks;
+        private readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
+        private readonly GitHooks _hooks;
 
-        readonly ObjectRepositoryMerge _merge;
+        private readonly ObjectRepositoryMerge _merge;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MergeProcessor"/> class.
@@ -80,7 +80,7 @@ namespace GitObjectDb.Services
             });
         }
 
-        ObjectId ApplyMerge(Signature merger, IRepository repository)
+        private ObjectId ApplyMerge(Signature merger, IRepository repository)
         {
             var computeChanges = _computeTreeChangesFactory(_merge.Container, _merge.Repository.RepositoryDescription);
             var treeChanges = computeChanges.Compute(_merge.Repository, _merge.ModifiedChunks, _merge.AddedObjects, _merge.DeletedObjects);
@@ -101,7 +101,7 @@ namespace GitObjectDb.Services
             return commit;
         }
 
-        ObjectId CommitChanges(Signature merger, IRepository repository, ObjectRepositoryChanges treeChanges)
+        private ObjectId CommitChanges(Signature merger, IRepository repository, ObjectRepositoryChanges treeChanges)
         {
             if (_merge.RequiresMergeCommit)
             {

@@ -41,7 +41,7 @@ namespace GitObjectDb.Services
             });
         }
 
-        IEnumerable<IModelObject> Grep(IObjectRepository repository, Tree tree, string content) =>
+        private IEnumerable<IModelObject> Grep(IObjectRepository repository, Tree tree, string content) =>
             tree.SelectMany(child =>
             {
                 switch (child.TargetType)
@@ -60,7 +60,7 @@ namespace GitObjectDb.Services
                 return Enumerable.Empty<IModelObject>();
             });
 
-        static bool ContainsString(Blob blob, string content)
+        private static bool ContainsString(Blob blob, string content)
         {
             using (var reader = new StreamReader(blob.GetContentStream()))
             {

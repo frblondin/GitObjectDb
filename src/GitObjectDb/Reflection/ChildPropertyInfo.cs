@@ -15,7 +15,7 @@ namespace GitObjectDb.Reflection
     [DebuggerDisplay("Name = {Name}, ItemType = {ItemType}")]
     public class ChildPropertyInfo
     {
-        readonly PropertyNameAttribute _childPropertyNameAttribute;
+        private readonly PropertyNameAttribute _childPropertyNameAttribute;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ChildPropertyInfo"/> class.
@@ -66,7 +66,7 @@ namespace GitObjectDb.Reflection
         /// </summary>
         public string FolderName => _childPropertyNameAttribute?.Name ?? Name;
 
-        static Expression<Func<IModelObject, IEnumerable<IModelObject>>> CreateGetter(PropertyInfo property)
+        private static Expression<Func<IModelObject, IEnumerable<IModelObject>>> CreateGetter(PropertyInfo property)
         {
             var instanceParam = Expression.Parameter(typeof(IModelObject), "instance");
             return Expression.Lambda<Func<IModelObject, IEnumerable<IModelObject>>>(
@@ -78,7 +78,7 @@ namespace GitObjectDb.Reflection
                 instanceParam);
         }
 
-        static Expression<Func<IModelObject, bool>> GetShouldVisitChildrenGetter(PropertyInfo property)
+        private static Expression<Func<IModelObject, bool>> GetShouldVisitChildrenGetter(PropertyInfo property)
         {
             var instanceParam = Expression.Parameter(typeof(IModelObject), "instance");
             var lazyChildren = Expression.Convert(

@@ -12,13 +12,13 @@ namespace GitObjectDb.Git
     /// <inheritdoc/>
     internal sealed class RepositoryProvider : IRepositoryProvider, IDisposable
     {
-        static readonly TimeSpan _expirationScanFrequency = TimeSpan.FromSeconds(2);
+        private static readonly TimeSpan _expirationScanFrequency = TimeSpan.FromSeconds(2);
 
-        readonly object _syncLock = new object();
-        readonly IDictionary<RepositoryDescription, CacheEntry> _dictionary = new Dictionary<RepositoryDescription, CacheEntry>();
-        readonly IRepositoryFactory _repositoryFactory;
+        private readonly object _syncLock = new object();
+        private readonly IDictionary<RepositoryDescription, CacheEntry> _dictionary = new Dictionary<RepositoryDescription, CacheEntry>();
+        private readonly IRepositoryFactory _repositoryFactory;
 
-        CancellationTokenSource _scanForExpiredItemsCancellationTokenSource;
+        private CancellationTokenSource _scanForExpiredItemsCancellationTokenSource;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RepositoryProvider"/> class.
@@ -103,7 +103,7 @@ namespace GitObjectDb.Git
             }
         }
 
-        CacheEntry GetEntry(RepositoryDescription description)
+        private CacheEntry GetEntry(RepositoryDescription description)
         {
             lock (_syncLock)
             {
@@ -117,7 +117,7 @@ namespace GitObjectDb.Git
             }
         }
 
-        void StartScanForExpiredItems()
+        private void StartScanForExpiredItems()
         {
             _scanForExpiredItemsCancellationTokenSource?.Cancel();
             _scanForExpiredItemsCancellationTokenSource = new CancellationTokenSource();
@@ -126,7 +126,7 @@ namespace GitObjectDb.Git
             delay.ContinueWith(ScanForExpiredItems, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        void ScanForExpiredItems(Task task)
+        private void ScanForExpiredItems(Task task)
         {
             lock (_syncLock)
             {
@@ -140,7 +140,7 @@ namespace GitObjectDb.Git
             }
         }
 
-        void Evict(KeyValuePair<RepositoryDescription, CacheEntry> kvp)
+        private void Evict(KeyValuePair<RepositoryDescription, CacheEntry> kvp)
         {
             var collection = (ICollection<KeyValuePair<RepositoryDescription, CacheEntry>>)_dictionary;
 
@@ -156,9 +156,9 @@ namespace GitObjectDb.Git
             _scanForExpiredItemsCancellationTokenSource?.Dispose();
         }
 
-        class CacheEntry
+        private class CacheEntry
         {
-            static readonly TimeSpan _timeout = TimeSpan.FromSeconds(1);
+            private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(1);
 
             public int Counter;
             public DateTimeOffset LastUsed;

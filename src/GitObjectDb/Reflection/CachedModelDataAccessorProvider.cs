@@ -6,8 +6,8 @@ namespace GitObjectDb.Reflection
     /// <inheritdoc />
     internal class CachedModelDataAccessorProvider : IModelDataAccessorProvider
     {
-        readonly IModelDataAccessorProvider _inner;
-        readonly ConcurrentDictionary<Type, IModelDataAccessor> _cache = new ConcurrentDictionary<Type, IModelDataAccessor>();
+        private readonly IModelDataAccessorProvider _inner;
+        private readonly ConcurrentDictionary<Type, IModelDataAccessor> _cache = new ConcurrentDictionary<Type, IModelDataAccessor>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CachedModelDataAccessorProvider"/> class.

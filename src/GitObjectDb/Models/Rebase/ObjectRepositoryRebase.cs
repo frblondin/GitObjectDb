@@ -23,12 +23,12 @@ namespace GitObjectDb.Models.Rebase
     [ExcludeFromGuardForNull]
     public class ObjectRepositoryRebase : IObjectRepositoryRebase
     {
-        readonly IServiceProvider _serviceProvider;
-        readonly IRepositoryProvider _repositoryProvider;
-        readonly IObjectRepositoryLoader _repositoryLoader;
-        readonly MigrationScaffolderFactory _migrationScaffolderFactory;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IRepositoryProvider _repositoryProvider;
+        private readonly IObjectRepositoryLoader _repositoryLoader;
+        private readonly MigrationScaffolderFactory _migrationScaffolderFactory;
 
-        readonly RepositoryDescription _repositoryDescription;
+        private readonly RepositoryDescription _repositoryDescription;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryRebase"/> class.
@@ -128,7 +128,7 @@ namespace GitObjectDb.Models.Rebase
         /// </summary>
         internal IImmutableList<TreeEntryChanges> ModifiedUpstreamBranchEntries { get; private set; }
 
-        void Initialize()
+        private void Initialize()
         {
             _repositoryProvider.Execute(_repositoryDescription, repository =>
             {
@@ -167,7 +167,7 @@ namespace GitObjectDb.Models.Rebase
             }
         }
 
-        void EnsureNoMigrations(IRepository repository)
+        private void EnsureNoMigrations(IRepository repository)
         {
             var migrationScaffolder = _migrationScaffolderFactory(Container, Repository.RepositoryDescription);
             var upstreamBranchMigrators = migrationScaffolder.Scaffold(MergeBaseCommitId, RebaseCommitId, MigrationMode.Upgrade);
@@ -178,7 +178,7 @@ namespace GitObjectDb.Models.Rebase
             }
         }
 
-        void UpdateUpstreamBranchModifiedPaths(IRepository repository, Commit rebaseCommit, Commit mergeBaseCommit)
+        private void UpdateUpstreamBranchModifiedPaths(IRepository repository, Commit rebaseCommit, Commit mergeBaseCommit)
         {
             using (var changes = repository.Diff.Compare<TreeChanges>(mergeBaseCommit.Tree, rebaseCommit.Tree))
             {

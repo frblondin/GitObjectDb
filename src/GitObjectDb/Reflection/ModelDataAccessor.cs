@@ -18,10 +18,10 @@ namespace GitObjectDb.Reflection
     /// <inheritdoc />
     internal class ModelDataAccessor : IModelDataAccessor
     {
-        readonly Lazy<IImmutableList<ChildPropertyInfo>> _childProperties;
-        readonly Lazy<IImmutableList<ModifiablePropertyInfo>> _modifiableProperties;
-        readonly Lazy<ConstructorParameterBinding> _constructorBinding;
         private readonly IServiceProvider _serviceProvider;
+        private readonly Lazy<IImmutableList<ChildPropertyInfo>> _childProperties;
+        private readonly Lazy<IImmutableList<ModifiablePropertyInfo>> _modifiableProperties;
+        private readonly Lazy<ConstructorParameterBinding> _constructorBinding;
         private readonly ModelObjectSpecialValueProvider _specialValueProvider;
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace GitObjectDb.Reflection
              select new ChildPropertyInfo(p, lazyChildrenType.GetGenericArguments()[0]))
             .ToImmutableList();
 
-        IImmutableList<ModifiablePropertyInfo> GetModifiableProperties() =>
+        private IImmutableList<ModifiablePropertyInfo> GetModifiableProperties() =>
             (from p in Type.GetTypeInfo().GetProperties()
              where Attribute.IsDefined(p, typeof(ModifiableAttribute))
              select new ModifiablePropertyInfo(p))
@@ -143,7 +143,7 @@ namespace GitObjectDb.Reflection
             return (IObjectRepository)DeepClone((IModelObject)instance, processArgument, childChangesGetter, mustForceVisit);
         }
 
-        IModelObject DeepClone(IModelObject node, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IModelObject, bool> mustForceVisit)
+        private IModelObject DeepClone(IModelObject node, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IModelObject, bool> mustForceVisit)
         {
             if (node == null)
             {

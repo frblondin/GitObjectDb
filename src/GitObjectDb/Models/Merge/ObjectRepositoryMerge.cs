@@ -22,11 +22,11 @@ namespace GitObjectDb.Models.Merge
     [ExcludeFromGuardForNull]
     public sealed class ObjectRepositoryMerge : IObjectRepositoryMerge
     {
-        readonly IServiceProvider _serviceProvider;
-        readonly IRepositoryProvider _repositoryProvider;
-        readonly IModelDataAccessorProvider _modelDataProvider;
-        readonly MigrationScaffolderFactory _migrationScaffolderFactory;
-        readonly RepositoryDescription _repositoryDescription;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IRepositoryProvider _repositoryProvider;
+        private readonly IModelDataAccessorProvider _modelDataProvider;
+        private readonly MigrationScaffolderFactory _migrationScaffolderFactory;
+        private readonly RepositoryDescription _repositoryDescription;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryMerge"/> class.
@@ -103,21 +103,21 @@ namespace GitObjectDb.Models.Merge
         /// <inheritdoc/>
         public IList<ObjectRepositoryDelete> DeletedObjects { get; } = new List<ObjectRepositoryDelete>();
 
-        static JObject GetContent(Commit mergeBase, string path, string branchInfo)
+        private static JObject GetContent(Commit mergeBase, string path, string branchInfo)
         {
             var blob = mergeBase[path]?.Target as Blob;
             return blob?.GetContentStream().ToJson<JObject>(JsonSerializer.CreateDefault()) ??
                 throw new NotImplementedException($"Could not find node {path} in {branchInfo} tree.");
         }
 
-        static JToken TryGetToken(JObject headObject, KeyValuePair<string, JToken> kvp)
+        private static JToken TryGetToken(JObject headObject, KeyValuePair<string, JToken> kvp)
         {
             return headObject.TryGetValue(kvp.Key, StringComparison.OrdinalIgnoreCase, out var headValue) ?
                 headValue :
                 null;
         }
 
-        void Initialize()
+        private void Initialize()
         {
             _repositoryProvider.Execute(_repositoryDescription, repository =>
             {
@@ -137,7 +137,7 @@ namespace GitObjectDb.Models.Merge
             });
         }
 
-        Commit ResolveRequiredMigrator(IRepository repository, Commit branchTip, IImmutableList<Migrator> migrators)
+        private Commit ResolveRequiredMigrator(IRepository repository, Commit branchTip, IImmutableList<Migrator> migrators)
         {
             RequiredMigrator = migrators.Count > 0 ? migrators[0] : null;
             if (RequiredMigrator != null && RequiredMigrator.CommitId != MergeCommitId)
@@ -164,7 +164,7 @@ namespace GitObjectDb.Models.Merge
             }
         }
 
-        void ComputeMerge(IRepository repository, Commit mergeBase, Commit branchTip, Commit headTip)
+        private void ComputeMerge(IRepository repository, Commit mergeBase, Commit branchTip, Commit headTip)
         {
             using (var branchChanges = repository.Diff.Compare<Patch>(mergeBase.Tree, branchTip.Tree))
             {
@@ -191,7 +191,7 @@ namespace GitObjectDb.Models.Merge
             }
         }
 
-        void ComputeMerge_Modified(Commit mergeBase, Commit branchTip, Commit headTip, Patch headChanges, PatchEntryChanges change)
+        private void ComputeMerge_Modified(Commit mergeBase, Commit branchTip, Commit headTip, Patch headChanges, PatchEntryChanges change)
         {
             var mergeBaseObject = GetContent(mergeBase, change.Path, "merge base");
             var branchObject = GetContent(branchTip, change.Path, "branch tip");
@@ -200,7 +200,7 @@ namespace GitObjectDb.Models.Merge
             AddModifiedChunks(change, mergeBaseObject, branchObject, headObject, headChanges[change.Path]);
         }
 
-        void ComputeMerge_Added(Commit branchTip, PatchEntryChanges change, Patch headChanges)
+        private void ComputeMerge_Added(Commit branchTip, PatchEntryChanges change, Patch headChanges)
         {
             var parentDataPath = change.Path.GetDataParentDataPath();
             if (headChanges.Any(c => c.Path.Equals(parentDataPath, StringComparison.OrdinalIgnoreCase) && c.Status == ChangeKind.Deleted))
@@ -213,7 +213,7 @@ namespace GitObjectDb.Models.Merge
             AddedObjects.Add(new ObjectRepositoryAdd(change.Path, branchObject, parentId));
         }
 
-        void ComputeMerge_Deleted(Commit mergeBase, PatchEntryChanges change, Patch headChanges)
+        private void ComputeMerge_Deleted(Commit mergeBase, PatchEntryChanges change, Patch headChanges)
         {
             var folder = change.Path.Replace($"/{FileSystemStorage.DataFile}", string.Empty);
             if (headChanges.Any(c => c.Path.Equals(folder, StringComparison.OrdinalIgnoreCase) && (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))
@@ -222,11 +222,11 @@ namespace GitObjectDb.Models.Merge
             }
 
             var mergeBaseObject = GetContent(mergeBase, change.Path, "branch tip");
-            var id = mergeBaseObject[nameof(IModelObject.Id)].ToObject<UniqueId>();
+            var id = mergeBaseObject.GetValue(nameof(IModelObject.Id), StringComparison.OrdinalIgnoreCase).ToObject<UniqueId>();
             DeletedObjects.Add(new ObjectRepositoryDelete(change.Path, id));
         }
 
-        void AddModifiedChunks(PatchEntryChanges branchChange, JObject mergeBaseObject, JObject newObject, JObject headObject, PatchEntryChanges headChange)
+        private void AddModifiedChunks(PatchEntryChanges branchChange, JObject mergeBaseObject, JObject newObject, JObject headObject, PatchEntryChanges headChange)
         {
             if (headChange?.Status == ChangeKind.Deleted)
             {

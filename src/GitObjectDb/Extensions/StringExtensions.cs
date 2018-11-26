@@ -30,7 +30,7 @@ namespace System
             return string.Join("/", parts.Take(parts.Length - count));
         }
 
-        static string[] GetParentChunks(string path, int count = 1)
+        private static string[] GetParentChunks(string path, int count = 1)
         {
             var parts = path.Split('/');
 

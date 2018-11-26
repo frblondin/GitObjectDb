@@ -17,8 +17,8 @@ namespace GitObjectDb.IO
     [ExcludeFromGuardForNull]
     internal class StringBuilderStream : MemoryStream
     {
-        readonly long _length;
-        int _positionInStringBuilder;
+        private readonly long _length;
+        private int _positionInStringBuilder;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StringBuilderStream"/> class.
@@ -53,7 +53,7 @@ namespace GitObjectDb.IO
         /// <inheritdoc />
         public override bool CanWrite => false;
 
-        long ComputeLength() =>
+        private long ComputeLength() =>
             StringBuilder.GetSlices().Sum(s => Encoding.GetByteCount(s._values, s._indexInChunk, s._count));
 
         /// <inheritdoc />

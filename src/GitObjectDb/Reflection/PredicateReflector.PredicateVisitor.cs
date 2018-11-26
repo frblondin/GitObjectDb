@@ -10,13 +10,13 @@ namespace GitObjectDb.Reflection
     internal partial class PredicateReflector
     {
         [ExcludeFromGuardForNull]
-        class PredicateVisitor : ExpressionVisitor
+        private class PredicateVisitor : ExpressionVisitor
         {
             public IDictionary<string, object> Values { get; } = new SortedDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
             public IDictionary<string, IList<ChildChange>> ChildChanges { get; } = new SortedDictionary<string, IList<ChildChange>>(StringComparer.OrdinalIgnoreCase);
 
-            static MemberInfo ExtractMember(Expression node)
+            private static MemberInfo ExtractMember(Expression node)
             {
                 var memberExpression = node as MemberExpression ?? throw new GitObjectDbException("Member expressions expected in predicate.");
                 if (!Attribute.IsDefined(memberExpression.Member, typeof(ModifiableAttribute)))
@@ -27,7 +27,7 @@ namespace GitObjectDb.Reflection
                 return memberExpression.Member;
             }
 
-            static void ThrowNotSupported(string nodeDetails) =>
+            private static void ThrowNotSupported(string nodeDetails) =>
                 throw new GitObjectDbException($"Expression of type {nodeDetails} is not supported in predicate reflector.");
 
             protected override Expression VisitBinary(BinaryExpression node)
@@ -76,7 +76,7 @@ namespace GitObjectDb.Reflection
                 return base.VisitMethodCall(node);
             }
 
-            void VisitAddOrDeleteMethodCall(MethodCallExpression node, ChildChangeType changeType)
+            private void VisitAddOrDeleteMethodCall(MethodCallExpression node, ChildChangeType changeType)
             {
                 var instance = node.Object as MemberExpression ??
                     throw new GitObjectDbException($"{changeType.ToString()} method is only supported when called on an object child property, eg. object.ChildProperty.{changeType.ToString()}(...).");
@@ -87,7 +87,7 @@ namespace GitObjectDb.Reflection
                 changes.Add(new ChildChange(value, changeType));
             }
 
-            IList<ChildChange> GetChildChangeList(string memberName)
+            private IList<ChildChange> GetChildChangeList(string memberName)
             {
                 if (!ChildChanges.TryGetValue(memberName, out var result))
                 {

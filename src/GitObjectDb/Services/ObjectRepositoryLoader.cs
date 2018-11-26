@@ -98,7 +98,7 @@ namespace GitObjectDb.Services
             return (TRepository)LoadFrom((IObjectRepositoryContainer)container, repositoryDescription, commitId);
         }
 
-        IModelObject LoadEntry(IObjectRepositoryContainer container, ObjectId commitId, TreeEntry entry, string path)
+        private IModelObject LoadEntry(IObjectRepositoryContainer container, ObjectId commitId, TreeEntry entry, string path)
         {
             var context = new ModelObjectSerializationContext(container, ResolveChildren);
             var serializer = _contractResolverFactory(context).Serializer;
@@ -117,7 +117,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        ILazyChildren LoadEntryChildren(IObjectRepositoryContainer container, ObjectId commitId, string path, ChildPropertyInfo childProperty) =>
+        private ILazyChildren LoadEntryChildren(IObjectRepositoryContainer container, ObjectId commitId, string path, ChildPropertyInfo childProperty) =>
             LazyChildrenHelper.Create(childProperty, (parent, repository) =>
             {
                 var childPath = string.IsNullOrEmpty(path) ? childProperty.FolderName : $"{path}/{childProperty.FolderName}";
@@ -133,7 +133,7 @@ namespace GitObjectDb.Services
                     Enumerable.Empty<IModelObject>();
             });
 
-        IEnumerable<IModelObject> LoadEntryChildren(IObjectRepositoryContainer container, ObjectId commitId, string childPath, Tree subTree) =>
+        private IEnumerable<IModelObject> LoadEntryChildren(IObjectRepositoryContainer container, ObjectId commitId, string childPath, Tree subTree) =>
             from c in subTree
             where c.TargetType == TreeEntryTargetType.Tree
             let childTree = (Tree)c.Target

@@ -54,7 +54,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        void RemoveNode(IModelObject left, IList<ObjectRepositoryEntryChanges> changed, Stack<string> stack)
+        private void RemoveNode(IModelObject left, IList<ObjectRepositoryEntryChanges> changed, Stack<string> stack)
         {
             var path = stack.ToDataPath();
             changed.Add(new ObjectRepositoryEntryChanges(path, ChangeKind.Deleted, old: left));
@@ -103,7 +103,7 @@ namespace GitObjectDb.Services
             });
         }
 
-        static IImmutableList<ObjectRepositoryEntryChanges> CollectModifiedNodes(AbstractObjectRepository oldRepository, AbstractObjectRepository newRepository, TreeChanges changes, Commit oldCommit) =>
+        private static IImmutableList<ObjectRepositoryEntryChanges> CollectModifiedNodes(IObjectRepository oldRepository, IObjectRepository newRepository, TreeChanges changes, Commit oldCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Modified)
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
@@ -113,7 +113,7 @@ namespace GitObjectDb.Services
              select new ObjectRepositoryEntryChanges(c.Path, c.Status, oldNode, newNode))
             .ToImmutableList();
 
-        static IImmutableList<ObjectRepositoryEntryChanges> CollectAddedNodes(AbstractObjectRepository newRepository, TreeChanges changes, Commit newCommit) =>
+        private static IImmutableList<ObjectRepositoryEntryChanges> CollectAddedNodes(IObjectRepository newRepository, TreeChanges changes, Commit newCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Added)
              let newEntry = newCommit[c.Path]
              where newEntry.TargetType == TreeEntryTargetType.Blob
@@ -122,7 +122,7 @@ namespace GitObjectDb.Services
              select new ObjectRepositoryEntryChanges(c.Path, c.Status, null, newNode))
             .ToImmutableList();
 
-        static IImmutableList<ObjectRepositoryEntryChanges> CollectDeletedNodes(AbstractObjectRepository oldRepository, TreeChanges changes, Commit oldCommit) =>
+        private static IImmutableList<ObjectRepositoryEntryChanges> CollectDeletedNodes(IObjectRepository oldRepository, TreeChanges changes, Commit oldCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Deleted)
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
@@ -131,7 +131,7 @@ namespace GitObjectDb.Services
              select new ObjectRepositoryEntryChanges(c.Path, c.Status, oldNode, null))
             .ToImmutableList();
 
-        static void ThrowIfNonSupportedChangeTypes(TreeChanges changes)
+        private static void ThrowIfNonSupportedChangeTypes(TreeChanges changes)
         {
             if (changes.Any(c => c.Status == ChangeKind.Conflicted))
             {
@@ -168,7 +168,7 @@ namespace GitObjectDb.Services
             return new ObjectRepositoryChanges(newRepository, changes.ToImmutableList(), original);
         }
 
-        void CompareNode(IModelObject original, IModelObject @new, IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack)
+        private void CompareNode(IModelObject original, IModelObject @new, IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack)
         {
             var accessor = _modelDataProvider.Get(original.GetType());
             UpdateNodeIfNeeded(original, @new, stack, accessor, changes);
@@ -187,7 +187,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        void CompareNodeChildren(IModelObject original, IModelObject @new, IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack, ChildPropertyInfo childProperty)
+        private void CompareNodeChildren(IModelObject original, IModelObject @new, IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack, ChildPropertyInfo childProperty)
         {
             using (var enumerator = new TwoSequenceEnumerator<IModelObject>(
                 childProperty.Accessor(original),
@@ -200,7 +200,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        void CompareNodeChildren(IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack, TwoSequenceEnumerator<IModelObject> enumerator)
+        private void CompareNodeChildren(IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack, TwoSequenceEnumerator<IModelObject> enumerator)
         {
             if (enumerator.NodeIsStillThere)
             {
@@ -298,7 +298,7 @@ namespace GitObjectDb.Services
             return Compare(repository, mergeResult);
         }
 
-        static Regex GetChildPathRegex(IModelObject node, ChildPropertyInfo childProperty)
+        private static Regex GetChildPathRegex(IModelObject node, ChildPropertyInfo childProperty)
         {
             var path = node.GetFolderPath();
             return string.IsNullOrEmpty(path) ?

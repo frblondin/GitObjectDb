@@ -18,7 +18,7 @@ namespace GitObjectDb.Models.Compare
     [DebuggerDisplay("+{Added.Count} ~{Modified.Count} -{Deleted.Count}")]
     public class ObjectRepositoryChanges : IReadOnlyList<ObjectRepositoryEntryChanges>
     {
-        readonly IImmutableList<ObjectRepositoryEntryChanges> _changes;
+        private readonly IImmutableList<ObjectRepositoryEntryChanges> _changes;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryChanges"/> class.

@@ -74,7 +74,7 @@ namespace GitObjectDb.Reflection
         }
 
         [ExcludeFromGuardForNull]
-        class Visitor<TExpression> : ExpressionVisitor
+        private class Visitor<TExpression> : ExpressionVisitor
             where TExpression : Expression
         {
             public TExpression Result { get; private set; }

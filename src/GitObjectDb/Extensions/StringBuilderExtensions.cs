@@ -54,7 +54,7 @@ namespace System.Text
         /// <param name="startIndex">The start index.</param>
         /// <param name="count">The count.</param>
         /// <returns>All chunks in natural order.</returns>
-        static List<ManageSliceActionItem> ForEachSliceChunk(StringBuilder source, int startIndex, int count )
+        private static List<ManageSliceActionItem> ForEachSliceChunk(StringBuilder source, int startIndex, int count )
         {
             var result = new List<ManageSliceActionItem>();
             var data = ChunkData.Get(source);
@@ -95,13 +95,13 @@ namespace System.Text
             return result;
         }
 
-        static ChunkData FindChunkForIndex(this StringBuilder source, int index)
+        private static ChunkData FindChunkForIndex(this StringBuilder source, int index)
         {
             var chunk = ChunkData._findChunkForIndexImpl(source, index);
             return ChunkData.Get(chunk);
         }
 
-        static ChunkData NextChunk(this StringBuilder source, StringBuilder chunk)
+        private static ChunkData NextChunk(this StringBuilder source, StringBuilder chunk)
         {
             var result = ChunkData._nextChunkImpl(source, chunk);
             return ChunkData.Get(result);
@@ -183,20 +183,20 @@ namespace System.Text
         [ExcludeFromGuardForNull]
         private struct ChunkData
         {
-            static readonly ConstructorInfo _constructor = ExpressionReflector.GetConstructor(() => new ChunkData(default, default, default, default, default));
+            private static readonly ConstructorInfo _constructor = ExpressionReflector.GetConstructor(() => new ChunkData(default, default, default, default, default));
 
-            static readonly FieldInfo _chunkCharsField = typeof(StringBuilder).GetField("m_ChunkChars", BindingFlags.Instance | BindingFlags.NonPublic);
-            static readonly FieldInfo _chunkOffsetField = typeof(StringBuilder).GetField("m_ChunkOffset", BindingFlags.Instance | BindingFlags.NonPublic);
-            static readonly FieldInfo _chunkLengthField = typeof(StringBuilder).GetField("m_ChunkLength", BindingFlags.Instance | BindingFlags.NonPublic);
-            static readonly FieldInfo _chunkPreviousField = typeof(StringBuilder).GetField("m_ChunkPrevious", BindingFlags.Instance | BindingFlags.NonPublic);
-            static readonly MethodInfo _findChunkForIndexMethod = typeof(StringBuilder).GetMethod("FindChunkForIndex", BindingFlags.Instance | BindingFlags.NonPublic);
-            static readonly MethodInfo _nextChunkMethod = typeof(StringBuilder).GetMethod("Next", BindingFlags.Instance | BindingFlags.NonPublic);
+            private static readonly FieldInfo _chunkCharsField = typeof(StringBuilder).GetField("m_ChunkChars", BindingFlags.Instance | BindingFlags.NonPublic);
+            private static readonly FieldInfo _chunkOffsetField = typeof(StringBuilder).GetField("m_ChunkOffset", BindingFlags.Instance | BindingFlags.NonPublic);
+            private static readonly FieldInfo _chunkLengthField = typeof(StringBuilder).GetField("m_ChunkLength", BindingFlags.Instance | BindingFlags.NonPublic);
+            private static readonly FieldInfo _chunkPreviousField = typeof(StringBuilder).GetField("m_ChunkPrevious", BindingFlags.Instance | BindingFlags.NonPublic);
+            private static readonly MethodInfo _findChunkForIndexMethod = typeof(StringBuilder).GetMethod("FindChunkForIndex", BindingFlags.Instance | BindingFlags.NonPublic);
+            private static readonly MethodInfo _nextChunkMethod = typeof(StringBuilder).GetMethod("Next", BindingFlags.Instance | BindingFlags.NonPublic);
 
-            static readonly ParameterExpression _stringBuilderArg = Expression.Parameter(typeof(StringBuilder));
-            static readonly ParameterExpression _indexArg = Expression.Parameter(typeof(int));
-            static readonly ParameterExpression _chunkArg = Expression.Parameter(typeof(StringBuilder));
+            private static readonly ParameterExpression _stringBuilderArg = Expression.Parameter(typeof(StringBuilder));
+            private static readonly ParameterExpression _indexArg = Expression.Parameter(typeof(int));
+            private static readonly ParameterExpression _chunkArg = Expression.Parameter(typeof(StringBuilder));
 
-            static readonly Func<StringBuilder, ChunkData> _chunkDataFactory =
+            private static readonly Func<StringBuilder, ChunkData> _chunkDataFactory =
                 Expression.Lambda<Func<StringBuilder, ChunkData>>(
                     Expression.New(_constructor,
                         _stringBuilderArg,
@@ -217,7 +217,7 @@ namespace System.Text
                     _stringBuilderArg, _chunkArg).Compile();
 
 #pragma warning disable S1144 // Unused private types or members should be removed
-            ChunkData(StringBuilder chunk, char[] chars, int offset, int length, StringBuilder previous)
+            private ChunkData(StringBuilder chunk, char[] chars, int offset, int length, StringBuilder previous)
             {
                 Chunk = chunk;
                 Chars = chars;

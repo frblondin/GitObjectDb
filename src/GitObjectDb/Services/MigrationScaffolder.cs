@@ -92,7 +92,7 @@ namespace GitObjectDb.Services
             });
         }
 
-        IEnumerable<Migrator> GetLogMigrators(IRepository repository, ICommitLog log, List<IMigration> deferred, Commit previousCommit, MigrationMode mode)
+        private IEnumerable<Migrator> GetLogMigrators(IRepository repository, ICommitLog log, List<IMigration> deferred, Commit previousCommit, MigrationMode mode)
         {
             var context = new ModelObjectSerializationContext(_container);
             var serializer = _contractResolverFactory(context).Serializer;
@@ -114,7 +114,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        IEnumerable<IMigration> GetCommitMigrations(IRepository repository, Commit previousCommit, Commit commit)
+        private static IEnumerable<IMigration> GetCommitMigrations(IRepository repository, Commit previousCommit, Commit commit, JsonSerializer serializer)
         {
             using (var changes = repository.Diff.Compare<TreeChanges>(previousCommit.Tree, commit.Tree))
             {

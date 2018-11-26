@@ -66,7 +66,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        void ThrowIfAnyDowngradeNotSupported()
+        private void ThrowIfAnyDowngradeNotSupported()
         {
             if (Migrations.Any(m => !m.CanDowngrade))
             {

@@ -12,11 +12,11 @@ namespace GitObjectDb.Reflection
     /// <inheritdoc/>
     internal partial class PredicateReflector : IPredicateReflector
     {
-        static readonly MethodInfo _childrenAddMethod = ExpressionReflector.GetMethod<ILazyChildren>(c => c.Add(default));
-        static readonly MethodInfo _childrenDeleteMethod = ExpressionReflector.GetMethod<ILazyChildren>(c => c.Delete(default));
+        private static readonly MethodInfo _childrenAddMethod = ExpressionReflector.GetMethod<ILazyChildren>(c => c.Add(default));
+        private static readonly MethodInfo _childrenDeleteMethod = ExpressionReflector.GetMethod<ILazyChildren>(c => c.Delete(default));
 
-        readonly PredicateVisitor _visitor;
-        readonly Expression _predicate;
+        private readonly PredicateVisitor _visitor;
+        private readonly Expression _predicate;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PredicateReflector"/> class.
@@ -35,7 +35,7 @@ namespace GitObjectDb.Reflection
         /// </summary>
         public IModelObject Instance { get; }
 
-        static PredicateVisitor CreateVisitor(Expression predicate)
+        private static PredicateVisitor CreateVisitor(Expression predicate)
         {
             var visitor = new PredicateVisitor();
             visitor.Visit(predicate);

@@ -13,9 +13,9 @@ namespace GitObjectDb.Tests
     [SetUpFixture]
     public class RepositoryFixture
     {
-        const string TempPath = @"C:\Temp";
+        private const string TempPath = @"C:\Temp";
 
-        static string WorkDirectory => Directory.Exists(TempPath) ? TempPath : TestContext.CurrentContext.WorkDirectory;
+        private static string WorkDirectory => Directory.Exists(TempPath) ? TempPath : TestContext.CurrentContext.WorkDirectory;
 
         public static string BenchmarkRepositoryPath =>
             Path.Combine(WorkDirectory, "Repos", "Benchmark");
@@ -63,7 +63,7 @@ namespace GitObjectDb.Tests
         [OneTimeTearDown]
         public void DeleteTempPath() => DeleteTempPathImpl();
 
-        static void DeleteTempPathImpl()
+        private static void DeleteTempPathImpl()
         {
             DirectoryUtils.Delete(TempRepoPath, true);
         }

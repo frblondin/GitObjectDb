@@ -24,7 +24,7 @@ namespace GitObjectDb.IO
             return DeleteImpl(targetDir, continueOnError, fixedExclusionList);
         }
 
-        static bool DeleteImpl(string targetDir, bool continueOnError, params string[] fixedExclusionList)
+        private static bool DeleteImpl(string targetDir, bool continueOnError, params string[] fixedExclusionList)
         {
             if (!Directory.Exists(targetDir))
             {
@@ -58,7 +58,7 @@ namespace GitObjectDb.IO
             return result;
         }
 
-        static bool DeleteNestedFiles(string targetDir, bool continueOnError, string[] fixedExclusionList)
+        private static bool DeleteNestedFiles(string targetDir, bool continueOnError, string[] fixedExclusionList)
         {
             var result = true;
             var files = Directory.GetFiles(targetDir);
@@ -85,7 +85,7 @@ namespace GitObjectDb.IO
             return result;
         }
 
-        static bool DeleteNestedDirectories(string targetDir, bool continueOnError, string[] fixedExclusionList)
+        private static bool DeleteNestedDirectories(string targetDir, bool continueOnError, string[] fixedExclusionList)
         {
             var result = true;
             try

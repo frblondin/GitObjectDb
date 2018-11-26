@@ -89,7 +89,7 @@ namespace GitObjectDb.Reflection
             return (IModelObject)jObject.ToObject(type, serializer);
         }
 
-        IEnumerable<IModelObject> GetDeletions(IModelObject instance, ChildPropertyInfo childProperty)
+        private IEnumerable<IModelObject> GetDeletions(IModelObject instance, ChildPropertyInfo childProperty)
         {
             if (_deletedObjects.Any())
             {

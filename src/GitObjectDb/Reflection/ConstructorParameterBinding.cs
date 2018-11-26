@@ -15,18 +15,18 @@ namespace GitObjectDb.Reflection
     /// </summary>
     public class ConstructorParameterBinding
     {
-        static readonly MethodInfo _serviceProviderGetServiceMethod = ExpressionReflector.GetMethod<IServiceProvider>(s => s.GetService(default));
-        static readonly MethodInfo _childProcessorInvokeMethod = ExpressionReflector.GetMethod<ChildProcessor>(p => p.Invoke(default, default, default, default));
+        private static readonly MethodInfo _serviceProviderGetServiceMethod = ExpressionReflector.GetMethod<IServiceProvider>(s => s.GetService(default));
+        private static readonly MethodInfo _childProcessorInvokeMethod = ExpressionReflector.GetMethod<ChildProcessor>(p => p.Invoke(default, default, default, default));
 
-        static readonly ParameterExpression _sourceObjectArg = Expression.Parameter(typeof(IModelObject), "sourceObject");
-        static readonly ParameterExpression _processArgumentArg = Expression.Parameter(typeof(ProcessArgument), "processArgument");
-        static readonly ParameterExpression _childProcessorArg = Expression.Parameter(typeof(ChildProcessor), "childProcessor");
+        private static readonly ParameterExpression _sourceObjectArg = Expression.Parameter(typeof(IModelObject), "sourceObject");
+        private static readonly ParameterExpression _processArgumentArg = Expression.Parameter(typeof(ProcessArgument), "processArgument");
+        private static readonly ParameterExpression _childProcessorArg = Expression.Parameter(typeof(ChildProcessor), "childProcessor");
 
-        readonly ParameterExpression _typedSourceObjectVar;
-        readonly ParameterExpression _resultVar;
+        private readonly ParameterExpression _typedSourceObjectVar;
+        private readonly ParameterExpression _resultVar;
 
-        readonly IServiceProvider _serviceProvider;
-        readonly IModelDataAccessorProvider _dataAccessorProvider;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IModelDataAccessorProvider _dataAccessorProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConstructorParameterBinding"/> class.
@@ -91,7 +91,7 @@ namespace GitObjectDb.Reflection
         /// </summary>
         internal Clone Cloner { get; }
 
-        Expression<Clone> ComputeValueRetrievers()
+        private Expression<Clone> ComputeValueRetrievers()
         {
             var properties = Constructor.DeclaringType.GetTypeInfo().GetProperties();
             var dataProvider = _dataAccessorProvider.Get(Constructor.DeclaringType);
@@ -109,7 +109,7 @@ namespace GitObjectDb.Reflection
                 _sourceObjectArg, _processArgumentArg, _childProcessorArg);
         }
 
-        Expression ResolveArgument(ParameterInfo parameter, PropertyInfo[] properties, IModelDataAccessor dataProvider)
+        private Expression ResolveArgument(ParameterInfo parameter, PropertyInfo[] properties, IModelDataAccessor dataProvider)
         {
             if (LazyChildrenHelper.TryGetLazyChildrenInterface(parameter.ParameterType) != null)
             {
@@ -131,7 +131,7 @@ namespace GitObjectDb.Reflection
             }
         }
 
-        Expression ResolveArgumentForLazyChildren(ParameterInfo parameter, IModelDataAccessor dataProvider)
+        private Expression ResolveArgumentForLazyChildren(ParameterInfo parameter, IModelDataAccessor dataProvider)
         {
             // childProcessor(lazyChildren, result, childDataProvider)
             var property = dataProvider.ChildProperties.TryGetWithValue(p => p.Name, parameter.Name) ??
@@ -151,7 +151,7 @@ namespace GitObjectDb.Reflection
                 property.Property.PropertyType);
         }
 
-        Expression ResolveArgumentFromServiceProvider(ParameterInfo parameter)
+        private Expression ResolveArgumentFromServiceProvider(ParameterInfo parameter)
         {
             // serviceProvider.GetService(typeof(parameterType))
             return Expression.Convert(

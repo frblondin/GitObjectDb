@@ -25,7 +25,7 @@ namespace GitObjectDb.Tests.Git
 {
     public class GuardClauseTests
     {
-        static Assembly Assembly { get; } = typeof(IModelObject).Assembly;
+        private static Assembly Assembly { get; } = typeof(IModelObject).Assembly;
 
         /// <summary>
         /// Add missing type to <see cref="CommonTypeProviderCustomization"/> as needed in case of errors.
@@ -49,7 +49,7 @@ namespace GitObjectDb.Tests.Git
         /// <summary>
         /// Provides some dummy values so that parameter values can be provided.
         /// </summary>
-        class CommonTypeProviderCustomization : ICustomization
+        private class CommonTypeProviderCustomization : ICustomization
         {
             public void Customize(IFixture fixture)
             {
@@ -65,7 +65,7 @@ namespace GitObjectDb.Tests.Git
                 CustomizeValidationObjects(fixture);
             }
 
-            static void CustomizeModelObjects(IFixture fixture)
+            private static void CustomizeModelObjects(IFixture fixture)
             {
                 fixture.Inject(new RepositoryDescription(RepositoryFixture.SmallRepositoryPath));
                 fixture.Register(UniqueId.CreateNew);
@@ -78,7 +78,7 @@ namespace GitObjectDb.Tests.Git
                 fixture.Inject<ObjectRepositoryContainer>(new ObjectRepositoryContainer<ObjectRepository>(fixture.Create<IServiceProvider>(), RepositoryFixture.SmallRepositoryPath));
             }
 
-            static void CustomizeExpressionObjects(IFixture fixture)
+            private static void CustomizeExpressionObjects(IFixture fixture)
             {
                 fixture.Inject(typeof(string));
                 fixture.Inject(ExpressionReflector.GetConstructor(() => new Page(default, default, default, default, default)));
@@ -87,7 +87,7 @@ namespace GitObjectDb.Tests.Git
                 fixture.Inject((LambdaExpression)Expression.Lambda<Action>(Expression.Empty()));
             }
 
-            static void CustomizeIModelObject(IFixture fixture)
+            private static void CustomizeIModelObject(IFixture fixture)
             {
                 var modelObject = Substitute.For<IModelObject>();
                 modelObject.Parent.Returns(default(IModelObject));
@@ -98,7 +98,7 @@ namespace GitObjectDb.Tests.Git
                 fixture.Inject(objectRepository);
             }
 
-            static void CustomizeGitObjects(IFixture fixture)
+            private static void CustomizeGitObjects(IFixture fixture)
             {
                 fixture.Inject<Func<IRepository, Tree>>(r => r.Head.Tip.Tree);
                 fixture.Inject(new ObjectId("2fa2540fecec8c4908fb0ccba825cdb903f09440"));
@@ -106,7 +106,7 @@ namespace GitObjectDb.Tests.Git
                 fixture.Inject(Substitute.For<TreeEntryChanges>());
             }
 
-            static void CustomizeJsonObjects(IFixture fixture)
+            private static void CustomizeJsonObjects(IFixture fixture)
             {
                 var jobject = new JObject();
                 jobject["Id"] = JToken.FromObject(UniqueId.CreateNew());
@@ -119,9 +119,9 @@ namespace GitObjectDb.Tests.Git
             }
         }
 
-        class FilterCommand : IBehaviorExpectation
+        private class FilterCommand : IBehaviorExpectation
         {
-            readonly IBehaviorExpectation _origin;
+            private readonly IBehaviorExpectation _origin;
 
             public FilterCommand(IBehaviorExpectation origin)
             {
@@ -145,12 +145,12 @@ namespace GitObjectDb.Tests.Git
                 _origin.Verify(command);
             }
 
-            static bool IsIteratorCommand(IGuardClauseCommand command)
+            private static bool IsIteratorCommand(IGuardClauseCommand command)
             {
                 return command.GetType().Name.Contains("Iterator");
             }
 
-            static bool IsMethodCommandToBeIgnored(IGuardClauseCommand command)
+            private static bool IsMethodCommandToBeIgnored(IGuardClauseCommand command)
             {
                 var methodInvokeCommand = TryGetCommand<MethodInvokeCommand>(command);
                 var method = (MethodBase)methodInvokeCommand?.ParameterInfo.Member;
@@ -165,7 +165,7 @@ namespace GitObjectDb.Tests.Git
                        ExcludeType(methodInvokeCommand.ParameterInfo.Member.ReflectedType);
             }
 
-            static bool IsPropertySetToBeIgnored(IGuardClauseCommand command)
+            private static bool IsPropertySetToBeIgnored(IGuardClauseCommand command)
             {
                 var propertySetCommand = TryGetCommand<PropertySetCommand>(command);
                 return propertySetCommand != null &&
@@ -173,15 +173,14 @@ namespace GitObjectDb.Tests.Git
                     propertySetCommand.PropertyInfo.DeclaringType.Assembly != Assembly);
             }
 
-            static TGuardClauseCommand TryGetCommand<TGuardClauseCommand>(IGuardClauseCommand command)
+            private static TGuardClauseCommand TryGetCommand<TGuardClauseCommand>(IGuardClauseCommand command)
                 where TGuardClauseCommand : class, IGuardClauseCommand
             {
                 var unwrappingCommand = command as ReflectionExceptionUnwrappingCommand;
                 return (unwrappingCommand?.Command ?? command) as TGuardClauseCommand;
             }
 
-            static bool ExcludeType(Type type) =>
-                typeof(Exception).IsAssignableFrom(type);
+            private static bool ExcludeType(Type type) => typeof(Exception).IsAssignableFrom(type);
         }
     }
 }

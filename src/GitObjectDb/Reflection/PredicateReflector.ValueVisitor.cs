@@ -26,10 +26,9 @@ namespace GitObjectDb.Reflection
             /// <returns>The extracted value.</returns>
             public static object ExtractValue(Expression node) => new ValueVisitor().ExtractValueImpl(node);
 
-            object ExtractValueImpl(Expression node)
+            private object ExtractValueImpl(Expression node)
             {
-                var expression = Visit(node);
-                switch (expression)
+                switch (Visit(node))
                 {
                     case null:
                         return null;

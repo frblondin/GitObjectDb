@@ -26,7 +26,7 @@ namespace GitObjectDb.Models.Compare
         /// </summary>
         public IEnumerable<ObjectRepositoryChunkChange> Conflicts { get; }
 
-        static string CreateMessage(IEnumerable<ObjectRepositoryChunkChange> conflicts)
+        private static string CreateMessage(IEnumerable<ObjectRepositoryChunkChange> conflicts)
         {
             if (conflicts == null)
             {
