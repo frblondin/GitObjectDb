@@ -1,0 +1,14 @@
+<Project>
+
+  <PropertyGroup>    
+    <PackageLicenseUrl>https://raw.githubusercontent.com/frblondin/GitObjectDb/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/frblondin/GitObjectDb</PackageProjectUrl>
+    <Copyright>Copyright 2018</Copyright>
+    <PackageTags>git, net, csharp, configuration-management</PackageTags>
+    <Authors>Thomas Caudal</Authors>
+    <Company />    
+    <RepositoryUrl>https://github.com/frblondin/GitObjectDb</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+</Project>
