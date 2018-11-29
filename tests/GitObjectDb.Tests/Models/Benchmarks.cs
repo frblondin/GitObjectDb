@@ -57,18 +57,20 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void SearchInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        public void SearchInLargeRepository(IObjectRepositorySearch search, ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
             var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
             var stopwatch = Stopwatch.StartNew();
+            var page = sut.Applications.PickRandom().Pages.PickRandom();
 
             // Act
-            sut.Flatten().LastOrDefault(o => o.Children.Any()); // Dummy search
+            var result = search.Grep(sut, page.Id.ToString());
+            stopwatch.Stop();
 
             // Assert
-            // Child loading is lazy so root load time should be really short
-            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromMinutes(1)));
+            Assert.That(result, Is.Not.Empty);
+            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(10)));
         }
 
         [Test]
