@@ -30,6 +30,15 @@ namespace GitObjectDb.Services
         /// <inheritdoc/>
         public IList<IModelObject> Grep(IObjectRepository repository, string content, StringComparison comparison)
         {
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
+            }
+            if (content == null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
             return repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
             {
                 if (!r.Head.Tip.Id.Equals(repository.CommitId))
@@ -80,13 +89,29 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public IList<IModelObject> Grep(IObjectRepositoryContainer container, string content, StringComparison comparison) =>
-            container.Repositories.SelectMany(r => Grep(r, content, comparison)).ToList();
+        public IList<IModelObject> Grep(IObjectRepositoryContainer container, string content, StringComparison comparison)
+        {
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+            if (content == null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
+            return container.Repositories.SelectMany(r => Grep(r, content, comparison)).ToList();
+        }
 
         /// <inheritdoc/>
         public IList<IModelObject> GetReferrers<TModel>(TModel node)
             where TModel : class, IModelObject
         {
+            if (node == null)
+            {
+                throw new ArgumentNullException(nameof(node));
+            }
+
             var target = $@"""path"": ""{node.GetFolderPath()}""";
             return Grep(node.Container, target, StringComparison.OrdinalIgnoreCase);
         }
