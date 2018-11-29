@@ -1,0 +1,31 @@
+using GitObjectDb.Models;
+using System;
+
+namespace GitObjectDb.Models.Migration
+{
+    /// <summary>
+    /// Represents the interface for migrations.
+    /// </summary>
+    public interface IMigration : IModelObject
+    {
+        /// <summary>
+        /// Gets a value indicating whether this instance supports downgrade.
+        /// </summary>
+        bool CanDowngrade { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance can be used at any version.
+        /// </summary>
+        bool IsIdempotent { get; }
+
+        /// <summary>
+        /// Operations to be performed during the upgrade process.
+        /// </summary>
+        void Up();
+
+        /// <summary>
+        /// Operations to be performed during the downgrade process.
+        /// </summary>
+        void Down();
+    }
+}

@@ -17,36 +17,25 @@ The Git repository is used as a pure database as the files containing the serial
 Here's a simple example:
 1. Define your own data model by inheriting from `AbstractObjectRepository`:
     ```cs
-    public class ObjectRepository : AbstractObjectRepository
+    [Repository]
+    public class ObjectRepository
     {
-        public ObjectRepository(IServiceProvider serviceProvider, IObjectRepositoryContainer container, Guid id, string name, Version version, IImmutableList<RepositoryDependency> dependencies, ILazyChildren<IMigration> migrations, ILazyChildren<Application> applications)
-            : base(serviceProvider, container, id, name, version, dependencies, migrations)
-        {
-            Applications = (applications ?? throw new ArgumentNullException(nameof(applications))).AttachToParent(this);
-        }
-    
         public ILazyChildren<Application> Applications { get; }
     }
     ```
     _Note that this object contains `Applications` of type `ILazyChildren<Application>`. That's how you can create nested objects. They must be of type `ILazyChildren<Application>`._
 2. Create nested object types:
     ```cs
-    [DataContract]
+    [Model]
     public class Application : AbstractModel
     {
-        public Application(IServiceProvider serviceProvider, UniqueId id, string name, ILazyChildren<Page> pages)
-            : base(serviceProvider, id, name)
-        {
-            Pages = (pages ?? throw new ArgumentNullException(nameof(pages))).AttachToParent(this);
-        }
-
         public ILazyChildren<Page> Pages { get; }
     }
     ```
 3. Basic commands
    - Initialize a new repository
         ```cs
-        var container = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
+        var container = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, path);
         var repo = new ObjectRepository(...);
         container.AddRepository(repo, signature, message);
         ```

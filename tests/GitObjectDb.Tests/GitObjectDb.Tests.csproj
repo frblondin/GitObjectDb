@@ -1,0 +1,70 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>$(SolutionDir)\Rules.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="$(SolutionDir)\stylecop.json" />
+    <AdditionalFiles Include="$(SolutionDir)\Rules.ruleset" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Amadevus.RecordGenerator.Attributes" Version="0.3.4" />
+    <PackageReference Include="Amadevus.RecordGenerator.Generators" Version="0.3.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Appveyor.TestLogger" Version="2.0.0" />
+    <PackageReference Include="AutoFixture.Idioms" Version="4.5.1" />
+    <PackageReference Include="AutoFixture.NUnit3" Version="4.5.1" />
+    <PackageReference Include="CodeGeneration.Roslyn.BuildTime" Version="0.4.88">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.msbuild" Version="2.1.1" />
+    <PackageReference Include="CSharpDiscriminatedUnion" Version="1.0.2" />
+    <PackageReference Include="LibGit2Sharp" Version="0.26.0-preview-0027" />
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.6.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.1.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" />
+    <PackageReference Include="NSubstitute" Version="3.1.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.11.2" />
+    <PackageReference Include="PowerAssert" Version="1.0.79" />
+    <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
+    <PackageReference Include="System.IO.Compression.ZipFile" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\GitObjectDb.ModelCodeGeneration.Attributes\GitObjectDb.ModelCodeGeneration.Attributes.csproj" />
+    <ProjectReference Include="..\..\src\GitObjectDb.ModelCodeGeneration\GitObjectDb.ModelCodeGeneration.csproj" />
+    <ProjectReference Include="..\..\src\GitObjectDb\GitObjectDb.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Assets\Benchmark.zip">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Small.zip">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <DotNetCliToolReference Include="dotnet-codegen" Version="0.4.88" />
+  </ItemGroup>
+
+</Project>
