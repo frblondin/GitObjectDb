@@ -28,7 +28,7 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public IEnumerable<IModelObject> Grep(IObjectRepository repository, string content)
+        public IList<IModelObject> Grep(IObjectRepository repository, string content, StringComparison comparison)
         {
             return repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
             {
@@ -37,30 +37,30 @@ namespace GitObjectDb.Services
                     throw new NotSupportedException("The current head commit id is different from the commit used by current instance.");
                 }
 
-                return Grep(repository, r.Head.Tip.Tree, content);
+                return Grep(repository, r.Head.Tip.Tree, content, comparison).ToList();
             });
         }
 
-        private IEnumerable<IModelObject> Grep(IObjectRepository repository, Tree tree, string content) =>
+        private IEnumerable<IModelObject> Grep(IObjectRepository repository, Tree tree, string content, StringComparison comparison) =>
             tree.SelectMany(child =>
             {
                 switch (child.TargetType)
                 {
                     case TreeEntryTargetType.Blob:
                         var blob = (Blob)child.Target;
-                        if (ContainsString(blob, content))
+                        if (ContainsString(blob, content, comparison))
                         {
                             return repository.GetFromGitPath(child.Path).ToEnumerable();
                         }
                         break;
                     case TreeEntryTargetType.Tree:
                         var subTree = (Tree)child.Target;
-                        return Grep(repository, subTree, content);
+                        return Grep(repository, subTree, content, comparison);
                 }
                 return Enumerable.Empty<IModelObject>();
             });
 
-        private static bool ContainsString(Blob blob, string content)
+        private static bool ContainsString(Blob blob, string content, StringComparison comparison)
         {
             using (var reader = new StreamReader(blob.GetContentStream()))
             {
@@ -71,7 +71,7 @@ namespace GitObjectDb.Services
                     {
                         return false;
                     }
-                    if (line.IndexOf(content, StringComparison.OrdinalIgnoreCase) != -1)
+                    if (line.IndexOf(content, comparison) != -1)
                     {
                         return true;
                     }
@@ -80,15 +80,15 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public IEnumerable<IModelObject> Grep(IObjectRepositoryContainer container, string content) =>
-            container.Repositories.SelectMany(r => Grep(r, content));
+        public IList<IModelObject> Grep(IObjectRepositoryContainer container, string content, StringComparison comparison) =>
+            container.Repositories.SelectMany(r => Grep(r, content, comparison)).ToList();
 
         /// <inheritdoc/>
-        public IEnumerable<IModelObject> GetReferrers<TModel>(TModel node)
+        public IList<IModelObject> GetReferrers<TModel>(TModel node)
             where TModel : class, IModelObject
         {
             var target = $@"""path"": ""{node.GetFolderPath()}""";
-            return Grep(node.Container, target);
+            return Grep(node.Container, target, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
