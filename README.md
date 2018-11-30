@@ -15,7 +15,7 @@ GitObjectDb is designed to simplify the configuration management versioning. It 
 The Git repository is used as a pure database as the files containing the serialized copy of the objects are never fetched in the filesystem. GitObjectDb only uses the blob storage provided by Git.
 
 Here's a simple example:
-1. Define your own data model by inheriting from `AbstractObjectRepository`:
+1. Define your own repository data model:
     ```cs
     [Repository]
     public class ObjectRepository
