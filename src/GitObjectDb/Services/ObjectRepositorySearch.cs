@@ -16,19 +16,8 @@ namespace GitObjectDb.Services
     /// <inheritdoc/>
     internal class ObjectRepositorySearch : IObjectRepositorySearch
     {
-        private readonly IModelDataAccessorProvider _dataAccessorProvider;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ObjectRepositorySearch"/> class.
-        /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
-        public ObjectRepositorySearch(IServiceProvider serviceProvider)
-        {
-            _dataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
-        }
-
         /// <inheritdoc/>
-        public IList<IModelObject> Grep(IObjectRepository repository, string content, StringComparison comparison)
+        public IList<IModelObject> Grep(IObjectRepository repository, string content, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             if (repository == null)
             {
@@ -89,7 +78,7 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public IList<IModelObject> Grep(IObjectRepositoryContainer container, string content, StringComparison comparison)
+        public IList<IModelObject> Grep(IObjectRepositoryContainer container, string content, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             if (container == null)
             {

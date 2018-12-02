@@ -111,9 +111,9 @@ namespace GitObjectDb.ModelCodeGeneration
 
         public static bool HasOnlyGetterWithNoBody(this PropertyDeclarationSyntax pdSyntax)
         {
-            return pdSyntax.AccessorList is AccessorListSyntax accList
-                ? accList.Accessors.Count == 1 && accList.Accessors.Single().IsGetterWithNoBody()
-                : false;
+            return pdSyntax.AccessorList is AccessorListSyntax accList &&
+                accList.Accessors.Count == 1 &&
+                accList.Accessors.Single().IsGetterWithNoBody();
         }
 
         public static bool IsGetterWithNoBody(this AccessorDeclarationSyntax accessor)

@@ -18,7 +18,6 @@ namespace GitObjectDb.Services
     /// <inheritdoc/>
     internal class ComputeTreeChanges : IComputeTreeChanges
     {
-        private readonly IServiceProvider _serviceProvider;
         private readonly IModelDataAccessorProvider _modelDataProvider;
         private readonly IObjectRepositoryLoader _objectRepositoryLoader;
         private readonly IRepositoryProvider _repositoryProvider;
@@ -36,13 +35,17 @@ namespace GitObjectDb.Services
         [ActivatorUtilitiesConstructor]
         public ComputeTreeChanges(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            if (serviceProvider == null)
+            {
+                throw new ArgumentNullException(nameof(serviceProvider));
+            }
+
             _modelDataProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
             _objectRepositoryLoader = serviceProvider.GetRequiredService<IObjectRepositoryLoader>();
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
-            _contractResolverFactory = _serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
+            _contractResolverFactory = serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
         }
 
         private static void UpdateNodeIfNeeded(IModelObject original, IModelObject @new, Stack<string> stack, IModelDataAccessor accessor, IList<ObjectRepositoryEntryChanges> changes)
