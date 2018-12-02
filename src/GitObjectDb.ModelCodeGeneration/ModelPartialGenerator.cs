@@ -1,3 +1,5 @@
+// Original work Copyright (c) 2018 https://github.com/amis92/RecordGenerator
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
