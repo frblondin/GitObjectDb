@@ -1,3 +1,5 @@
+// Original work Copyright (c) 2018 https://github.com/amis92/RecordGenerator
+
 using CodeGeneration.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;

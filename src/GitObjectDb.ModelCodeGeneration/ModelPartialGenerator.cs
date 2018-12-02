@@ -1,3 +1,5 @@
+// Original work Copyright (c) 2018 https://github.com/amis92/RecordGenerator
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -139,40 +141,6 @@ namespace GitObjectDb.ModelCodeGeneration
                                 SeparatedList(arguments)))));
         }
 
-        private IEnumerable<MemberDeclarationSyntax> GenerateMutators()
-        {
-            return Descriptor.Entries.Select(CreateRecordMutator);
-            MethodDeclarationSyntax CreateRecordMutator(ModelDescriptor.Entry entry)
-            {
-                var arguments = Descriptor.Entries.Select(x =>
-                {
-                    return Argument(
-                        IdentifierName(x.Identifier));
-                });
-                var mutator =
-                    MethodDeclaration(
-                        Descriptor.Type,
-                        GetMutatorIdentifier())
-                    .AddModifiers(SyntaxKind.PublicKeyword)
-                    .WithParameters(
-                        Parameter(
-                            entry.Identifier)
-                        .WithType(entry.Type))
-                    .WithBodyStatements(
-                        ReturnStatement(
-                            InvocationExpression(
-                                IdentifierName(Names.Update))
-                            .WithArgumentList(
-                                ArgumentList(
-                                    SeparatedList(arguments)))));
-                return mutator;
-                SyntaxToken GetMutatorIdentifier()
-                {
-                    return Identifier($"{Names.WithPrefix}{entry.Identifier.ValueText}");
-                }
-            }
-        }
-
         private static MemberDeclarationSyntax GenerateValidatePartialMethod()
         {
             return
@@ -188,13 +156,6 @@ namespace GitObjectDb.ModelCodeGeneration
             return Parameter(
                     property.Identifier)
                 .WithType(property.Type);
-        }
-
-        private ParameterListSyntax GenerateFullParameterList()
-        {
-            return ParameterList(
-                    SeparatedList(
-                        Descriptor.Entries.Select(CreateParameter)));
         }
     }
 }

@@ -15,7 +15,6 @@ namespace GitObjectDb.Services
     /// <inheritdoc />
     internal class ObjectRepositoryLoader : IObjectRepositoryLoader
     {
-        private readonly IServiceProvider _serviceProvider;
         private readonly IModelDataAccessorProvider _dataAccessorProvider;
         private readonly IRepositoryProvider _repositoryProvider;
         private readonly ModelObjectContractResolverFactory _contractResolverFactory;
@@ -26,11 +25,14 @@ namespace GitObjectDb.Services
         /// <param name="serviceProvider">The service provider.</param>
         public ObjectRepositoryLoader(IServiceProvider serviceProvider)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            if (serviceProvider == null)
+            {
+                throw new ArgumentNullException(nameof(serviceProvider));
+            }
 
-            _dataAccessorProvider = _serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
-            _repositoryProvider = _serviceProvider.GetRequiredService<IRepositoryProvider>();
-            _contractResolverFactory = _serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
+            _dataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
+            _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
+            _contractResolverFactory = serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
         }
 
         /// <inheritdoc />

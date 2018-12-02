@@ -20,7 +20,6 @@ namespace GitObjectDb.Services
     public class MigrationScaffolder : IMigrationScaffolder
     {
         private readonly IRepositoryProvider _repositoryProvider;
-        private readonly IServiceProvider _serviceProvider;
         private readonly IObjectRepositoryContainer _container;
         private readonly RepositoryDescription _repositoryDescription;
         private readonly ModelObjectContractResolverFactory _contractResolverFactory;
@@ -39,11 +38,15 @@ namespace GitObjectDb.Services
         [ActivatorUtilitiesConstructor]
         public MigrationScaffolder(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            if (serviceProvider == null)
+            {
+                throw new ArgumentNullException(nameof(serviceProvider));
+            }
+
             _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
-            _contractResolverFactory = _serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
+            _contractResolverFactory = serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
         }
 
         /// <inheritdoc/>

@@ -19,7 +19,6 @@ namespace GitObjectDb.Reflection
     /// <seealso cref="GitObjectDb.Reflection.IPredicateReflector" />
     internal class PredicateFromChanges : IPredicateReflector
     {
-        private readonly IServiceProvider _serviceProvider;
         private readonly ModelObjectContractResolverFactory _contractResolverFactory;
         private readonly IObjectRepositoryContainer _container;
         private readonly ILookup<UniqueId, ObjectRepositoryChunkChange> _modifiedChunks;
@@ -50,8 +49,7 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(deletedObjects));
             }
 
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _contractResolverFactory = _serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
+            _contractResolverFactory = serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _modifiedChunks = modifiedChunks.ToLookup(c => c.Id);
             _addedObjects = addedObjects.ToLookup(o => o.ParentId);

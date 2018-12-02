@@ -66,8 +66,10 @@ namespace GitObjectDb.Validations
                 var propertyValue = property.Accessor(context.Instance);
                 if (propertyValue == null)
                 {
+                    continue;
                 }
-                else if (property.IsDiscriminatedUnion)
+
+                if (property.IsDiscriminatedUnion)
                 {
                     ValidateDiscriminatedUnion(context, property.Name, propertyValue, result);
                 }
