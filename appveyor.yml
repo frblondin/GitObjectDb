@@ -32,7 +32,7 @@ before_build:
 build_script:
   - ps: |
       if ($env:APPVEYOR_PULL_REQUEST_NUMBER) {
-        SonarScanner.MSBuild.exe begin /k:"GitObjectDb" /v:"$ENV:APPVEYOR_BUILD_NUMBER" /d:sonar.organization="frblondin-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$ENV:sonarcloudtoken" /d:sonar.cs.opencover.reportsPaths="$ENV:CD\TestResults\coverage*.opencover.xml" /d:sonar.analysis.mode="preview" /d:sonar.github.pullRequest="$env:APPVEYOR_PULL_REQUEST_NUMBER" /d:sonar.github.repository="$ENV:APPVEYOR_REPO_NAME" /d:"sonar.github.oauth=$ENV:github_auth_token" /d:sonar.pullrequest.base="$ENV:APPVEYOR_REPO_BRANCH" /d:sonar.pullrequest.branch="$ENV:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH" /d:sonar.pullrequest.key="$ENV:APPVEYOR_PULL_REQUEST_NUMBER" /d:sonar.pullrequest.provider="github" /d:sonar.pullrequest.github.repository="$ENV:APPVEYOR_REPO_NAME" /d:sonar.pullrequest.github.endpoint="https://api.github.com/"
+        SonarScanner.MSBuild.exe begin /k:"GitObjectDb" /v:"$ENV:APPVEYOR_BUILD_NUMBER" /d:sonar.organization="frblondin-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$ENV:sonarcloudtoken" /d:sonar.cs.opencover.reportsPaths="$ENV:CD\TestResults\coverage*.opencover.xml" /d:sonar.pullrequest.base="$ENV:APPVEYOR_REPO_BRANCH" /d:sonar.pullrequest.branch="$ENV:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH" /d:sonar.pullrequest.key="$ENV:APPVEYOR_PULL_REQUEST_NUMBER" /d:"sonar.language=cs"
       } Else {
         SonarScanner.MSBuild.exe begin /k:"GitObjectDb" /v:"$ENV:APPVEYOR_BUILD_NUMBER" /d:sonar.organization="frblondin-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$ENV:sonarcloudtoken" /d:sonar.cs.opencover.reportsPaths="$ENV:CD\TestResults\coverage*.opencover.xml"
       }
