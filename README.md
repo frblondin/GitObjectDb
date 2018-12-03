@@ -27,7 +27,7 @@ Here's a simple example:
 2. Create nested object types:
     ```cs
     [Model]
-    public class Application : AbstractModel
+    public class Application
     {
         public ILazyChildren<Page> Pages { get; }
     }
