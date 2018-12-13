@@ -21,31 +21,31 @@ namespace GitObjectDb.Services
         private readonly IModelDataAccessorProvider _modelDataProvider;
         private readonly IObjectRepositoryLoader _objectRepositoryLoader;
         private readonly IRepositoryProvider _repositoryProvider;
+        private readonly ModelObjectContractResolverFactory _contractResolverFactory;
+
         private readonly IObjectRepositoryContainer _container;
         private readonly RepositoryDescription _repositoryDescription;
-        private readonly ModelObjectContractResolverFactory _contractResolverFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeTreeChanges"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
         /// <param name="container">The container.</param>
         /// <param name="repositoryDescription">The repository description.</param>
-        /// <exception cref="ArgumentNullException">serviceProvider</exception>
+        /// <param name="modelDataProvider">The model data provider.</param>
+        /// <param name="objectRepositoryLoader">The object repository loader.</param>
+        /// <param name="repositoryProvider">The repository provider.</param>
+        /// <param name="contractResolverFactory">The <see cref="ModelObjectContractResolver"/> factory.</param>
         [ActivatorUtilitiesConstructor]
-        public ComputeTreeChanges(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription)
+        public ComputeTreeChanges(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription,
+            IModelDataAccessorProvider modelDataProvider, IObjectRepositoryLoader objectRepositoryLoader, IRepositoryProvider repositoryProvider, ModelObjectContractResolverFactory contractResolverFactory)
         {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
-
-            _modelDataProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
-            _objectRepositoryLoader = serviceProvider.GetRequiredService<IObjectRepositoryLoader>();
-            _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
-            _contractResolverFactory = serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
+
+            _modelDataProvider = modelDataProvider ?? throw new ArgumentNullException(nameof(modelDataProvider));
+            _objectRepositoryLoader = objectRepositoryLoader ?? throw new ArgumentNullException(nameof(objectRepositoryLoader));
+            _repositoryProvider = repositoryProvider ?? throw new ArgumentNullException(nameof(repositoryProvider));
+            _contractResolverFactory = contractResolverFactory ?? throw new ArgumentNullException(nameof(contractResolverFactory));
         }
 
         private static void UpdateNodeIfNeeded(IModelObject original, IModelObject @new, Stack<string> stack, IModelDataAccessor accessor, IList<ObjectRepositoryEntryChanges> changes)

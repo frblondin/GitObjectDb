@@ -10,7 +10,7 @@ namespace GitObjectDb.Models.Compare
     /// Compares model objects only by using the <see cref="IModelObject.Id"/> property.
     /// </summary>
     /// <typeparam name="TModel">The type of the model.</typeparam>
-    /// <seealso cref="System.Collections.Generic.IEqualityComparer{TModel}" />
+    /// <seealso cref="IEqualityComparer{TModel}" />
     public class ObjectRepositoryIdComparer<TModel> : IEqualityComparer<TModel>, IComparer<TModel>
         where TModel : class, IModelObject
     {

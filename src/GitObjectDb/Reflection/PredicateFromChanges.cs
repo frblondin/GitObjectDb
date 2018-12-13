@@ -19,6 +19,16 @@ namespace GitObjectDb.Reflection
     /// <seealso cref="GitObjectDb.Reflection.IPredicateReflector" />
     internal class PredicateFromChanges : IPredicateReflector
     {
+        /// <summary>
+        /// Creates a new instance of <see cref="PredicateFromChanges"/>.
+        /// </summary>
+        /// <param name="container">The container.</param>
+        /// <param name="modifiedChunks">The modified chunks.</param>
+        /// <param name="addedObjects">The added objects.</param>
+        /// <param name="deletedObjects">The deleted objects.</param>
+        /// <returns>The newly created instance.</returns>
+        internal delegate PredicateFromChanges Factory(IObjectRepositoryContainer container, IList<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects);
+
         private readonly ModelObjectContractResolverFactory _contractResolverFactory;
         private readonly IObjectRepositoryContainer _container;
         private readonly ILookup<UniqueId, ObjectRepositoryChunkChange> _modifiedChunks;
@@ -29,12 +39,14 @@ namespace GitObjectDb.Reflection
         /// <summary>
         /// Initializes a new instance of the <see cref="PredicateFromChanges"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
         /// <param name="container">The container.</param>
         /// <param name="modifiedChunks">The modified chunks.</param>
         /// <param name="addedObjects">The added objects.</param>
         /// <param name="deletedObjects">The deleted objects.</param>
-        public PredicateFromChanges(IServiceProvider serviceProvider, IObjectRepositoryContainer container, IList<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects)
+        /// <param name="contractResolverFactory">The <see cref="ModelObjectContractResolver"/> factory.</param>
+        [ActivatorUtilitiesConstructor]
+        public PredicateFromChanges(IObjectRepositoryContainer container, IList<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects,
+            ModelObjectContractResolverFactory contractResolverFactory)
         {
             if (modifiedChunks == null)
             {
@@ -49,7 +61,7 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(deletedObjects));
             }
 
-            _contractResolverFactory = serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
+            _contractResolverFactory = contractResolverFactory ?? throw new ArgumentNullException(nameof(contractResolverFactory));
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _modifiedChunks = modifiedChunks.ToLookup(c => c.Id);
             _addedObjects = addedObjects.ToLookup(o => o.ParentId);

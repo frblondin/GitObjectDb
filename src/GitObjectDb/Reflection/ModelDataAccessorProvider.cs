@@ -7,18 +7,18 @@ namespace GitObjectDb.Reflection
     /// <inheritdoc />
     internal class ModelDataAccessorProvider : IModelDataAccessorProvider
     {
-        private readonly IServiceProvider _serviceProvider;
+        private readonly ModelDataAccessorFactory _modelDataAccessorFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ModelDataAccessorProvider"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
-        public ModelDataAccessorProvider(IServiceProvider serviceProvider)
+        /// <param name="modelDataAccessorFactory">The <see cref="IModelDataAccessor"/> factory.</param>
+        public ModelDataAccessorProvider(ModelDataAccessorFactory modelDataAccessorFactory)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _modelDataAccessorFactory = modelDataAccessorFactory ?? throw new ArgumentNullException(nameof(modelDataAccessorFactory));
         }
 
         /// <inheritdoc />
-        public IModelDataAccessor Get(Type type) => new ModelDataAccessor(_serviceProvider, type);
+        public IModelDataAccessor Get(Type type) => _modelDataAccessorFactory(type);
     }
 }

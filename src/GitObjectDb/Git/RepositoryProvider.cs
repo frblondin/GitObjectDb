@@ -23,20 +23,10 @@ namespace GitObjectDb.Git
         /// <summary>
         /// Initializes a new instance of the <see cref="RepositoryProvider"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
-        /// <exception cref="ArgumentNullException">
-        /// memoryCache
-        /// or
-        /// repositoryFactory
-        /// </exception>
-        public RepositoryProvider(IServiceProvider serviceProvider)
+        /// <param name="repositoryFactory">The repository factory.</param>
+        public RepositoryProvider(IRepositoryFactory repositoryFactory)
         {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
-
-            _repositoryFactory = serviceProvider.GetRequiredService<IRepositoryFactory>();
+            _repositoryFactory = repositoryFactory ?? throw new ArgumentNullException(nameof(repositoryFactory));
         }
 
         /// <inheritdoc/>

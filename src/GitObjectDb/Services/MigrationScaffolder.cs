@@ -27,26 +27,23 @@ namespace GitObjectDb.Services
         /// <summary>
         /// Initializes a new instance of the <see cref="MigrationScaffolder"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
         /// <param name="container">The container.</param>
         /// <param name="repositoryDescription">The repository description.</param>
+        /// <param name="repositoryProvider">The repository provider.</param>
+        /// <param name="contractResolverFactory">The <see cref="ModelObjectContractResolver"/> factory.</param>
         /// <exception cref="ArgumentNullException">
         /// serviceProvider
         /// or
         /// repository
         /// </exception>
         [ActivatorUtilitiesConstructor]
-        public MigrationScaffolder(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription)
+        internal MigrationScaffolder(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription,
+            IRepositoryProvider repositoryProvider, ModelObjectContractResolverFactory contractResolverFactory)
         {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
-
-            _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
+            _repositoryProvider = repositoryProvider ?? throw new ArgumentNullException(nameof(repositoryProvider));
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
-            _contractResolverFactory = serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
+            _contractResolverFactory = contractResolverFactory ?? throw new ArgumentNullException(nameof(contractResolverFactory));
         }
 
         /// <inheritdoc/>

@@ -10,13 +10,11 @@ namespace GitObjectDb.Models.Rebase
     /// <summary>
     /// Creates a new instance implementing the <see cref="IObjectRepositoryRebase"/> interface.
     /// </summary>
-    /// <param name="container">The container.</param>
-    /// <param name="repositoryDescription">The repository description.</param>
     /// <param name="repository">The repository on which to apply the merge.</param>
     /// <param name="rebaseCommitId">The commit to be rebased.</param>
     /// <param name="branchName">Name of the branch.</param>
     /// <returns>The newly created instance.</returns>
-    public delegate IObjectRepositoryRebase ObjectRepositoryRebaseFactory(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, ObjectId rebaseCommitId, string branchName);
+    public delegate IObjectRepositoryRebase ObjectRepositoryRebaseFactory(IObjectRepository repository, ObjectId rebaseCommitId, string branchName);
 
     /// <summary>
     /// Encapsulates a rebase operation.

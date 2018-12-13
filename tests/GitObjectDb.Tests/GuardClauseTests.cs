@@ -11,6 +11,7 @@ using GitObjectDb.Tests.Assets.Models.Migration;
 using GitObjectDb.Tests.Assets.Utils;
 using GitObjectDb.Validations;
 using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using NSubstitute;
 using NUnit.Framework;
@@ -21,7 +22,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
-namespace GitObjectDb.Tests.Git
+namespace GitObjectDb.Tests
 {
     public class GuardClauseTests
     {
@@ -42,6 +43,7 @@ namespace GitObjectDb.Tests.Git
                         where !typeof(Delegate).IsAssignableFrom(t)
                         where !Attribute.IsDefined(t, typeof(ExcludeFromGuardForNullAttribute))
                         where !t.Name.Contains("Template")
+                        where t.GetTypeInfo().DeclaredConstructors.Any(c => c.IsPublic)
                         select t;
             assertion.Verify(types);
         }
@@ -72,15 +74,15 @@ namespace GitObjectDb.Tests.Git
                 fixture.Register<IObjectRepository>(fixture.Create<ObjectRepository>);
                 fixture.Register<IMigration>(fixture.Create<DummyMigration>);
                 fixture.Register<IModelObject>(fixture.Create<ObjectRepository>);
-                fixture.Inject(new ModelDataAccessor(fixture.Create<IServiceProvider>(), typeof(Page)));
+                fixture.Inject(fixture.Create<IServiceProvider>().GetRequiredService<ModelDataAccessorFactory>().Invoke(typeof(Page)));
                 fixture.Inject<ConstructorParameterBinding.ChildProcessor>((name, children, @new, dataAccessor) => children);
                 fixture.Inject<ConstructorParameterBinding.Clone>((@object, predicateReflector, processor) => @object);
-                fixture.Inject<ObjectRepositoryContainer>(new ObjectRepositoryContainer<ObjectRepository>(fixture.Create<IServiceProvider>(), RepositoryFixture.SmallRepositoryPath));
+                fixture.Inject((ObjectRepositoryContainer)fixture.Create<IServiceProvider>().GetRequiredService<IObjectRepositoryContainerFactory>().Create<ObjectRepository>(RepositoryFixture.SmallRepositoryPath));
             }
 
             private static void CustomizeExpressionObjects(IFixture fixture)
             {
-                fixture.Inject(typeof(string));
+                fixture.Inject(typeof(Page));
                 fixture.Inject(ExpressionReflector.GetConstructor(() => new Page(default, default, default, default, default)));
                 fixture.Inject(ExpressionReflector.GetProperty<Page>(p => p.Description));
                 fixture.Inject((Expression)Expression.Default(typeof(object)));

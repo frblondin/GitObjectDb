@@ -7,6 +7,13 @@ using System.Linq.Expressions;
 namespace GitObjectDb.Reflection
 {
     /// <summary>
+    /// Creates a new instance of <see cref="IModelDataAccessor"/>.
+    /// </summary>
+    /// <param name="type">The type.</param>
+    /// <returns>The newly created instance.</returns>
+    public delegate IModelDataAccessor ModelDataAccessorFactory(Type type);
+
+    /// <summary>
     /// Provides information about a model type.
     /// </summary>
     public interface IModelDataAccessor

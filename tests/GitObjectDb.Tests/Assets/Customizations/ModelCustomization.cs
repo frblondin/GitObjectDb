@@ -2,6 +2,7 @@ using AutoFixture;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Tests.Assets.Models;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -41,9 +42,10 @@ namespace GitObjectDb.Tests.Assets.Customizations
             fixture.Register(UniqueId.CreateNew);
 
             var serviceProvider = fixture.Create<IServiceProvider>();
+            var containerFactory = serviceProvider.GetRequiredService<IObjectRepositoryContainerFactory>();
 
             var path = ContainerPath ?? RepositoryFixture.GetAvailableFolderPath();
-            var container = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, path);
+            var container = containerFactory.Create<ObjectRepository>(path);
             fixture.Inject(container);
             fixture.Inject<IObjectRepositoryContainer<ObjectRepository>>(container);
             fixture.Inject<IObjectRepositoryContainer>(container);

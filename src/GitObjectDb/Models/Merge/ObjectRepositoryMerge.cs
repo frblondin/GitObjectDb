@@ -1,6 +1,5 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Git;
-using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Reflection;
@@ -20,56 +19,37 @@ namespace GitObjectDb.Models.Merge
 {
     /// <inheritdoc/>
     [ExcludeFromGuardForNull]
-    public sealed class ObjectRepositoryMerge : IObjectRepositoryMerge
+    internal sealed class ObjectRepositoryMerge : IObjectRepositoryMerge
     {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly IRepositoryProvider _repositoryProvider;
         private readonly IModelDataAccessorProvider _modelDataProvider;
         private readonly MigrationScaffolderFactory _migrationScaffolderFactory;
-        private readonly RepositoryDescription _repositoryDescription;
+        private readonly MergeProcessor.Factory _mergeProcessorFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryMerge"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
-        /// <param name="container">The container.</param>
-        /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="repository">The repository on which to apply the merge.</param>
         /// <param name="mergeCommitId">The commit to be merged.</param>
         /// <param name="branchName">Name of the branch.</param>
-        /// <exception cref="ArgumentNullException">
-        /// serviceProvider
-        /// or
-        /// repositoryDescription
-        /// or
-        /// commitId
-        /// or
-        /// branchName
-        /// or
-        /// merger
-        /// </exception>
+        /// <param name="modelDataProvider">The model data provider.</param>
+        /// <param name="migrationScaffolderFactory">The <see cref="MigrationScaffolder"/> factory.</param>
+        /// <param name="mergeProcessorFactory">The <see cref="MergeProcessor"/> factory.</param>
         [ActivatorUtilitiesConstructor]
-        public ObjectRepositoryMerge(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, ObjectId mergeCommitId, string branchName)
+        public ObjectRepositoryMerge(IObjectRepository repository, ObjectId mergeCommitId, string branchName,
+            IModelDataAccessorProvider modelDataProvider, MigrationScaffolderFactory migrationScaffolderFactory,
+            MergeProcessor.Factory mergeProcessorFactory)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            Container = container ?? throw new ArgumentNullException(nameof(container));
-            _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
             Repository = repository ?? throw new ArgumentNullException(nameof(repository));
             HeadCommitId = repository.CommitId ?? throw new GitObjectDbException("Repository instance is not linked to any commit.");
             MergeCommitId = mergeCommitId ?? throw new ArgumentNullException(nameof(mergeCommitId));
             BranchName = branchName ?? throw new ArgumentNullException(nameof(branchName));
 
-            _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
-            _modelDataProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
-            _migrationScaffolderFactory = serviceProvider.GetRequiredService<MigrationScaffolderFactory>();
+            _modelDataProvider = modelDataProvider ?? throw new ArgumentNullException(nameof(modelDataProvider));
+            _migrationScaffolderFactory = migrationScaffolderFactory ?? throw new ArgumentNullException(nameof(migrationScaffolderFactory));
+            _mergeProcessorFactory = mergeProcessorFactory ?? throw new ArgumentNullException(nameof(mergeProcessorFactory));
 
             Initialize();
         }
-
-        /// <summary>
-        /// Gets the container.
-        /// </summary>
-        public IObjectRepositoryContainer Container { get; }
 
         /// <summary>
         /// Gets the repository.
@@ -119,7 +99,7 @@ namespace GitObjectDb.Models.Merge
 
         private void Initialize()
         {
-            _repositoryProvider.Execute(_repositoryDescription, repository =>
+            Repository.Execute(repository =>
             {
                 EnsureHeadCommit(repository);
 
@@ -128,7 +108,7 @@ namespace GitObjectDb.Models.Merge
                 var baseCommit = repository.ObjectDatabase.FindMergeBase(headTip, mergeCommit);
                 RequiresMergeCommit = headTip.Id != baseCommit.Id;
 
-                var migrationScaffolder = _migrationScaffolderFactory(Container, _repositoryDescription);
+                var migrationScaffolder = _migrationScaffolderFactory(Repository.Container, Repository.RepositoryDescription);
                 var migrators = migrationScaffolder.Scaffold(baseCommit.Id, MergeCommitId, MigrationMode.Upgrade);
 
                 mergeCommit = ResolveRequiredMigrator(repository, mergeCommit, migrators);
@@ -250,6 +230,6 @@ namespace GitObjectDb.Models.Merge
         }
 
         /// <inheritdoc/>
-        public ObjectId Apply(Signature merger) => new MergeProcessor(_serviceProvider, this).Apply(merger);
+        public ObjectId Apply(Signature merger) => _mergeProcessorFactory(this).Apply(merger);
     }
 }

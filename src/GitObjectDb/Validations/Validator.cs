@@ -22,17 +22,13 @@ namespace GitObjectDb.Validations
         /// <summary>
         /// Initializes a new instance of the <see cref="Validator"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
+        /// <param name="modelDataAccessor">The model data accessor.</param>
+        /// <param name="propertyValidators">The property validators.</param>
         /// <exception cref="ArgumentNullException">serviceProvider</exception>
-        public Validator(IServiceProvider serviceProvider)
+        public Validator(IModelDataAccessorProvider modelDataAccessor, IEnumerable<IPropertyValidator> propertyValidators)
         {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
-
-            _modelDataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
-            _propertyValidators = serviceProvider.GetRequiredService<IEnumerable<IPropertyValidator>>();
+            _modelDataAccessorProvider = modelDataAccessor ?? throw new ArgumentNullException(nameof(modelDataAccessor));
+            _propertyValidators = propertyValidators ?? throw new ArgumentNullException(nameof(propertyValidators));
         }
 
         /// <inheritdoc/>

@@ -28,13 +28,13 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void CreateAndLoadRepository(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Signature signature, string message)
+        public void CreateAndLoadRepository(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryContainerFactory containerFactory, Signature signature, string message)
         {
             // Arrange
             sut = container.AddRepository(sut, signature, message);
 
             // Act
-            var newContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, container.Path);
+            var newContainer = containerFactory.Create<ObjectRepository>(container.Path);
             var loaded = newContainer.Repositories.Single();
 
             // Assert

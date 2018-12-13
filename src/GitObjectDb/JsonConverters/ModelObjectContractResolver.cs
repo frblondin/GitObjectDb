@@ -34,19 +34,15 @@ namespace GitObjectDb.JsonConverters
         /// <summary>
         /// Initializes a new instance of the <see cref="ModelObjectContractResolver"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
         /// <param name="context">The context.</param>
+        /// <param name="modelObjectContractCache">The model object constract cache.</param>
         [ActivatorUtilitiesConstructor]
-        public ModelObjectContractResolver(IServiceProvider serviceProvider, ModelObjectSerializationContext context)
+        public ModelObjectContractResolver(ModelObjectSerializationContext context,
+            ModelObjectContractCache modelObjectContractCache)
         {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
-
-            _modelObjectContractCache = serviceProvider.GetRequiredService<ModelObjectContractCache>();
-            Serializer = JsonSerializerProvider.Create(this);
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _modelObjectContractCache = modelObjectContractCache ?? throw new ArgumentNullException(nameof(modelObjectContractCache));
+            Serializer = JsonSerializerProvider.Create(this);
         }
 
         /// <summary>

@@ -22,17 +22,14 @@ namespace GitObjectDb.Services
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryLoader"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
-        public ObjectRepositoryLoader(IServiceProvider serviceProvider)
+        /// <param name="dataAccessorProvider">The data accessor provider.</param>
+        /// <param name="repositoryProvider">The repository provider.</param>
+        /// <param name="contractResolverFactory">The contract resolved factory.</param>
+        public ObjectRepositoryLoader(IModelDataAccessorProvider dataAccessorProvider, IRepositoryProvider repositoryProvider, ModelObjectContractResolverFactory contractResolverFactory)
         {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
-
-            _dataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
-            _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
-            _contractResolverFactory = serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>();
+            _dataAccessorProvider = dataAccessorProvider ?? throw new ArgumentNullException(nameof(dataAccessorProvider));
+            _repositoryProvider = repositoryProvider ?? throw new ArgumentNullException(nameof(repositoryProvider));
+            _contractResolverFactory = contractResolverFactory ?? throw new ArgumentNullException(nameof(contractResolverFactory));
         }
 
         /// <inheritdoc />

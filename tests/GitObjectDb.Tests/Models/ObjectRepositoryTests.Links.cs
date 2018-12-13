@@ -15,7 +15,7 @@ namespace GitObjectDb.Tests.Models
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void LoadLinkField(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Signature signature, string message)
+        public void LoadLinkField(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryContainerFactory containerFactory, Signature signature, string message)
         {
             // Arrange
             container.AddRepository(sut, signature, message);
@@ -23,7 +23,7 @@ namespace GitObjectDb.Tests.Models
                 f => f.Content.MatchOrDefault(matchLink: l => true));
 
             // Act
-            var newContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, container.Path);
+            var newContainer = containerFactory.Create<ObjectRepository>(container.Path);
             var loaded = newContainer.Repositories.Single();
             var loadedLinkField = (Field)loaded.GetFromGitPath(linkField.GetFolderPath());
 

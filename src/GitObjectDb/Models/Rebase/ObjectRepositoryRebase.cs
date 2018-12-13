@@ -1,15 +1,10 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Git;
-using GitObjectDb.Git.Hooks;
-using GitObjectDb.IO;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Migration;
-using GitObjectDb.Reflection;
 using GitObjectDb.Services;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -21,57 +16,37 @@ namespace GitObjectDb.Models.Rebase
 {
     /// <inheritdoc />
     [ExcludeFromGuardForNull]
-    public class ObjectRepositoryRebase : IObjectRepositoryRebase
+    internal class ObjectRepositoryRebase : IObjectRepositoryRebase
     {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly IRepositoryProvider _repositoryProvider;
         private readonly IObjectRepositoryLoader _repositoryLoader;
         private readonly MigrationScaffolderFactory _migrationScaffolderFactory;
-
-        private readonly RepositoryDescription _repositoryDescription;
+        private readonly RebaseProcessor.Factory _rebaseProcessorFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryRebase"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
-        /// <param name="container">The container.</param>
-        /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="repository">The repository on which to apply the merge.</param>
         /// <param name="rebaseCommitId">The commit to be rebased.</param>
         /// <param name="branchName">Name of the branch.</param>
-        /// <exception cref="ArgumentNullException">
-        /// serviceProvider
-        /// or
-        /// repositoryDescription
-        /// or
-        /// commitId
-        /// or
-        /// branchName
-        /// or
-        /// merger
-        /// </exception>
+        /// <param name="repositoryLoader">The repository loader.</param>
+        /// <param name="migrationScaffolderFactory">The <see cref="MigrationScaffolder"/> factory.</param>
+        /// <param name="rebaseProcessorFactory">The <see cref="MergeProcessor"/> factory.</param>
         [ActivatorUtilitiesConstructor]
-        public ObjectRepositoryRebase(IServiceProvider serviceProvider, IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, ObjectId rebaseCommitId, string branchName)
+        public ObjectRepositoryRebase(IObjectRepository repository, ObjectId rebaseCommitId, string branchName,
+            IObjectRepositoryLoader repositoryLoader, MigrationScaffolderFactory migrationScaffolderFactory,
+            RebaseProcessor.Factory rebaseProcessorFactory)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            Container = container ?? throw new ArgumentNullException(nameof(container));
-            _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
             Repository = repository ?? throw new ArgumentNullException(nameof(repository));
             HeadCommitId = repository.CommitId ?? throw new GitObjectDbException("Repository instance is not linked to any commit.");
             RebaseCommitId = rebaseCommitId ?? throw new ArgumentNullException(nameof(rebaseCommitId));
             BranchName = branchName ?? throw new ArgumentNullException(nameof(branchName));
 
-            _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
-            _repositoryLoader = serviceProvider.GetRequiredService<IObjectRepositoryLoader>();
-            _migrationScaffolderFactory = serviceProvider.GetRequiredService<MigrationScaffolderFactory>();
+            _repositoryLoader = repositoryLoader ?? throw new ArgumentNullException(nameof(repositoryLoader));
+            _migrationScaffolderFactory = migrationScaffolderFactory ?? throw new ArgumentNullException(nameof(migrationScaffolderFactory));
+            _rebaseProcessorFactory = rebaseProcessorFactory ?? throw new ArgumentNullException(nameof(rebaseProcessorFactory));
 
             Initialize();
         }
-
-        /// <summary>
-        /// Gets the container.
-        /// </summary>
-        public IObjectRepositoryContainer Container { get; }
 
         /// <summary>
         /// Gets the repository.
@@ -130,7 +105,7 @@ namespace GitObjectDb.Models.Rebase
 
         private void Initialize()
         {
-            _repositoryProvider.Execute(_repositoryDescription, repository =>
+            Repository.Execute(repository =>
             {
                 EnsureHeadCommit(repository);
 
@@ -148,9 +123,9 @@ namespace GitObjectDb.Models.Rebase
                 }).Select(c => c.Id).ToImmutableList();
                 UpdateUpstreamBranchModifiedPaths(repository, rebaseCommit, mergeBaseCommit);
 
-                StartRepository = _repositoryLoader.LoadFrom(Container, Repository.RepositoryDescription, RebaseCommitId);
+                StartRepository = _repositoryLoader.LoadFrom(Repository.Container, Repository.RepositoryDescription, RebaseCommitId);
 
-                Status = new RebaseProcessor(_serviceProvider, this).ContinueNext(repository);
+                Status = _rebaseProcessorFactory(this).ContinueNext(repository);
             });
         }
 
@@ -169,7 +144,7 @@ namespace GitObjectDb.Models.Rebase
 
         private void EnsureNoMigrations(IRepository repository)
         {
-            var migrationScaffolder = _migrationScaffolderFactory(Container, Repository.RepositoryDescription);
+            var migrationScaffolder = _migrationScaffolderFactory(Repository.Container, Repository.RepositoryDescription);
             var upstreamBranchMigrators = migrationScaffolder.Scaffold(MergeBaseCommitId, RebaseCommitId, MigrationMode.Upgrade);
             var currentBranchMigrators = migrationScaffolder.Scaffold(MergeBaseCommitId, repository.Head.Tip.Id, MigrationMode.Upgrade);
             if (upstreamBranchMigrators.Any() || currentBranchMigrators.Any())
@@ -190,7 +165,7 @@ namespace GitObjectDb.Models.Rebase
         public IObjectRepositoryRebase Continue()
         {
             Status = Repository.Execute(
-                r => new RebaseProcessor(_serviceProvider, this).Continue(r));
+                r => _rebaseProcessorFactory(this).Continue(r));
             return this;
         }
 

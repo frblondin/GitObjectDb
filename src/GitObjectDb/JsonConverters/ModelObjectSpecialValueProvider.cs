@@ -21,11 +21,11 @@ namespace GitObjectDb.JsonConverters
         /// Initializes a new instance of the <see cref="ModelObjectSpecialValueProvider"/> class.
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
-        /// <exception cref="ArgumentNullException">serviceProvider</exception>
-        public ModelObjectSpecialValueProvider(IServiceProvider serviceProvider)
+        /// <param name="modelDataAccessorProvider">The model data accessor provider.</param>
+        public ModelObjectSpecialValueProvider(IServiceProvider serviceProvider, IModelDataAccessorProvider modelDataAccessorProvider)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _dataAccessorProvider = _serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
+            _dataAccessorProvider = modelDataAccessorProvider ?? throw new ArgumentNullException(nameof(modelDataAccessorProvider));
         }
 
         /// <summary>
