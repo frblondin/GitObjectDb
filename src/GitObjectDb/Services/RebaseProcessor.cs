@@ -18,31 +18,37 @@ namespace GitObjectDb.Services
     /// </summary>
     internal class RebaseProcessor
     {
+        /// <summary>
+        /// Creates a new instance of <see cref="RebaseProcessor"/>.
+        /// </summary>
+        /// <param name="objectRepositoryRebase">The object repository rebase.</param>
+        /// <returns>The newly created instance.</returns>
+        internal delegate RebaseProcessor Factory(ObjectRepositoryRebase objectRepositoryRebase);
+
         private static readonly JsonSerializer _serializer = JsonSerializer.CreateDefault();
 
-        private readonly IServiceProvider _serviceProvider;
         private readonly ObjectRepositoryRebase _rebase;
 
         private readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
         private readonly IModelDataAccessorProvider _modelDataProvider;
+        private readonly PredicateFromChanges.Factory _predicateFromChangesFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RebaseProcessor"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
         /// <param name="objectRepositoryRebase">The object repository rebase.</param>
-        /// <exception cref="ArgumentNullException">
-        /// serviceProvider
-        /// or
-        /// objectRepositoryRebase
-        /// </exception>
-        internal RebaseProcessor(IServiceProvider serviceProvider, ObjectRepositoryRebase objectRepositoryRebase)
+        /// <param name="computeTreeChangesFactory">The <see cref="IComputeTreeChanges"/> factory.</param>
+        /// <param name="modelDataProvider">The model data provider.</param>
+        /// <param name="predicateFromChangesFactory">The <see cref="PredicateFromChanges"/> factory.</param>
+        [ActivatorUtilitiesConstructor]
+        internal RebaseProcessor(ObjectRepositoryRebase objectRepositoryRebase,
+            ComputeTreeChangesFactory computeTreeChangesFactory, IModelDataAccessorProvider modelDataProvider, PredicateFromChanges.Factory predicateFromChangesFactory)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _rebase = objectRepositoryRebase ?? throw new ArgumentNullException(nameof(objectRepositoryRebase));
 
-            _computeTreeChangesFactory = serviceProvider.GetRequiredService<ComputeTreeChangesFactory>();
-            _modelDataProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
+            _computeTreeChangesFactory = computeTreeChangesFactory ?? throw new ArgumentNullException(nameof(computeTreeChangesFactory));
+            _modelDataProvider = modelDataProvider ?? throw new ArgumentNullException(nameof(modelDataProvider));
+            _predicateFromChangesFactory = predicateFromChangesFactory ?? throw new ArgumentNullException(nameof(predicateFromChangesFactory));
         }
 
         private IObjectRepository CurrentTransformedRepository => _rebase.Transformations.LastOrDefault() ?? _rebase.StartRepository;
@@ -86,7 +92,7 @@ namespace GitObjectDb.Services
 
         private RebaseStatus CompleteStep(IRepository repository)
         {
-            var predicate = new PredicateFromChanges(_serviceProvider, _rebase.Container, _rebase.ModifiedChunks, _rebase.AddedObjects, _rebase.DeletedObjects);
+            var predicate = _predicateFromChangesFactory(_rebase.Repository.Container, _rebase.ModifiedChunks, _rebase.AddedObjects, _rebase.DeletedObjects);
             var transformed = CurrentTransformedRepository.With(predicate);
             _rebase.Transformations.Add(transformed);
 
@@ -105,7 +111,7 @@ namespace GitObjectDb.Services
 
         private RebaseStatus CompleteRebase(IRepository r)
         {
-            var computeChanges = _computeTreeChangesFactory(_rebase.Container, _rebase.Repository.RepositoryDescription);
+            var computeChanges = _computeTreeChangesFactory(_rebase.Repository.Container, _rebase.Repository.RepositoryDescription);
             var previous = _rebase.StartRepository;
             var lastCommit = r.Lookup<Commit>(_rebase.RebaseCommitId);
             foreach (var info in _rebase.Transformations.Zip(_rebase.ReplayedCommits, (repository, commit) => (repository, r.Lookup<Commit>(commit))))

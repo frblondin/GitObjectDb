@@ -39,30 +39,64 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static IServiceCollection ConfigureServices(IServiceCollection source)
         {
-            source.AddSingleton<GitHooks>();
+            ConfigureInternalServices(source);
+            ConfigureReflectionServices(source);
+            ConfigureGitServices(source);
+            ConfigureJsonServices(source);
+            ConfigureValidationServices(source);
+            ConfigureModelServices(source);
+
+            return source;
+        }
+
+        private static void ConfigureInternalServices(IServiceCollection source)
+        {
             source.AddSingleton<IObjectRepositoryLoader, ObjectRepositoryLoader>();
-            source.AddSingleton<IModelDataAccessorProvider, ModelDataAccessorProvider>();
-            source.AddSingleton<IConstructorSelector, MostParametersConstructorSelector>();
             source.AddFactoryDelegate<ComputeTreeChangesFactory, ComputeTreeChanges>();
-            source.AddSingleton<IRepositoryFactory, RepositoryFactory>();
-            source.AddSingleton<IRepositoryProvider, RepositoryProvider>();
-            source.AddSingleton<IModelDataAccessorProvider>(s =>
-                new CachedModelDataAccessorProvider(new ModelDataAccessorProvider(s)));
-            source.AddFactoryDelegate<ObjectRepositoryMergeFactory, ObjectRepositoryMerge>();
             source.AddFactoryDelegate<MigrationScaffolderFactory, MigrationScaffolder>();
             source.AddSingleton<IObjectRepositorySearch, ObjectRepositorySearch>();
-            source.AddFactoryDelegate<ObjectRepositoryRebaseFactory, ObjectRepositoryRebase>();
+            source.AddFactoryDelegate<MergeProcessor>();
+            source.AddFactoryDelegate<RebaseProcessor>();
+        }
 
+        private static void ConfigureReflectionServices(IServiceCollection source)
+        {
+            source.AddSingleton<IModelDataAccessorProvider, ModelDataAccessorProvider>();
+            source.AddSingleton<IConstructorSelector, MostParametersConstructorSelector>();
+            source.AddSingleton<IModelDataAccessorProvider>(s =>
+                new CachedModelDataAccessorProvider(new ModelDataAccessorProvider(s.GetRequiredService<ModelDataAccessorFactory>())));
+            source.AddFactoryDelegate<PredicateFromChanges>();
+            source.AddFactoryDelegate<ConstructorParameterBinding>();
+            source.AddFactoryDelegate<ModelDataAccessorFactory, ModelDataAccessor>();
+        }
+
+        private static void ConfigureGitServices(IServiceCollection source)
+        {
+            source.AddSingleton<IRepositoryFactory, RepositoryFactory>();
+            source.AddSingleton<IRepositoryProvider, RepositoryProvider>();
+            source.AddSingleton<GitHooks>();
+        }
+
+        private static void ConfigureJsonServices(IServiceCollection source)
+        {
             source.AddFactoryDelegate<ModelObjectContractResolverFactory, ModelObjectContractResolver>();
             source.AddSingleton<ModelObjectContractCache>();
             source.AddSingleton<ModelObjectSpecialValueProvider>();
+        }
 
+        private static void ConfigureValidationServices(IServiceCollection source)
+        {
             source.AddSingleton<IPropertyValidator, DependencyPropertyValidator>();
             source.AddSingleton<IPropertyValidator, LazyLinkPropertyValidator>();
             source.AddSingleton<IPropertyValidator, ObjectPathPropertyValidator>();
             source.AddSingleton<IValidator, Validator>();
+        }
 
-            return source;
+        private static void ConfigureModelServices(IServiceCollection source)
+        {
+            source.AddSingleton<IObjectRepositoryContainerFactory, ObjectRepositoryContainerFactory>();
+            source.AddFactoryDelegate<ObjectRepositoryMergeFactory, ObjectRepositoryMerge>();
+            source.AddFactoryDelegate<ObjectRepositoryRebaseFactory, ObjectRepositoryRebase>();
         }
     }
 }

@@ -1,4 +1,6 @@
 using AutoFixture;
+using GitObjectDb.Git;
+using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Services;
@@ -7,6 +9,7 @@ using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Models.Migration;
 using GitObjectDb.Tests.Assets.Utils;
 using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -26,7 +29,8 @@ namespace GitObjectDb.Tests.Migrations
             var commit = container.Commit(updated, signature, message);
 
             // Act
-            var migrationScaffolder = new MigrationScaffolder(serviceProvider, container, sut.RepositoryDescription);
+            var migrationScaffolder = new MigrationScaffolder(container, sut.RepositoryDescription,
+                serviceProvider.GetRequiredService<IRepositoryProvider>(), serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>());
             var migrators = migrationScaffolder.Scaffold(sut.CommitId, commit.CommitId, MigrationMode.Upgrade);
 
             // Assert

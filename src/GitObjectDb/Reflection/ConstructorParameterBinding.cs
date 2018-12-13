@@ -15,6 +15,13 @@ namespace GitObjectDb.Reflection
     /// </summary>
     public class ConstructorParameterBinding
     {
+        /// <summary>
+        /// Creates a new instance of <see cref="ConstructorParameterBinding"/>.
+        /// </summary>
+        /// <param name="constructor">The constructor.</param>
+        /// <returns>The newly created instance.</returns>
+        internal delegate ConstructorParameterBinding Factory(ConstructorInfo constructor);
+
         private static readonly MethodInfo _serviceProviderGetServiceMethod = ExpressionReflector.GetMethod<IServiceProvider>(s => s.GetService(default));
         private static readonly MethodInfo _childProcessorInvokeMethod = ExpressionReflector.GetMethod<ChildProcessor>(p => p.Invoke(default, default, default, default));
 
@@ -31,19 +38,16 @@ namespace GitObjectDb.Reflection
         /// <summary>
         /// Initializes a new instance of the <see cref="ConstructorParameterBinding"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
         /// <param name="constructor">The constructor.</param>
-        /// <exception cref="ArgumentNullException">
-        /// serviceProvider
-        /// or
-        /// constructor
-        /// </exception>
-        public ConstructorParameterBinding(IServiceProvider serviceProvider, ConstructorInfo constructor)
+        /// <param name="serviceProvider">The service provider.</param>
+        /// <param name="dataAccessorProvider">The data accessor provider.</param>
+        [ActivatorUtilitiesConstructor]
+        public ConstructorParameterBinding(ConstructorInfo constructor, IServiceProvider serviceProvider, IModelDataAccessorProvider dataAccessorProvider)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             Constructor = constructor ?? throw new ArgumentNullException(nameof(constructor));
 
-            _dataAccessorProvider = serviceProvider.GetRequiredService<IModelDataAccessorProvider>();
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _dataAccessorProvider = dataAccessorProvider ?? throw new ArgumentNullException(nameof(dataAccessorProvider));
             Parameters = constructor.GetParameters().ToImmutableList();
             _typedSourceObjectVar = Expression.Variable(Constructor.DeclaringType);
             _resultVar = Expression.Variable(Constructor.DeclaringType);

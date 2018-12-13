@@ -15,11 +15,11 @@ namespace GitObjectDb.Tests.Reflection
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization))]
-        public void ThrowIfMissingSerializableProperty(IServiceProvider serviceProvider)
+        public void ThrowIfMissingSerializableProperty(ModelDataAccessorFactory modelDataAccessorFactory)
         {
             // Assert
             var exception = Assert.Throws<NotSupportedException>(
-                () => new ModelDataAccessor(serviceProvider, typeof(PropertyNotSerializable)));
+                () => modelDataAccessorFactory.Invoke(typeof(PropertyNotSerializable)));
             Assert.That(exception, Has.Message.Contains("is not serialized"));
         }
 

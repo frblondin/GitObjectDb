@@ -23,31 +23,34 @@ namespace GitObjectDb.Models
     public class ObjectRepositoryContainer<TRepository> : ObjectRepositoryContainer, IObjectRepositoryContainer<TRepository>
         where TRepository : class, IObjectRepository
     {
+        private readonly IObjectRepositoryLoader _repositoryLoader;
         private readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
         private readonly ObjectRepositoryMergeFactory _objectRepositoryMergeFactory;
         private readonly ObjectRepositoryRebaseFactory _objectRepositoryRebaseFactory;
-        private readonly IObjectRepositoryLoader _repositoryLoader;
         private readonly IRepositoryProvider _repositoryProvider;
         private readonly GitHooks _hooks;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryContainer{TRepository}"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
         /// <param name="path">The path.</param>
-        public ObjectRepositoryContainer(IServiceProvider serviceProvider, string path)
+        /// <param name="repositoryLoader">The repository loader.</param>
+        /// <param name="computeTreeChangesFactory">The <see cref="IComputeTreeChanges"/> factory.</param>
+        /// <param name="objectRepositoryMergeFactory">The <see cref="IObjectRepositoryMerge"/> factory.</param>
+        /// <param name="objectRepositoryRebaseFactory">The <see cref="IObjectRepositoryRebase"/> factory.</param>
+        /// <param name="repositoryProvider">The repository provider.</param>
+        /// <param name="hooks">The hooks.</param>
+        public ObjectRepositoryContainer(string path,
+            IObjectRepositoryLoader repositoryLoader, ComputeTreeChangesFactory computeTreeChangesFactory,
+            ObjectRepositoryMergeFactory objectRepositoryMergeFactory, ObjectRepositoryRebaseFactory objectRepositoryRebaseFactory,
+            IRepositoryProvider repositoryProvider, GitHooks hooks)
         {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
-
-            _repositoryLoader = serviceProvider.GetRequiredService<IObjectRepositoryLoader>();
-            _computeTreeChangesFactory = serviceProvider.GetRequiredService<ComputeTreeChangesFactory>();
-            _objectRepositoryMergeFactory = serviceProvider.GetRequiredService<ObjectRepositoryMergeFactory>();
-            _objectRepositoryRebaseFactory = serviceProvider.GetRequiredService<ObjectRepositoryRebaseFactory>();
-            _repositoryProvider = serviceProvider.GetRequiredService<IRepositoryProvider>();
-            _hooks = serviceProvider.GetRequiredService<GitHooks>();
+            _repositoryLoader = repositoryLoader ?? throw new ArgumentNullException(nameof(repositoryLoader));
+            _computeTreeChangesFactory = computeTreeChangesFactory;
+            _objectRepositoryMergeFactory = objectRepositoryMergeFactory ?? throw new ArgumentNullException(nameof(objectRepositoryMergeFactory));
+            _objectRepositoryRebaseFactory = objectRepositoryRebaseFactory ?? throw new ArgumentNullException(nameof(objectRepositoryRebaseFactory));
+            _repositoryProvider = repositoryProvider ?? throw new ArgumentNullException(nameof(repositoryProvider));
+            _hooks = hooks ?? throw new ArgumentNullException(nameof(hooks));
 
             Path = path ?? throw new ArgumentNullException(nameof(path));
             Directory.CreateDirectory(path);
@@ -397,7 +400,7 @@ namespace GitObjectDb.Models
 
                 return (r.Head.TrackedBranch.Tip.Id, r.Head.TrackedBranch.FriendlyName);
             });
-            return _objectRepositoryMergeFactory(this, repository.RepositoryDescription, repository, originTip, remoteBranch);
+            return _objectRepositoryMergeFactory(repository, originTip, remoteBranch);
         }
 
         /// <inheritdoc />
@@ -414,7 +417,7 @@ namespace GitObjectDb.Models
 
             repository.EnsuresCurrentRepository();
             var commitId = repository.Execute(r => r.Branches[branchName].Tip.Id);
-            return _objectRepositoryMergeFactory(this, repository.RepositoryDescription, repository, commitId, branchName);
+            return _objectRepositoryMergeFactory(repository, commitId, branchName);
         }
 
         /// <inheritdoc />
@@ -442,7 +445,7 @@ namespace GitObjectDb.Models
 
             repository.EnsuresCurrentRepository();
             var commitId = repository.Execute(r => r.Branches[branchName].Tip.Id);
-            return _objectRepositoryRebaseFactory(this, repository.RepositoryDescription, repository, commitId, branchName);
+            return _objectRepositoryRebaseFactory(repository, commitId, branchName);
         }
 
         /// <inheritdoc />

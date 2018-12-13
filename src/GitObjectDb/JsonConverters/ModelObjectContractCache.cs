@@ -25,15 +25,10 @@ namespace GitObjectDb.JsonConverters
         /// <summary>
         /// Initializes a new instance of the <see cref="ModelObjectContractCache" /> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
-        public ModelObjectContractCache(IServiceProvider serviceProvider)
+        /// <param name="modelObjectSpecialValueProvider"></param>
+        public ModelObjectContractCache(ModelObjectSpecialValueProvider modelObjectSpecialValueProvider)
         {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
-
-            _modelObjectSpecialValueProvider = serviceProvider.GetRequiredService<ModelObjectSpecialValueProvider>();
+            _modelObjectSpecialValueProvider = modelObjectSpecialValueProvider ?? throw new ArgumentNullException(nameof(modelObjectSpecialValueProvider));
         }
 
         /// <summary>

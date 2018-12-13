@@ -1,12 +1,9 @@
-using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Merge;
-using GitObjectDb.Reflection;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,6 +18,13 @@ namespace GitObjectDb.Services
     /// </summary>
     internal sealed class MergeProcessor
     {
+        /// <summary>
+        /// Creates a new instance of <see cref="MergeProcessor"/>.
+        /// </summary>
+        /// <param name="objectRepositoryMerge">The object repository merge.</param>
+        /// <returns>The newly created instance.</returns>
+        internal delegate MergeProcessor Factory(ObjectRepositoryMerge objectRepositoryMerge);
+
         private readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
         private readonly GitHooks _hooks;
 
@@ -29,24 +33,17 @@ namespace GitObjectDb.Services
         /// <summary>
         /// Initializes a new instance of the <see cref="MergeProcessor"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
         /// <param name="objectRepositoryMerge">The object repository merge.</param>
-        /// <exception cref="ArgumentNullException">
-        /// serviceProvider
-        /// or
-        /// repositoryDescription
-        /// </exception>
-        internal MergeProcessor(IServiceProvider serviceProvider, ObjectRepositoryMerge objectRepositoryMerge)
+        /// <param name="computeTreeChangesFactory">The <see cref="IComputeTreeChanges"/> factory.</param>
+        /// <param name="hooks">The hooks.</param>
+        [ActivatorUtilitiesConstructor]
+        internal MergeProcessor(ObjectRepositoryMerge objectRepositoryMerge,
+            ComputeTreeChangesFactory computeTreeChangesFactory, GitHooks hooks)
         {
-            if (serviceProvider == null)
-            {
-                throw new ArgumentNullException(nameof(serviceProvider));
-            }
-
             _merge = objectRepositoryMerge ?? throw new ArgumentNullException(nameof(objectRepositoryMerge));
 
-            _computeTreeChangesFactory = serviceProvider.GetRequiredService<ComputeTreeChangesFactory>();
-            _hooks = serviceProvider.GetRequiredService<GitHooks>();
+            _computeTreeChangesFactory = computeTreeChangesFactory ?? throw new ArgumentNullException(nameof(computeTreeChangesFactory));
+            _hooks = hooks ?? throw new ArgumentNullException(nameof(hooks));
         }
 
         /// <summary>
@@ -82,7 +79,7 @@ namespace GitObjectDb.Services
 
         private ObjectId ApplyMerge(Signature merger, IRepository repository)
         {
-            var computeChanges = _computeTreeChangesFactory(_merge.Container, _merge.Repository.RepositoryDescription);
+            var computeChanges = _computeTreeChangesFactory(_merge.Repository.Container, _merge.Repository.RepositoryDescription);
             var treeChanges = computeChanges.Compute(_merge.Repository, _merge.ModifiedChunks, _merge.AddedObjects, _merge.DeletedObjects);
 
             if (!_hooks.OnMergeStarted(treeChanges))

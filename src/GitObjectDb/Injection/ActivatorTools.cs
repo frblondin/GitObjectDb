@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var flag = false;
             foreach (var declaredConstructor in instanceType.GetTypeInfo().DeclaredConstructors)
             {
-                if (!declaredConstructor.IsStatic && declaredConstructor.IsPublic && declaredConstructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false))
+                if (!declaredConstructor.IsStatic && declaredConstructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false))
                 {
                     if (flag)
                     {

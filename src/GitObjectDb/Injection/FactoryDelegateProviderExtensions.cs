@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.DependencyInjection
         private static readonly MethodInfo _getRequiredServiceDefinition = ExpressionReflector.GetMethod(() => ServiceProviderServiceExtensions.GetRequiredService<object>(null), true);
 
         /// <summary>
-        /// Adds a factory delefate that returns a new instance of the type specified by the <typeparamref name="TDelegate"/> delegate.
+        /// Adds a factory delegate that returns a new instance of the type specified by the <typeparamref name="TDelegate"/> delegate.
         /// </summary>
         /// <typeparam name="TDelegate">The type of the delegate.</typeparam>
         /// <typeparam name="TImplementation">The type of the implementation.</typeparam>
@@ -33,14 +33,34 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(services));
             }
 
-            var invoker = CreateInvoker<TDelegate>(typeof(TImplementation));
-            return services.AddSingleton(invoker.Compile());
+            var invoker = CreateInvoker(typeof(TImplementation), typeof(TDelegate));
+            return services.AddSingleton(typeof(TDelegate), (Func<IServiceProvider, object>)invoker.Compile());
         }
 
-        private static Expression<Func<IServiceProvider, TDelegate>> CreateInvoker<TDelegate>(Type implementationType)
+        /// <summary>
+        /// Adds a factory delegate that returns a new instance of the type specified by the nested delegate type named &quot;Factory&quot;.
+        /// </summary>
+        /// <typeparam name="TImplementation">The type of the implementation.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection" /> to add the service to.</param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
+        public static IServiceCollection AddFactoryDelegate<TImplementation>(this IServiceCollection services)
+            where TImplementation : class
+        {
+            if (services == null)
+            {
+                throw new ArgumentNullException(nameof(services));
+            }
+
+            var delegateType = typeof(TImplementation).Assembly.GetType($"{typeof(TImplementation).FullName}+Factory", true);
+            var invoker = CreateInvoker(typeof(TImplementation), delegateType);
+            return services.AddSingleton(delegateType, (Func<IServiceProvider, object>)invoker.Compile());
+        }
+
+        private static LambdaExpression CreateInvoker(Type implementationType, Type delegateType)
         {
             var capturedServiceProvider = Expression.Parameter(typeof(IServiceProvider), "capturedServiceProvider");
-            var factory = CreateFactory<TDelegate>(capturedServiceProvider, implementationType);
+            var factory = CreateFactory(capturedServiceProvider, implementationType, delegateType);
+            var invokerType = Expression.GetFuncType(typeof(IServiceProvider), delegateType);
 
             // capturedServiceProvider =>
             //    (param1, param2...) =>
@@ -48,23 +68,23 @@ namespace Microsoft.Extensions.DependencyInjection
             //                         param1,
             //                         param2,
             //                         ...)
-            return Expression.Lambda<Func<IServiceProvider, TDelegate>>(factory, capturedServiceProvider);
+            return Expression.Lambda(invokerType, factory, capturedServiceProvider);
         }
 
-        private static Expression<TDelegate> CreateFactory<TDelegate>(ParameterExpression capturedServiceProvider, Type implementationType)
+        private static LambdaExpression CreateFactory(ParameterExpression capturedServiceProvider, Type implementationType, Type delegateType)
         {
-            var (parameters, argumentTypes, returnType) = GetDelegateData<TDelegate>();
+            var (parameters, argumentTypes, returnType) = GetDelegateData(delegateType);
             var constructor = ActivatorTools.FindPreferredConstructor(implementationType, argumentTypes, out var map);
             var invokeConstructor = Expression.Convert(
                 Expression.New(constructor, from p in constructor.GetParameters()
                                             select MapParameter(p, map, parameters, capturedServiceProvider)),
                 returnType);
-            return Expression.Lambda<TDelegate>(invokeConstructor, parameters);
+            return Expression.Lambda(delegateType, invokeConstructor, parameters);
         }
 
-        private static (IList<ParameterExpression> parameters, Type[] argumentTypes, Type ReturnType) GetDelegateData<TDelegate>()
+        private static (IList<ParameterExpression> parameters, Type[] argumentTypes, Type ReturnType) GetDelegateData(Type delegateType)
         {
-            var invokeMethod = typeof(TDelegate).GetMethod("Invoke");
+            var invokeMethod = delegateType.GetMethod("Invoke");
             return ((from p in invokeMethod.GetParameters()
                      select Expression.Parameter(p.ParameterType, p.Name)).ToList(),
                     (from p in invokeMethod.GetParameters()

@@ -199,12 +199,12 @@ namespace GitObjectDb.Tests.Services
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void PullNotRequiringAnyMerge(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Signature signature, string message)
+        public void PullNotRequiringAnyMerge(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryContainerFactory containerFactory, Signature signature, string message)
         {
             // Arrange
             sut = container.AddRepository(sut, signature, message);
             var tempPath = RepositoryFixture.GetAvailableFolderPath();
-            var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
+            var clientContainer = containerFactory.Create<ObjectRepository>(tempPath);
             clientContainer.Clone(container.Repositories.Single().RepositoryDescription.Path);
 
             // Arrange - Update source repository
@@ -223,12 +223,12 @@ namespace GitObjectDb.Tests.Services
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void PullRequiringMerge(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Signature signature, string message)
+        public void PullRequiringMerge(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryContainerFactory containerFactory, Signature signature, string message)
         {
             // Arrange
             sut = container.AddRepository(sut, signature, message);
             var tempPath = RepositoryFixture.GetAvailableFolderPath();
-            var clientContainer = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, tempPath);
+            var clientContainer = containerFactory.Create<ObjectRepository>(tempPath);
             clientContainer.Clone(container.Repositories.Single().RepositoryDescription.Path);
 
             // Arrange - Update source repository

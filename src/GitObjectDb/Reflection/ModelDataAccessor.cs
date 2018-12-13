@@ -18,7 +18,6 @@ namespace GitObjectDb.Reflection
     /// <inheritdoc />
     internal class ModelDataAccessor : IModelDataAccessor
     {
-        private readonly IServiceProvider _serviceProvider;
         private readonly Lazy<IImmutableList<ChildPropertyInfo>> _childProperties;
         private readonly Lazy<IImmutableList<ModifiablePropertyInfo>> _modifiableProperties;
         private readonly Lazy<ConstructorParameterBinding> _constructorBinding;
@@ -27,29 +26,31 @@ namespace GitObjectDb.Reflection
         /// <summary>
         /// Initializes a new instance of the <see cref="ModelDataAccessor"/> class.
         /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
         /// <param name="type">The type.</param>
-        /// <exception cref="ArgumentNullException">
-        /// serviceProvider
-        /// or
-        /// IModelDataAccessorProvider
-        /// or
-        /// type
-        /// </exception>
-        public ModelDataAccessor(IServiceProvider serviceProvider, Type type)
+        /// <param name="constructorParameterBindingFactory">The <see cref="ConstructorParameterBinding"/> factory.</param>
+        /// <param name="specialValueProvider">The special value provider.</param>
+        /// <param name="constructorSelector">The constructor selector.</param>
+        [ActivatorUtilitiesConstructor]
+        public ModelDataAccessor(Type type,
+            ConstructorParameterBinding.Factory constructorParameterBindingFactory, ModelObjectSpecialValueProvider specialValueProvider,
+            IConstructorSelector constructorSelector)
         {
+            if (constructorSelector == null)
+            {
+                throw new ArgumentNullException(nameof(constructorSelector));
+            }
+
             Type = type ?? throw new ArgumentNullException(nameof(type));
 
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _childProperties = new Lazy<IImmutableList<ChildPropertyInfo>>(GetChildProperties);
             _modifiableProperties = new Lazy<IImmutableList<ModifiablePropertyInfo>>(GetModifiableProperties);
             _constructorBinding = new Lazy<ConstructorParameterBinding>(() =>
             {
                 var constructors = from c in Type.GetTypeInfo().GetConstructors()
-                                   select new ConstructorParameterBinding(serviceProvider, c);
-                return _serviceProvider.GetRequiredService<IConstructorSelector>().SelectConstructorBinding(Type, constructors.ToArray());
+                                   select constructorParameterBindingFactory(c);
+                return constructorSelector.SelectConstructorBinding(Type, constructors.ToArray());
             });
-            _specialValueProvider = _serviceProvider.GetRequiredService<ModelObjectSpecialValueProvider>();
+            _specialValueProvider = specialValueProvider ?? throw new ArgumentNullException(nameof(specialValueProvider));
 
             ValidateSerializable();
         }

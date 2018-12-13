@@ -11,13 +11,11 @@ namespace GitObjectDb.Models.Merge
     /// <summary>
     /// Creates a new instance implementing the <see cref="IObjectRepositoryMerge"/> interface.
     /// </summary>
-    /// <param name="container">The container.</param>
-    /// <param name="repositoryDescription">The repository description.</param>
     /// <param name="repository">The repository on which to apply the merge.</param>
     /// <param name="mergeCommitId">The commit to be merged.</param>
     /// <param name="branchName">Name of the branch.</param>
     /// <returns>The newly created instance.</returns>
-    public delegate IObjectRepositoryMerge ObjectRepositoryMergeFactory(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IObjectRepository repository, ObjectId mergeCommitId, string branchName);
+    public delegate IObjectRepositoryMerge ObjectRepositoryMergeFactory(IObjectRepository repository, ObjectId mergeCommitId, string branchName);
 
     /// <summary>
     /// Provides the ability to merge changes between two branches.
