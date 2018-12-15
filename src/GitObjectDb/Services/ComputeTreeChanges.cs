@@ -5,6 +5,7 @@ using GitObjectDb.Models.Compare;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,7 @@ namespace GitObjectDb.Services
         private readonly IObjectRepositoryLoader _objectRepositoryLoader;
         private readonly IRepositoryProvider _repositoryProvider;
         private readonly ModelObjectContractResolverFactory _contractResolverFactory;
-
+        private readonly ILogger<ComputeTreeChanges> _logger;
         private readonly IObjectRepositoryContainer _container;
         private readonly RepositoryDescription _repositoryDescription;
 
@@ -35,9 +36,12 @@ namespace GitObjectDb.Services
         /// <param name="objectRepositoryLoader">The object repository loader.</param>
         /// <param name="repositoryProvider">The repository provider.</param>
         /// <param name="contractResolverFactory">The <see cref="ModelObjectContractResolver"/> factory.</param>
+        /// <param name="logger">The logger.</param>
         [ActivatorUtilitiesConstructor]
         public ComputeTreeChanges(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription,
-            IModelDataAccessorProvider modelDataProvider, IObjectRepositoryLoader objectRepositoryLoader, IRepositoryProvider repositoryProvider, ModelObjectContractResolverFactory contractResolverFactory)
+            IModelDataAccessorProvider modelDataProvider, IObjectRepositoryLoader objectRepositoryLoader,
+            IRepositoryProvider repositoryProvider, ModelObjectContractResolverFactory contractResolverFactory,
+            ILogger<ComputeTreeChanges> logger)
         {
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
@@ -46,6 +50,7 @@ namespace GitObjectDb.Services
             _objectRepositoryLoader = objectRepositoryLoader ?? throw new ArgumentNullException(nameof(objectRepositoryLoader));
             _repositoryProvider = repositoryProvider ?? throw new ArgumentNullException(nameof(repositoryProvider));
             _contractResolverFactory = contractResolverFactory ?? throw new ArgumentNullException(nameof(contractResolverFactory));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         private static void UpdateNodeIfNeeded(IModelObject original, IModelObject @new, Stack<string> stack, IModelDataAccessor accessor, IList<ObjectRepositoryEntryChanges> changes)
@@ -101,6 +106,9 @@ namespace GitObjectDb.Services
                     var modified = CollectModifiedNodes(oldRepository, newRepository, changes, oldCommit);
                     var added = CollectAddedNodes(newRepository, changes, newCommit);
                     var deleted = CollectDeletedNodes(oldRepository, changes, oldCommit);
+
+                    _logger.ChangesComputed(modified.Count, added.Count, deleted.Count, oldCommitId, newCommitId);
+
                     return new ObjectRepositoryChanges(newRepository, added.Concat(modified).Concat(deleted).ToImmutableList(), oldRepository);
                 }
             });
@@ -168,7 +176,11 @@ namespace GitObjectDb.Services
 
             var changes = new List<ObjectRepositoryEntryChanges>();
             CompareNode(original, newRepository, changes, new Stack<string>());
-            return new ObjectRepositoryChanges(newRepository, changes.ToImmutableList(), original);
+            var result = new ObjectRepositoryChanges(newRepository, changes.ToImmutableList(), original);
+
+            _logger.ChangesComputed(result.Modified.Count, result.Added.Count, result.Deleted.Count, original.CommitId, original.CommitId);
+
+            return result;
         }
 
         private void CompareNode(IModelObject original, IModelObject @new, IList<ObjectRepositoryEntryChanges> changes, Stack<string> stack)
