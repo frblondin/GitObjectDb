@@ -1,6 +1,8 @@
 using AutoFixture;
 using AutoFixture.Kernel;
+using GitObjectDb.Tests.Assets.Loggers;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -14,9 +16,13 @@ namespace GitObjectDb.Tests.Assets.Customizations
 
         public DefaultContainerCustomization()
         {
-            var services = new ServiceCollection();
-            services.AddGitObjectDb();
-            _serviceProvider = services.BuildServiceProvider();
+            _serviceProvider = new ServiceCollection()
+                .AddGitObjectDb()
+                .AddLogging(builder =>
+                    builder.SetMinimumLevel(LogLevel.Trace)
+                           .AddProvider(new ConsoleProvider())
+                )
+                .BuildServiceProvider();
         }
 
         public void Customize(IFixture fixture)
