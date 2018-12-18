@@ -43,7 +43,7 @@ build_script:
   - dotnet test tests\GitObjectDb.ModelCodeGeneration.Tests\GitObjectDb.ModelCodeGeneration.Tests.csproj --logger "trx;LogFileName=..\..\TestResults\TestResults.ModelCodeGeneration.GitObjectDb.trx" /p:CollectCoverage=true --no-build --configuration Release /p:CoverletOutput=../TestResults/coverage.GitObjectDb.ModelCodeGeneration.opencover.xml /p:CoverletOutputFormat=opencover
   - ps: |
       if (-Not $env:APPVEYOR_PULL_REQUEST_NUMBER -Or $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -eq $end:APPVEYOR_REPO_NAME) {
-        SonarScanner.MSBuild.exe end /d:"sonar.login=%sonarcloudtoken%"
+        SonarScanner.MSBuild.exe end /d:"sonar.login=$ENV:sonarcloudtoken"
       }
   - ps: |
       if (-Not $env:APPVEYOR_PULL_REQUEST_NUMBER) {
