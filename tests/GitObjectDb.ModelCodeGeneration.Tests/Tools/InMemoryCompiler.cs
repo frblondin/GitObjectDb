@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -18,7 +19,9 @@ namespace GitObjectDb.ModelCodeGeneration.Tests.Tools
             var references = (from a in AppDomain.CurrentDomain.GetAssemblies()
                               where !a.IsDynamic
                               where !string.IsNullOrEmpty(a.Location)
-                              select MetadataReference.CreateFromFile(a.Location)).ToList();
+                              group a by Path.GetFileNameWithoutExtension(a.Location) into g
+                              let greatestVersion = g.OrderByDescending(a => FileVersionInfo.GetVersionInfo(a.Location).FileVersion).First()
+                              select MetadataReference.CreateFromFile(greatestVersion.Location)).ToList();
             var compilation = CSharpCompilation.Create(
                 assemblyName,
                 syntaxTrees: trees,
