@@ -6,6 +6,7 @@ using GitObjectDb.Services;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Utils;
+using GitObjectDb.Tests.Git.Backends;
 using LibGit2Sharp;
 using NUnit.Framework;
 using System;
@@ -67,10 +68,35 @@ namespace GitObjectDb.Tests.Models
             // Act
             var result = search.Grep(sut, page.Id.ToString());
             stopwatch.Stop();
+            Console.WriteLine($"Grep total duration: {stopwatch.Elapsed}");
 
             // Assert
             Assert.That(result, Is.Not.Empty);
             Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(10)));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
+        public void SearchInLargeRepositoryUsingLightDbBackend(IObjectRepositorySearch search, ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        {
+            // Arrange
+            var dbFile = Path.Combine(RepositoryFixture.BenchmarkRepositoryDescription.Path, "lite.db");
+            LiteDbBackend backend = default;
+            var repositoryDescription = RepositoryFixture.BenchmarkRepositoryDescription
+                                                         .WithBackend(() => backend = new LiteDbBackend($"filename={dbFile}; journal=false"));
+            var sut = loader.LoadFrom(container, repositoryDescription);
+            sut.Execute(r => r.ObjectDatabase.CopyAllBlobs(backend));
+            var stopwatch = Stopwatch.StartNew();
+            var page = sut.Applications.PickRandom().Pages.PickRandom();
+
+            // Act
+            var result = search.Grep(sut, page.Id.ToString());
+            stopwatch.Stop();
+            Console.WriteLine($"Grep total duration: {stopwatch.Elapsed}");
+
+            // Assert
+            Assert.That(result, Is.Not.Empty);
+            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(5)));
         }
 
         [Test]

@@ -18,10 +18,10 @@ namespace GitObjectDb.Tests.Models
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ResolveDiffsPageNameUpdate(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
+        public void ResolveDiffsPageNameUpdate(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // Arrange
-            sut = container.AddRepository(sut, signature, message, () => inMemoryBackend);
+            sut = container.AddRepository(sut, signature, message);
             var modifiedPage = page.With(p => p.Name == "modified");
             var commit = container.Commit(modifiedPage.Repository, signature, message);
 
@@ -38,10 +38,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ResolveDiffsFieldAddition(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
+        public void ResolveDiffsFieldAddition(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // Arrange
-            sut = container.AddRepository(sut, signature, message, () => inMemoryBackend);
+            sut = container.AddRepository(sut, signature, message);
             var field = new Field(serviceProvider, UniqueId.CreateNew(), "foo", FieldContent.Default);
             var modifiedPage = page.With(p => p.Fields.Add(field));
             var commit = container.Commit(modifiedPage.Repository, signature, message);
@@ -59,10 +59,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ResolveDiffsFieldDeletion(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
+        public void ResolveDiffsFieldDeletion(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // Arrange
-            sut = container.AddRepository(sut, signature, message, () => inMemoryBackend);
+            sut = container.AddRepository(sut, signature, message);
             var field = page.Fields[5];
             var modifiedPage = page.With(p => p.Fields.Delete(field));
             var commit = container.Commit(modifiedPage.Repository, signature, message);
@@ -80,10 +80,10 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ResolveDiffsPageDeletion(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Application application, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory, InMemoryBackend inMemoryBackend)
+        public void ResolveDiffsPageDeletion(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Application application, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // Arrange
-            sut = container.AddRepository(sut, signature, message, () => inMemoryBackend);
+            sut = container.AddRepository(sut, signature, message);
             var page = application.Pages[1];
             var modifiedApplication = application.With(p => p.Pages.Delete(page));
             var commit = container.Commit(modifiedApplication.Repository, signature, message);
