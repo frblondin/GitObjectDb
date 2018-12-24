@@ -38,6 +38,22 @@ namespace GitObjectDb.Git
         /// </summary>
         public Func<OdbBackend> Backend { get; }
 
+        /// <summary>
+        /// Returns a new instance of the <see cref="RepositoryDescription"/> using
+        /// provided <paramref name="backend"/>.
+        /// </summary>
+        /// <param name="backend"></param>
+        /// <returns>The newly created <see cref="RepositoryDescription"/>.</returns>
+        public RepositoryDescription WithBackend(Func<OdbBackend> backend)
+        {
+            if (backend == null)
+            {
+                throw new ArgumentNullException(nameof(backend));
+            }
+
+            return new RepositoryDescription(Path, backend);
+        }
+
         /// <inheritdoc/>
         public override bool Equals(object obj) => Equals(obj as RepositoryDescription);
 

@@ -13,16 +13,17 @@ using System.Threading;
 
 namespace GitObjectDb.Tests.Git.Backends
 {
-    public class InMemoryBackendTests
+    public class LiteDbBackendTests
     {
         [Test]
         [AutoData]
-        public void InMemoryBackend(InMemoryBackend sut, Signature signature, string message)
+        public void LiteDbBackend(Signature signature, string message)
         {
             var path = GetTempPath();
             Repository.Init(path, true);
             using (var repository = new Repository(path))
             {
+                var sut = new LiteDbBackend(Path.Combine(path, "lite.db"));
                 repository.ObjectDatabase.AddBackend(sut, priority: 5);
 
                 var definition = !repository.Info.IsHeadUnborn ? TreeDefinition.From(repository.Head.Tip.Tree) : new TreeDefinition();
