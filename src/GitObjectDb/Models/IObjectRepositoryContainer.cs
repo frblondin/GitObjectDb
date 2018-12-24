@@ -79,7 +79,7 @@ namespace GitObjectDb.Models
         /// <param name="backend">The backend (optional).</param>
         /// <param name="isBare">if set to <c>true</c> a bare Git repository will be created.</param>
         /// <returns>The commit identifier of the new repository HEAD.</returns>
-        TRepository AddRepository(TRepository repository, Signature signature, string message, OdbBackend backend = null, bool isBare = false);
+        TRepository AddRepository(TRepository repository, Signature signature, string message, Func<OdbBackend> backend = null, bool isBare = false);
 
         /// <summary>
         /// Loads the instance from a Git repository.
@@ -88,7 +88,7 @@ namespace GitObjectDb.Models
         /// <param name="commitId">The commit id to clone.</param>
         /// <param name="backend">The backend (optional).</param>
         /// <returns>The loaded instance.</returns>
-        TRepository Clone(string repository, ObjectId commitId = null, OdbBackend backend = null);
+        TRepository Clone(string repository, ObjectId commitId = null, Func<OdbBackend> backend = null);
 
         /// <summary>
         /// Commits all changes by comparing the current instance with a new one.

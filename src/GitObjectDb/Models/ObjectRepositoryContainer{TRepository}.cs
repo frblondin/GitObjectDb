@@ -100,7 +100,7 @@ namespace GitObjectDb.Models
             Repositories.FirstOrDefault(r => r.Id == id);
 
         /// <inheritdoc />
-        public TRepository Clone(string repository, ObjectId commitId = null, OdbBackend backend = null)
+        public TRepository Clone(string repository, ObjectId commitId = null, Func<OdbBackend> backend = null)
         {
             if (repository == null)
             {
@@ -127,7 +127,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public TRepository AddRepository(TRepository repository, Signature signature, string message, OdbBackend backend = null, bool isBare = false)
+        public TRepository AddRepository(TRepository repository, Signature signature, string message, Func<OdbBackend> backend = null, bool isBare = false)
         {
             if (repository == null)
             {

@@ -22,7 +22,7 @@ namespace GitObjectDb.Git
         /// or
         /// backend
         /// </exception>
-        public RepositoryDescription(string path, OdbBackend backend = null)
+        public RepositoryDescription(string path, Func<OdbBackend> backend = null)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));
             Backend = backend;
@@ -36,7 +36,7 @@ namespace GitObjectDb.Git
         /// <summary>
         /// Gets the backend (can be null).
         /// </summary>
-        public OdbBackend Backend { get; }
+        public Func<OdbBackend> Backend { get; }
 
         /// <inheritdoc/>
         public override bool Equals(object obj) => Equals(obj as RepositoryDescription);
@@ -44,15 +44,9 @@ namespace GitObjectDb.Git
         /// <inheritdoc/>
         public bool Equals(RepositoryDescription other) =>
             other != null &&
-            string.Equals(Path, other.Path, StringComparison.OrdinalIgnoreCase) &&
-            Backend == other.Backend;
+            string.Equals(Path, other.Path, StringComparison.OrdinalIgnoreCase);
 
         /// <inheritdoc/>
-        public override int GetHashCode()
-        {
-            var h1 = Path.GetHashCode();
-            var h2 = Backend?.GetHashCode() ?? 0;
-            return h2 != 0 ? ((h1 << 5) + h1) ^ h2 : h1;
-        }
+        public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(Path);
     }
 }
