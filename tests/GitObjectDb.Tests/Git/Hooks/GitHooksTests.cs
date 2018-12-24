@@ -28,7 +28,7 @@ namespace GitObjectDb.Tests.Git.Hooks
                 f => f.Content.MatchOrDefault(matchLink: l => true));
 
             // Act
-            container.AddRepository(repository, signature, message, inMemoryBackend);
+            container.AddRepository(repository, signature, message, () => inMemoryBackend);
             var composer = new PredicateComposer()
                 .And(field, f => f.Name == "modified field name" &&
                                  f.Content == FieldContent.NewLink(new FieldLinkContent(new LazyLink<Page>(container, newLinkedPage))))
@@ -49,7 +49,7 @@ namespace GitObjectDb.Tests.Git.Hooks
             sut.CommitStarted += (_, args) => args.Cancel = true;
 
             // Act
-            var update = container.AddRepository(instance, signature, message, inMemoryBackend);
+            var update = container.AddRepository(instance, signature, message, () => inMemoryBackend);
 
             // Assert
             Assert.That(update, Is.Null);
@@ -64,7 +64,7 @@ namespace GitObjectDb.Tests.Git.Hooks
             sut.CommitCompleted += (_, args) => lastEvent = args;
 
             // Act
-            container.AddRepository(instance, signature, message, inMemoryBackend);
+            container.AddRepository(instance, signature, message, () => inMemoryBackend);
             var modifiedPage = page.With(p => p.Name == "modified");
             var commit = container.Commit(modifiedPage.Repository, signature, message);
 

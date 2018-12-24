@@ -19,7 +19,13 @@ namespace GitObjectDb.Git
             var repository = new Repository(description.Path);
             if (description.Backend != null)
             {
-                repository.ObjectDatabase.AddBackend(description.Backend, priority: 5);
+                var backend = description.Backend();
+                if (backend == null)
+                {
+                    throw new GitObjectDbException("Backend returned by factory cannot be null.");
+                }
+
+                repository.ObjectDatabase.AddBackend(backend, priority: 5);
             }
 
             return repository;
