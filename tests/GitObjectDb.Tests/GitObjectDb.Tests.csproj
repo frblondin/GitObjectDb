@@ -44,7 +44,6 @@
     <PackageReference Include="NSubstitute" Version="3.1.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.11.2" />
     <PackageReference Include="PowerAssert" Version="1.0.79" />
-    <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
     <PackageReference Include="System.IO.Compression.ZipFile" Version="4.3.0" />
   </ItemGroup>
 
