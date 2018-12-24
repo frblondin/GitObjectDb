@@ -48,8 +48,28 @@ namespace GitObjectDb.Services
                 throw new ArgumentNullException(nameof(repositoryDescription));
             }
 
-            Repository.Clone(repository, repositoryDescription.Path, new CloneOptions { Checkout = false });
-            return LoadFrom(container, repositoryDescription, commitId);
+            Repository.Init(repositoryDescription.Path);
+            return _repositoryProvider.Execute(repositoryDescription, r =>
+            {
+                Clone(repository, r, commitId);
+                return LoadFrom(container, repositoryDescription, r, commitId);
+            });
+        }
+
+        private static void Clone(string repository, IRepository r, ObjectId commitId = null)
+        {
+            const string OriginRemote = "origin";
+            const string MasterBranch = "master";
+
+            var concrete = r as Repository ??
+                throw new NotSupportedException($"Object of type {nameof(Repository)} expected.");
+            r.Network.Remotes.Add(OriginRemote, repository);
+            Commands.Fetch(concrete, OriginRemote, new[] { MasterBranch }, new FetchOptions { TagFetchMode = TagFetchMode.All }, null);
+            var masterBranch = r.Branches.Add(MasterBranch, commitId?.Sha ?? r.Branches["origin/master"].Tip.Sha);
+            r.Branches.Update(masterBranch,
+                b => b.Remote = OriginRemote,
+                b => b.UpstreamBranch = MasterBranch,
+                b => b.TrackedBranch = $"refs/remotes/{OriginRemote}/{MasterBranch}");
         }
 
         /// <inheritdoc />
@@ -72,22 +92,25 @@ namespace GitObjectDb.Services
             }
 
             return _repositoryProvider.Execute(repositoryDescription, repository =>
-            {
-                Commit currentCommit;
-                if (commitId == null)
-                {
-                    currentCommit = repository.Head.Tip;
-                    commitId = currentCommit.Id;
-                }
-                else
-                {
-                    currentCommit = repository.Lookup<Commit>(commitId);
-                }
+                LoadFrom(container, repositoryDescription, repository, commitId));
+        }
 
-                var instance = (IObjectRepository)LoadEntry(container, commitId, currentCommit[FileSystemStorage.DataFile], string.Empty);
-                instance.SetRepositoryData(repositoryDescription, commitId);
-                return instance;
-            });
+        private IObjectRepository LoadFrom(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IRepository repository, ObjectId commitId = null)
+        {
+            Commit currentCommit;
+            if (commitId == null)
+            {
+                currentCommit = repository.Head.Tip;
+                commitId = currentCommit.Id;
+            }
+            else
+            {
+                currentCommit = repository.Lookup<Commit>(commitId);
+            }
+
+            var instance = (IObjectRepository)LoadEntry(container, commitId, currentCommit[FileSystemStorage.DataFile], string.Empty);
+            instance.SetRepositoryData(repositoryDescription, commitId);
+            return instance;
         }
 
         /// <inheritdoc />
