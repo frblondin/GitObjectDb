@@ -286,7 +286,7 @@ namespace GitObjectDb.Services
                 var propertyChange = changes[path].TryGetWithValue(c => c.Property.Name, name);
                 if (propertyChange != null)
                 {
-                    return propertyChange.MergeValue.ToObject(argumentType, serializer);
+                    return propertyChange.MergeValue;
                 }
                 else
                 {

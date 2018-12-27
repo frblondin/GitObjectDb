@@ -145,8 +145,7 @@ namespace GitObjectDb.Reflection
                 .FirstOrDefault(c => c.Property.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (change != null)
             {
-                var propertyType = change.Property.Property.PropertyType;
-                return change.MergeValue.ToObject(propertyType);
+                return change.MergeValue;
             }
 
             return fallback is ICloneable cloneable ? cloneable.Clone() : fallback;

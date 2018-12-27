@@ -34,7 +34,7 @@ namespace GitObjectDb.Tests
         /// <param name="fixture">The fixture.</param>
         /// <param name="assertion">The assertion.</param>
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(CommonTypeProviderCustomization), typeof(JsonCustomization), typeof(NSubstituteForAbstractTypesCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(CommonTypeProviderCustomization), typeof(NSubstituteForAbstractTypesCustomization))]
         public void VerifyGuardForNullClauses(IFixture fixture, GuardClauseAssertion assertion)
         {
             fixture.Customizations.OfType<NSubstituteForAbstractTypesCustomization>().Single().ExcludeEnumerableTypes = false;
@@ -63,7 +63,6 @@ namespace GitObjectDb.Tests
                 CustomizeExpressionObjects(fixture);
                 CustomizeIModelObject(fixture);
                 CustomizeGitObjects(fixture);
-                CustomizeJsonObjects(fixture);
                 CustomizeValidationObjects(fixture);
             }
 
@@ -106,13 +105,6 @@ namespace GitObjectDb.Tests
                 fixture.Inject(new ObjectId("2fa2540fecec8c4908fb0ccba825cdb903f09440"));
                 fixture.Inject(Substitute.For<PatchEntryChanges>());
                 fixture.Inject(Substitute.For<TreeEntryChanges>());
-            }
-
-            private static void CustomizeJsonObjects(IFixture fixture)
-            {
-                var jobject = new JObject();
-                jobject["Id"] = JToken.FromObject(UniqueId.CreateNew());
-                fixture.Inject(jobject);
             }
 
             private static void CustomizeValidationObjects(IFixture fixture)

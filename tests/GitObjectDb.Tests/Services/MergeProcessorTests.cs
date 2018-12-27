@@ -185,7 +185,7 @@ namespace GitObjectDb.Tests.Services
             var commitC = container.Commit(updateNameOther.Repository, signature, message); // C
             var merge = container.Merge(sut.Id, "newBranch");
             var chunk = merge.ModifiedChunks.Single();
-            chunk.Resolve(JToken.FromObject("merged name"));
+            chunk.Resolve("merged name");
             var mergeCommit = merge.Apply(signature); // D
 
             // Assert

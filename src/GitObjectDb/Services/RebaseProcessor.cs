@@ -1,3 +1,4 @@
+using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Rebase;
@@ -25,13 +26,12 @@ namespace GitObjectDb.Services
         /// <returns>The newly created instance.</returns>
         internal delegate RebaseProcessor Factory(ObjectRepositoryRebase objectRepositoryRebase);
 
-        private static readonly JsonSerializer _serializer = JsonSerializer.CreateDefault();
-
         private readonly ObjectRepositoryRebase _rebase;
 
         private readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
         private readonly IModelDataAccessorProvider _modelDataProvider;
         private readonly PredicateFromChanges.Factory _predicateFromChangesFactory;
+        private readonly JsonSerializer _serializer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RebaseProcessor"/> class.
@@ -40,15 +40,24 @@ namespace GitObjectDb.Services
         /// <param name="computeTreeChangesFactory">The <see cref="IComputeTreeChanges"/> factory.</param>
         /// <param name="modelDataProvider">The model data provider.</param>
         /// <param name="predicateFromChangesFactory">The <see cref="PredicateFromChanges"/> factory.</param>
+        /// <param name="objectContractResolverFactory">The <see cref="ModelObjectContractResolver"/> factory.</param>
         [ActivatorUtilitiesConstructor]
         internal RebaseProcessor(ObjectRepositoryRebase objectRepositoryRebase,
-            ComputeTreeChangesFactory computeTreeChangesFactory, IModelDataAccessorProvider modelDataProvider, PredicateFromChanges.Factory predicateFromChangesFactory)
+            ComputeTreeChangesFactory computeTreeChangesFactory, IModelDataAccessorProvider modelDataProvider,
+            PredicateFromChanges.Factory predicateFromChangesFactory, ModelObjectContractResolverFactory objectContractResolverFactory)
         {
+            if (objectContractResolverFactory == null)
+            {
+                throw new ArgumentNullException(nameof(objectContractResolverFactory));
+            }
+
             _rebase = objectRepositoryRebase ?? throw new ArgumentNullException(nameof(objectRepositoryRebase));
 
             _computeTreeChangesFactory = computeTreeChangesFactory ?? throw new ArgumentNullException(nameof(computeTreeChangesFactory));
             _modelDataProvider = modelDataProvider ?? throw new ArgumentNullException(nameof(modelDataProvider));
             _predicateFromChangesFactory = predicateFromChangesFactory ?? throw new ArgumentNullException(nameof(predicateFromChangesFactory));
+            var contractResolver = objectContractResolverFactory(new ModelObjectSerializationContext(objectRepositoryRebase.Repository.Container));
+            _serializer = JsonSerializerProvider.Create(contractResolver);
         }
 
         private IObjectRepository CurrentTransformedRepository => _rebase.Transformations.LastOrDefault() ?? _rebase.StartRepository;
@@ -171,7 +180,8 @@ namespace GitObjectDb.Services
             var currentObjectAsJObject = currentObject.ToJObject();
             var changeStart = GetContent(repository.Lookup<Blob>(change.OldOid));
             var changeEnd = GetContent(repository.Lookup<Blob>(change.Oid));
-            var properties = _modelDataProvider.Get(currentObject.GetType()).ModifiableProperties;
+            var type = currentObject.GetType();
+            var properties = _modelDataProvider.Get(type).ModifiableProperties;
 
             var changes = from kvp in (IEnumerable<KeyValuePair<string, JToken>>)changeEnd
                           let p = properties.TryGetWithValue(pr => pr.Name, kvp.Key)
@@ -179,15 +189,23 @@ namespace GitObjectDb.Services
                           let startValue = changeStart[kvp.Key]
                           where startValue == null || !JToken.DeepEquals(kvp.Value, startValue)
                           let currentValue = TryGetToken(currentObjectAsJObject, kvp)
-                          select new ObjectRepositoryChunkChange(change.Path, p, changeStart, startValue, changeEnd, kvp.Value, currentObjectAsJObject, currentValue);
+                          let isInConflict = !JToken.DeepEquals(startValue, currentValue) && !JToken.DeepEquals(kvp.Value, currentValue)
+                          select new ObjectRepositoryChunkChange(change.Path, p, ConvertToObject(changeStart, p, startValue), ConvertToObject(changeEnd, p, kvp.Value), ConvertToObject(currentObjectAsJObject, p, currentValue), isInConflict);
 
             foreach (var modifiedProperty in changes)
             {
                 _rebase.ModifiedChunks.Add(modifiedProperty);
             }
+
+            ObjectRepositoryChunk ConvertToObject(JObject jobject, ModifiablePropertyInfo property, JToken token)
+            {
+                var @object = (IModelObject)jobject.ToObject(type, _serializer);
+                var value = token.ToObject(property.Property.PropertyType, _serializer);
+                return new ObjectRepositoryChunk(@object, property, value);
+            }
         }
 
-        private static JObject GetContent(Blob blob) => blob?.GetContentStream().ToJson<JObject>(_serializer);
+        private JObject GetContent(Blob blob) => blob?.GetContentStream().ToJson<JObject>(_serializer);
 
         private static JToken TryGetToken(JObject headObject, KeyValuePair<string, JToken> kvp)
         {
