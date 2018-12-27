@@ -198,7 +198,7 @@ namespace GitObjectDb.Tests.Services
         {
             // Act
             var rebase = CreateConflictingRebase(sut, container, signature, message);
-            rebase.ModifiedChunks.Single(c => c.IsInConflict).Resolve(JToken.FromObject("resolved"));
+            rebase.ModifiedChunks.Single(c => c.IsInConflict).Resolve("resolved");
             rebase.Continue();
 
             // Assert

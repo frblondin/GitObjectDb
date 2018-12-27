@@ -1,3 +1,4 @@
+using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Reflection;
 using GitObjectDb.Tests.Assets.Customizations;
@@ -13,68 +14,44 @@ namespace GitObjectDb.Tests.Models.Compare
 {
     public class ObjectRepositoryChunkChangeTests
     {
-        readonly ModifiablePropertyInfo _property = new ModifiablePropertyInfo(ExpressionReflector.GetProperty<Page>(p => p.Name));
+        private static readonly ModifiablePropertyInfo _nameProperty = new ModifiablePropertyInfo(ExpressionReflector.GetProperty<Field>(p => p.Name));
 
         [Test]
-        [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void ObjectRepositoryMergeChunkChangePropertiesAreMatchingEntryParameterValues(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue)
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
+        public void ObjectRepositoryMergeChunkChangePropertiesAreMatchingEntryParameterValues(Page page)
         {
             // Arrange
             var path = RepositoryFixture.GetAvailableFolderPath();
+            Field mergeBaseNode = page.Fields[0], branchNode = page.Fields[1], headNode = page.Fields[2];
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, _property, mergeBaseNode, mergeBaseValue, branchNode, branchValue, headNode, headValue);
+            var sut = new ObjectRepositoryChunkChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode), true);
 
             // Assert
             Assert.That(sut.Path, Is.SameAs(path));
-            Assert.That(sut.Ancestor, Is.SameAs(mergeBaseNode));
-            Assert.That(sut.Theirs, Is.SameAs(branchNode));
-            Assert.That(sut.Ours, Is.SameAs(headNode));
-            Assert.That(sut.Property, Is.SameAs(_property));
-            Assert.That(sut.AncestorValue, Is.SameAs(mergeBaseValue));
-            Assert.That(sut.TheirsValue, Is.SameAs(branchValue));
-            Assert.That(sut.OursValue, Is.SameAs(headValue));
+            Assert.That(sut.Property, Is.SameAs(_nameProperty));
+            Assert.That(sut.Ancestor.Object, Is.SameAs(mergeBaseNode));
+            Assert.That(sut.Theirs.Object, Is.SameAs(branchNode));
+            Assert.That(sut.Ours.Object, Is.SameAs(headNode));
+            Assert.That(sut.Ancestor.Property, Is.SameAs(_nameProperty));
+            Assert.That(sut.Theirs.Property, Is.SameAs(_nameProperty));
+            Assert.That(sut.Ours.Property, Is.SameAs(_nameProperty));
+            Assert.That(sut.Ancestor.Value, Is.SameAs(mergeBaseNode.Name));
+            Assert.That(sut.Theirs.Value, Is.SameAs(branchNode.Name));
+            Assert.That(sut.Ours.Value, Is.SameAs(headNode.Name));
+            Assert.That(sut.WasInConflict, Is.True);
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void ObjectRepositoryMergeChunkChangeShouldNotBeInConflictIfHeadValuesAreSame(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue)
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
+        public void ObjectRepositoryMergeChunkChangeResolveConflict(Page page, string resolvedValue)
         {
             // Arrange
             var path = RepositoryFixture.GetAvailableFolderPath();
+            Field mergeBaseNode = page.Fields[0], branchNode = page.Fields[1], headNode = page.Fields[2];
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, _property, mergeBaseNode, mergeBaseValue, branchNode, branchValue, headNode, mergeBaseValue);
-
-            // Assert
-            Assert.That(sut.IsInConflict, Is.False);
-            Assert.That(sut.MergeValue, Is.SameAs(branchValue));
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void ObjectRepositoryMergeChunkChangeShouldBeInConflictIfValuesAreDifferent(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue)
-        {
-            // Arrange
-            var path = RepositoryFixture.GetAvailableFolderPath();
-
-            // Act
-            var sut = new ObjectRepositoryChunkChange(path, _property, mergeBaseNode, mergeBaseValue, branchNode, branchValue, headNode, headValue);
-
-            // Assert
-            Assert.That(sut.IsInConflict, Is.True);
-            Assert.That(sut.MergeValue, Is.Null);
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void ObjectRepositoryMergeChunkChangeResolveConflict(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue, JToken resolvedValue)
-        {
-            // Arrange
-            var path = RepositoryFixture.GetAvailableFolderPath();
-
-            // Act
-            var sut = new ObjectRepositoryChunkChange(path, _property, mergeBaseNode, mergeBaseValue, branchNode, branchValue, headNode, headValue);
+            var sut = new ObjectRepositoryChunkChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode), true);
             sut.Resolve(resolvedValue);
 
             // Assert
@@ -84,16 +61,20 @@ namespace GitObjectDb.Tests.Models.Compare
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(JsonCustomization))]
-        public void ObjectRepositoryMergeChunkChangeResolveConflictOnlyOnce(JObject mergeBaseNode, JObject branchNode, JObject headNode, JToken mergeBaseValue, JToken branchValue, JToken headValue, JToken resolvedValue)
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
+        public void ObjectRepositoryMergeChunkChangeResolveConflictOnlyOnce(Page page, string resolvedValue)
         {
             // Arrange
             var path = RepositoryFixture.GetAvailableFolderPath();
+            Field mergeBaseNode = page.Fields[0], branchNode = page.Fields[1], headNode = page.Fields[2];
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, _property, mergeBaseNode, mergeBaseValue, branchNode, branchValue, headNode, headValue);
+            var sut = new ObjectRepositoryChunkChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode), true);
             sut.Resolve(resolvedValue);
             Assert.Throws<GitObjectDbException>(() => sut.Resolve(resolvedValue));
         }
+
+        private static ObjectRepositoryChunk CreateChunk(IModelObject @object) =>
+            new ObjectRepositoryChunk(@object, _nameProperty, @object.Name);
     }
 }

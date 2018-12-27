@@ -1,5 +1,6 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Git;
+using GitObjectDb.JsonConverters;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Reflection;
@@ -24,6 +25,7 @@ namespace GitObjectDb.Models.Merge
         private readonly IModelDataAccessorProvider _modelDataProvider;
         private readonly MigrationScaffolderFactory _migrationScaffolderFactory;
         private readonly MergeProcessor.Factory _mergeProcessorFactory;
+        private readonly JsonSerializer _serializer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryMerge"/> class.
@@ -34,11 +36,17 @@ namespace GitObjectDb.Models.Merge
         /// <param name="modelDataProvider">The model data provider.</param>
         /// <param name="migrationScaffolderFactory">The <see cref="MigrationScaffolder"/> factory.</param>
         /// <param name="mergeProcessorFactory">The <see cref="MergeProcessor"/> factory.</param>
+        /// <param name="objectContractResolverFactory">The <see cref="ModelObjectContractResolver"/> factory.</param>
         [ActivatorUtilitiesConstructor]
         public ObjectRepositoryMerge(IObjectRepository repository, ObjectId mergeCommitId, string branchName,
             IModelDataAccessorProvider modelDataProvider, MigrationScaffolderFactory migrationScaffolderFactory,
-            MergeProcessor.Factory mergeProcessorFactory)
+            MergeProcessor.Factory mergeProcessorFactory, ModelObjectContractResolverFactory objectContractResolverFactory)
         {
+            if (objectContractResolverFactory == null)
+            {
+                throw new ArgumentNullException(nameof(objectContractResolverFactory));
+            }
+
             Repository = repository ?? throw new ArgumentNullException(nameof(repository));
             HeadCommitId = repository.CommitId ?? throw new GitObjectDbException("Repository instance is not linked to any commit.");
             MergeCommitId = mergeCommitId ?? throw new ArgumentNullException(nameof(mergeCommitId));
@@ -47,6 +55,8 @@ namespace GitObjectDb.Models.Merge
             _modelDataProvider = modelDataProvider ?? throw new ArgumentNullException(nameof(modelDataProvider));
             _migrationScaffolderFactory = migrationScaffolderFactory ?? throw new ArgumentNullException(nameof(migrationScaffolderFactory));
             _mergeProcessorFactory = mergeProcessorFactory ?? throw new ArgumentNullException(nameof(mergeProcessorFactory));
+            var contractResolver = objectContractResolverFactory(new ModelObjectSerializationContext(Repository.Container));
+            _serializer = JsonSerializerProvider.Create(contractResolver);
 
             Initialize();
         }
@@ -221,11 +231,19 @@ namespace GitObjectDb.Models.Merge
                           let mergeBaseValue = mergeBaseObject[kvp.Key]
                           where mergeBaseValue == null || !JToken.DeepEquals(kvp.Value, mergeBaseValue)
                           let headValue = TryGetToken(headObject, kvp)
-                          select new ObjectRepositoryChunkChange(branchChange.Path, p, mergeBaseObject, mergeBaseValue, newObject, kvp.Value, headObject, headValue);
+                          let isInConflict = !JToken.DeepEquals(mergeBaseValue, headValue) && !JToken.DeepEquals(kvp.Value, headValue)
+                          select new ObjectRepositoryChunkChange(branchChange.Path, p, ConvertToObject(mergeBaseObject, p, mergeBaseValue), ConvertToObject(newObject, p, kvp.Value), ConvertToObject(headObject, p, headValue), isInConflict);
 
             foreach (var modifiedProperty in changes)
             {
                 ModifiedChunks.Add(modifiedProperty);
+            }
+
+            ObjectRepositoryChunk ConvertToObject(JObject jobject, ModifiablePropertyInfo property, JToken token)
+            {
+                var @object = (IModelObject)jobject.ToObject(type, _serializer);
+                var value = token.ToObject(property.Property.PropertyType, _serializer);
+                return new ObjectRepositoryChunk(@object, property, value);
             }
         }
 
