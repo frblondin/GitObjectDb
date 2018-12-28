@@ -92,7 +92,7 @@ namespace GitObjectDb.Tests.Git.Hooks
             sut.MergeStarted += (_, args) => lastEvent = args;
 
             // Act - Pull commit from origin
-            var pullResult = clientContainer.Pull(clientContainer.Repositories.Single());
+            var pullResult = clientContainer.Pull(clientContainer.Repositories.Single().Id);
             var result = pullResult.Apply(signature);
 
             // Assert
@@ -118,7 +118,7 @@ namespace GitObjectDb.Tests.Git.Hooks
             sut.MergeStarted += (_, args) => args.Cancel = true;
 
             // Act - Pull commit from origin
-            var pullResult = clientContainer.Pull(clientContainer.Repositories.Single());
+            var pullResult = clientContainer.Pull(clientContainer.Repositories.Single().Id);
             var result = pullResult.Apply(signature);
 
             // Assert
@@ -144,7 +144,7 @@ namespace GitObjectDb.Tests.Git.Hooks
             sut.MergeCompleted += (_, args) => lastEvent = args;
 
             // Act - Pull commit from origin
-            var pullResult = clientContainer.Pull(clientContainer.Repositories.Single());
+            var pullResult = clientContainer.Pull(clientContainer.Repositories.Single().Id);
             pullResult.Apply(signature);
 
             // Assert

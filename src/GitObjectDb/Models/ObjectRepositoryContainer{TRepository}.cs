@@ -216,20 +216,16 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public void Push(IObjectRepository repository, string remoteName = null, PushOptions options = null)
+        public void Push(UniqueId id, string remoteName = null, PushOptions options = null)
         {
-            if (repository == null)
-            {
-                throw new ArgumentNullException(nameof(repository));
-            }
             if (options == null)
             {
                 options = new PushOptions();
             }
 
+            var repository = this[id];
             using (_logger.BeginScope("Pushing repository '{Repository}' changes.", repository.Id))
             {
-                repository.EnsuresCurrentRepository();
                 repository.Execute(r =>
                 {
                     EnsureHeadCommit(r, repository);
@@ -287,23 +283,34 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public TRepository Checkout(TRepository repository, string branchName)
+        public TRepository Checkout(UniqueId id, string branchName, bool createNewBranch = false, string committish = null)
         {
-            if (repository == null)
-            {
-                throw new ArgumentNullException(nameof(repository));
-            }
             if (branchName == null)
             {
                 throw new ArgumentNullException(nameof(branchName));
             }
 
+            var repository = this[id];
             using (_logger.BeginScope("Checking out repository '{Repository}' at '{BranchName}'.", repository.Id, branchName))
             {
-                repository.EnsuresCurrentRepository();
                 return repository.Execute(r =>
                 {
+                    var head = r.Head;
                     var branch = r.Branches[branchName];
+                    if (createNewBranch)
+                    {
+                        if (branch != null)
+                        {
+                            throw new GitObjectDbException($"The branch '{branchName}' already exists.");
+                        }
+                        var reflogName = committish ?? (r.Refs.Head is SymbolicReference ? head.FriendlyName : head.Tip.Sha);
+                        branch = r.CreateBranch(branchName, reflogName);
+                    }
+                    else if (branch == null)
+                    {
+                        throw new GitObjectDbException($"The branch '{branchName}' does not exist.");
+                    }
+
                     r.Refs.MoveHeadTarget(branch.CanonicalName);
 
                     var newRepository = _repositoryLoader.LoadFrom(this, repository.RepositoryDescription, branch.Tip.Id);
@@ -313,28 +320,14 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public TRepository Checkout(UniqueId id, string branchName)
+        public TRepository Fetch(UniqueId id, FetchOptions options = null)
         {
-            if (branchName == null)
-            {
-                throw new ArgumentNullException(nameof(branchName));
-            }
-
-            return Checkout(this[id], branchName);
-        }
-
-        /// <inheritdoc />
-        public TRepository Fetch(TRepository repository, FetchOptions options = null)
-        {
-            if (repository == null)
-            {
-                throw new ArgumentNullException(nameof(repository));
-            }
             if (options == null)
             {
                 options = new FetchOptions();
             }
 
+            var repository = this[id];
             using (_logger.BeginScope("Fetching repository '{Repository}'.", repository.Id))
             {
                 return repository.Execute(r =>
@@ -349,17 +342,14 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public void FetchAll(TRepository repository, FetchOptions options = null)
+        public void FetchAll(UniqueId id, FetchOptions options = null)
         {
-            if (repository == null)
-            {
-                throw new ArgumentNullException(nameof(repository));
-            }
             if (options == null)
             {
                 options = new FetchOptions();
             }
 
+            var repository = this[id];
             using (_logger.BeginScope("Fetching all remotes for repository '{Repository}'.", repository.Id))
             {
                 repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
@@ -376,61 +366,16 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public TRepository Branch(TRepository repository, string branchName, string committish = null)
+        public IObjectRepositoryMerge Pull(UniqueId id, FetchOptions options = null)
         {
-            if (repository == null)
-            {
-                throw new ArgumentNullException(nameof(repository));
-            }
-            if (branchName == null)
-            {
-                throw new ArgumentNullException(nameof(branchName));
-            }
-
-            using (_logger.BeginScope("Branching repository '{Repository}' at '{BranchName}'.", repository.Id, branchName))
-            {
-                repository.EnsuresCurrentRepository();
-                return repository.Execute(r =>
-                {
-                    var head = r.Head;
-                    var reflogName = committish ??
-                        (r.Refs.Head is SymbolicReference ? head.FriendlyName : head.Tip.Sha);
-
-                    var branch = r.CreateBranch(branchName, reflogName);
-                    r.Refs.MoveHeadTarget(branch.CanonicalName);
-
-                    var newRepository = _repositoryLoader.LoadFrom(this, repository.RepositoryDescription, branch.Tip.Id);
-                    return AddOrReplace(newRepository);
-                });
-            }
-        }
-
-        /// <inheritdoc />
-        public TRepository Branch(UniqueId id, string branchName, string committish = null)
-        {
-            if (branchName == null)
-            {
-                throw new ArgumentNullException(nameof(branchName));
-            }
-
-            return Branch(this[id], branchName, committish);
-        }
-
-        /// <inheritdoc />
-        public IObjectRepositoryMerge Pull(TRepository repository, FetchOptions options = null)
-        {
-            if (repository == null)
-            {
-                throw new ArgumentNullException(nameof(repository));
-            }
             if (options == null)
             {
                 options = new FetchOptions();
             }
 
+            var repository = this[id];
             using (_logger.BeginScope("Pulling repository '{Repository}'.", repository.Id))
             {
-                repository.EnsuresCurrentRepository();
                 var (originTip, remoteBranch) = repository.Execute(r =>
                 {
                     var concrete = r as Repository ??
@@ -444,26 +389,6 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public IObjectRepositoryMerge Merge(TRepository repository, string branchName)
-        {
-            if (repository == null)
-            {
-                throw new ArgumentNullException(nameof(repository));
-            }
-            if (branchName == null)
-            {
-                throw new ArgumentNullException(nameof(branchName));
-            }
-
-            using (_logger.BeginScope("Merging repository '{Repository}' with '{BranchName}'.", repository.Id, branchName))
-            {
-                repository.EnsuresCurrentRepository();
-                var commitId = repository.Execute(r => r.Branches[branchName].Tip.Id);
-                return _objectRepositoryMergeFactory(repository, commitId, branchName);
-            }
-        }
-
-        /// <inheritdoc />
         public IObjectRepositoryMerge Merge(UniqueId id, string branchName)
         {
             if (branchName == null)
@@ -471,26 +396,11 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(branchName));
             }
 
-            return Merge(this[id], branchName);
-        }
-
-        /// <inheritdoc />
-        public IObjectRepositoryRebase Rebase(TRepository repository, string branchName)
-        {
-            if (repository == null)
-            {
-                throw new ArgumentNullException(nameof(repository));
-            }
-            if (branchName == null)
-            {
-                throw new ArgumentNullException(nameof(branchName));
-            }
-
+            var repository = this[id];
             using (_logger.BeginScope("Merging repository '{Repository}' with '{BranchName}'.", repository.Id, branchName))
             {
-                repository.EnsuresCurrentRepository();
                 var commitId = repository.Execute(r => r.Branches[branchName].Tip.Id);
-                return _objectRepositoryRebaseFactory(repository, commitId, branchName);
+                return _objectRepositoryMergeFactory(repository, commitId, branchName);
             }
         }
 
@@ -502,7 +412,12 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(branchName));
             }
 
-            return Rebase(this[id], branchName);
+            var repository = this[id];
+            using (_logger.BeginScope("Merging repository '{Repository}' with '{BranchName}'.", repository.Id, branchName))
+            {
+                var commitId = repository.Execute(r => r.Branches[branchName].Tip.Id);
+                return _objectRepositoryRebaseFactory(repository, commitId, branchName);
+            }
         }
 
         /// <inheritdoc />

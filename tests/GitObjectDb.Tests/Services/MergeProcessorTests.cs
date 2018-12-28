@@ -34,7 +34,7 @@ namespace GitObjectDb.Tests.Services
             sut = container.AddRepository(sut, signature, message); // A
 
             // Act
-            container.Branch(sut, "newBranch");
+            container.Checkout(sut.Id, "newBranch", createNewBranch: true);
             var updateName = page.With(p => p.Name == "modified name");
             container.Commit(updateName.Repository, signature, message); // B
             container.Checkout(sut.Id, "master");
@@ -63,7 +63,7 @@ namespace GitObjectDb.Tests.Services
             sut = container.AddRepository(sut, signature, message); // A
 
             // Act
-            container.Branch(sut, "newBranch");
+            container.Checkout(sut.Id, "newBranch", createNewBranch: true);
             var updateName = page.With(p => p.Fields.Add(new Field(serviceProvider, UniqueId.CreateNew(), "new field", FieldContent.Default)));
             container.Commit(updateName.Repository, signature, message); // B
             container.Checkout(sut.Id, "master");
@@ -91,7 +91,7 @@ namespace GitObjectDb.Tests.Services
             sut = container.AddRepository(sut, signature, message); // A
 
             // Act
-            container.Branch(sut, "newBranch");
+            container.Checkout(sut.Id, "newBranch", createNewBranch: true);
             var updateName = page.With(p => p.Fields.Delete(page.Fields[1]));
             container.Commit(updateName.Repository, signature, message); // B
             container.Checkout(sut.Id, "master");
@@ -121,7 +121,7 @@ namespace GitObjectDb.Tests.Services
             sut = container.AddRepository(sut, signature, message); // A
 
             // B, C
-            container.Branch(sut, "newBranch");
+            container.Checkout(sut.Id, "newBranch", createNewBranch: true);
             var updatedInstance = sut.With(i => i.Migrations.Add(fixture.Create<DummyMigration>()));
             var b = container.Commit(updatedInstance.Repository, signature, message); // B
             Assert.That(b.Migrations.Count, Is.GreaterThan(0));
@@ -156,7 +156,7 @@ namespace GitObjectDb.Tests.Services
             sut = container.AddRepository(sut, signature, message); // A
 
             // Act
-            container.Branch(sut, "newBranch");
+            container.Checkout(sut.Id, "newBranch", createNewBranch: true);
             var updateName = page.With(p => p.Name == "modified name");
             container.Commit(updateName.Repository, signature, message); // B
             container.Checkout(sut.Id, "master");
@@ -177,7 +177,7 @@ namespace GitObjectDb.Tests.Services
             sut = container.AddRepository(sut, signature, message); // A
 
             // Act
-            container.Branch(sut, "newBranch");
+            container.Checkout(sut.Id, "newBranch", createNewBranch: true);
             var updateName = page.With(p => p.Name == "modified name");
             container.Commit(updateName.Repository, signature, message); // B
             container.Checkout(sut.Id, "master");
@@ -212,7 +212,7 @@ namespace GitObjectDb.Tests.Services
             var commitResult = container.Commit(change.Repository, signature, message);
 
             // Act
-            var pullResult = clientContainer.Pull(clientContainer.Repositories.Single());
+            var pullResult = clientContainer.Pull(clientContainer.Repositories.Single().Id);
             pullResult.Apply(signature);
 
             // Assert
@@ -240,7 +240,7 @@ namespace GitObjectDb.Tests.Services
             clientContainer.Commit(clientChange.Repository, signature, message);
 
             // Act
-            var pullResult = clientContainer.Pull(clientContainer.Repositories.Single());
+            var pullResult = clientContainer.Pull(clientContainer.Repositories.Single().Id);
             pullResult.Apply(signature);
 
             // Assert
