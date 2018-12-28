@@ -62,19 +62,16 @@ namespace GitObjectDb.Services
         {
             using (var reader = new StreamReader(blob.GetContentStream()))
             {
-                while (true)
+                while (!reader.EndOfStream)
                 {
                     var line = reader.ReadLine();
-                    if (line == null)
-                    {
-                        return false;
-                    }
                     if (line.IndexOf(content, comparison) != -1)
                     {
                         return true;
                     }
                 }
             }
+            return false;
         }
 
         /// <inheritdoc/>
