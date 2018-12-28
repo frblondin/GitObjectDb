@@ -103,75 +103,43 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Update remote repository along with associated objects.
         /// </summary>
-        /// <param name="repository">The repository.</param>
+        /// <param name="id">The repository id.</param>
         /// <param name="remoteName">Name of the remote.</param>
         /// <param name="options">The options.</param>
-        void Push(IObjectRepository repository, string remoteName = null, PushOptions options = null);
-
-        /// <summary>
-        /// Checkouts the specified branch name.
-        /// </summary>
-        /// <param name="repository">The repository.</param>
-        /// <param name="branchName">Name of the branch.</param>
-        /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
-        TRepository Checkout(TRepository repository, string branchName);
+        void Push(UniqueId id, string remoteName = null, PushOptions options = null);
 
         /// <summary>
         /// Checkouts the specified branch name.
         /// </summary>
         /// <param name="id">The repository id.</param>
         /// <param name="branchName">Name of the branch.</param>
+        /// <param name="createNewBranch">Create a new branch.</param>
+        /// <param name="committish">The revparse spec for the target commit.</param>
         /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
-        TRepository Checkout(UniqueId id, string branchName);
+        TRepository Checkout(UniqueId id, string branchName, bool createNewBranch = false, string committish = null);
 
         /// <summary>
         /// Download objects and refs from the remote repository.
         /// </summary>
-        /// <param name="repository">The repository.</param>
+        /// <param name="id">The repository id.</param>
         /// <param name="options">The options.</param>
         /// <returns>The remote HEAD commit <typeparamref name="TRepository"/>.</returns>
-        TRepository Fetch(TRepository repository, FetchOptions options = null);
+        TRepository Fetch(UniqueId id, FetchOptions options = null);
 
         /// <summary>
         /// Download objects and refs from all remote branches.
         /// </summary>
-        /// <param name="repository">The repository.</param>
+        /// <param name="id">The repository id.</param>
         /// <param name="options">The options.</param>
-        void FetchAll(TRepository repository, FetchOptions options = null);
+        void FetchAll(UniqueId id, FetchOptions options = null);
 
         /// <summary>
         /// Download objects and refs from the remote repository.
         /// </summary>
-        /// <param name="repository">The repository.</param>
+        /// <param name="id">The repository id.</param>
         /// <param name="options">The options.</param>
         /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
-        IObjectRepositoryMerge Pull(TRepository repository, FetchOptions options = null);
-
-        /// <summary>
-        /// Creates a branch with the specified name. This branch will point at the current commit.
-        /// </summary>
-        /// <param name="repository">The repository.</param>
-        /// <param name="branchName">The name of the branch to create.</param>
-        /// <param name="committish">The revparse spec for the target commit.</param>
-        /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
-        TRepository Branch(TRepository repository, string branchName, string committish = null);
-
-        /// <summary>
-        /// Creates a branch with the specified name. This branch will point at the current commit.
-        /// </summary>
-        /// <param name="id">The repository id.</param>
-        /// <param name="branchName">The name of the branch to create.</param>
-        /// <param name="committish">The revparse spec for the target commit.</param>
-        /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
-        TRepository Branch(UniqueId id, string branchName, string committish = null);
-
-        /// <summary>
-        /// Merges changes from branch into the branch pointed at by HEAD.
-        /// </summary>
-        /// <param name="repository">The repository.</param>
-        /// <param name="branchName">Name of the branch.</param>
-        /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
-        IObjectRepositoryMerge Merge(TRepository repository, string branchName);
+        IObjectRepositoryMerge Pull(UniqueId id, FetchOptions options = null);
 
         /// <summary>
         /// Merges changes from branch into the branch pointed at by HEAD.
@@ -180,14 +148,6 @@ namespace GitObjectDb.Models
         /// <param name="branchName">Name of the branch.</param>
         /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
         IObjectRepositoryMerge Merge(UniqueId id, string branchName);
-
-        /// <summary>
-        /// Rebases changes from branch into the branch pointed at by HEAD.
-        /// </summary>
-        /// <param name="repository">The repository.</param>
-        /// <param name="branchName">Name of the branch.</param>
-        /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
-        IObjectRepositoryRebase Rebase(TRepository repository, string branchName);
 
         /// <summary>
         /// Rebases changes from branch into the branch pointed at by HEAD.

@@ -38,7 +38,7 @@ namespace GitObjectDb.Tests.Models
             repository = container.Commit(change.Repository, signature, message);
 
             // Act
-            container.Push(repository);
+            container.Push(repository.Id);
 
             // Assert
             using (var repo = new Repository(tempPath))
@@ -58,7 +58,7 @@ namespace GitObjectDb.Tests.Models
             var change = repository.Applications[0].Pages[0].With(a => a.Description == "foo");
             repository = container.Commit(change.Repository, signature, message);
 
-            container.Push(repository, "origin");
+            container.Push(repository.Id, "origin");
             return (tempPath, repository);
         }
     }

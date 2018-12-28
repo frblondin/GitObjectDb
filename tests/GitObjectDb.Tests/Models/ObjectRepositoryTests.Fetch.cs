@@ -28,7 +28,7 @@ namespace GitObjectDb.Tests.Models
             var commitResult = container.Commit(change.Repository, signature, message);
 
             // Act
-            var fetchResult = clientContainer.Fetch(clientContainer.Repositories.Single());
+            var fetchResult = clientContainer.Fetch(clientContainer.Repositories.Single().Id);
 
             // Assert
             Assert.That(fetchResult.CommitId, Is.EqualTo(commitResult.CommitId));

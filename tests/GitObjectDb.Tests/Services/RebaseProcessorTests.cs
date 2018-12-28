@@ -33,7 +33,7 @@ namespace GitObjectDb.Tests.Services
             // Act
             var updateName = sut.Applications[0].Pages[0].With(p => p.Name == "modified name");
             var b = container.Commit(updateName.Repository, signature, message); // B
-            container.Branch(a.Id, "newBranch", "HEAD~1");
+            container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
             var updateDescription = sut.Applications[0].Pages[0].With(p => p.Description == "modified description");
             container.Commit(updateDescription.Repository, signature, message); // C
             var rebase = container.Rebase(sut.Id, "master");
@@ -73,7 +73,7 @@ namespace GitObjectDb.Tests.Services
             var application = sut.Applications[0];
             var updateName = application.With(app => app.Name == "modified name");
             var b = container.Commit(updateName.Repository, signature, message); // B
-            container.Branch(a.Id, "newBranch", "HEAD~1");
+            container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
             var deletePage = application.With(app => app.Pages.Delete(application.Pages[0]));
             container.Commit(deletePage.Repository, signature, message); // C
             var rebase = container.Rebase(sut.Id, "master");
@@ -113,10 +113,10 @@ namespace GitObjectDb.Tests.Services
             var application = sut.Applications[0];
             var updateName = application.With(app => app.Name == "modified name");
             var b = container.Commit(updateName.Repository, signature, message); // B
-            container.Branch(a.Id, "newBranch", "HEAD~1");
+            container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
             var page = new Page(serviceProvider, UniqueId.CreateNew(), "name", "description", new LazyChildren<Field>());
-            var addPAge = application.With(app => app.Pages.Add(page));
-            container.Commit(addPAge.Repository, signature, message); // C
+            var addPage = application.With(app => app.Pages.Add(page));
+            container.Commit(addPage.Repository, signature, message); // C
             var rebase = container.Rebase(sut.Id, "master");
 
             // Assert
@@ -153,7 +153,7 @@ namespace GitObjectDb.Tests.Services
             // Act
             var updatedInstance = sut.With(i => i.Migrations.Add(migration));
             container.Commit(updatedInstance.Repository, signature, message); // B
-            container.Branch(a.Id, "newBranch", "HEAD~1");
+            container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
             var updateDescription = page.With(p => p.Description == "modified description");
             container.Commit(updateDescription.Repository, signature, message); // C
             Assert.Throws<NotSupportedException>(() => container.Rebase(sut.Id, "master"));
@@ -173,7 +173,7 @@ namespace GitObjectDb.Tests.Services
             // Act
             var updateName = page.With(p => p.Name == "modified name");
             container.Commit(updateName.Repository, signature, message); // B
-            container.Branch(a.Id, "newBranch", "HEAD~1");
+            container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
             var updatedInstance = sut.With(i => i.Migrations.Add(migration));
             container.Commit(updatedInstance.Repository, signature, message); // C
             Assert.Throws<NotSupportedException>(() => container.Rebase(sut.Id, "master"));
@@ -215,7 +215,7 @@ namespace GitObjectDb.Tests.Services
             var a = container.AddRepository(sut, signature, message); // A
             var updateName = a.Applications[0].Pages[0].With(p => p.Name == "foo");
             container.Commit(updateName.Repository, signature, message); // B
-            container.Branch(a.Id, "newBranch", "HEAD~1");
+            container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
             var update = new PredicateComposer()
                 .And(a.Applications[0].Pages[0], p => p.Name == "bar" && p.Description == "bar")
                 .And(a.Applications[0].Pages[0].Fields[0], f => f.Name == "bar");
