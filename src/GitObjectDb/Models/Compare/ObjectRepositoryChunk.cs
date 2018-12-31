@@ -1,11 +1,14 @@
-﻿using GitObjectDb.Reflection;
+using GitObjectDb.Reflection;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace GitObjectDb.Models.Compare
 {
     /// <summary>
     /// Represents an object property value.
     /// </summary>
+    [DebuggerDisplay("Object = {Object.Id}, Property = {Property.Name}, Value = {Value}")]
     public class ObjectRepositoryChunk
     {
 #pragma warning disable CA1720 // Identifier contains type name
@@ -39,5 +42,20 @@ namespace GitObjectDb.Models.Compare
         /// The value of the chunk.
         /// </summary>
         public object Value { get; }
+
+        /// <summary>
+        /// Gets whether the given <paramref name="chunk"/> <see cref="Value"/> is equal to the current value.
+        /// </summary>
+        /// <param name="chunk"></param>
+        /// <returns></returns>
+        public bool HasSameValue(ObjectRepositoryChunk chunk)
+        {
+            if (chunk == null)
+            {
+                throw new ArgumentNullException(nameof(chunk));
+            }
+
+            return EqualityComparer<object>.Default.Equals(Value, chunk.Value);
+        }
     }
 }

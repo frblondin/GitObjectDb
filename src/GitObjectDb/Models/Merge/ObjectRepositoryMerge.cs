@@ -223,27 +223,36 @@ namespace GitObjectDb.Models.Merge
                 throw new NotImplementedException($"Conflict as a modified node {branchChange.Path} in merge branch source has been deleted in head.");
             }
             var type = Type.GetType(mergeBaseObject.Value<string>("$type"));
-            var properties = _modelDataProvider.Get(type).ModifiableProperties;
-
-            var changes = from kvp in (IEnumerable<KeyValuePair<string, JToken>>)newObject
-                          let p = properties.TryGetWithValue(pr => pr.Name, kvp.Key)
-                          where p != null
-                          let mergeBaseValue = mergeBaseObject[kvp.Key]
-                          where mergeBaseValue == null || !JToken.DeepEquals(kvp.Value, mergeBaseValue)
-                          let headValue = TryGetToken(headObject, kvp)
-                          let isInConflict = !JToken.DeepEquals(mergeBaseValue, headValue) && !JToken.DeepEquals(kvp.Value, headValue)
-                          select new ObjectRepositoryChunkChange(branchChange.Path, p, ConvertToObject(mergeBaseObject, p, mergeBaseValue), ConvertToObject(newObject, p, kvp.Value), ConvertToObject(headObject, p, headValue), isInConflict);
+            var changes = ComputeModifiedChunks(_modelDataProvider.Get(type), _serializer, branchChange, mergeBaseObject, newObject, headObject);
 
             foreach (var modifiedProperty in changes)
             {
                 ModifiedChunks.Add(modifiedProperty);
             }
+        }
 
-            ObjectRepositoryChunk ConvertToObject(JObject jobject, ModifiablePropertyInfo property, JToken token)
+        internal static IEnumerable<ObjectRepositoryChunkChange> ComputeModifiedChunks(IModelDataAccessor dataAccessor, JsonSerializer serializer, PatchEntryChanges changes, JObject ancestorJson, JObject theirJson, JObject ourJson)
+        {
+            var ours = (IModelObject)ourJson.ToObject(dataAccessor.Type, serializer);
+            return ComputeModifiedChunks(dataAccessor, serializer, changes, ancestorJson, theirJson, ours);
+        }
+
+        internal static IEnumerable<ObjectRepositoryChunkChange> ComputeModifiedChunks(IModelDataAccessor dataAccessor, JsonSerializer serializer, PatchEntryChanges changes, JObject ancestorJson, JObject theirJson, IModelObject ours)
+        {
+            var ancestor = (IModelObject)ancestorJson.ToObject(dataAccessor.Type, serializer);
+            var theirs = (IModelObject)theirJson.ToObject(dataAccessor.Type, serializer);
+
+            return from name in ((IDictionary<string, JToken>)theirJson).Keys
+                   let property = dataAccessor.ModifiableProperties.TryGetWithValue(p => p.Name, name) where property != null
+                   let ancestorChunk = GetChunk(ancestor, property)
+                   let theirChunk = GetChunk(theirs, property)
+                   where !ancestorChunk.HasSameValue(theirChunk)
+                   let ourChunk = GetChunk(ours, property)
+                   select new ObjectRepositoryChunkChange(changes.Path, property, ancestorChunk, theirChunk, ourChunk);
+
+            ObjectRepositoryChunk GetChunk(IModelObject @object, ModifiablePropertyInfo property)
             {
-                var @object = (IModelObject)jobject.ToObject(type, _serializer);
-                var value = token.ToObject(property.Property.PropertyType, _serializer);
-                return new ObjectRepositoryChunk(@object, property, value);
+                return new ObjectRepositoryChunk(@object, property, property.Accessor(@object));
             }
         }
 

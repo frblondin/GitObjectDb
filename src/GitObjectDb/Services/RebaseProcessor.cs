@@ -1,6 +1,7 @@
 using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
+using GitObjectDb.Models.Merge;
 using GitObjectDb.Models.Rebase;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
@@ -175,33 +176,15 @@ namespace GitObjectDb.Services
 
         private void ComputeChanges_Modified(IRepository repository, PatchEntryChanges change)
         {
-            var currentObject = CurrentTransformedRepository.GetFromGitPath(change.Path) ??
+            var currentObject = CurrentTransformedRepository.TryGetFromGitPath(change.Path) ??
                 throw new NotImplementedException($"Conflict as a modified node {change.Path} has been deleted in current rebase state.");
-            var currentObjectAsJObject = currentObject.ToJObject();
             var changeStart = GetContent(repository.Lookup<Blob>(change.OldOid));
             var changeEnd = GetContent(repository.Lookup<Blob>(change.Oid));
-            var type = currentObject.GetType();
-            var properties = _modelDataProvider.Get(type).ModifiableProperties;
-
-            var changes = from kvp in (IEnumerable<KeyValuePair<string, JToken>>)changeEnd
-                          let p = properties.TryGetWithValue(pr => pr.Name, kvp.Key)
-                          where p != null
-                          let startValue = changeStart[kvp.Key]
-                          where startValue == null || !JToken.DeepEquals(kvp.Value, startValue)
-                          let currentValue = TryGetToken(currentObjectAsJObject, kvp)
-                          let isInConflict = !JToken.DeepEquals(startValue, currentValue) && !JToken.DeepEquals(kvp.Value, currentValue)
-                          select new ObjectRepositoryChunkChange(change.Path, p, ConvertToObject(changeStart, p, startValue), ConvertToObject(changeEnd, p, kvp.Value), ConvertToObject(currentObjectAsJObject, p, currentValue), isInConflict);
+            var changes = ObjectRepositoryMerge.ComputeModifiedChunks(_modelDataProvider.Get(currentObject.GetType()), _serializer, change, changeStart, changeEnd, currentObject);
 
             foreach (var modifiedProperty in changes)
             {
                 _rebase.ModifiedChunks.Add(modifiedProperty);
-            }
-
-            ObjectRepositoryChunk ConvertToObject(JObject jobject, ModifiablePropertyInfo property, JToken token)
-            {
-                var @object = (IModelObject)jobject.ToObject(type, _serializer);
-                var value = token.ToObject(property.Property.PropertyType, _serializer);
-                return new ObjectRepositoryChunk(@object, property, value);
             }
         }
 

@@ -245,7 +245,7 @@ namespace System.Text
             }
         }
 
-        [DebuggerDisplay("Data={Data.Chunk}")]
+        [DebuggerDisplay("Data = {Data.Chunk}")]
         [StructLayout(LayoutKind.Sequential)]
         [ExcludeFromGuardForNull]
         private struct ManageSliceActionItem

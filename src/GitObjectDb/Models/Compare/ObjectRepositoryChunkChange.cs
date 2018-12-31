@@ -13,7 +13,7 @@ namespace GitObjectDb.Models.Compare
     /// <summary>
     /// Represents a chunk change in a <see cref="IModelObject"/> while performing a merge.
     /// </summary>
-    [DebuggerDisplay("Property = {Property.Name}, Path = {Path}")]
+    [DebuggerDisplay("Property = {Property.Name}, Path = {Path}, IsInConflict = {IsInConflict}, WasInConflict = {WasInConflict}")]
     [ExcludeFromGuardForNull]
     public class ObjectRepositoryChunkChange
     {
@@ -25,15 +25,14 @@ namespace GitObjectDb.Models.Compare
         /// <param name="ancestor">The ancestor.</param>
         /// <param name="theirs">Their node.</param>
         /// <param name="ours">Our node.</param>
-        /// <param name="isInConflict"></param>
-        public ObjectRepositoryChunkChange(string path, ModifiablePropertyInfo property, ObjectRepositoryChunk ancestor, ObjectRepositoryChunk theirs, ObjectRepositoryChunk ours, bool isInConflict)
+        public ObjectRepositoryChunkChange(string path, ModifiablePropertyInfo property, ObjectRepositoryChunk ancestor, ObjectRepositoryChunk theirs, ObjectRepositoryChunk ours)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));
             Property = property ?? throw new ArgumentNullException(nameof(property));
             Ancestor = ancestor ?? throw new ArgumentNullException(nameof(ancestor));
             Theirs = theirs ?? throw new ArgumentNullException(nameof(theirs));
             Ours = ours ?? throw new ArgumentNullException(nameof(ours));
-            WasInConflict = isInConflict;
+            WasInConflict = !ancestor.HasSameValue(ours) && !theirs.HasSameValue(ours);
 
             Id = ancestor.Object.Id;
 
