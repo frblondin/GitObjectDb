@@ -30,7 +30,8 @@ namespace GitObjectDb.JsonConverters
                 ContractResolver = contractResolver ?? new CamelCasePropertyNamesContractResolver(),
                 TypeNameHandling = TypeNameHandling.Objects,
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                Formatting = Formatting.Indented
+                Formatting = Formatting.Indented,
+                DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate
             };
             serializer.Converters.Add(new VersionConverter());
             return serializer;

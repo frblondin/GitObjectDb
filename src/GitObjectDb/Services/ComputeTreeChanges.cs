@@ -121,6 +121,8 @@ namespace GitObjectDb.Services
              let path = c.Path.GetParentPath()
              let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in old repository.")
              let newNode = newRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in new repository.")
+             where !oldNode.Equals(newNode) // If new property have been defined in the data model we could end up with json
+                                            // differences even is object have same value (default values for ex.) = false positivies
              select new ObjectRepositoryEntryChanges(c.Path, c.Status, oldNode, newNode))
             .ToImmutableList();
 

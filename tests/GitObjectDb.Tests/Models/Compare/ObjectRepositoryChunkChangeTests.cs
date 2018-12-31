@@ -25,7 +25,7 @@ namespace GitObjectDb.Tests.Models.Compare
             Field mergeBaseNode = page.Fields[0], branchNode = page.Fields[1], headNode = page.Fields[2];
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode), true);
+            var sut = new ObjectRepositoryChunkChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode));
 
             // Assert
             Assert.That(sut.Path, Is.SameAs(path));
@@ -51,7 +51,7 @@ namespace GitObjectDb.Tests.Models.Compare
             Field mergeBaseNode = page.Fields[0], branchNode = page.Fields[1], headNode = page.Fields[2];
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode), true);
+            var sut = new ObjectRepositoryChunkChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode));
             sut.Resolve(resolvedValue);
 
             // Assert
@@ -69,7 +69,7 @@ namespace GitObjectDb.Tests.Models.Compare
             Field mergeBaseNode = page.Fields[0], branchNode = page.Fields[1], headNode = page.Fields[2];
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode), true);
+            var sut = new ObjectRepositoryChunkChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode));
             sut.Resolve(resolvedValue);
             Assert.Throws<GitObjectDbException>(() => sut.Resolve(resolvedValue));
         }
