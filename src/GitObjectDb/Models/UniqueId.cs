@@ -4,7 +4,9 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace GitObjectDb.Models
@@ -21,15 +23,11 @@ namespace GitObjectDb.Models
         public const int ShaLength = 12;
 
 #pragma warning disable IDE1006 // Naming Styles
-                               /// <summary>
-                               /// A read-only instance of the <see cref="UniqueId" /> structure whose value is empty.
-                               /// </summary>
+        /// <summary>
+        /// A read-only instance of the <see cref="UniqueId" /> structure whose value is empty.
+        /// </summary>
         public static readonly UniqueId Empty = default;
 #pragma warning restore IDE1006 // Naming Styles
-        private static readonly IImmutableList<char> _validChars =
-            Enumerable.Range('a', 26).Select(i => (char)i)
-            .Concat(Enumerable.Range('0', 10).Select(i => (char)i))
-            .ToImmutableList();
 
         private readonly string _sha;
 
@@ -99,15 +97,29 @@ namespace GitObjectDb.Models
 
         private static char[] CreateNewCharArray()
         {
-#pragma warning disable S2245 // Using pseudorandom number generators (PRNGs) is security-sensitive
-            var random = new Random();
-#pragma warning restore S2245 // Using pseudorandom number generators (PRNGs) is security-sensitive
-            var chars = new char[ShaLength];
-            for (int i = 0; i < ShaLength; i++)
+            var buffer = new byte[ShaLength];
+            (new RNGCryptoServiceProvider()).GetBytes(buffer);
+
+            var result = new char[ShaLength];
+            for (var pos = 0; pos < ShaLength; pos++)
             {
-                chars[i] = _validChars[random.Next(ShaLength)];
+                result[pos] = ConvertToChar(buffer[pos]);
             }
-            return chars;
+            return result;
+        }
+
+        private static char ConvertToChar(byte value)
+        {
+            var i = value % 37;
+            if (i < 10)
+            {
+                return (char)('0' + i);
+            }
+            if (i == 10)
+            {
+                return '_';
+            }
+            return (char)('a' + i - 11);
         }
 
         /// <summary>
@@ -132,12 +144,12 @@ namespace GitObjectDb.Models
         }
 
         private static bool IsShaValid(string sha) =>
-            sha != null &&
-            sha.Length == ShaLength &&
+            sha?.Length == ShaLength &&
             sha.All(c => IsShaValidChat(c));
 
         private static bool IsShaValidChat(char c) =>
             (c >= 'a' && c <= 'a' + 26) ||
+            c == '_' ||
             (c >= '0' && c <= '9');
 
         /// <inheritdoc/>
