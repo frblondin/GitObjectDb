@@ -24,7 +24,7 @@ namespace GitObjectDb.Tests.Services
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void MergeTwoDifferentPropertiesChanged(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
+        public void MergeTwoDifferentPropertiesChanged(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // master:    A---C---D
             //             \     /
@@ -34,11 +34,11 @@ namespace GitObjectDb.Tests.Services
             sut = container.AddRepository(sut, signature, message); // A
 
             // Act
-            container.Checkout(sut.Id, "newBranch", createNewBranch: true);
-            var updateName = page.With(p => p.Name == "modified name");
+            sut = container.Checkout(sut.Id, "newBranch", createNewBranch: true);
+            var updateName = sut.With(sut.Applications[0].Pages[0], p => p.Name, "modified name");
             container.Commit(updateName.Repository, signature, message); // B
-            container.Checkout(sut.Id, "master");
-            var updateDescription = page.With(p => p.Description == "modified description");
+            var a = container.Checkout(sut.Id, "master");
+            var updateDescription = a.With(a.Applications[0].Pages[0], p => p.Description, "modified description");
             var commitC = container.Commit(updateDescription.Repository, signature, message); // C
             var mergeCommit = container.Merge(sut.Id, "newBranch").Apply(signature); // D
 
@@ -47,13 +47,13 @@ namespace GitObjectDb.Tests.Services
                 .Compare(commitC.CommitId, mergeCommit);
             Assert.That(changes, Has.Count.EqualTo(1));
             Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Modified));
-            Assert.That(changes[0].Old.Name, Is.EqualTo(page.Name));
+            Assert.That(changes[0].Old.Name, Is.EqualTo(sut.Applications[0].Pages[0].Name));
             Assert.That(changes[0].New.Name, Is.EqualTo(updateName.Name));
         }
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void MergeFileAdditionChange(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
+        public void MergeFileAdditionChange(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IServiceProvider serviceProvider, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // master:    A---C---D
             //             \     /
@@ -63,11 +63,11 @@ namespace GitObjectDb.Tests.Services
             sut = container.AddRepository(sut, signature, message); // A
 
             // Act
-            container.Checkout(sut.Id, "newBranch", createNewBranch: true);
-            var updateName = page.With(p => p.Fields.Add(new Field(serviceProvider, UniqueId.CreateNew(), "new field", FieldContent.Default)));
+            sut = container.Checkout(sut.Id, "newBranch", createNewBranch: true);
+            var updateName = sut.With(c => c.Add(sut.Applications[0].Pages[0], p => p.Fields, new Field(serviceProvider, UniqueId.CreateNew(), "new field", FieldContent.Default)));
             container.Commit(updateName.Repository, signature, message); // B
-            container.Checkout(sut.Id, "master");
-            var updateDescription = page.With(p => p.Description == "modified description");
+            var a = container.Checkout(sut.Id, "master");
+            var updateDescription = a.With(a.Applications[0].Pages[0], p => p.Description, "modified description");
             var commitC = container.Commit(updateDescription.Repository, signature, message); // C
             var mergeCommit = container.Merge(sut.Id, "newBranch").Apply(signature); // D
 
@@ -81,21 +81,22 @@ namespace GitObjectDb.Tests.Services
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void MergeFileDeletionChange(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
+        public void MergeFileDeletionChange(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // master:    A---C---D
             //             \     /
             // newBranch:   B---'
 
             // Arrange
-            sut = container.AddRepository(sut, signature, message); // A
+            var a = container.AddRepository(sut, signature, message); // A
 
             // Act
-            container.Checkout(sut.Id, "newBranch", createNewBranch: true);
-            var updateName = page.With(p => p.Fields.Delete(page.Fields[1]));
-            container.Commit(updateName.Repository, signature, message); // B
-            container.Checkout(sut.Id, "master");
-            var updateDescription = page.With(p => p.Description == "modified description");
+            a = container.Checkout(a.Id, "newBranch", createNewBranch: true);
+            var page = a.Applications[0].Pages[0];
+            var updateName = a.With(c => c.Remove(page, p => p.Fields, page.Fields[1]));
+            container.Commit(updateName, signature, message); // B
+            a = container.Checkout(a.Id, "master");
+            var updateDescription = a.With(a.Applications[0].Pages[0], p => p.Description, "modified description");
             var commitC = container.Commit(updateDescription.Repository, signature, message); // C
             var mergeCommit = container.Merge(sut.Id, "newBranch").Apply(signature); // D
 
@@ -109,7 +110,7 @@ namespace GitObjectDb.Tests.Services
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void MergeTwoDifferentPropertiesWithMigrationChanged(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IFixture fixture, Page page, Signature signature, string message)
+        public void MergeTwoDifferentPropertiesWithMigrationChanged(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IFixture fixture, Signature signature, string message)
         {
             // master:    A-----D-----E---F
             //             \         /   /
@@ -118,19 +119,19 @@ namespace GitObjectDb.Tests.Services
             // newBranch:     B---C---' (B contains a non-idempotent migration)
 
             // Arrange
-            sut = container.AddRepository(sut, signature, message); // A
+            var a = container.AddRepository(sut, signature, message); // A
 
             // B, C
-            container.Checkout(sut.Id, "newBranch", createNewBranch: true);
-            var updatedInstance = sut.With(i => i.Migrations.Add(fixture.Create<DummyMigration>()));
-            var b = container.Commit(updatedInstance.Repository, signature, message); // B
+            a = container.Checkout(sut.Id, "newBranch", createNewBranch: true);
+            var updatedInstance = a.With(c => c.Add(a, r => r.Migrations, fixture.Create<DummyMigration>()));
+            var b = container.Commit(updatedInstance, signature, message); // B
             Assert.That(b.Migrations.Count, Is.GreaterThan(0));
-            var updateName = b.Applications[1].Pages[1].With(p => p.Name == "modified name");
+            var updateName = b.With(b.Applications[1].Pages[1], p => p.Name, "modified name");
             container.Commit(updateName.Repository, signature, message); // C
 
             // D
-            container.Checkout(sut.Id, "master");
-            var updateDescription = page.With(p => p.Description == "modified description");
+            a = container.Checkout(sut.Id, "master");
+            var updateDescription = a.With(a.Applications[0].Pages[0], p => p.Description, "modified description");
             container.Commit(updateDescription.Repository, signature, message); // D
 
             // E
@@ -146,42 +147,42 @@ namespace GitObjectDb.Tests.Services
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void MergeSamePropertyDetectsConflicts(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message)
+        public void MergeSamePropertyDetectsConflicts(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // master:    A---C---D
             //             \     /
             // newBranch:   B---'
 
             // Arrange
-            sut = container.AddRepository(sut, signature, message); // A
+            var a = container.AddRepository(sut, signature, message); // A
 
             // Act
-            container.Checkout(sut.Id, "newBranch", createNewBranch: true);
-            var updateName = page.With(p => p.Name == "modified name");
+            a = container.Checkout(sut.Id, "newBranch", createNewBranch: true);
+            var updateName = a.With(a.Applications[0].Pages[0], p => p.Name, "modified name");
             container.Commit(updateName.Repository, signature, message); // B
-            container.Checkout(sut.Id, "master");
-            var updateNameOther = page.With(p => p.Name == "yet again modified name");
+            a = container.Checkout(sut.Id, "master");
+            var updateNameOther = a.With(a.Applications[0].Pages[0], p => p.Name, "yet again modified name");
             container.Commit(updateNameOther.Repository, signature, message); // C
             Assert.Throws<RemainingConflictsException>(() => container.Merge(sut.Id, "newBranch").Apply(signature));
         }
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void MergeSamePropertyConflict(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
+        public void MergeSamePropertyConflict(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // master:    A---C---D
             //             \     /
             // newBranch:   B---'
 
             // Arrange
-            sut = container.AddRepository(sut, signature, message); // A
+            var a = container.AddRepository(sut, signature, message); // A
 
             // Act
-            container.Checkout(sut.Id, "newBranch", createNewBranch: true);
-            var updateName = page.With(p => p.Name == "modified name");
+            a = container.Checkout(sut.Id, "newBranch", createNewBranch: true);
+            var updateName = a.With(a.Applications[0].Pages[0], p => p.Name, "modified name");
             container.Commit(updateName.Repository, signature, message); // B
-            container.Checkout(sut.Id, "master");
-            var updateNameOther = page.With(p => p.Name == "yet again modified name");
+            a = container.Checkout(sut.Id, "master");
+            var updateNameOther = a.With(a.Applications[0].Pages[0], p => p.Name, "yet again modified name");
             var commitC = container.Commit(updateNameOther.Repository, signature, message); // C
             var merge = container.Merge(sut.Id, "newBranch");
             var chunk = merge.ModifiedChunks.Single();
@@ -208,7 +209,7 @@ namespace GitObjectDb.Tests.Services
             clientContainer.Clone(container.Repositories.Single().RepositoryDescription.Path);
 
             // Arrange - Update source repository
-            var change = sut.Applications[0].Pages[0].With(a => a.Description == "foo");
+            var change = sut.With(sut.Applications[0].Pages[0], p => p.Description, "foo");
             var commitResult = container.Commit(change.Repository, signature, message);
 
             // Act
@@ -232,11 +233,11 @@ namespace GitObjectDb.Tests.Services
             clientContainer.Clone(container.Repositories.Single().RepositoryDescription.Path);
 
             // Arrange - Update source repository
-            var change = sut.Applications[0].Pages[0].With(a => a.Description == "foo");
-            container.Commit(change.Repository, signature, message);
+            var change = sut.With(sut.Applications[0].Pages[0], p => p.Description, "foo");
+            sut = container.Commit(change.Repository, signature, message);
 
             // Arrange - Update client repository
-            var clientChange = clientContainer.Repositories.Single().Applications[0].Pages[0].With(a => a.Name == "bar");
+            var clientChange = sut.With(sut.Applications[0].Pages[0], p => p.Name, "bar");
             clientContainer.Commit(clientChange.Repository, signature, message);
 
             // Act

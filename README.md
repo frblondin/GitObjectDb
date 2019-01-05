@@ -16,7 +16,7 @@ The Git repository is used as a pure database as the files containing the serial
 
 Here's a simple example:
 1. Define your own repository data model:
-    ```cs
+    ```csharp
     [Repository]
     public class ObjectRepository
     {
@@ -25,40 +25,44 @@ Here's a simple example:
     ```
     _Note that this object contains `Applications` of type `ILazyChildren<Application>`. That's how you can create nested objects. They must be of type `ILazyChildren<Application>`._
 2. Create nested object types:
-    ```cs
+    ```csharp
     [Model]
     public class Application
     {
+        [Modifiable]
+        public string SomeNewProperty { get; }
+
         public ILazyChildren<Page> Pages { get; }
     }
     ```
 3. Basic commands
    - Initialize a new repository
-        ```cs
+        ```csharp
         var container = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, path);
         var repo = new ObjectRepository(...);
         container.AddRepository(repo, signature, message);
         ```
    - Commit a new change
-        ```cs
-        var modifiedPage = page.With(p => p.Name == "modified");
-        container.Commit(modifiedPage.Repository, signature, message);
+        ```csharp
+        var modified = repo.With(page, p => p.Name, "modified");
+        container.Commit(modified.Repository, signature, message);
         ```
-    - Branch management:
-        
-        See [branch & merges](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Models/ObjectRepositoryTests.Branch.cs) and [rebase](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Models/ObjectRepositoryTests.Rebase.cs) unit tests.
-    - Migrations:
-        
-        Migrations allows to define any action that must be executed when the commit containing the migration will be processed by a pull. See the [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Migrations/MigrationTests.cs) for more details.
+   - Commit multiple changes
+        ```csharp
+        var modified = repository.With(c => c
+            .Update(field, f => f.Name, "modified field name")
+            .Update(field, f => f.Content, FieldContent.NewLink(new FieldLinkContent(new LazyLink<Page>(container, newLinkedPage))))
+            .Update(page, p => p.Name, "modified page name"));
+        container.Commit(modified.Repository, signature, message);
+        ```
+    - Branch management: see [branch & merges](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Models/ObjectRepositoryTests.Branch.cs) and [rebase](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Models/ObjectRepositoryTests.Rebase.cs) unit tests.
+    - Migrations: migrations allows to define any action that must be executed when the commit containing the migration will be processed by a pull. See the [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Migrations/MigrationTests.cs) for more details.
     - [Pre/post commit & merge hook](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Git/Hooks/GitHooksTests.cs)
-	- Simple validation:
-        
-        See [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Validations/ModelValidationTests.cs) for more information.
+	- Simple validation: see [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Validations/ModelValidationTests.cs) for more information.
 
 ## Prerequisites
 
- - **Windows:** .NET 4.0+
- - **Linux/Mac OS X:** Mono 3.6+
+ - .NET Standard 2.0
 
 ## Online resources
 

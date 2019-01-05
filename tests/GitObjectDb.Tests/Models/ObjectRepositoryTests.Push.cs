@@ -34,7 +34,7 @@ namespace GitObjectDb.Tests.Models
         {
             // Arrange
             var (tempPath, repository) = PushNewRemoteImpl(sample, container, signature, message);
-            var change = repository.Applications[0].Pages[0].With(a => a.Description == "bar");
+            var change = repository.With(repository.Applications[0].Pages[0], p => p.Description, "bar");
             repository = container.Commit(change.Repository, signature, message);
 
             // Act
@@ -55,7 +55,7 @@ namespace GitObjectDb.Tests.Models
             repository = container.AddRepository(repository, signature, message);
             repository.Execute(r => r.Network.Remotes.Add("origin", tempPath));
 
-            var change = repository.Applications[0].Pages[0].With(a => a.Description == "foo");
+            var change = repository.With(repository.Applications[0].Pages[0], p => p.Description, "foo");
             repository = container.Commit(change.Repository, signature, message);
 
             container.Push(repository.Id, "origin");

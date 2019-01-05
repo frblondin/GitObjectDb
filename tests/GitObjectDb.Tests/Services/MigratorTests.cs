@@ -21,17 +21,17 @@ namespace GitObjectDb.Tests.Migrations
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void MigrationScaffolderDetectsRequiredChanges(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, IFixture fixture, IServiceProvider serviceProvider, Signature signature, string message)
+        public void MigrationScaffolderDetectsRequiredChanges(ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, IFixture fixture, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange
-            sut = container.AddRepository(sut, signature, message);
-            var updated = sut.With(i => i.Migrations.Add(fixture.Create<DummyMigration>()));
+            repository = container.AddRepository(repository, signature, message);
+            var updated = repository.With(c => c.Add(repository, r => r.Migrations, fixture.Create<DummyMigration>()));
             var commit = container.Commit(updated, signature, message);
 
             // Act
-            var migrationScaffolder = new MigrationScaffolder(container, sut.RepositoryDescription,
+            var migrationScaffolder = new MigrationScaffolder(container, repository.RepositoryDescription,
                 serviceProvider.GetRequiredService<IRepositoryProvider>(), serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>());
-            var migrators = migrationScaffolder.Scaffold(sut.CommitId, commit.CommitId, MigrationMode.Upgrade);
+            var migrators = migrationScaffolder.Scaffold(repository.CommitId, commit.CommitId, MigrationMode.Upgrade);
 
             // Assert
             Assert.That(migrators, Has.Count.EqualTo(1));

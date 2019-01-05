@@ -1,4 +1,5 @@
 using GitObjectDb.Models;
+using GitObjectDb.Transformations;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -40,12 +41,12 @@ namespace GitObjectDb.Reflection
 
 #pragma warning disable CA1716 // Identifiers should not match keywords
         /// <summary>
-        /// Creates a copy of the instance and apply changes according to the new test values provided in the predicate.
+        /// Creates a copy of the repository and applies changes according to the new test values provided in the <paramref name="transformations"/>.
         /// </summary>
-        /// <param name="source">The object.</param>
-        /// <param name="predicate">The predicate.</param>
-        /// <returns>The newly created copy. Both parents and children nodes have been cloned as well.</returns>
-        IModelObject With(IModelObject source, IPredicateReflector predicate);
+        /// <param name="repository">The repository.</param>
+        /// <param name="transformations">The transformations.</param>
+        /// <returns>The newly created repository.</returns>
+        IObjectRepository With(IObjectRepository repository, IEnumerable<ITransformation> transformations);
 #pragma warning restore CA1716 // Identifiers should not match keywords
 
         /// <summary>

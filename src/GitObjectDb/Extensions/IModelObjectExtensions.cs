@@ -1,10 +1,10 @@
 using GitObjectDb.JsonConverters;
-using GitObjectDb.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -17,37 +17,6 @@ namespace GitObjectDb.Models
     /// </summary>
     public static class IModelObjectExtensions
     {
-        /// <summary>
-        /// Creates a copy of the repository and apply changes according to the new test values provided in the predicate.
-        /// </summary>
-        /// <typeparam name="TModel">The type of the model.</typeparam>
-        /// <param name="source">The source.</param>
-        /// <param name="predicate">The predicate.</param>
-        /// <returns>The newly created copy. Both parents and children nodes have been cloned as well.</returns>
-        public static TModel With<TModel>(this TModel source, Expression<Predicate<TModel>> predicate = null)
-            where TModel : IModelObject
-        {
-            return With(source, new PredicateReflector(source, predicate));
-        }
-
-        /// <summary>
-        /// Creates a copy of the repository and apply changes according to the new test values provided in the predicate.
-        /// </summary>
-        /// <typeparam name="TModel">The type of the model.</typeparam>
-        /// <param name="source">The source.</param>
-        /// <param name="predicate">The predicate.</param>
-        /// <returns>The newly created copy. Both parents and children nodes have been cloned as well.</returns>
-        public static TModel With<TModel>(this TModel source, IPredicateReflector predicate)
-            where TModel : IModelObject
-        {
-            if (predicate == null)
-            {
-                throw new ArgumentNullException(nameof(predicate));
-            }
-
-            return (TModel)source.DataAccessor.With(source, predicate);
-        }
-
         /// <summary>
         /// Gets the root repository of the specified node.
         /// </summary>
@@ -101,7 +70,7 @@ namespace GitObjectDb.Models
         }
 
         /// <summary>
-        /// Gets an <see cref="IEnumerable{IModelObject}"/> containing all parents of this node.
+        /// Gets an <see cref="IEnumerable{IModelObject}"/> containing all parents of this node including itself.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <returns>All parent nodes from nearest to farest.</returns>

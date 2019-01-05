@@ -24,7 +24,7 @@ namespace GitObjectDb.Tests.Models
             clientContainer.Clone(container.Repositories.Single().RepositoryDescription.Path);
 
             // Arrange - Update source repository
-            var change = sut.Applications[0].Pages[0].With(a => a.Description == "foo");
+            var change = sut.With(sut.Applications[0].Pages[0], p => p.Description, "foo");
             var commitResult = container.Commit(change.Repository, signature, message);
 
             // Act

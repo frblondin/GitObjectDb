@@ -1,6 +1,7 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
+using GitObjectDb.Transformations;
 using GitObjectDb.Validations;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Serialization;
@@ -16,7 +17,7 @@ using System.Text;
 namespace GitObjectDb.Reflection
 {
     /// <inheritdoc />
-    internal class ModelDataAccessor : IModelDataAccessor
+    internal partial class ModelDataAccessor : IModelDataAccessor
     {
         private readonly Lazy<IImmutableList<ChildPropertyInfo>> _childProperties;
         private readonly Lazy<IImmutableList<ModifiablePropertyInfo>> _modifiableProperties;
@@ -114,23 +115,52 @@ namespace GitObjectDb.Reflection
             .ToImmutableList();
 
         /// <inheritdoc />
-        public IModelObject With(IModelObject source, IPredicateReflector predicate)
+        public IObjectRepository With(IObjectRepository repository, IEnumerable<ITransformation> transformations)
         {
-            if (source == null)
+            if (repository == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                throw new ArgumentNullException(nameof(repository));
             }
-            if (predicate == null)
+            if (transformations == null)
             {
-                throw new ArgumentNullException(nameof(predicate));
+                throw new ArgumentNullException(nameof(transformations));
             }
 
-            var newInstance = DeepClone(
-                source.Repository,
-                predicate.ProcessArgument,
-                predicate.GetChildChanges,
-                predicate.MustForceVisit);
-            return newInstance.TryGetFromGitPath(source.GetDataPath());
+            var changes = transformations
+                .OfType<PropertyTransformation>()
+                .ToLookup(t => (t.InstanceId, t.PropertyName), TransformationLookupComparer.Instance);
+            var additions = transformations
+                .OfType<ChildAddTransformation>()
+                .ToLookup(t => (t.InstanceId, t.PropertyName), t => t.Child, TransformationLookupComparer.Instance);
+            var deletions = new HashSet<UniqueId>(transformations
+                .OfType<ChildDeleteTransformation>().Select(d => d.ChildId));
+            var impactedPaths = transformations.Select(c => c.Path).Distinct().ToList();
+            return DeepClone(repository, ProcessArgument, GetChildChanges, MustForceVisit);
+
+            object ProcessArgument(IModelObject instance, string name, Type argumentType, object fallback = null)
+            {
+                var match = changes[(instance.Id, name)].FirstOrDefault();
+                if (match != null)
+                {
+                    return match.Value;
+                }
+                return fallback is ICloneable cloneable ? cloneable.Clone() : fallback;
+            }
+            (IEnumerable<IModelObject> Additions, IEnumerable<IModelObject> Deletions) GetChildChanges(IModelObject instance, ChildPropertyInfo childProperty)
+            {
+                var childrenToBeAdded = additions[(instance.Id, childProperty.FolderName)];
+                var childrenToBeRemoved = childProperty.Accessor(instance).Where(c => IsDeleted(c));
+                return (childrenToBeAdded, childrenToBeRemoved);
+            }
+            bool IsDeleted(IModelObject instance)
+            {
+                return instance.Parents().Any(p => deletions.Contains(p.Id));
+            }
+            bool MustForceVisit(IModelObject node)
+            {
+                var folderPath = node.GetFolderPath();
+                return impactedPaths.Any(p => p.StartsWith(folderPath, StringComparison.OrdinalIgnoreCase));
+            }
         }
 
         /// <inheritdoc />

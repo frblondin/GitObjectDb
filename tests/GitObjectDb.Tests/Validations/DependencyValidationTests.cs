@@ -18,7 +18,7 @@ namespace GitObjectDb.Tests.Validations
         {
             // Arrange
             var wrongDependency = new RepositoryDependency(UniqueId.CreateNew(), "foo", new System.Version(1, 0));
-            repository = repository.With(r => r.Dependencies == repository.Dependencies.Add(wrongDependency));
+            repository = repository.With(repository, r => r.Dependencies, repository.Dependencies.Add(wrongDependency));
             container.AddRepository(repository, signature, message);
 
             // Act
@@ -35,7 +35,7 @@ namespace GitObjectDb.Tests.Validations
             // Arrange
             container.AddRepository(dependency, signature, message);
             var wrongDependency = new RepositoryDependency(dependency, new System.Version(dependency.Version.Major + 1, 0));
-            repository = repository.With(r => r.Dependencies == repository.Dependencies.Add(wrongDependency));
+            repository = repository.With(repository, r => r.Dependencies, repository.Dependencies.Add(wrongDependency));
             container.AddRepository(repository, signature, message);
 
             // Act
@@ -51,8 +51,8 @@ namespace GitObjectDb.Tests.Validations
         {
             // Arrange
             container.AddRepository(dependency, signature, message);
-            var wrongDependency = new RepositoryDependency(dependency, new System.Version(dependency.Version.Major - 1, 0));
-            repository = repository.With(r => r.Dependencies == repository.Dependencies.Add(wrongDependency));
+            var newDependency = new RepositoryDependency(dependency, new System.Version(dependency.Version.Major - 1, 0));
+            repository = repository.With(repository, r => r.Dependencies, repository.Dependencies.Add(newDependency));
             container.AddRepository(repository, signature, message);
 
             // Act

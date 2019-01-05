@@ -37,7 +37,7 @@ namespace GitObjectDb.Tests.Validations
 
             // Act
             var failingLink = new LazyLink<Page>(container, new ObjectPath(UniqueId.CreateNew(), "foo"));
-            var modified = linkField.With(f => f.Content == FieldContent.NewLink(new FieldLinkContent(failingLink)));
+            var modified = repository.With(linkField, f => f.Content, FieldContent.NewLink(new FieldLinkContent(failingLink)));
             var result = modified.Repository.Validate();
 
             // Assert
@@ -59,7 +59,7 @@ namespace GitObjectDb.Tests.Validations
 
             // Act
             var failingLink = new LazyLink<Page>(container, new ObjectPath(linkField.Repository.Id, "foo"));
-            var modified = linkField.With(f => f.Content == FieldContent.NewLink(new FieldLinkContent(failingLink)));
+            var modified = repository.With(linkField, f => f.Content, FieldContent.NewLink(new FieldLinkContent(failingLink)));
             var result = modified.Repository.Validate();
 
             // Assert
