@@ -65,7 +65,6 @@ namespace Microsoft.Extensions.DependencyInjection
             source.AddSingleton<IConstructorSelector, MostParametersConstructorSelector>();
             source.AddSingleton<IModelDataAccessorProvider>(s =>
                 new CachedModelDataAccessorProvider(new ModelDataAccessorProvider(s.GetRequiredService<ModelDataAccessorFactory>())));
-            source.AddFactoryDelegate<PredicateFromChanges>();
             source.AddFactoryDelegate<ConstructorParameterBinding>();
             source.AddFactoryDelegate<ModelDataAccessorFactory, ModelDataAccessor>();
         }

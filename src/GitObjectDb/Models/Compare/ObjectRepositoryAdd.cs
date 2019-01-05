@@ -19,20 +19,20 @@ namespace GitObjectDb.Models.Compare
         /// Initializes a new instance of the <see cref="ObjectRepositoryAdd"/> class.
         /// </summary>
         /// <param name="path">The path.</param>
-        /// <param name="node">The node.</param>
+        /// <param name="child">The child.</param>
         /// <param name="parentId">The parent id.</param>
         /// <exception cref="ArgumentNullException">
         /// path
         /// or
         /// branchNode
         /// </exception>
-        public ObjectRepositoryAdd(string path, JObject node, UniqueId parentId)
+        public ObjectRepositoryAdd(string path, IModelObject child, UniqueId parentId)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));
-            Node = node ?? throw new ArgumentNullException(nameof(node));
+            Child = child ?? throw new ArgumentNullException(nameof(child));
             ParentId = parentId;
 
-            Id = node.GetValue(nameof(IModelObject.Id), StringComparison.OrdinalIgnoreCase).ToObject<UniqueId>();
+            Id = child.Id;
         }
 
         /// <summary>
@@ -41,9 +41,9 @@ namespace GitObjectDb.Models.Compare
         public string Path { get; }
 
         /// <summary>
-        /// Gets the node.
+        /// Gets the added child.
         /// </summary>
-        public JObject Node { get; }
+        public IModelObject Child { get; }
 
         /// <summary>
         /// Gets the parent unique id.

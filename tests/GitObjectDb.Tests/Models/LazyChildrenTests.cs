@@ -82,30 +82,6 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenThrowsErrorWhenAddGetsCalledDirectly(IList<IModelObject> values, IModelObject parent, IModelObject child)
-        {
-            // Act
-            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
-            sut.AttachToParent(parent);
-
-            // Assert
-            Assert.Throws<GitObjectDbException>(() => sut.Add(child));
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
-        public void LazyChildrenThrowsErrorWhenDeleteGetsCalledDirectly(IList<IModelObject> values, IModelObject parent)
-        {
-            // Act
-            var sut = new LazyChildren<IModelObject>(values.ToImmutableList());
-            sut.AttachToParent(parent);
-
-            // Assert
-            Assert.Throws<GitObjectDbException>(() => sut.Delete(values[0]));
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(NSubstituteForAbstractTypesCustomization))]
         public void LazyChildrenAttachToSameParentTwiceIsIgnored(IList<IModelObject> values, IModelObject parent)
         {
             // Act

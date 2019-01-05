@@ -93,10 +93,11 @@ namespace GitObjectDb.Models.Merge
         /// <inheritdoc/>
         public IList<ObjectRepositoryDelete> DeletedObjects { get; } = new List<ObjectRepositoryDelete>();
 
-        private static JObject GetContent(Commit mergeBase, string path, string branchInfo)
+        private T GetContent<T>(Commit mergeBase, string path, string branchInfo)
+            where T : class
         {
             var blob = mergeBase[path]?.Target as Blob;
-            return blob?.GetContentStream().ToJson<JObject>(JsonSerializer.CreateDefault()) ??
+            return blob?.GetContentStream().ToJson<T>(_serializer) ??
                 throw new NotImplementedException($"Could not find node {path} in {branchInfo} tree.");
         }
 
@@ -183,9 +184,9 @@ namespace GitObjectDb.Models.Merge
 
         private void ComputeMerge_Modified(Commit mergeBase, Commit branchTip, Commit headTip, Patch headChanges, PatchEntryChanges change)
         {
-            var mergeBaseObject = GetContent(mergeBase, change.Path, "merge base");
-            var branchObject = GetContent(branchTip, change.Path, "branch tip");
-            var headObject = GetContent(headTip, change.Path, "head tip");
+            var mergeBaseObject = GetContent<JObject>(mergeBase, change.Path, "merge base");
+            var branchObject = GetContent<JObject>(branchTip, change.Path, "branch tip");
+            var headObject = GetContent<JObject>(headTip, change.Path, "head tip");
 
             AddModifiedChunks(change, mergeBaseObject, branchObject, headObject, headChanges[change.Path]);
         }
@@ -198,7 +199,7 @@ namespace GitObjectDb.Models.Merge
                 throw new NotImplementedException("Node addition while parent has been deleted in head is not supported.");
             }
 
-            var branchObject = GetContent(branchTip, change.Path, "branch tip");
+            var branchObject = GetContent<IModelObject>(branchTip, change.Path, "branch tip");
             var parentId = change.Path.GetDataParentId(Repository);
             AddedObjects.Add(new ObjectRepositoryAdd(change.Path, branchObject, parentId));
         }
@@ -211,7 +212,7 @@ namespace GitObjectDb.Models.Merge
                 throw new NotImplementedException("Node deletion while children have been added or modified in head is not supported.");
             }
 
-            var mergeBaseObject = GetContent(mergeBase, change.Path, "branch tip");
+            var mergeBaseObject = GetContent<JObject>(mergeBase, change.Path, "branch tip");
             var id = mergeBaseObject.GetValue(nameof(IModelObject.Id), StringComparison.OrdinalIgnoreCase).ToObject<UniqueId>();
             DeletedObjects.Add(new ObjectRepositoryDelete(change.Path, id));
         }

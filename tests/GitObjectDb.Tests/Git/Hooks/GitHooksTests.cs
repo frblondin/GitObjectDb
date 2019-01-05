@@ -19,21 +19,22 @@ namespace GitObjectDb.Tests.Git.Hooks
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void PreCommitWhenPropertyChangeGetsFired(GitHooks sut, ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, Page page, Page newLinkedPage, Signature signature, string message)
+        public void PreCommitWhenPropertyChangeGetsFired(GitHooks sut, ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // Arrange
+            repository = container.AddRepository(repository, signature, message);
             CommitStartedEventArgs lastEvent = null;
             sut.CommitStarted += (_, args) => lastEvent = args;
             var field = repository.Flatten().OfType<Field>().First(
                 f => f.Content.MatchOrDefault(matchLink: l => true));
 
             // Act
-            container.AddRepository(repository, signature, message);
-            var composer = new PredicateComposer()
-                .And(field, f => f.Name == "modified field name" &&
-                                 f.Content == FieldContent.NewLink(new FieldLinkContent(new LazyLink<Page>(container, newLinkedPage))))
-                .And(page, p => p.Name == "modified page name");
-            var modified = repository.With(composer);
+            var page = repository.Applications[0].Pages[1];
+            var newLinkedPage = repository.Applications[1].Pages[2];
+            var modified = repository.With(c => c
+                .Update(field, f => f.Name, "modified field name")
+                .Update(field, f => f.Content, FieldContent.NewLink(new FieldLinkContent(new LazyLink<Page>(container, newLinkedPage))))
+                .Update(page, p => p.Name, "modified page name"));
             container.Commit(modified.Repository, signature, message);
 
             // Assert
@@ -57,15 +58,15 @@ namespace GitObjectDb.Tests.Git.Hooks
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void PostCommitWhenPropertyChangeGetsFired(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message)
+        public void PostCommitWhenPropertyChangeGetsFired(GitHooks sut, ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // Arrange
             CommitCompletedEventArgs lastEvent = null;
             sut.CommitCompleted += (_, args) => lastEvent = args;
 
             // Act
-            container.AddRepository(instance, signature, message);
-            var modifiedPage = page.With(p => p.Name == "modified");
+            repository = container.AddRepository(repository, signature, message);
+            var modifiedPage = repository.With(repository.Applications[0].Pages[0], p => p.Name, "modified");
             var commit = container.Commit(modifiedPage.Repository, signature, message);
 
             // Assert
@@ -75,16 +76,16 @@ namespace GitObjectDb.Tests.Git.Hooks
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void PreMergeGetsFiredWhenPulling(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IObjectRepositoryContainerFactory containerFactory, Signature signature, string message)
+        public void PreMergeGetsFiredWhenPulling(GitHooks sut, ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> origin, IObjectRepositoryContainerFactory containerFactory, Signature signature, string message)
         {
             // Arrange - Create origin and local repositories
-            instance = origin.AddRepository(instance, signature, message);
+            repository = origin.AddRepository(repository, signature, message);
             var tempPath = RepositoryFixture.GetAvailableFolderPath();
             var clientContainer = containerFactory.Create<ObjectRepository>(tempPath);
             clientContainer.Clone(origin.Repositories.Single().RepositoryDescription.Path);
 
             // Arrange - Commit change on origin
-            var change = instance.Applications[0].Pages[0].With(a => a.Description == "foo");
+            var change = repository.With(repository.Applications[0].Pages[0], p => p.Description, "foo");
             origin.Commit(change.Repository, signature, message);
 
             // Arrange - suscribe to hook
@@ -102,16 +103,16 @@ namespace GitObjectDb.Tests.Git.Hooks
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void PreMergeCancelsPullWhenRequested(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IObjectRepositoryContainerFactory containerFactory, Signature signature, string message)
+        public void PreMergeCancelsPullWhenRequested(GitHooks sut, ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> origin, IObjectRepositoryContainerFactory containerFactory, Signature signature, string message)
         {
             // Arrange - Create origin and local repositories
-            instance = origin.AddRepository(instance, signature, message);
+            repository = origin.AddRepository(repository, signature, message);
             var tempPath = RepositoryFixture.GetAvailableFolderPath();
             var clientContainer = containerFactory.Create<ObjectRepository>(tempPath);
             clientContainer.Clone(origin.Repositories.Single().RepositoryDescription.Path);
 
             // Arrange - Commit change on origin
-            var change = instance.Applications[0].Pages[0].With(a => a.Description == "foo");
+            var change = repository.With(repository.Applications[0].Pages[0], p => p.Description, "foo");
             origin.Commit(change.Repository, signature, message);
 
             // Arrange - suscribe to hook
@@ -127,16 +128,16 @@ namespace GitObjectDb.Tests.Git.Hooks
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void PostMergeGetsFiredWhenPulling(GitHooks sut, ObjectRepository instance, IObjectRepositoryContainer<ObjectRepository> origin, IObjectRepositoryContainerFactory containerFactory, Signature signature, string message)
+        public void PostMergeGetsFiredWhenPulling(GitHooks sut, ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> origin, IObjectRepositoryContainerFactory containerFactory, Signature signature, string message)
         {
             // Arrange - Create origin and local repositories
-            instance = origin.AddRepository(instance, signature, message);
+            repository = origin.AddRepository(repository, signature, message);
             var tempPath = RepositoryFixture.GetAvailableFolderPath();
             var clientContainer = containerFactory.Create<ObjectRepository>(tempPath);
             clientContainer.Clone(origin.Repositories.Single().RepositoryDescription.Path);
 
             // Arrange - Commit change on origin
-            var change = instance.Applications[0].Pages[0].With(a => a.Description == "foo");
+            var change = repository.With(repository.Applications[0].Pages[0], p => p.Description, "foo");
             origin.Commit(change.Repository, signature, message);
 
             // Arrange - suscribe to hook

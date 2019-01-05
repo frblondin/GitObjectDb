@@ -67,7 +67,7 @@ namespace GitObjectDb.Reflection
         internal delegate ILazyChildren ChildProcessor(ChildPropertyInfo childProperty, ILazyChildren children, IModelObject @new, IModelDataAccessor dataAccessor);
 
         /// <summary>
-        /// Clones an existing <see cref="IModelObject"/> into a new instance after applying the changes contained in a predicate.
+        /// Clones an existing <see cref="IModelObject"/> into a new instance after applying the changes contained in transformations.
         /// </summary>
         /// <param name="object">The object.</param>
         /// <param name="processArgument">The argument processor.</param>
@@ -130,7 +130,7 @@ namespace GitObjectDb.Reflection
                 }
                 else
                 {
-                    return ResolveArgumentFromReflector(parameter, property);
+                    return ResolveArgumentFromTransformation(parameter, property);
                 }
             }
         }
@@ -166,9 +166,9 @@ namespace GitObjectDb.Reflection
                 parameter.ParameterType);
         }
 
-        Expression ResolveArgumentFromReflector(ParameterInfo parameter, PropertyInfo property)
+        Expression ResolveArgumentFromTransformation(ParameterInfo parameter, PropertyInfo property)
         {
-            // predicate.ProcessArgument(propertyName, @object)
+            // transformation.ProcessArgument(propertyName, @object)
             return Expression.Convert(
                 Expression.Call(
                     _processArgumentArg,

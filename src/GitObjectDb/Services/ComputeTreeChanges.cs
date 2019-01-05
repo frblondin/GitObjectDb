@@ -6,7 +6,6 @@ using GitObjectDb.Reflection;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -22,7 +21,6 @@ namespace GitObjectDb.Services
         private readonly IModelDataAccessorProvider _modelDataProvider;
         private readonly IObjectRepositoryLoader _objectRepositoryLoader;
         private readonly IRepositoryProvider _repositoryProvider;
-        private readonly ModelObjectContractResolverFactory _contractResolverFactory;
         private readonly ILogger<ComputeTreeChanges> _logger;
         private readonly IObjectRepositoryContainer _container;
         private readonly RepositoryDescription _repositoryDescription;
@@ -35,13 +33,11 @@ namespace GitObjectDb.Services
         /// <param name="modelDataProvider">The model data provider.</param>
         /// <param name="objectRepositoryLoader">The object repository loader.</param>
         /// <param name="repositoryProvider">The repository provider.</param>
-        /// <param name="contractResolverFactory">The <see cref="ModelObjectContractResolver"/> factory.</param>
         /// <param name="logger">The logger.</param>
         [ActivatorUtilitiesConstructor]
         public ComputeTreeChanges(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription,
             IModelDataAccessorProvider modelDataProvider, IObjectRepositoryLoader objectRepositoryLoader,
-            IRepositoryProvider repositoryProvider, ModelObjectContractResolverFactory contractResolverFactory,
-            ILogger<ComputeTreeChanges> logger)
+            IRepositoryProvider repositoryProvider, ILogger<ComputeTreeChanges> logger)
         {
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
@@ -49,7 +45,6 @@ namespace GitObjectDb.Services
             _modelDataProvider = modelDataProvider ?? throw new ArgumentNullException(nameof(modelDataProvider));
             _objectRepositoryLoader = objectRepositoryLoader ?? throw new ArgumentNullException(nameof(objectRepositoryLoader));
             _repositoryProvider = repositoryProvider ?? throw new ArgumentNullException(nameof(repositoryProvider));
-            _contractResolverFactory = contractResolverFactory ?? throw new ArgumentNullException(nameof(contractResolverFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -280,8 +275,6 @@ namespace GitObjectDb.Services
                                                 where UniqueId.TryParse(part, out tempId)
                                                 let id = tempId
                                                 select id);
-            var context = new ModelObjectSerializationContext(_container);
-            var serializer = _contractResolverFactory(context).Serializer;
             object ProcessProperty(IModelObject node, string name, Type argumentType, object fallback)
             {
                 var path = node.GetDataPath();
@@ -300,9 +293,8 @@ namespace GitObjectDb.Services
             {
                 var pathWithProperty = GetChildPathRegex(node, childProperty);
                 var additions = (from o in addedObjects
-                                    where pathWithProperty.IsMatch(o.Path)
-                                    let objectType = Type.GetType(o.Node.Value<string>("$type"))
-                                    select (IModelObject)o.Node.ToObject(childProperty.ItemType, serializer)).ToList();
+                                 where pathWithProperty.IsMatch(o.Path)
+                                 select o.Child).ToList();
                 var deleted = new HashSet<UniqueId>(from o in deletedObjects
                                                     where pathWithProperty.IsMatch(o.Path)
                                                     select o.Id);

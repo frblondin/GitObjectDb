@@ -4,6 +4,7 @@ using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Merge;
 using GitObjectDb.Models.Rebase;
 using GitObjectDb.Reflection;
+using GitObjectDb.Transformations;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -31,7 +32,6 @@ namespace GitObjectDb.Services
 
         private readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
         private readonly IModelDataAccessorProvider _modelDataProvider;
-        private readonly PredicateFromChanges.Factory _predicateFromChangesFactory;
         private readonly JsonSerializer _serializer;
 
         /// <summary>
@@ -40,12 +40,11 @@ namespace GitObjectDb.Services
         /// <param name="objectRepositoryRebase">The object repository rebase.</param>
         /// <param name="computeTreeChangesFactory">The <see cref="IComputeTreeChanges"/> factory.</param>
         /// <param name="modelDataProvider">The model data provider.</param>
-        /// <param name="predicateFromChangesFactory">The <see cref="PredicateFromChanges"/> factory.</param>
         /// <param name="objectContractResolverFactory">The <see cref="ModelObjectContractResolver"/> factory.</param>
         [ActivatorUtilitiesConstructor]
         internal RebaseProcessor(ObjectRepositoryRebase objectRepositoryRebase,
             ComputeTreeChangesFactory computeTreeChangesFactory, IModelDataAccessorProvider modelDataProvider,
-            PredicateFromChanges.Factory predicateFromChangesFactory, ModelObjectContractResolverFactory objectContractResolverFactory)
+            ModelObjectContractResolverFactory objectContractResolverFactory)
         {
             if (objectContractResolverFactory == null)
             {
@@ -56,7 +55,6 @@ namespace GitObjectDb.Services
 
             _computeTreeChangesFactory = computeTreeChangesFactory ?? throw new ArgumentNullException(nameof(computeTreeChangesFactory));
             _modelDataProvider = modelDataProvider ?? throw new ArgumentNullException(nameof(modelDataProvider));
-            _predicateFromChangesFactory = predicateFromChangesFactory ?? throw new ArgumentNullException(nameof(predicateFromChangesFactory));
             var contractResolver = objectContractResolverFactory(new ModelObjectSerializationContext(objectRepositoryRebase.Repository.Container));
             _serializer = JsonSerializerProvider.Create(contractResolver);
         }
@@ -102,8 +100,8 @@ namespace GitObjectDb.Services
 
         private RebaseStatus CompleteStep(IRepository repository)
         {
-            var predicate = _predicateFromChangesFactory(_rebase.Repository.Container, _rebase.ModifiedChunks, _rebase.AddedObjects, _rebase.DeletedObjects);
-            var transformed = CurrentTransformedRepository.With(predicate);
+            var transformations = new TransformationFromChunkChanges(_rebase.ModifiedChunks, _rebase.AddedObjects, _rebase.DeletedObjects);
+            var transformed = CurrentTransformedRepository.DataAccessor.With(CurrentTransformedRepository, transformations);
             _rebase.Transformations.Add(transformed);
 
             _rebase.ClearChanges();
@@ -209,7 +207,7 @@ namespace GitObjectDb.Services
                 throw new NotImplementedException("Node addition while parent has been deleted in head is not supported.");
             }
 
-            var @new = GetContent(repository.Lookup<Blob>(change.Oid));
+            var @new = repository.Lookup<Blob>(change.Oid).GetContentStream().ToJson<IModelObject>(_serializer);
             var parentId = change.Path.GetDataParentId(_rebase.Repository);
             _rebase.AddedObjects.Add(new ObjectRepositoryAdd(change.Path, @new, parentId));
         }

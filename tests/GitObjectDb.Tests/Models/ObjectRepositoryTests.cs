@@ -47,11 +47,11 @@ namespace GitObjectDb.Tests.Models
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void CommitPageNameUpdate(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Page page, Signature signature, string message)
+        public void CommitPageNameUpdate(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // Act
-            container.AddRepository(sut, signature, message);
-            var modifiedPage = page.With(p => p.Name == "modified");
+            sut = container.AddRepository(sut, signature, message);
+            var modifiedPage = sut.With(sut.Applications[0].Pages[0], p => p.Name, "modified");
             var updated = container.Commit(modifiedPage.Repository, signature, message);
             var retrievedPage = updated.Flatten().OfType<Page>().FirstOrDefault(p => p.Name == "modified");
 

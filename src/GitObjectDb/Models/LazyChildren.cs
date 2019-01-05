@@ -187,16 +187,6 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        [ExcludeFromGuardForNull]
-        public bool Add(IModelObject child) =>
-            throw new GitObjectDbException($"The {nameof(ILazyChildren.Add)} method should never by called. Its purpose is to be used within a With(...) predicate.");
-
-        /// <inheritdoc />
-        [ExcludeFromGuardForNull]
-        public bool Delete(IModelObject child) =>
-            throw new GitObjectDbException($"The {nameof(ILazyChildren.Delete)} method should never by called. Its purpose is to be used within a With(...) predicate.");
-
-        /// <inheritdoc />
         public IEnumerator<TChild> GetEnumerator() => Children.GetEnumerator();
 
         /// <inheritdoc />

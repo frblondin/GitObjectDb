@@ -17,7 +17,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Tests.Models
+namespace GitObjectDb.Tests
 {
     [Parallelizable(ParallelScope.All)]
     public class Benchmarks
@@ -111,7 +111,7 @@ namespace GitObjectDb.Tests.Models
             var stopwatch = Stopwatch.StartNew();
 
             // Act
-            var modifiedField = fieldToModify.With(f => f.Name == "modified");
+            var modifiedField = sut.With(fieldToModify, f => f.Name, "modified");
             computeTreeChanges.Compare(sut, modifiedField.Repository);
 
             // Assert

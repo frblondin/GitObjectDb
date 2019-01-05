@@ -53,19 +53,5 @@ namespace GitObjectDb.Models
         /// <param name="deleted">Nodes that must be deleted.</param>
         /// <returns>The new <see cref="ILazyChildren"/> instance containing the result of the transformations.</returns>
         ILazyChildren Clone(bool forceVisit, Func<IModelObject, IModelObject> update, IEnumerable<IModelObject> added = null, IEnumerable<IModelObject> deleted = null);
-
-        /// <summary>
-        /// Adds the specified child. This method should only be used within <see cref="IModelObjectExtensions.With{TModel}(TModel, Expression{Predicate{TModel}})"/>.
-        /// </summary>
-        /// <param name="child">The child.</param>
-        /// <returns>Return type required to return a predicate.</returns>
-        bool Add(IModelObject child);
-
-        /// <summary>
-        /// Deletes the specified child. This method should only be used within <see cref="IModelObjectExtensions.With{TModel}(TModel, Expression{Predicate{TModel}})"/>.
-        /// </summary>
-        /// <param name="child">The child.</param>
-        /// <returns>Return type required to return a predicate.</returns>
-        bool Delete(IModelObject child);
     }
 }
