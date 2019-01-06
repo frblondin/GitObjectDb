@@ -31,8 +31,10 @@ before_build:
 
 build_script:
   - ps: |
-      if ($env:APPVEYOR_PULL_REQUEST_NUMBER) {
-        if ($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -eq $end:APPVEYOR_REPO_NAME) {
+      Write-Host "APPVEYOR_REPO_NAME: $ENV:APPVEYOR_REPO_NAME"
+      Write-Host "APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME: $ENV:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME"
+      if ($ENV:APPVEYOR_PULL_REQUEST_NUMBER) {
+        if ($ENV:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -eq $ENV:APPVEYOR_REPO_NAME) {
           SonarScanner.MSBuild.exe begin /k:"GitObjectDb" /v:"$ENV:APPVEYOR_BUILD_NUMBER" /d:sonar.organization="frblondin-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$ENV:sonarcloudtoken" /d:sonar.cs.opencover.reportsPaths="$ENV:CD\tests\TestResults\coverage.GitObjectDb.ModelCodeGeneration.opencover.xml,$ENV:CD\tests\TestResults\coverage.GitObjectDb.opencover.xml" /d:sonar.pullrequest.base="$ENV:APPVEYOR_REPO_BRANCH" /d:sonar.pullrequest.branch="$ENV:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH" /d:sonar.pullrequest.key="$ENV:APPVEYOR_PULL_REQUEST_NUMBER" /d:"sonar.language=cs"
         }
       } Else {
@@ -42,11 +44,11 @@ build_script:
   - dotnet test tests\GitObjectDb.Tests\GitObjectDb.Tests.csproj --logger "trx;LogFileName=..\..\TestResults\TestResults.GitObjectDb.trx" /p:CollectCoverage=true --no-build --configuration Release /p:CoverletOutput=../TestResults/coverage.GitObjectDb.opencover.xml /p:CoverletOutputFormat=opencover
   - dotnet test tests\GitObjectDb.ModelCodeGeneration.Tests\GitObjectDb.ModelCodeGeneration.Tests.csproj --logger "trx;LogFileName=..\..\TestResults\TestResults.ModelCodeGeneration.GitObjectDb.trx" /p:CollectCoverage=true --no-build --configuration Release /p:CoverletOutput=../TestResults/coverage.GitObjectDb.ModelCodeGeneration.opencover.xml /p:CoverletOutputFormat=opencover
   - ps: |
-      if (-Not $env:APPVEYOR_PULL_REQUEST_NUMBER -Or $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -eq $end:APPVEYOR_REPO_NAME) {
+      if (-Not $ENV:APPVEYOR_PULL_REQUEST_NUMBER -Or $ENV:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -eq $ENV:APPVEYOR_REPO_NAME) {
         SonarScanner.MSBuild.exe end /d:"sonar.login=$ENV:sonarcloudtoken"
       }
   - ps: |
-      if (-Not $env:APPVEYOR_PULL_REQUEST_NUMBER) {
+      if (-Not $ENV:APPVEYOR_PULL_REQUEST_NUMBER) {
         dotnet pack src\GitObjectDb --no-build --configuration Release /p:Version="$ENV:APPVEYOR_BUILD_VERSION" -o ..\..\Artifacts --include-symbols --include-source
         dotnet pack src\GitObjectDb.ModelCodeGeneration --no-build --configuration Release /p:Version="$ENV:APPVEYOR_BUILD_VERSION" -o ..\..\Artifacts --include-symbols --include-source
         dotnet pack src\GitObjectDb.ModelCodeGeneration.Attributes --no-build --configuration Release /p:Version="$ENV:APPVEYOR_BUILD_VERSION" -o ..\..\Artifacts --include-symbols --include-source
