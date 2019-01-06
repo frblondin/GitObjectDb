@@ -100,9 +100,18 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public object Clone() => _factory != null ?
-                                 new LazyLink<TLink>(_container, _factory) :
-                                 new LazyLink<TLink>(_container, Path);
+        public object Clone()
+        {
+            if (_path != null)
+            {
+                return new LazyLink<TLink>(_container, _path);
+            }
+            if (_factory != null)
+            {
+                return new LazyLink<TLink>(_container, _factory);
+            }
+            return new LazyLink<TLink>(_container, Path);
+        }
 
         /// <inheritdoc />
         public bool Equals(LazyLink<TLink> other)
