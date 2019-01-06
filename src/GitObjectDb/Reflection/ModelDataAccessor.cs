@@ -36,6 +36,10 @@ namespace GitObjectDb.Reflection
             ConstructorParameterBinding.Factory constructorParameterBindingFactory, ModelObjectSpecialValueProvider specialValueProvider,
             IConstructorSelector constructorSelector)
         {
+            if (constructorParameterBindingFactory == null)
+            {
+                throw new ArgumentNullException(nameof(constructorParameterBindingFactory));
+            }
             if (constructorSelector == null)
             {
                 throw new ArgumentNullException(nameof(constructorSelector));

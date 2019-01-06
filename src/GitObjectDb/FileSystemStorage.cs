@@ -17,16 +17,11 @@ namespace GitObjectDb
         /// <summary>
         /// The migration folder.
         /// </summary>
-        public const string MigrationFolder = "$Migrations";
+        public const string MigrationFolder = SpecialFolderPrefix + "Migrations";
 
         /// <summary>
         /// The prefix of special folders.
         /// </summary>
-        public const char SpecialFolderPrefix = '$';
-
-        /// <summary>
-        /// Gets the git path containing migrations.
-        /// </summary>
-        public static string Migrations { get; } = $"{SpecialFolderPrefix}Migrations";
+        public const string SpecialFolderPrefix = "$";
     }
 }

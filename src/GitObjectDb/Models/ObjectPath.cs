@@ -30,7 +30,7 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="node">The object.</param>
         public ObjectPath(IModelObject node)
-            : this(node.Repository.Id, node.GetFolderPath())
+            : this(node?.Repository?.Id ?? throw new ArgumentNullException(nameof(node)), node.GetFolderPath())
         {
         }
 

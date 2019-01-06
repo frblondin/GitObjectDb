@@ -49,7 +49,7 @@ namespace GitObjectDb.Models
             IRepositoryProvider repositoryProvider, GitHooks hooks, ILogger<ObjectRepositoryContainer> logger)
         {
             _repositoryLoader = repositoryLoader ?? throw new ArgumentNullException(nameof(repositoryLoader));
-            _computeTreeChangesFactory = computeTreeChangesFactory;
+            _computeTreeChangesFactory = computeTreeChangesFactory ?? throw new ArgumentNullException(nameof(computeTreeChangesFactory));
             _objectRepositoryMergeFactory = objectRepositoryMergeFactory ?? throw new ArgumentNullException(nameof(objectRepositoryMergeFactory));
             _objectRepositoryRebaseFactory = objectRepositoryRebaseFactory ?? throw new ArgumentNullException(nameof(objectRepositoryRebaseFactory));
             _repositoryProvider = repositoryProvider ?? throw new ArgumentNullException(nameof(repositoryProvider));

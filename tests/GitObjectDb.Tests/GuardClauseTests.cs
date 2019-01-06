@@ -153,10 +153,18 @@ namespace GitObjectDb.Tests
                     return false;
                 }
                 return method.DeclaringType.Assembly != Assembly || // Filter out inherited methods not being overridden
-                       method.IsSpecialName ||
+                       IsEventHanlderAddOrRemove(method) ||
                        methodInvokeCommand.ParameterInfo.IsOptional ||
                        Attribute.IsDefined(methodInvokeCommand.ParameterInfo.Member, typeof(ExcludeFromGuardForNullAttribute)) ||
                        ExcludeType(methodInvokeCommand.ParameterInfo.Member.ReflectedType);
+            }
+
+            private static bool IsEventHanlderAddOrRemove(MethodBase method)
+            {
+                var parameters = method.GetParameters();
+                return parameters.Length == 1 &&
+                       (method.Name.StartsWith("add_", StringComparison.OrdinalIgnoreCase) ||
+                        method.Name.StartsWith("remove_", StringComparison.OrdinalIgnoreCase));
             }
 
             private static bool IsPropertySetToBeIgnored(IGuardClauseCommand command)

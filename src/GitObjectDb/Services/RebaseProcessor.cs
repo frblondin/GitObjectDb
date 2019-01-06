@@ -188,13 +188,6 @@ namespace GitObjectDb.Services
 
         private JObject GetContent(Blob blob) => blob?.GetContentStream().ToJson<JObject>(_serializer);
 
-        private static JToken TryGetToken(JObject headObject, KeyValuePair<string, JToken> kvp)
-        {
-            return headObject.TryGetValue(kvp.Key, StringComparison.OrdinalIgnoreCase, out var headValue) ?
-                headValue :
-                null;
-        }
-
         private void ComputeChanges_Added(IRepository repository, PatchEntryChanges change)
         {
             if (CurrentTransformedRepository.TryGetFromGitPath(change.Path) != null)
