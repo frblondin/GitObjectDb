@@ -101,13 +101,6 @@ namespace GitObjectDb.Models.Merge
                 throw new NotImplementedException($"Could not find node {path} in {branchInfo} tree.");
         }
 
-        private static JToken TryGetToken(JObject headObject, KeyValuePair<string, JToken> kvp)
-        {
-            return headObject.TryGetValue(kvp.Key, StringComparison.OrdinalIgnoreCase, out var headValue) ?
-                headValue :
-                null;
-        }
-
         private void Initialize()
         {
             Repository.Execute(repository =>

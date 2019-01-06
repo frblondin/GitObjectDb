@@ -39,37 +39,6 @@ namespace GitObjectDb.Models
         }
 
         /// <summary>
-        /// Determines whether this node is a parent of the specified instance.
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <param name="instance">The instance.</param>
-        /// <returns>
-        ///   <c>true</c> if the node is a parent of the specified instance; otherwise, <c>false</c>.
-        /// </returns>
-        public static bool IsParentOf(this IModelObject source, IModelObject instance)
-        {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
-
-            var node = instance;
-            while (node != null)
-            {
-                if (node == source)
-                {
-                    return true;
-                }
-                node = node.Parent;
-            }
-            return false;
-        }
-
-        /// <summary>
         /// Gets an <see cref="IEnumerable{IModelObject}"/> containing all parents of this node including itself.
         /// </summary>
         /// <param name="source">The source.</param>
