@@ -32,5 +32,46 @@ namespace GitObjectDb.Tests.Models
             Assert.That(yetAgainResolved, Is.SameAs(page));
             Assert.That(count, Is.EqualTo(2));
         }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
+        public void LazyLinkCloneDuplicatesFactoryWithoutInvokingIt(IObjectRepositoryContainer<ObjectRepository> container)
+        {
+            // Act
+            var exception = new Exception();
+            var sut = (LazyLink<Page>)new LazyLink<Page>(container, () => throw exception).Clone();
+
+            // Assert
+            Assert.That(sut.IsLinkCreated, Is.False);
+            var thrown = Assert.Throws<Exception>(() => sut.Link.ToString());
+            Assert.That(thrown, Is.SameAs(exception));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
+        public void LazyLinkCloneCopiesPath(IObjectRepositoryContainer<ObjectRepository> container, Page page)
+        {
+            // Arrange
+            var path = new ObjectPath(page);
+
+            // Act
+            var sut = (LazyLink<Page>)new LazyLink<Page>(container, path).Clone();
+
+            // Assert
+            Assert.That(sut.IsLinkCreated, Is.False);
+            Assert.That(sut.Path, Is.EqualTo(path));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
+        public void LazyLinkCloneCopiesObjectPath(IObjectRepositoryContainer<ObjectRepository> container, Page page)
+        {
+            // Act
+            var sut = (LazyLink<Page>)new LazyLink<Page>(container, page).Clone();
+
+            // Assert
+            Assert.That(sut.IsLinkCreated, Is.False);
+            Assert.That(sut.Path, Is.EqualTo(new ObjectPath(page)));
+        }
     }
 }
