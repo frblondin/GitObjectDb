@@ -55,10 +55,10 @@ Here's a simple example:
             .Update(page, p => p.Name, "modified page name"));
         container.Commit(modified.Repository, signature, message);
         ```
-    - Branch management: see [branch & merges](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Models/ObjectRepositoryTests.Branch.cs) and [rebase](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Models/ObjectRepositoryTests.Rebase.cs) unit tests.
-    - Migrations: migrations allows to define any action that must be executed when the commit containing the migration will be processed by a pull. See the [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Migrations/MigrationTests.cs) for more details.
-    - [Pre/post commit & merge hook](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Git/Hooks/GitHooksTests.cs)
-	- Simple validation: see [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/GitObjectDb.Tests/Validations/ModelValidationTests.cs) for more information.
+    - Branch management: see [branch & merges](https://github.com/frblondin/GitObjectDb/blob/master/tests/GitObjectDb.Tests/Services/MergeProcessorTests.cs) and [rebase](https://github.com/frblondin/GitObjectDb/blob/master/tests/GitObjectDb.Tests/Services/RebaseProcessorTests.cs) unit tests.
+    - Migrations: migrations allows to define any action that must be executed when the commit containing the migration will be processed by a pull. See the [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/tests/GitObjectDb.Tests/Services/MigratorTests.cs) for more details.
+    - [Pre/post commit & merge hook](https://github.com/frblondin/GitObjectDb/blob/master/tests/GitObjectDb.Tests/Git/Hooks/GitHooksTests.cs)
+	- Simple validation: see [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/tests/GitObjectDb.Tests/Validations/ModelValidationTests.cs) for more information.
 
 ## Prerequisites
 
