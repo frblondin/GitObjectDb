@@ -72,7 +72,25 @@ namespace GitObjectDb.Tests
 
             // Assert
             Assert.That(result, Is.Not.Empty);
-            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(10)));
+            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(2)));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
+        public void FullLoadInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        {
+            // Arrange
+            var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
+            var stopwatch = Stopwatch.StartNew();
+
+            // Act
+            var result = sut.Flatten().Last();
+            stopwatch.Stop();
+            Console.WriteLine($"Full load total duration: {stopwatch.Elapsed}");
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(30)));
         }
 
         [Test]
