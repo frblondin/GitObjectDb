@@ -1,7 +1,3 @@
-using GitObjectDb.JsonConverters;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -127,27 +123,5 @@ namespace GitObjectDb.Models
                 builder.Append(node.Id);
             }
         }
-
-        /// <summary>
-        /// Serializes the node into the <paramref name="stringBuilder"/>.
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <param name="stringBuilder">The string builder.</param>
-        internal static void ToJson(this IModelObject source, StringBuilder stringBuilder)
-        {
-            stringBuilder.Clear();
-            using (var writer = new StringWriter(stringBuilder))
-            {
-                JsonSerializerProvider.Default.Serialize(writer, source);
-            }
-        }
-
-        /// <summary>
-        /// Creates a <see cref="JObject"/> from a node.
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <returns>A <see cref="JObject"/> with the values of the specified node.</returns>
-        internal static JObject ToJObject(this IModelObject source) =>
-            JObject.FromObject(source, JsonSerializerProvider.Default);
     }
 }

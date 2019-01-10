@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Concurrent;
@@ -7,7 +6,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace GitObjectDb.JsonConverters
+namespace GitObjectDb.Serialization.Json.Converters
 {
     /// <summary>
     /// <see cref="JsonContract"/> provider that manages cache optimizations.

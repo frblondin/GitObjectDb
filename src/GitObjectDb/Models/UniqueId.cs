@@ -1,5 +1,5 @@
 using GitObjectDb.Attributes;
-using GitObjectDb.JsonConverters;
+using GitObjectDb.Serialization.Json.Converters;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

@@ -1,4 +1,5 @@
 using GitObjectDb.Models;
+using GitObjectDb.Serialization;
 using GitObjectDb.Services;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,19 +25,12 @@ namespace GitObjectDb.Models.Compare
         /// Initializes a new instance of the <see cref="ObjectRepositoryChanges"/> class.
         /// </summary>
         /// <param name="newRepository">The new repository.</param>
-        /// <param name="changed">The list of <see cref="ObjectRepositoryEntryChanges" /> that have been been changed.</param>
+        /// <param name="changes">The list of <see cref="ObjectRepositoryEntryChanges" /> that have been been changed.</param>
         /// <param name="oldRepository">The old repository.</param>
-        /// <exception cref="ArgumentNullException">
-        /// modified
-        /// or
-        /// added
-        /// or
-        /// deleted
-        /// </exception>
-        public ObjectRepositoryChanges(IObjectRepository newRepository, IImmutableList<ObjectRepositoryEntryChanges> changed, IObjectRepository oldRepository = null)
+        internal ObjectRepositoryChanges(IObjectRepository newRepository, IImmutableList<ObjectRepositoryEntryChanges> changes, IObjectRepository oldRepository = null)
         {
             NewRepository = newRepository ?? throw new ArgumentNullException(nameof(newRepository));
-            _changes = changed ?? throw new ArgumentNullException(nameof(changed));
+            _changes = changes ?? throw new ArgumentNullException(nameof(changes));
             OldRepository = oldRepository;
 
             Added = _changes.Where(c => c.Status == ChangeKind.Added).ToImmutableList();
@@ -80,33 +74,5 @@ namespace GitObjectDb.Models.Compare
 
         /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        /// <summary>
-        /// Updates the tree definition.
-        /// </summary>
-        /// <param name="repository">The repository.</param>
-        /// <param name="definition">The definition.</param>
-        internal void UpdateTreeDefinition(IRepository repository, TreeDefinition definition)
-        {
-            if (repository == null)
-            {
-                throw new ArgumentNullException(nameof(repository));
-            }
-            if (definition == null)
-            {
-                throw new ArgumentNullException(nameof(definition));
-            }
-
-            var buffer = new StringBuilder();
-            foreach (var change in Modified.Concat(Added))
-            {
-                change.New.ToJson(buffer);
-                definition.Add(change.Path, repository.CreateBlob(buffer), Mode.NonExecutableFile);
-            }
-            foreach (var deleted in Deleted)
-            {
-                definition.Remove(deleted.Path);
-            }
-        }
     }
 }

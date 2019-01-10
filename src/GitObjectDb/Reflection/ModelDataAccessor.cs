@@ -1,10 +1,7 @@
 using GitObjectDb.Attributes;
-using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Transformations;
-using GitObjectDb.Validations;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -13,6 +10,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using GitObjectDb.Serialization;
 
 namespace GitObjectDb.Reflection
 {
@@ -22,23 +20,26 @@ namespace GitObjectDb.Reflection
         private readonly Lazy<IImmutableList<ChildPropertyInfo>> _childProperties;
         private readonly Lazy<IImmutableList<ModifiablePropertyInfo>> _modifiableProperties;
         private readonly Lazy<ConstructorParameterBinding> _constructorBinding;
-        private readonly ModelObjectSpecialValueProvider _specialValueProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ModelDataAccessor"/> class.
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="constructorParameterBindingFactory">The <see cref="ConstructorParameterBinding"/> factory.</param>
-        /// <param name="specialValueProvider">The special value provider.</param>
+        /// <param name="repositorySerializerFactory">The <see cref="IObjectRepositorySerializer"/> factory.</param>
         /// <param name="constructorSelector">The constructor selector.</param>
         [ActivatorUtilitiesConstructor]
         public ModelDataAccessor(Type type,
-            ConstructorParameterBinding.Factory constructorParameterBindingFactory, ModelObjectSpecialValueProvider specialValueProvider,
+            ConstructorParameterBinding.Factory constructorParameterBindingFactory, ObjectRepositorySerializerFactory repositorySerializerFactory,
             IConstructorSelector constructorSelector)
         {
             if (constructorParameterBindingFactory == null)
             {
                 throw new ArgumentNullException(nameof(constructorParameterBindingFactory));
+            }
+            if (repositorySerializerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(repositorySerializerFactory));
             }
             if (constructorSelector == null)
             {
@@ -55,9 +56,8 @@ namespace GitObjectDb.Reflection
                                    select constructorParameterBindingFactory(c);
                 return constructorSelector.SelectConstructorBinding(Type, constructors.ToArray());
             });
-            _specialValueProvider = specialValueProvider ?? throw new ArgumentNullException(nameof(specialValueProvider));
 
-            ValidateSerializable();
+            repositorySerializerFactory().ValidateSerializable(Type);
         }
 
         /// <inheritdoc />
@@ -71,39 +71,6 @@ namespace GitObjectDb.Reflection
 
         /// <inheritdoc />
         public ConstructorParameterBinding ConstructorParameterBinding => _constructorBinding.Value;
-
-        private void ValidateSerializable()
-        {
-            var contract = (JsonObjectContract)JsonSerializerProvider.Default.ContractResolver.ResolveContract(Type);
-            var missingMatchingProperties = contract.CreatorParameters.SelectMany(GetParameterErrors).ToList();
-            if (missingMatchingProperties.Any())
-            {
-                throw new NotSupportedException(
-                    $"The type {Type.Name} contains invalid constructor parameters:\n\t" +
-                    string.Join("\n\t", missingMatchingProperties));
-            }
-
-            IEnumerable<string> GetParameterErrors(JsonProperty constructorParameter)
-            {
-                if (_specialValueProvider.TryGetInjector(Type, constructorParameter) != null)
-                {
-                    yield break;
-                }
-                var matching = contract.Properties.TryGetWithValue(p => p.PropertyName, constructorParameter.PropertyName);
-                if (matching == null)
-                {
-                    yield return $"No property named '{constructorParameter.PropertyName}' could be found.";
-                }
-                if (matching.Ignored)
-                {
-                    yield return $"The property named '{constructorParameter.PropertyName}' is not serialized.";
-                }
-                if (matching.PropertyType != constructorParameter.PropertyType)
-                {
-                    yield return $"The property type '{matching.PropertyType}' does not match.";
-                }
-            }
-        }
 
         private IImmutableList<ChildPropertyInfo> GetChildProperties() =>
             (from p in Type.GetTypeInfo().GetProperties()

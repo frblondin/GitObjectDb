@@ -2,6 +2,7 @@ using GitObjectDb;
 using GitObjectDb.Git.Hooks;
 using GitObjectDb.IO;
 using GitObjectDb.Models.Compare;
+using GitObjectDb.Serialization;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -50,6 +51,7 @@ namespace LibGit2Sharp
         /// </summary>
         /// <param name="repository">The repository.</param>
         /// <param name="changes">The changes.</param>
+        /// <param name="serializer">The serializer.</param>
         /// <param name="message">The message.</param>
         /// <param name="author">The author.</param>
         /// <param name="committer">The committer.</param>
@@ -57,7 +59,7 @@ namespace LibGit2Sharp
         /// <param name="options">The options.</param>
         /// <param name="mergeParent">The parent commit for a merge.</param>
         /// <returns>The created <see cref="LibGit2Sharp.Commit" />.</returns>
-        internal static Commit CommitChanges(this IRepository repository, ObjectRepositoryChanges changes, string message, Signature author, Signature committer, GitHooks hooks, CommitOptions options = null, Commit mergeParent = null)
+        internal static Commit CommitChanges(this IRepository repository, ObjectRepositoryChanges changes, IObjectRepositorySerializer serializer, string message, Signature author, Signature committer, GitHooks hooks, CommitOptions options = null, Commit mergeParent = null)
         {
             TreeDefinition definition;
             if (changes.OldRepository?.CommitId != null)
@@ -83,12 +85,36 @@ namespace LibGit2Sharp
                 return null;
             }
 
-            changes.UpdateTreeDefinition(repository, definition);
+            repository.UpdateTreeDefinition(changes, definition, serializer);
 
             var result = Commit(repository, definition, message, author, committer, options, mergeParent);
             hooks.OnCommitCompleted(changes, message, result.Id);
 
             return result;
+        }
+
+        internal static void UpdateTreeDefinition(this IRepository repository, ObjectRepositoryChanges changes, TreeDefinition definition, IObjectRepositorySerializer serializer)
+        {
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
+            }
+            if (definition == null)
+            {
+                throw new ArgumentNullException(nameof(definition));
+            }
+
+            var buffer = new StringBuilder();
+            foreach (var change in changes.Modified.Concat(changes.Added))
+            {
+                buffer.Clear();
+                serializer.Serialize(change.New, buffer);
+                definition.Add(change.Path, repository.CreateBlob(buffer), Mode.NonExecutableFile);
+            }
+            foreach (var deleted in changes.Deleted)
+            {
+                definition.Remove(deleted.Path);
+            }
         }
 
         /// <summary>

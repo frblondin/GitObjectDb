@@ -1,19 +1,17 @@
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
-using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
-using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Merge;
-using GitObjectDb.Models.Rebase;
 using GitObjectDb.Reflection;
 using GitObjectDb.Services;
 using GitObjectDb.Validations;
+using GitObjectDb.Models.Rebase;
 using GitObjectDb.Validations.PropertyValidators;
-using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using GitObjectDb.Serialization;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -42,7 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ConfigureInternalServices(source);
             ConfigureReflectionServices(source);
             ConfigureGitServices(source);
-            ConfigureJsonServices(source);
+            ConfigureSerializationServices(source);
             ConfigureValidationServices(source);
             ConfigureModelServices(source);
 
@@ -76,11 +74,12 @@ namespace Microsoft.Extensions.DependencyInjection
             source.AddSingleton<GitHooks>();
         }
 
-        private static void ConfigureJsonServices(IServiceCollection source)
+        private static void ConfigureSerializationServices(IServiceCollection source)
         {
-            source.AddFactoryDelegate<ModelObjectContractResolverFactory, ModelObjectContractResolver>();
-            source.AddSingleton<ModelObjectContractCache>();
-            source.AddSingleton<ModelObjectSpecialValueProvider>();
+            // Default serializer is Json, can be overridden
+            source.AddFactoryDelegate<ObjectRepositorySerializerFactory, GitObjectDb.Serialization.Json.JsonRepositorySerializer>();
+            source.AddSingleton<GitObjectDb.Serialization.Json.Converters.ModelObjectContractCache>();
+            source.AddSingleton<GitObjectDb.Serialization.Json.Converters.ModelObjectSpecialValueProvider>();
         }
 
         private static void ConfigureValidationServices(IServiceCollection source)

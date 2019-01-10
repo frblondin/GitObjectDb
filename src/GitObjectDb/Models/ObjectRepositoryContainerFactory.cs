@@ -5,6 +5,7 @@ using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
 using GitObjectDb.Models.Merge;
 using GitObjectDb.Models.Rebase;
+using GitObjectDb.Serialization;
 using GitObjectDb.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -36,6 +37,7 @@ namespace GitObjectDb.Models
                 _serviceProvider.GetRequiredService<ObjectRepositoryRebaseFactory>(),
                 _serviceProvider.GetRequiredService<IRepositoryProvider>(),
                 _serviceProvider.GetRequiredService<GitHooks>(),
+                _serviceProvider.GetRequiredService<ObjectRepositorySerializerFactory>(),
                 _serviceProvider.GetRequiredService<ILogger<ObjectRepositoryContainer>>());
         }
     }

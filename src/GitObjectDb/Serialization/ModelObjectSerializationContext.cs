@@ -2,12 +2,12 @@ using GitObjectDb.Models;
 using GitObjectDb.Services;
 using System;
 
-namespace GitObjectDb.JsonConverters
+namespace GitObjectDb.Serialization
 {
     /// <summary>
-    /// Hosts values being required by <see cref="ModelObjectSpecialValueProvider"/>.
+    /// Hosts values being required by <see cref="IObjectRepositorySerializer"/>.
     /// </summary>
-    internal class ModelObjectSerializationContext
+    public class ModelObjectSerializationContext
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ModelObjectSerializationContext"/> class.
