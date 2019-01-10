@@ -1,14 +1,12 @@
-using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Merge;
 using GitObjectDb.Models.Rebase;
 using GitObjectDb.Reflection;
+using GitObjectDb.Serialization;
 using GitObjectDb.Transformations;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,7 +30,7 @@ namespace GitObjectDb.Services
 
         private readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
         private readonly IModelDataAccessorProvider _modelDataProvider;
-        private readonly JsonSerializer _serializer;
+        private readonly IObjectRepositorySerializer _serializer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RebaseProcessor"/> class.
@@ -40,23 +38,22 @@ namespace GitObjectDb.Services
         /// <param name="objectRepositoryRebase">The object repository rebase.</param>
         /// <param name="computeTreeChangesFactory">The <see cref="IComputeTreeChanges"/> factory.</param>
         /// <param name="modelDataProvider">The model data provider.</param>
-        /// <param name="objectContractResolverFactory">The <see cref="ModelObjectContractResolver"/> factory.</param>
+        /// <param name="serializerFactory">The <see cref="ObjectRepositorySerializerFactory"/> factory.</param>
         [ActivatorUtilitiesConstructor]
         internal RebaseProcessor(ObjectRepositoryRebase objectRepositoryRebase,
             ComputeTreeChangesFactory computeTreeChangesFactory, IModelDataAccessorProvider modelDataProvider,
-            ModelObjectContractResolverFactory objectContractResolverFactory)
+            ObjectRepositorySerializerFactory serializerFactory)
         {
-            if (objectContractResolverFactory == null)
+            if (serializerFactory == null)
             {
-                throw new ArgumentNullException(nameof(objectContractResolverFactory));
+                throw new ArgumentNullException(nameof(serializerFactory));
             }
 
             _rebase = objectRepositoryRebase ?? throw new ArgumentNullException(nameof(objectRepositoryRebase));
 
             _computeTreeChangesFactory = computeTreeChangesFactory ?? throw new ArgumentNullException(nameof(computeTreeChangesFactory));
             _modelDataProvider = modelDataProvider ?? throw new ArgumentNullException(nameof(modelDataProvider));
-            var contractResolver = objectContractResolverFactory(new ModelObjectSerializationContext(objectRepositoryRebase.Repository.Container));
-            _serializer = JsonSerializerProvider.Create(contractResolver);
+            _serializer = serializerFactory(new ModelObjectSerializationContext(objectRepositoryRebase.Repository.Container));
         }
 
         private IObjectRepository CurrentTransformedRepository => _rebase.Transformations.LastOrDefault() ?? _rebase.StartRepository;
@@ -128,7 +125,7 @@ namespace GitObjectDb.Services
                 if (changes.Any())
                 {
                     var definition = TreeDefinition.From(lastCommit);
-                    changes.UpdateTreeDefinition(r, definition);
+                    r.UpdateTreeDefinition(changes, definition, _serializer);
                     var tree = r.ObjectDatabase.CreateTree(definition);
                     previous = info.repository;
                     lastCommit = r.ObjectDatabase.CreateCommit(info.Item2.Author, info.Item2.Committer, info.Item2.Message, tree, new[] { lastCommit }, false);
@@ -176,17 +173,15 @@ namespace GitObjectDb.Services
         {
             var currentObject = CurrentTransformedRepository.TryGetFromGitPath(change.Path) ??
                 throw new NotImplementedException($"Conflict as a modified node {change.Path} has been deleted in current rebase state.");
-            var changeStart = GetContent(repository.Lookup<Blob>(change.OldOid));
-            var changeEnd = GetContent(repository.Lookup<Blob>(change.Oid));
-            var changes = ObjectRepositoryMerge.ComputeModifiedChunks(_modelDataProvider.Get(currentObject.GetType()), _serializer, change, changeStart, changeEnd, currentObject);
+            var changeStart = _serializer.Deserialize(repository.Lookup<Blob>(change.OldOid).GetContentStream());
+            var changeEnd = _serializer.Deserialize(repository.Lookup<Blob>(change.Oid).GetContentStream());
+            var changes = ObjectRepositoryMerge.ComputeModifiedChunks(change, changeStart, changeEnd, currentObject);
 
             foreach (var modifiedProperty in changes)
             {
                 _rebase.ModifiedChunks.Add(modifiedProperty);
             }
         }
-
-        private JObject GetContent(Blob blob) => blob?.GetContentStream().ToJson<JObject>(_serializer);
 
         private void ComputeChanges_Added(IRepository repository, PatchEntryChanges change)
         {
@@ -200,7 +195,7 @@ namespace GitObjectDb.Services
                 throw new NotImplementedException("Node addition while parent has been deleted in head is not supported.");
             }
 
-            var @new = repository.Lookup<Blob>(change.Oid).GetContentStream().ToJson<IModelObject>(_serializer);
+            var @new = _serializer.Deserialize(repository.Lookup<Blob>(change.Oid).GetContentStream());
             var parentId = change.Path.GetDataParentId(_rebase.Repository);
             _rebase.AddedObjects.Add(new ObjectRepositoryAdd(change.Path, @new, parentId));
         }
@@ -208,14 +203,15 @@ namespace GitObjectDb.Services
         private void ComputeChanges_Deleted(IRepository repository, PatchEntryChanges change)
         {
             var folder = change.Path.Replace($"/{FileSystemStorage.DataFile}", string.Empty);
-            if (_rebase.ModifiedUpstreamBranchEntries.Any(c => c.Path.Equals(folder, StringComparison.OrdinalIgnoreCase) && (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))
+            if (_rebase.ModifiedUpstreamBranchEntries.Any(c =>
+                c.Path.Equals(folder, StringComparison.OrdinalIgnoreCase) &&
+                (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))
             {
                 throw new NotImplementedException("Node deletion while children have been added or modified in head is not supported.");
             }
 
-            var mergeBaseObject = GetContent(repository.Lookup<Blob>(change.OldOid));
-            var id = mergeBaseObject.GetValue(nameof(IModelObject.Id), StringComparison.OrdinalIgnoreCase).ToObject<UniqueId>();
-            _rebase.DeletedObjects.Add(new ObjectRepositoryDelete(change.Path, id));
+            var mergeBaseObject = _serializer.Deserialize(repository.Lookup<Blob>(change.OldOid).GetContentStream());
+            _rebase.DeletedObjects.Add(new ObjectRepositoryDelete(change.Path, mergeBaseObject.Id));
         }
     }
 }

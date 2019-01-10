@@ -1,7 +1,5 @@
 using GitObjectDb.Attributes;
-using GitObjectDb.Models;
 using GitObjectDb.Reflection;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

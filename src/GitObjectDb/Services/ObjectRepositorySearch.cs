@@ -1,5 +1,4 @@
 using GitObjectDb.Git;
-using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
@@ -98,7 +97,7 @@ namespace GitObjectDb.Services
                 throw new ArgumentNullException(nameof(node));
             }
 
-            var target = $@"""path"": ""{node.GetFolderPath()}""";
+            var target = $@"path: ""{node.GetFolderPath()}""";
             return Grep(node.Container, target, StringComparison.OrdinalIgnoreCase);
         }
     }

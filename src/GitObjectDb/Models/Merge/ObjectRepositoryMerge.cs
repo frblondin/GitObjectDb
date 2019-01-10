@@ -1,14 +1,11 @@
 using GitObjectDb.Attributes;
-using GitObjectDb.Git;
-using GitObjectDb.JsonConverters;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Reflection;
+using GitObjectDb.Serialization;
 using GitObjectDb.Services;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -25,7 +22,7 @@ namespace GitObjectDb.Models.Merge
         private readonly IModelDataAccessorProvider _modelDataProvider;
         private readonly MigrationScaffolderFactory _migrationScaffolderFactory;
         private readonly MergeProcessor.Factory _mergeProcessorFactory;
-        private readonly JsonSerializer _serializer;
+        internal readonly IObjectRepositorySerializer _serializer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryMerge"/> class.
@@ -36,15 +33,15 @@ namespace GitObjectDb.Models.Merge
         /// <param name="modelDataProvider">The model data provider.</param>
         /// <param name="migrationScaffolderFactory">The <see cref="MigrationScaffolder"/> factory.</param>
         /// <param name="mergeProcessorFactory">The <see cref="MergeProcessor"/> factory.</param>
-        /// <param name="objectContractResolverFactory">The <see cref="ModelObjectContractResolver"/> factory.</param>
+        /// <param name="serializerFactory">The <see cref="ObjectRepositorySerializerFactory"/> factory.</param>
         [ActivatorUtilitiesConstructor]
         public ObjectRepositoryMerge(IObjectRepository repository, ObjectId mergeCommitId, string branchName,
             IModelDataAccessorProvider modelDataProvider, MigrationScaffolderFactory migrationScaffolderFactory,
-            MergeProcessor.Factory mergeProcessorFactory, ModelObjectContractResolverFactory objectContractResolverFactory)
+            MergeProcessor.Factory mergeProcessorFactory, ObjectRepositorySerializerFactory serializerFactory)
         {
-            if (objectContractResolverFactory == null)
+            if (serializerFactory == null)
             {
-                throw new ArgumentNullException(nameof(objectContractResolverFactory));
+                throw new ArgumentNullException(nameof(serializerFactory));
             }
 
             Repository = repository ?? throw new ArgumentNullException(nameof(repository));
@@ -55,8 +52,7 @@ namespace GitObjectDb.Models.Merge
             _modelDataProvider = modelDataProvider ?? throw new ArgumentNullException(nameof(modelDataProvider));
             _migrationScaffolderFactory = migrationScaffolderFactory ?? throw new ArgumentNullException(nameof(migrationScaffolderFactory));
             _mergeProcessorFactory = mergeProcessorFactory ?? throw new ArgumentNullException(nameof(mergeProcessorFactory));
-            var contractResolver = objectContractResolverFactory(new ModelObjectSerializationContext(Repository.Container));
-            _serializer = JsonSerializerProvider.Create(contractResolver);
+            _serializer = serializerFactory(new ModelObjectSerializationContext(Repository.Container));
 
             Initialize();
         }
@@ -93,12 +89,14 @@ namespace GitObjectDb.Models.Merge
         /// <inheritdoc/>
         public IList<ObjectRepositoryDelete> DeletedObjects { get; } = new List<ObjectRepositoryDelete>();
 
-        private T GetContent<T>(Commit mergeBase, string path, string branchInfo)
-            where T : class
+        private IModelObject GetContent(Commit mergeBase, string path, string branchInfo)
         {
             var blob = mergeBase[path]?.Target as Blob;
-            return blob?.GetContentStream().ToJson<T>(_serializer) ??
+            if (blob == null)
+            {
                 throw new NotImplementedException($"Could not find node {path} in {branchInfo} tree.");
+            }
+            return _serializer.Deserialize(blob.GetContentStream());
         }
 
         private void Initialize()
@@ -177,9 +175,9 @@ namespace GitObjectDb.Models.Merge
 
         private void ComputeMerge_Modified(Commit mergeBase, Commit branchTip, Commit headTip, Patch headChanges, PatchEntryChanges change)
         {
-            var mergeBaseObject = GetContent<JObject>(mergeBase, change.Path, "merge base");
-            var branchObject = GetContent<JObject>(branchTip, change.Path, "branch tip");
-            var headObject = GetContent<JObject>(headTip, change.Path, "head tip");
+            var mergeBaseObject = GetContent(mergeBase, change.Path, "merge base");
+            var branchObject = GetContent(branchTip, change.Path, "branch tip");
+            var headObject = GetContent(headTip, change.Path, "head tip");
 
             AddModifiedChunks(change, mergeBaseObject, branchObject, headObject, headChanges[change.Path]);
         }
@@ -192,7 +190,7 @@ namespace GitObjectDb.Models.Merge
                 throw new NotImplementedException("Node addition while parent has been deleted in head is not supported.");
             }
 
-            var branchObject = GetContent<IModelObject>(branchTip, change.Path, "branch tip");
+            var branchObject = GetContent(branchTip, change.Path, "branch tip");
             var parentId = change.Path.GetDataParentId(Repository);
             AddedObjects.Add(new ObjectRepositoryAdd(change.Path, branchObject, parentId));
         }
@@ -205,19 +203,17 @@ namespace GitObjectDb.Models.Merge
                 throw new NotImplementedException("Node deletion while children have been added or modified in head is not supported.");
             }
 
-            var mergeBaseObject = GetContent<JObject>(mergeBase, change.Path, "branch tip");
-            var id = mergeBaseObject.GetValue(nameof(IModelObject.Id), StringComparison.OrdinalIgnoreCase).ToObject<UniqueId>();
-            DeletedObjects.Add(new ObjectRepositoryDelete(change.Path, id));
+            var mergeBaseObject = GetContent(mergeBase, change.Path, "branch tip");
+            DeletedObjects.Add(new ObjectRepositoryDelete(change.Path, mergeBaseObject.Id));
         }
 
-        private void AddModifiedChunks(PatchEntryChanges branchChange, JObject mergeBaseObject, JObject newObject, JObject headObject, PatchEntryChanges headChange)
+        private void AddModifiedChunks(PatchEntryChanges branchChange, IModelObject mergeBaseObject, IModelObject newObject, IModelObject headObject, PatchEntryChanges headChange)
         {
             if (headChange?.Status == ChangeKind.Deleted)
             {
                 throw new NotImplementedException($"Conflict as a modified node {branchChange.Path} in merge branch source has been deleted in head.");
             }
-            var type = Type.GetType(mergeBaseObject.Value<string>("$type"));
-            var changes = ComputeModifiedChunks(_modelDataProvider.Get(type), _serializer, branchChange, mergeBaseObject, newObject, headObject);
+            var changes = ComputeModifiedChunks(branchChange, mergeBaseObject, newObject, headObject);
 
             foreach (var modifiedProperty in changes)
             {
@@ -225,19 +221,9 @@ namespace GitObjectDb.Models.Merge
             }
         }
 
-        internal static IEnumerable<ObjectRepositoryChunkChange> ComputeModifiedChunks(IModelDataAccessor dataAccessor, JsonSerializer serializer, PatchEntryChanges changes, JObject ancestorJson, JObject theirJson, JObject ourJson)
+        internal static IEnumerable<ObjectRepositoryChunkChange> ComputeModifiedChunks(PatchEntryChanges changes, IModelObject ancestor, IModelObject theirs, IModelObject ours)
         {
-            var ours = (IModelObject)ourJson.ToObject(dataAccessor.Type, serializer);
-            return ComputeModifiedChunks(dataAccessor, serializer, changes, ancestorJson, theirJson, ours);
-        }
-
-        internal static IEnumerable<ObjectRepositoryChunkChange> ComputeModifiedChunks(IModelDataAccessor dataAccessor, JsonSerializer serializer, PatchEntryChanges changes, JObject ancestorJson, JObject theirJson, IModelObject ours)
-        {
-            var ancestor = (IModelObject)ancestorJson.ToObject(dataAccessor.Type, serializer);
-            var theirs = (IModelObject)theirJson.ToObject(dataAccessor.Type, serializer);
-
-            return from name in ((IDictionary<string, JToken>)theirJson).Keys
-                   let property = dataAccessor.ModifiableProperties.TryGetWithValue(p => p.Name, name) where property != null
+            return from property in ours.DataAccessor.ModifiableProperties
                    let ancestorChunk = GetChunk(ancestor, property)
                    let theirChunk = GetChunk(theirs, property)
                    where !ancestorChunk.HasSameValue(theirChunk)

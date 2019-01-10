@@ -4,6 +4,7 @@ using GitObjectDb.Git.Hooks;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Merge;
 using GitObjectDb.Models.Rebase;
+using GitObjectDb.Serialization;
 using GitObjectDb.Services;
 using GitObjectDb.Validations;
 using LibGit2Sharp;
@@ -30,6 +31,7 @@ namespace GitObjectDb.Models
         private readonly ObjectRepositoryRebaseFactory _objectRepositoryRebaseFactory;
         private readonly IRepositoryProvider _repositoryProvider;
         private readonly GitHooks _hooks;
+        private readonly ObjectRepositorySerializerFactory _serializerFactory;
         private readonly ILogger<ObjectRepositoryContainer> _logger;
 
         /// <summary>
@@ -42,11 +44,13 @@ namespace GitObjectDb.Models
         /// <param name="objectRepositoryRebaseFactory">The <see cref="IObjectRepositoryRebase"/> factory.</param>
         /// <param name="repositoryProvider">The repository provider.</param>
         /// <param name="hooks">The hooks.</param>
+        /// <param name="serializerFactory">The <see cref="IObjectRepositorySerializer"/> factory.</param>
         /// <param name="logger">The logger.</param>
         public ObjectRepositoryContainer(string path,
             IObjectRepositoryLoader repositoryLoader, ComputeTreeChangesFactory computeTreeChangesFactory,
             ObjectRepositoryMergeFactory objectRepositoryMergeFactory, ObjectRepositoryRebaseFactory objectRepositoryRebaseFactory,
-            IRepositoryProvider repositoryProvider, GitHooks hooks, ILogger<ObjectRepositoryContainer> logger)
+            IRepositoryProvider repositoryProvider, GitHooks hooks,
+            ObjectRepositorySerializerFactory serializerFactory, ILogger<ObjectRepositoryContainer> logger)
         {
             _repositoryLoader = repositoryLoader ?? throw new ArgumentNullException(nameof(repositoryLoader));
             _computeTreeChangesFactory = computeTreeChangesFactory ?? throw new ArgumentNullException(nameof(computeTreeChangesFactory));
@@ -54,6 +58,7 @@ namespace GitObjectDb.Models
             _objectRepositoryRebaseFactory = objectRepositoryRebaseFactory ?? throw new ArgumentNullException(nameof(objectRepositoryRebaseFactory));
             _repositoryProvider = repositoryProvider ?? throw new ArgumentNullException(nameof(repositoryProvider));
             _hooks = hooks ?? throw new ArgumentNullException(nameof(hooks));
+            _serializerFactory = serializerFactory ?? throw new ArgumentNullException(nameof(serializerFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             Path = path ?? throw new ArgumentNullException(nameof(path));
@@ -152,7 +157,7 @@ namespace GitObjectDb.Models
                 {
                     var all = repository.Flatten().Select(o => new ObjectRepositoryEntryChanges(o.GetDataPath(), ChangeKind.Added, @new: o));
                     var changes = new ObjectRepositoryChanges(repository, all.ToImmutableList());
-                    var commit = r.CommitChanges(changes, message, signature, signature, _hooks);
+                    var commit = r.CommitChanges(changes, _serializerFactory(), message, signature, signature, _hooks);
                     if (commit == null)
                     {
                         return null;
@@ -204,7 +209,7 @@ namespace GitObjectDb.Models
                     var changes = computeChanges.Compare(previousRepository, repository);
                     if (changes.Any())
                     {
-                        var commit = r.CommitChanges(changes, message, signature, signature, _hooks, options).Id;
+                        var commit = r.CommitChanges(changes, _serializerFactory(), message, signature, signature, _hooks, options).Id;
                         return (TRepository)ReloadRepository(previousRepository, commit);
                     }
                     else

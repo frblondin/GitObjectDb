@@ -1,13 +1,12 @@
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.JsonConverters
+namespace GitObjectDb.Serialization.Json.Converters
 {
     /// <summary>
     /// Provides value accessor for components being registered in the DI container, lazy children...

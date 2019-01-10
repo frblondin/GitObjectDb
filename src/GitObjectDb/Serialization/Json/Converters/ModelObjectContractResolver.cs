@@ -1,9 +1,4 @@
-using GitObjectDb.Models;
-using GitObjectDb.Reflection;
-using GitObjectDb.Services;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
@@ -12,15 +7,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
-namespace GitObjectDb.JsonConverters
+namespace GitObjectDb.Serialization.Json.Converters
 {
-    /// <summary>
-    /// Creates a new instance of <see cref="ModelObjectContractResolver"/>.
-    /// </summary>
-    /// <param name="context">The context.</param>
-    /// <returns>The newly created instance.</returns>
-    internal delegate ModelObjectContractResolver ModelObjectContractResolverFactory(ModelObjectSerializationContext context);
-
     /// <summary>
     /// Resolves member mappings for a type, camel casing property names, and processing special repository
     /// object types such as children defined in nested files.
@@ -42,13 +30,7 @@ namespace GitObjectDb.JsonConverters
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _modelObjectContractCache = modelObjectContractCache ?? throw new ArgumentNullException(nameof(modelObjectContractCache));
-            Serializer = JsonSerializerProvider.Create(this);
         }
-
-        /// <summary>
-        /// Gets the serializer.
-        /// </summary>
-        public JsonSerializer Serializer { get; }
 
         /// <inheritdoc/>
         public override JsonContract ResolveContract(Type type)

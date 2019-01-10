@@ -103,7 +103,7 @@ namespace GitObjectDb.Services
             if (_merge.RequiresMergeCommit)
             {
                 var message = $"Merge branch {_merge.BranchName} into {repository.Head.FriendlyName}";
-                return repository.CommitChanges(treeChanges, message, merger, merger, hooks: _hooks, mergeParent: repository.Lookup<Commit>(_merge.MergeCommitId)).Id;
+                return repository.CommitChanges(treeChanges, _merge._serializer, message, merger, merger, hooks: _hooks, mergeParent: repository.Lookup<Commit>(_merge.MergeCommitId)).Id;
             }
             else
             {

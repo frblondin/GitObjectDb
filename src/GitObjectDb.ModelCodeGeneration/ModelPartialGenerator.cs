@@ -47,16 +47,6 @@ namespace GitObjectDb.ModelCodeGeneration
         {
             return ConstructorDeclaration(Descriptor.TypeIdentifier)
                 .AddModifiers(SyntaxKind.PublicKeyword)
-                .WithAttributeLists(
-                        SingletonList(
-                            AttributeList(
-                                SingletonSeparatedList(
-                                    Attribute(
-                                        QualifiedName(
-                                            QualifiedName(
-                                                IdentifierName("Newtonsoft"),
-                                                IdentifierName("Json")),
-                                            IdentifierName("JsonConstructor")))))))
                 .WithParameters(
                     TemplateDescriptors.SelectMany(t =>
                         t.ConstructorDeclaration?.ParameterList.Parameters.Concat(

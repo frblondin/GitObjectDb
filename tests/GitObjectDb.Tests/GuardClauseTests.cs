@@ -3,6 +3,7 @@ using AutoFixture.Idioms;
 using GitObjectDb.Attributes;
 using GitObjectDb.Git;
 using GitObjectDb.Models;
+using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Reflection;
 using GitObjectDb.Tests.Assets.Customizations;
@@ -17,6 +18,7 @@ using NSubstitute;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -77,6 +79,7 @@ namespace GitObjectDb.Tests
                 fixture.Inject<ConstructorParameterBinding.ChildProcessor>((name, children, @new, dataAccessor) => children);
                 fixture.Inject<ConstructorParameterBinding.Clone>((@object, predicateReflector, processor) => @object);
                 fixture.Inject((ObjectRepositoryContainer)fixture.Create<IServiceProvider>().GetRequiredService<IObjectRepositoryContainerFactory>().Create<ObjectRepository>(RepositoryFixture.SmallRepositoryPath));
+                fixture.Register(() => new ObjectRepositoryChanges(fixture.Create<IObjectRepository>(), ImmutableList.Create<ObjectRepositoryEntryChanges>()));
             }
 
             private static void CustomizeExpressionObjects(IFixture fixture)

@@ -1,6 +1,5 @@
 using AutoFixture;
 using GitObjectDb.Git;
-using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Services;
@@ -14,6 +13,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using GitObjectDb.Serialization;
 
 namespace GitObjectDb.Tests.Migrations
 {
@@ -30,7 +30,7 @@ namespace GitObjectDb.Tests.Migrations
 
             // Act
             var migrationScaffolder = new MigrationScaffolder(container, repository.RepositoryDescription,
-                serviceProvider.GetRequiredService<IRepositoryProvider>(), serviceProvider.GetRequiredService<ModelObjectContractResolverFactory>());
+                serviceProvider.GetRequiredService<IRepositoryProvider>(), serviceProvider.GetRequiredService<ObjectRepositorySerializerFactory>());
             var migrators = migrationScaffolder.Scaffold(repository.CommitId, commit.CommitId, MigrationMode.Upgrade);
 
             // Assert

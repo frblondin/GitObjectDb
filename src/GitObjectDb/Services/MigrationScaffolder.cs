@@ -1,18 +1,16 @@
 using GitObjectDb.Git;
-using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Services;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using GitObjectDb.Serialization;
 
 namespace GitObjectDb.Services
 {
@@ -22,7 +20,7 @@ namespace GitObjectDb.Services
         private readonly IRepositoryProvider _repositoryProvider;
         private readonly IObjectRepositoryContainer _container;
         private readonly RepositoryDescription _repositoryDescription;
-        private readonly ModelObjectContractResolverFactory _contractResolverFactory;
+        private readonly ObjectRepositorySerializerFactory _repositorySerializerFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MigrationScaffolder"/> class.
@@ -30,20 +28,15 @@ namespace GitObjectDb.Services
         /// <param name="container">The container.</param>
         /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="repositoryProvider">The repository provider.</param>
-        /// <param name="contractResolverFactory">The <see cref="ModelObjectContractResolver"/> factory.</param>
-        /// <exception cref="ArgumentNullException">
-        /// serviceProvider
-        /// or
-        /// repository
-        /// </exception>
+        /// <param name="repositorySerializerFactory">The <see cref="IObjectRepositorySerializer"/> factory.</param>
         [ActivatorUtilitiesConstructor]
         internal MigrationScaffolder(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription,
-            IRepositoryProvider repositoryProvider, ModelObjectContractResolverFactory contractResolverFactory)
+            IRepositoryProvider repositoryProvider, ObjectRepositorySerializerFactory repositorySerializerFactory)
         {
             _repositoryProvider = repositoryProvider ?? throw new ArgumentNullException(nameof(repositoryProvider));
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _repositoryDescription = repositoryDescription ?? throw new ArgumentNullException(nameof(repositoryDescription));
-            _contractResolverFactory = contractResolverFactory ?? throw new ArgumentNullException(nameof(contractResolverFactory));
+            _repositorySerializerFactory = repositorySerializerFactory ?? throw new ArgumentNullException(nameof(repositorySerializerFactory));
         }
 
         /// <inheritdoc/>
@@ -95,7 +88,7 @@ namespace GitObjectDb.Services
         private IEnumerable<Migrator> GetLogMigrators(IRepository repository, ICommitLog log, List<IMigration> deferred, Commit previousCommit, MigrationMode mode)
         {
             var context = new ModelObjectSerializationContext(_container);
-            var serializer = _contractResolverFactory(context).Serializer;
+            var serializer = _repositorySerializerFactory(context);
             foreach (var commit in log)
             {
                 if (previousCommit != null)
@@ -114,14 +107,14 @@ namespace GitObjectDb.Services
             }
         }
 
-        private static IEnumerable<IMigration> GetCommitMigrations(IRepository repository, Commit previousCommit, Commit commit, JsonSerializer serializer)
+        private static IEnumerable<IMigration> GetCommitMigrations(IRepository repository, Commit previousCommit, Commit commit, IObjectRepositorySerializer serializer)
         {
             using (var changes = repository.Diff.Compare<TreeChanges>(previousCommit.Tree, commit.Tree))
             {
                 foreach (var change in changes.Where(c => c.Path.StartsWith(FileSystemStorage.MigrationFolder, StringComparison.OrdinalIgnoreCase) && (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))
                 {
                     var blob = (Blob)commit[change.Path].Target;
-                    yield return blob.GetContentStream().ToJson<IMigration>(serializer);
+                    yield return (IMigration)serializer.Deserialize(blob.GetContentStream());
                 }
             }
         }

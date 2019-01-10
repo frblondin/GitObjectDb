@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace GitObjectDb.JsonConverters
+namespace GitObjectDb.Serialization.Json.Converters
 {
     /// <summary>
     /// Converts a <see cref="UniqueId" /> to and from a string (e.g. <c>"xK0hg6876bQ"</c>).

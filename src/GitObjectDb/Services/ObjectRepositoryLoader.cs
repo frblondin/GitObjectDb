@@ -1,14 +1,12 @@
 using GitObjectDb.Git;
-using GitObjectDb.JsonConverters;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
 using LibGit2Sharp;
-using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using GitObjectDb.Serialization;
 
 namespace GitObjectDb.Services
 {
@@ -17,19 +15,20 @@ namespace GitObjectDb.Services
     {
         private readonly IModelDataAccessorProvider _dataAccessorProvider;
         private readonly IRepositoryProvider _repositoryProvider;
-        private readonly ModelObjectContractResolverFactory _contractResolverFactory;
+        private readonly ObjectRepositorySerializerFactory _repositorySerializerFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryLoader"/> class.
         /// </summary>
         /// <param name="dataAccessorProvider">The data accessor provider.</param>
         /// <param name="repositoryProvider">The repository provider.</param>
-        /// <param name="contractResolverFactory">The contract resolved factory.</param>
-        public ObjectRepositoryLoader(IModelDataAccessorProvider dataAccessorProvider, IRepositoryProvider repositoryProvider, ModelObjectContractResolverFactory contractResolverFactory)
+        /// <param name="repositorySerializerFactory">The <see cref="IObjectRepositorySerializer"/> factory.</param>
+        public ObjectRepositoryLoader(IModelDataAccessorProvider dataAccessorProvider, IRepositoryProvider repositoryProvider,
+            ObjectRepositorySerializerFactory repositorySerializerFactory)
         {
             _dataAccessorProvider = dataAccessorProvider ?? throw new ArgumentNullException(nameof(dataAccessorProvider));
             _repositoryProvider = repositoryProvider ?? throw new ArgumentNullException(nameof(repositoryProvider));
-            _contractResolverFactory = contractResolverFactory ?? throw new ArgumentNullException(nameof(contractResolverFactory));
+            _repositorySerializerFactory = repositorySerializerFactory ?? throw new ArgumentNullException(nameof(repositorySerializerFactory));
         }
 
         /// <inheritdoc />
@@ -123,9 +122,9 @@ namespace GitObjectDb.Services
         private IModelObject LoadEntry(IObjectRepositoryContainer container, ObjectId commitId, TreeEntry entry, string path)
         {
             var context = new ModelObjectSerializationContext(container, ResolveChildren);
-            var serializer = _contractResolverFactory(context).Serializer;
+            var serializer = _repositorySerializerFactory(context);
             var blob = (Blob)entry.Target;
-            return blob.GetContentStream().ToJson<IModelObject>(serializer);
+            return serializer.Deserialize(blob.GetContentStream());
 
             ILazyChildren ResolveChildren(Type type, string propertyName)
             {

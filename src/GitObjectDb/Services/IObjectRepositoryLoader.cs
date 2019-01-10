@@ -1,7 +1,6 @@
 using GitObjectDb.Git;
 using GitObjectDb.Models;
 using LibGit2Sharp;
-using Newtonsoft.Json;
 using System;
 
 namespace GitObjectDb.Services
