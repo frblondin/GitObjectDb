@@ -15,7 +15,7 @@ namespace GitObjectDb.Git.Hooks
         /// </summary>
         /// <param name="changes">The changes.</param>
         /// <exception cref="ArgumentNullException">message</exception>
-        public MergeStartedEventArgs(ObjectRepositoryChanges changes)
+        public MergeStartedEventArgs(ObjectRepositoryChangeCollection changes)
         {
             Changes = changes ?? throw new ArgumentNullException(nameof(changes));
         }
@@ -23,6 +23,6 @@ namespace GitObjectDb.Git.Hooks
         /// <summary>
         /// Gets the changes.
         /// </summary>
-        public ObjectRepositoryChanges Changes { get; }
+        public ObjectRepositoryChangeCollection Changes { get; }
     }
 }

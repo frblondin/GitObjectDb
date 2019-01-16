@@ -156,7 +156,7 @@ namespace GitObjectDb.Models
                 return _repositoryProvider.Execute(repositoryDescription, r =>
                 {
                     var all = repository.Flatten().Select(o => new ObjectRepositoryEntryChanges(o.GetDataPath(), ChangeKind.Added, @new: o));
-                    var changes = new ObjectRepositoryChanges(repository, all.ToImmutableList());
+                    var changes = new ObjectRepositoryChangeCollection(repository, all.ToImmutableList());
                     var commit = r.CommitChanges(changes, _serializerFactory(), message, signature, signature, _hooks);
                     if (commit == null)
                     {

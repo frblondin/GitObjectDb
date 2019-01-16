@@ -45,11 +45,13 @@ namespace GitObjectDb.Transformations
         /// </summary>
         public PropertyInfo Property { get; }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Gets the name of the property.
+        /// </summary>
         public string PropertyName => Property.Name;
 
         /// <summary>
-        /// The value to update the property.
+        /// Gets the value to update the property.
         /// </summary>
         public object Value { get; }
     }

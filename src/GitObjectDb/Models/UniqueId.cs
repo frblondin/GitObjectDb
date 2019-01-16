@@ -98,7 +98,7 @@ namespace GitObjectDb.Models
         private static char[] CreateNewCharArray()
         {
             var buffer = new byte[ShaLength];
-            (new RNGCryptoServiceProvider()).GetBytes(buffer);
+            new RNGCryptoServiceProvider().GetBytes(buffer);
 
             var result = new char[ShaLength];
             for (var pos = 0; pos < ShaLength; pos++)

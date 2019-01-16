@@ -38,7 +38,7 @@ namespace GitObjectDb.Git.Hooks
         /// <param name="changes">The changes.</param>
         /// <param name="message">The message.</param>
         /// <returns>The <see cref="CancelEventArgs"/>.</returns>
-        internal bool OnCommitStarted(ObjectRepositoryChanges changes, string message)
+        internal bool OnCommitStarted(ObjectRepositoryChangeCollection changes, string message)
         {
             if (message == null)
             {
@@ -56,7 +56,7 @@ namespace GitObjectDb.Git.Hooks
         /// <param name="changes">The changes.</param>
         /// <param name="message">The message.</param>
         /// <param name="commitId">The commit identifier.</param>
-        internal void OnCommitCompleted(ObjectRepositoryChanges changes, string message, ObjectId commitId)
+        internal void OnCommitCompleted(ObjectRepositoryChangeCollection changes, string message, ObjectId commitId)
         {
             if (message == null)
             {
@@ -72,7 +72,7 @@ namespace GitObjectDb.Git.Hooks
         /// </summary>
         /// <param name="changes">The changes.</param>
         /// <returns>The <see cref="CancelEventArgs"/>.</returns>
-        internal bool OnMergeStarted(ObjectRepositoryChanges changes)
+        internal bool OnMergeStarted(ObjectRepositoryChangeCollection changes)
         {
             var args = new MergeStartedEventArgs(changes);
             MergeStarted?.Invoke(this, args);
@@ -84,7 +84,7 @@ namespace GitObjectDb.Git.Hooks
         /// </summary>
         /// <param name="changes">The changes.</param>
         /// <param name="commitId">The commit identifier.</param>
-        internal void OnMergeCompleted(ObjectRepositoryChanges changes, ObjectId commitId)
+        internal void OnMergeCompleted(ObjectRepositoryChangeCollection changes, ObjectId commitId)
         {
             var args = new MergeCompletedEventArgs(changes, commitId);
             MergeCompleted?.Invoke(this, args);

@@ -21,7 +21,7 @@ namespace GitObjectDb.Transformations
                     throw new ArgumentNullException(nameof(node));
                 }
 
-                var visited = (new PropertyVisitor()).Visit(node);
+                var visited = new PropertyVisitor().Visit(node);
                 var memberExpression = visited as MemberExpression ?? throw new GitObjectDbException("Member expressions expected.");
                 return memberExpression.Member as PropertyInfo ?? throw new GitObjectDbException($"The member '{memberExpression.Member.Name}' is not a property.");
             }

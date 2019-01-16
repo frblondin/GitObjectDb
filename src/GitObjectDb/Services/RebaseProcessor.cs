@@ -19,17 +19,9 @@ namespace GitObjectDb.Services
     /// </summary>
     internal class RebaseProcessor
     {
-        /// <summary>
-        /// Creates a new instance of <see cref="RebaseProcessor"/>.
-        /// </summary>
-        /// <param name="objectRepositoryRebase">The object repository rebase.</param>
-        /// <returns>The newly created instance.</returns>
-        internal delegate RebaseProcessor Factory(ObjectRepositoryRebase objectRepositoryRebase);
-
         private readonly ObjectRepositoryRebase _rebase;
 
         private readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
-        private readonly IModelDataAccessorProvider _modelDataProvider;
         private readonly IObjectRepositorySerializer _serializer;
 
         /// <summary>
@@ -37,12 +29,10 @@ namespace GitObjectDb.Services
         /// </summary>
         /// <param name="objectRepositoryRebase">The object repository rebase.</param>
         /// <param name="computeTreeChangesFactory">The <see cref="IComputeTreeChanges"/> factory.</param>
-        /// <param name="modelDataProvider">The model data provider.</param>
         /// <param name="serializerFactory">The <see cref="ObjectRepositorySerializerFactory"/> factory.</param>
         [ActivatorUtilitiesConstructor]
         internal RebaseProcessor(ObjectRepositoryRebase objectRepositoryRebase,
-            ComputeTreeChangesFactory computeTreeChangesFactory, IModelDataAccessorProvider modelDataProvider,
-            ObjectRepositorySerializerFactory serializerFactory)
+            ComputeTreeChangesFactory computeTreeChangesFactory, ObjectRepositorySerializerFactory serializerFactory)
         {
             if (serializerFactory == null)
             {
@@ -52,9 +42,15 @@ namespace GitObjectDb.Services
             _rebase = objectRepositoryRebase ?? throw new ArgumentNullException(nameof(objectRepositoryRebase));
 
             _computeTreeChangesFactory = computeTreeChangesFactory ?? throw new ArgumentNullException(nameof(computeTreeChangesFactory));
-            _modelDataProvider = modelDataProvider ?? throw new ArgumentNullException(nameof(modelDataProvider));
             _serializer = serializerFactory(new ModelObjectSerializationContext(objectRepositoryRebase.Repository.Container));
         }
+
+        /// <summary>
+        /// Creates a new instance of <see cref="RebaseProcessor"/>.
+        /// </summary>
+        /// <param name="objectRepositoryRebase">The object repository rebase.</param>
+        /// <returns>The newly created instance.</returns>
+        internal delegate RebaseProcessor Factory(ObjectRepositoryRebase objectRepositoryRebase);
 
         private IObjectRepository CurrentTransformedRepository => _rebase.Transformations.LastOrDefault() ?? _rebase.StartRepository;
 

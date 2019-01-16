@@ -2,16 +2,16 @@ using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Merge;
+using GitObjectDb.Models.Rebase;
 using GitObjectDb.Reflection;
+using GitObjectDb.Serialization;
 using GitObjectDb.Services;
 using GitObjectDb.Validations;
-using GitObjectDb.Models.Rebase;
 using GitObjectDb.Validations.PropertyValidators;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using GitObjectDb.Serialization;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

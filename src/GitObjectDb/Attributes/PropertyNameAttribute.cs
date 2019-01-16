@@ -1,4 +1,3 @@
-using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -24,6 +23,7 @@ namespace GitObjectDb.Attributes
             {
                 throw new ArgumentNullException(nameof(name));
             }
+
             Name = name;
         }
 

@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
 using GitObjectDb.Models.Merge;
@@ -9,6 +6,9 @@ using GitObjectDb.Serialization;
 using GitObjectDb.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace GitObjectDb.Models
 {
@@ -18,7 +18,7 @@ namespace GitObjectDb.Models
         private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ObjectRepositoryContainer{TRepository}"/> class.
+        /// Initializes a new instance of the <see cref="ObjectRepositoryContainerFactory"/> class.
         /// </summary>
         /// <param name="serviceProvider">The service provider.</param>
         public ObjectRepositoryContainerFactory(IServiceProvider serviceProvider)

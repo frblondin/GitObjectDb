@@ -2,6 +2,7 @@ using GitObjectDb.Git;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Migration;
+using GitObjectDb.Serialization;
 using GitObjectDb.Services;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +11,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
-using GitObjectDb.Serialization;
 
 namespace GitObjectDb.Services
 {

@@ -42,7 +42,7 @@ namespace GitObjectDb.Git
         /// Returns a new instance of the <see cref="RepositoryDescription"/> using
         /// provided <paramref name="backend"/>.
         /// </summary>
-        /// <param name="backend"></param>
+        /// <param name="backend">The backend provider.</param>
         /// <returns>The newly created <see cref="RepositoryDescription"/>.</returns>
         public RepositoryDescription WithBackend(Func<OdbBackend> backend)
         {

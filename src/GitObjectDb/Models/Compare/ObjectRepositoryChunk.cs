@@ -28,26 +28,26 @@ namespace GitObjectDb.Models.Compare
 
 #pragma warning disable CA1720 // Identifier contains type name
         /// <summary>
-        /// The object.
+        /// Gets the object.
         /// </summary>
         public IModelObject Object { get; }
 #pragma warning restore CA1720 // Identifier contains type name
 
         /// <summary>
-        /// The property.
+        /// Gets the property.
         /// </summary>
         public ModifiablePropertyInfo Property { get; }
 
         /// <summary>
-        /// The value of the chunk.
+        /// Gets the value of the chunk.
         /// </summary>
         public object Value { get; }
 
         /// <summary>
         /// Gets whether the given <paramref name="chunk"/> <see cref="Value"/> is equal to the current value.
         /// </summary>
-        /// <param name="chunk"></param>
-        /// <returns></returns>
+        /// <param name="chunk">The chunk to compare to.</param>
+        /// <returns><code>true</code> if chunks have same value, <code>false</code> otherwise.</returns>
         public bool HasSameValue(ObjectRepositoryChunk chunk)
         {
             if (chunk == null)

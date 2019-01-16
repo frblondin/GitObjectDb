@@ -12,7 +12,9 @@ namespace GitObjectDb.Models
     /// <typeparam name="TChild">The type of the children.</typeparam>
     /// <seealso cref="GitObjectDb.Models.ILazyChildren" />
     /// <seealso cref="System.Collections.Generic.IReadOnlyList{TChild}" />
+#pragma warning disable CA1710 // Identifiers should have correct suffix
     public interface ILazyChildren<TChild> : ILazyChildren, IReadOnlyList<TChild>
+#pragma warning restore CA1710 // Identifiers should have correct suffix
         where TChild : class, IModelObject
     {
         /// <summary>
@@ -27,7 +29,11 @@ namespace GitObjectDb.Models
     /// <summary>
     /// Provides support for lazy children loading.
     /// </summary>
+#pragma warning disable CA1710 // Identifiers should have correct suffix
+#pragma warning disable CA1010 // Collections should implement generic interface
     public interface ILazyChildren : IEnumerable
+#pragma warning restore CA1010 // Collections should implement generic interface
+#pragma warning restore CA1710 // Identifiers should have correct suffix
     {
         /// <summary>
         /// Gets the parent.

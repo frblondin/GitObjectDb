@@ -3,10 +3,8 @@ using GitObjectDb.Git.Hooks;
 using GitObjectDb.IO;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Serialization;
-using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -59,7 +57,7 @@ namespace LibGit2Sharp
         /// <param name="options">The options.</param>
         /// <param name="mergeParent">The parent commit for a merge.</param>
         /// <returns>The created <see cref="LibGit2Sharp.Commit" />.</returns>
-        internal static Commit CommitChanges(this IRepository repository, ObjectRepositoryChanges changes, IObjectRepositorySerializer serializer, string message, Signature author, Signature committer, GitHooks hooks, CommitOptions options = null, Commit mergeParent = null)
+        internal static Commit CommitChanges(this IRepository repository, ObjectRepositoryChangeCollection changes, IObjectRepositorySerializer serializer, string message, Signature author, Signature committer, GitHooks hooks, CommitOptions options = null, Commit mergeParent = null)
         {
             TreeDefinition definition;
             if (changes.OldRepository?.CommitId != null)
@@ -93,7 +91,7 @@ namespace LibGit2Sharp
             return result;
         }
 
-        internal static void UpdateTreeDefinition(this IRepository repository, ObjectRepositoryChanges changes, TreeDefinition definition, IObjectRepositorySerializer serializer)
+        internal static void UpdateTreeDefinition(this IRepository repository, ObjectRepositoryChangeCollection changes, TreeDefinition definition, IObjectRepositorySerializer serializer)
         {
             if (repository == null)
             {

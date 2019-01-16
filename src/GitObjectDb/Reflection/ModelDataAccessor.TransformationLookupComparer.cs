@@ -8,11 +8,11 @@ namespace GitObjectDb.Reflection
     {
         private class TransformationLookupComparer : IEqualityComparer<(UniqueId InstanceId, string Name)>
         {
-            internal static TransformationLookupComparer Instance { get; } = new TransformationLookupComparer();
-
             private TransformationLookupComparer()
             {
             }
+
+            internal static TransformationLookupComparer Instance { get; } = new TransformationLookupComparer();
 
             public bool Equals((UniqueId InstanceId, string Name) x, (UniqueId InstanceId, string Name) y) =>
                 x.InstanceId == y.InstanceId &&

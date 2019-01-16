@@ -19,10 +19,8 @@ namespace GitObjectDb.Models.Merge
     [ExcludeFromGuardForNull]
     internal sealed class ObjectRepositoryMerge : IObjectRepositoryMerge
     {
-        private readonly IModelDataAccessorProvider _modelDataProvider;
         private readonly MigrationScaffolderFactory _migrationScaffolderFactory;
         private readonly MergeProcessor.Factory _mergeProcessorFactory;
-        internal readonly IObjectRepositorySerializer _serializer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryMerge"/> class.
@@ -30,14 +28,13 @@ namespace GitObjectDb.Models.Merge
         /// <param name="repository">The repository on which to apply the merge.</param>
         /// <param name="mergeCommitId">The commit to be merged.</param>
         /// <param name="branchName">Name of the branch.</param>
-        /// <param name="modelDataProvider">The model data provider.</param>
         /// <param name="migrationScaffolderFactory">The <see cref="MigrationScaffolder"/> factory.</param>
         /// <param name="mergeProcessorFactory">The <see cref="MergeProcessor"/> factory.</param>
         /// <param name="serializerFactory">The <see cref="ObjectRepositorySerializerFactory"/> factory.</param>
         [ActivatorUtilitiesConstructor]
         public ObjectRepositoryMerge(IObjectRepository repository, ObjectId mergeCommitId, string branchName,
-            IModelDataAccessorProvider modelDataProvider, MigrationScaffolderFactory migrationScaffolderFactory,
-            MergeProcessor.Factory mergeProcessorFactory, ObjectRepositorySerializerFactory serializerFactory)
+            MigrationScaffolderFactory migrationScaffolderFactory, MergeProcessor.Factory mergeProcessorFactory,
+            ObjectRepositorySerializerFactory serializerFactory)
         {
             if (serializerFactory == null)
             {
@@ -49,13 +46,14 @@ namespace GitObjectDb.Models.Merge
             MergeCommitId = mergeCommitId ?? throw new ArgumentNullException(nameof(mergeCommitId));
             BranchName = branchName ?? throw new ArgumentNullException(nameof(branchName));
 
-            _modelDataProvider = modelDataProvider ?? throw new ArgumentNullException(nameof(modelDataProvider));
             _migrationScaffolderFactory = migrationScaffolderFactory ?? throw new ArgumentNullException(nameof(migrationScaffolderFactory));
             _mergeProcessorFactory = mergeProcessorFactory ?? throw new ArgumentNullException(nameof(mergeProcessorFactory));
-            _serializer = serializerFactory(new ModelObjectSerializationContext(Repository.Container));
+            Serializer = serializerFactory(new ModelObjectSerializationContext(Repository.Container));
 
             Initialize();
         }
+
+        public IObjectRepositorySerializer Serializer { get; }
 
         /// <summary>
         /// Gets the repository.
@@ -96,7 +94,7 @@ namespace GitObjectDb.Models.Merge
             {
                 throw new NotImplementedException($"Could not find node {path} in {branchInfo} tree.");
             }
-            return _serializer.Deserialize(blob.GetContentStream());
+            return Serializer.Deserialize(blob.GetContentStream());
         }
 
         private void Initialize()

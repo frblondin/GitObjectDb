@@ -1,5 +1,6 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Models;
+using GitObjectDb.Serialization;
 using GitObjectDb.Transformations;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -10,7 +11,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using GitObjectDb.Serialization;
 
 namespace GitObjectDb.Reflection
 {

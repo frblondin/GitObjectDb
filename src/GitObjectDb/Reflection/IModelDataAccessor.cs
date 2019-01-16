@@ -39,7 +39,6 @@ namespace GitObjectDb.Reflection
         /// </summary>
         ConstructorParameterBinding ConstructorParameterBinding { get; }
 
-#pragma warning disable CA1716 // Identifiers should not match keywords
         /// <summary>
         /// Creates a copy of the repository and applies changes according to the new test values provided in the <paramref name="transformations"/>.
         /// </summary>
@@ -47,7 +46,6 @@ namespace GitObjectDb.Reflection
         /// <param name="transformations">The transformations.</param>
         /// <returns>The newly created repository.</returns>
         IObjectRepository With(IObjectRepository repository, IEnumerable<ITransformation> transformations);
-#pragma warning restore CA1716 // Identifiers should not match keywords
 
         /// <summary>
         /// Deep clones an instance and modify children on the fly.

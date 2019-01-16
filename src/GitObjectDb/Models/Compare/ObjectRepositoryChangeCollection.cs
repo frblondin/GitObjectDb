@@ -17,17 +17,17 @@ namespace GitObjectDb.Models.Compare
     /// Holds the result of a diff between two trees.
     /// </summary>
     [DebuggerDisplay("+{Added.Count} ~{Modified.Count} -{Deleted.Count}")]
-    public class ObjectRepositoryChanges : IReadOnlyList<ObjectRepositoryEntryChanges>
+    public class ObjectRepositoryChangeCollection : IReadOnlyList<ObjectRepositoryEntryChanges>
     {
         private readonly IImmutableList<ObjectRepositoryEntryChanges> _changes;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ObjectRepositoryChanges"/> class.
+        /// Initializes a new instance of the <see cref="ObjectRepositoryChangeCollection"/> class.
         /// </summary>
         /// <param name="newRepository">The new repository.</param>
         /// <param name="changes">The list of <see cref="ObjectRepositoryEntryChanges" /> that have been been changed.</param>
         /// <param name="oldRepository">The old repository.</param>
-        internal ObjectRepositoryChanges(IObjectRepository newRepository, IImmutableList<ObjectRepositoryEntryChanges> changes, IObjectRepository oldRepository = null)
+        internal ObjectRepositoryChangeCollection(IObjectRepository newRepository, IImmutableList<ObjectRepositoryEntryChanges> changes, IObjectRepository oldRepository = null)
         {
             NewRepository = newRepository ?? throw new ArgumentNullException(nameof(newRepository));
             _changes = changes ?? throw new ArgumentNullException(nameof(changes));

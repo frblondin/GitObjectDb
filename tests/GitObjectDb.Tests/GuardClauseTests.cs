@@ -79,7 +79,7 @@ namespace GitObjectDb.Tests
                 fixture.Inject<ConstructorParameterBinding.ChildProcessor>((name, children, @new, dataAccessor) => children);
                 fixture.Inject<ConstructorParameterBinding.Clone>((@object, predicateReflector, processor) => @object);
                 fixture.Inject((ObjectRepositoryContainer)fixture.Create<IServiceProvider>().GetRequiredService<IObjectRepositoryContainerFactory>().Create<ObjectRepository>(RepositoryFixture.SmallRepositoryPath));
-                fixture.Register(() => new ObjectRepositoryChanges(fixture.Create<IObjectRepository>(), ImmutableList.Create<ObjectRepositoryEntryChanges>()));
+                fixture.Register(() => new ObjectRepositoryChangeCollection(fixture.Create<IObjectRepository>(), ImmutableList.Create<ObjectRepositoryEntryChanges>()));
             }
 
             private static void CustomizeExpressionObjects(IFixture fixture)
