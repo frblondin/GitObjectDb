@@ -1,8 +1,8 @@
+using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using GitObjectDb.Models;
 
 namespace GitObjectDb.Serialization
 {
@@ -14,20 +14,20 @@ namespace GitObjectDb.Serialization
     public delegate IObjectRepositorySerializer ObjectRepositorySerializerFactory(ModelObjectSerializationContext context = null);
 
     /// <summary>
-	/// Serializes and deserializes <see cref="IModelObject"/> objects into and from a Git repository.
+    /// Serializes and deserializes <see cref="IModelObject"/> objects into and from a Git repository.
     /// </summary>
     public interface IObjectRepositorySerializer
     {
         /// <summary>
-		/// Deserializes the structure contained in the specified <see cref="Stream"/>.
+        /// Deserializes the structure contained in the specified <see cref="Stream"/>.
         /// </summary>
-		/// <param name="stream">The <see cref="Stream" /> that contains the structure to deserialize.</param>
-		/// <returns>The <see cref="IModelObject"/> being deserialized.</returns>
+        /// <param name="stream">The <see cref="Stream" /> that contains the structure to deserialize.</param>
+        /// <returns>The <see cref="IModelObject"/> being deserialized.</returns>
         IModelObject Deserialize(Stream stream);
 
         /// <summary>
-		/// Serializes the specified <see cref="IModelObject"/> and writes the structure
-		/// using the specified <see cref="StringBuilder"/>.
+        /// Serializes the specified <see cref="IModelObject"/> and writes the structure
+        /// using the specified <see cref="StringBuilder"/>.
         /// </summary>
         /// <param name="node">The <see cref="IModelObject"/> to serialize.</param>
         /// <param name="builder">The <see cref="StringBuilder"/> used to write the structure.</param>
@@ -36,7 +36,7 @@ namespace GitObjectDb.Serialization
         /// <summary>
         /// Validates that the given type can be serialized successfully.
         /// </summary>
-        /// <param name="type"></param>
+        /// <param name="type">The type to be validated.</param>
         void ValidateSerializable(Type type);
     }
 }

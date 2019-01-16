@@ -1,17 +1,18 @@
+using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq.Expressions;
-using GitObjectDb.Models;
 
 namespace GitObjectDb.Transformations
 {
     /// <summary>
     /// Composes multiple <see cref="PropertyTransformation"/> to perform multiple changes at once.
     /// </summary>
+#pragma warning disable CA1710 // Identifiers should have correct suffix
     public interface ITransformationComposer : IEnumerable<ITransformation>
+#pragma warning restore CA1710 // Identifiers should have correct suffix
     {
-#pragma warning disable CA1716 // Identifiers should not match keywords
         /// <summary>
         /// Adds a new <see cref="PropertyTransformation"/>.
         /// </summary>
@@ -22,7 +23,6 @@ namespace GitObjectDb.Transformations
         /// <param name="value">The value to assign to the property or field identified by <paramref name="propertyPicker" />.</param>
         /// <returns>An <see cref="ITransformationComposer"/> which can be used to further customize the transformations.</returns>
         ITransformationComposer Update<TModel, TProperty>(TModel node, Expression<Func<TModel, TProperty>> propertyPicker, TProperty value)
-#pragma warning restore CA1716 // Identifiers should not match keywords
             where TModel : IModelObject;
 
         /// <summary>

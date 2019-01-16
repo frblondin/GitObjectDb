@@ -49,7 +49,8 @@ namespace GitObjectDb.Transformations
             return new TransformationComposer(_repository, _transformations.Add(new ChildDeleteTransformation(child)));
         }
 
-        private void EnsureInRepository<TModel>(TModel node) where TModel : IModelObject
+        private void EnsureInRepository<TModel>(TModel node)
+            where TModel : IModelObject
         {
             if (!object.ReferenceEquals(node.Repository, _repository))
             {

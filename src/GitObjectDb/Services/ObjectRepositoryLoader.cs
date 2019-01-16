@@ -1,12 +1,12 @@
 using GitObjectDb.Git;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
+using GitObjectDb.Serialization;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using GitObjectDb.Serialization;
 
 namespace GitObjectDb.Services
 {

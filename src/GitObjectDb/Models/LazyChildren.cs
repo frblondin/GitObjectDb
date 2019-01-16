@@ -14,7 +14,9 @@ namespace GitObjectDb.Models
 {
     /// <inheritdoc />
     [DebuggerDisplay("AreChildrenLoaded = {AreChildrenLoaded}")]
+#pragma warning disable CA1710 // Identifiers should have correct suffix
     public sealed class LazyChildren<TChild> : ILazyChildren<TChild>
+#pragma warning restore CA1710 // Identifiers should have correct suffix
         where TChild : class, IModelObject
     {
         static readonly string _nullReturnedValueExceptionMessage =

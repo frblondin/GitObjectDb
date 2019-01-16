@@ -1,11 +1,33 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <RuleSet Name="New Rule Set" Description=" " ToolsVersion="15.0">
-  <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
-    <Rule Id="CA1010" Action="None" />
-    <Rule Id="CA1032" Action="None" />
-    <Rule Id="CA1710" Action="None" />
-  </Rules>
   <Rules AnalyzerId="Microsoft.CodeAnalysis.Analyzers" RuleNamespace="Microsoft.CodeAnalysis.Analyzers">
     <Rule Id="RS1022" Action="None" />
+  </Rules>
+  <Rules AnalyzerId="Microsoft.Design" RuleNamespace="Microsoft.Design">
+    <Rule Id="CA1032" Action="None" />
+    <Rule Id="CA1043" Action="None" />
+    <Rule Id="CA1716" Action="None" />
+  </Rules>
+  <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
+    <Rule Id="SA1101" Action="None" />
+    <Rule Id="SA1123" Action="None" />
+    <Rule Id="SA1124" Action="None" />
+    <Rule Id="SA1204" Action="None" />
+    <Rule Id="SA1208" Action="None" />
+    <Rule Id="SA1309" Action="None" />
+    <Rule Id="SA1310" Action="None" />
+    <Rule Id="SA1600" Action="None" />
+    <Rule Id="SA1633" Action="None" />
+    <Rule Id="SA1400" Action="None" />
+    <Rule Id="SA1513" Action="None" />
+    <Rule Id="SA1008" Action="None" />
+    <Rule Id="SA1601" Action="None" />
+    <Rule Id="SA1116" Action="None" />
+    <Rule Id="SA1117" Action="None" />
+    <Rule Id="SA1009" Action="None" />
+    <Rule Id="SA1202" Action="None" />
+    <Rule Id="SA1401" Action="Info" />
+    <Rule Id="SA1652" Action="None" />
+    <Rule Id="SA1118" Action="None" />
   </Rules>
 </RuleSet>

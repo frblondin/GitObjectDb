@@ -18,13 +18,6 @@ namespace GitObjectDb.Services
     /// </summary>
     internal sealed class MergeProcessor
     {
-        /// <summary>
-        /// Creates a new instance of <see cref="MergeProcessor"/>.
-        /// </summary>
-        /// <param name="objectRepositoryMerge">The object repository merge.</param>
-        /// <returns>The newly created instance.</returns>
-        internal delegate MergeProcessor Factory(ObjectRepositoryMerge objectRepositoryMerge);
-
         private readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
         private readonly GitHooks _hooks;
 
@@ -45,6 +38,13 @@ namespace GitObjectDb.Services
             _computeTreeChangesFactory = computeTreeChangesFactory ?? throw new ArgumentNullException(nameof(computeTreeChangesFactory));
             _hooks = hooks ?? throw new ArgumentNullException(nameof(hooks));
         }
+
+        /// <summary>
+        /// Creates a new instance of <see cref="MergeProcessor"/>.
+        /// </summary>
+        /// <param name="objectRepositoryMerge">The object repository merge.</param>
+        /// <returns>The newly created instance.</returns>
+        internal delegate MergeProcessor Factory(ObjectRepositoryMerge objectRepositoryMerge);
 
         /// <summary>
         /// Applies the specified merger.
@@ -98,12 +98,12 @@ namespace GitObjectDb.Services
             return commit;
         }
 
-        private ObjectId CommitChanges(Signature merger, IRepository repository, ObjectRepositoryChanges treeChanges)
+        private ObjectId CommitChanges(Signature merger, IRepository repository, ObjectRepositoryChangeCollection treeChanges)
         {
             if (_merge.RequiresMergeCommit)
             {
                 var message = $"Merge branch {_merge.BranchName} into {repository.Head.FriendlyName}";
-                return repository.CommitChanges(treeChanges, _merge._serializer, message, merger, merger, hooks: _hooks, mergeParent: repository.Lookup<Commit>(_merge.MergeCommitId)).Id;
+                return repository.CommitChanges(treeChanges, _merge.Serializer, message, merger, merger, hooks: _hooks, mergeParent: repository.Lookup<Commit>(_merge.MergeCommitId)).Id;
             }
             else
             {

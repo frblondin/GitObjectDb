@@ -73,12 +73,10 @@ namespace GitObjectDb.Models.Rebase
         /// </summary>
         IList<ObjectRepositoryDelete> DeletedObjects { get; }
 
-#pragma warning disable CA1716 // Identifiers should not match keywords
         /// <summary>
         /// Continues the rebase operation.
         /// </summary>
         /// <returns>A current <see cref="IObjectRepositoryRebase"/> instance - used to allow chained calls.</returns>
         IObjectRepositoryRebase Continue();
-#pragma warning restore CA1716 // Identifiers should not match keywords
     }
 }

@@ -75,7 +75,7 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public ObjectRepositoryChanges Compare(ObjectId oldCommitId, ObjectId newCommitId)
+        public ObjectRepositoryChangeCollection Compare(ObjectId oldCommitId, ObjectId newCommitId)
         {
             if (oldCommitId == null)
             {
@@ -103,7 +103,7 @@ namespace GitObjectDb.Services
 
                     _logger.ChangesComputed(modified.Count, added.Count, deleted.Count, oldCommitId, newCommitId);
 
-                    return new ObjectRepositoryChanges(newRepository, added.Concat(modified).Concat(deleted).ToImmutableList(), oldRepository);
+                    return new ObjectRepositoryChangeCollection(newRepository, added.Concat(modified).Concat(deleted).ToImmutableList(), oldRepository);
                 }
             });
         }
@@ -115,8 +115,7 @@ namespace GitObjectDb.Services
              let path = c.Path.GetParentPath()
              let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in old repository.")
              let newNode = newRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in new repository.")
-             where !oldNode.Equals(newNode) // If new property have been defined in the data model we could end up with text
-                                            // differences even is object have same value (default values for ex.) = false positivies
+             where !oldNode.Equals(newNode) // If new property have been defined in the data model we could end up with text differences even is object have same value (default values for ex.) = false positivies
              select new ObjectRepositoryEntryChanges(c.Path, c.Status, oldNode, newNode))
             .ToImmutableList();
 
@@ -159,7 +158,7 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public ObjectRepositoryChanges Compare(IObjectRepository original, IObjectRepository newRepository)
+        public ObjectRepositoryChangeCollection Compare(IObjectRepository original, IObjectRepository newRepository)
         {
             if (original == null)
             {
@@ -172,7 +171,7 @@ namespace GitObjectDb.Services
 
             var changes = new List<ObjectRepositoryEntryChanges>();
             CompareNode(original, newRepository, changes, new Stack<string>());
-            var result = new ObjectRepositoryChanges(newRepository, changes.ToImmutableList(), original);
+            var result = new ObjectRepositoryChangeCollection(newRepository, changes.ToImmutableList(), original);
 
             _logger.ChangesComputed(result.Modified.Count, result.Added.Count, result.Deleted.Count, original.CommitId, original.CommitId);
 
@@ -244,7 +243,7 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public ObjectRepositoryChanges Compute(IObjectRepository repository, IList<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects)
+        public ObjectRepositoryChangeCollection Compute(IObjectRepository repository, IList<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects)
         {
             if (repository == null)
             {

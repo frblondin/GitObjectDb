@@ -24,7 +24,7 @@ namespace GitObjectDb.Serialization.Json.Converters
         /// <summary>
         /// Initializes a new instance of the <see cref="ModelObjectContractCache" /> class.
         /// </summary>
-        /// <param name="modelObjectSpecialValueProvider"></param>
+        /// <param name="modelObjectSpecialValueProvider">The special value provider.</param>
         public ModelObjectContractCache(ModelObjectSpecialValueProvider modelObjectSpecialValueProvider)
         {
             _modelObjectSpecialValueProvider = modelObjectSpecialValueProvider ?? throw new ArgumentNullException(nameof(modelObjectSpecialValueProvider));

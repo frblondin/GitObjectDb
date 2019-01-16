@@ -1,14 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using GitObjectDb.Models;
 using GitObjectDb.Services;
 using LibGit2Sharp;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace Microsoft.Extensions.Logging
 {
     internal static class ILoggerExtensions
     {
+#pragma warning disable SA1201 // Elements must appear in the correct order
+#pragma warning disable SA1516 // Elements must be separated by blank line
         #region ObjectRepositoryContainer
         private static readonly Action<ILogger, string, Exception> _containerCreated = LoggerMessage.Define<string>(
             LogLevel.Information,
@@ -40,5 +42,7 @@ namespace Microsoft.Extensions.Logging
         internal static void ChangesComputed(this ILogger<ComputeTreeChanges> logger, int modified, int added, int deleted, ObjectId old, ObjectId @new) =>
             _changesComputed(logger, modified, added, deleted, old, @new, null);
         #endregion
+#pragma warning restore SA1516 // Elements must be separated by blank line
+#pragma warning restore SA1201 // Elements must appear in the correct order
     }
 }

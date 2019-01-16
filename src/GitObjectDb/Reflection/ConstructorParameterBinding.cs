@@ -15,13 +15,6 @@ namespace GitObjectDb.Reflection
     /// </summary>
     public class ConstructorParameterBinding
     {
-        /// <summary>
-        /// Creates a new instance of <see cref="ConstructorParameterBinding"/>.
-        /// </summary>
-        /// <param name="constructor">The constructor.</param>
-        /// <returns>The newly created instance.</returns>
-        internal delegate ConstructorParameterBinding Factory(ConstructorInfo constructor);
-
         private static readonly MethodInfo _serviceProviderGetServiceMethod = ExpressionReflector.GetMethod<IServiceProvider>(s => s.GetService(default));
         private static readonly MethodInfo _childProcessorInvokeMethod = ExpressionReflector.GetMethod<ChildProcessor>(p => p.Invoke(default, default, default, default));
 
@@ -55,6 +48,13 @@ namespace GitObjectDb.Reflection
             ClonerExpression = ComputeValueRetrievers();
             Cloner = ClonerExpression.Compile();
         }
+
+        /// <summary>
+        /// Creates a new instance of <see cref="ConstructorParameterBinding"/>.
+        /// </summary>
+        /// <param name="constructor">The constructor.</param>
+        /// <returns>The newly created instance.</returns>
+        internal delegate ConstructorParameterBinding Factory(ConstructorInfo constructor);
 
         /// <summary>
         /// Processes all children provided in <see cref="ILazyChildren"/>.
