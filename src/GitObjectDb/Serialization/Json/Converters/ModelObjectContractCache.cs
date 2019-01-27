@@ -52,7 +52,7 @@ namespace GitObjectDb.Serialization.Json.Converters
 
         private static JsonContract CreateContract(Type type)
         {
-            var defaultContractResolver = new DefaultContractResolver();
+            var defaultContractResolver = new CamelCasePropertyNamesContractResolver();
             return defaultContractResolver.ResolveContract(type);
         }
 
