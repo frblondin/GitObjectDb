@@ -49,9 +49,8 @@ namespace GitObjectDb.ModelCodeGeneration
                 .AddModifiers(SyntaxKind.PublicKeyword)
                 .WithParameters(
                     TemplateDescriptors.SelectMany(t =>
-                        t.ConstructorDeclaration?.ParameterList.Parameters.Concat(
-                            Descriptor.Entries.Select(CreateParameter))
-                        ?? Enumerable.Empty<ParameterSyntax>()))
+                        t.ConstructorDeclaration?.ParameterList.Parameters ?? Enumerable.Empty<ParameterSyntax>())
+                        .Concat(Descriptor.Entries.Select(CreateParameter)))
                 .WithInitializer(
                     CreateCtorInitializer())
                 .WithBodyStatements(
@@ -143,9 +142,15 @@ namespace GitObjectDb.ModelCodeGeneration
 
         private static ParameterSyntax CreateParameter(ModelDescriptor.Entry property)
         {
-            return Parameter(
-                    property.Identifier)
-                .WithType(property.Type);
+            var result = Parameter(property.Identifier).WithType(property.Type);
+            if (property.IsOptional)
+            {
+                result = result.WithDefault(
+                    EqualsValueClause(
+                        LiteralExpression(
+                            SyntaxKind.NullLiteralExpression)));
+            }
+            return result;
         }
     }
 }
