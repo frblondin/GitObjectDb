@@ -1,10 +1,11 @@
 using System;
 
-[System.Runtime.Serialization.DataContract]
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements must be documented
 #pragma warning disable CA1050 // Declare types in namespaces
+[System.Runtime.Serialization.DataContract]
 [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[System.Diagnostics.DebuggerDisplay("Id = {Id}, Name = {Name}")]
 public partial class ModelTemplate : GitObjectDb.Models.IModelObject
 #pragma warning restore CA1050 // Declare types in namespaces
 #pragma warning restore SA1600 // Elements must be documented
