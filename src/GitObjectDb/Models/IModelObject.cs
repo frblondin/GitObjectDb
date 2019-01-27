@@ -49,6 +49,11 @@ namespace GitObjectDb.Models
         IEnumerable<IModelObject> Children { get; }
 
         /// <summary>
+        /// Gets the <see cref="ObjectPath"/>.
+        /// </summary>
+        ObjectPath Path { get; }
+
+        /// <summary>
         /// Attaches to instance to a given parent.
         /// </summary>
         /// <param name="parent">The parent.</param>
