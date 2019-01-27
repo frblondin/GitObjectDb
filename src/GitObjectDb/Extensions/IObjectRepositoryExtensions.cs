@@ -69,7 +69,7 @@ namespace GitObjectDb.Models
         /// <param name="repository">The repository.</param>
         /// <param name="transformation">The transformation.</param>
         /// <returns>The newly created copy. Both parents and children nodes have been cloned as well.</returns>
-        public static IObjectRepository With<TRepository>(this TRepository repository, Func<ITransformationComposer, ITransformationComposer> transformation)
+        public static TRepository With<TRepository>(this TRepository repository, Func<ITransformationComposer, ITransformationComposer> transformation)
             where TRepository : IObjectRepository
         {
             if (repository == null)
@@ -82,7 +82,7 @@ namespace GitObjectDb.Models
             }
 
             var composer = transformation(new TransformationComposer(repository, ImmutableList.Create<ITransformation>()));
-            return repository.DataAccessor.With(repository, composer);
+            return (TRepository)repository.DataAccessor.With(repository, composer);
         }
 
         /// <summary>
