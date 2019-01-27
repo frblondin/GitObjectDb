@@ -168,6 +168,6 @@ namespace GitObjectDb.Models
         public override string ToString() => _sha ?? string.Empty;
 
         /// <inheritdoc/>
-        public int CompareTo(UniqueId other) => StringComparer.Ordinal.Compare(_sha, other._sha);
+        public int CompareTo(UniqueId other) => string.CompareOrdinal(_sha, other._sha);
     }
 }
