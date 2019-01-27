@@ -225,7 +225,6 @@ namespace GitObjectDb.Services
             else if (enumerator.NodeHasBeenAdded)
             {
                 stack.Push(enumerator.Right.Id.ToString());
-                var path = stack.ToDataPath();
                 AddNodeRecursively(enumerator.Right, changes, stack, (p, n) => new ObjectRepositoryEntryChanges(p, ChangeKind.Added, @new: n));
                 stack.Pop();
                 enumerator.MoveNextRight();

@@ -24,6 +24,10 @@ public partial class ModelTemplate : GitObjectDb.Models.IObjectRepository
     public GitObjectDb.Models.ILazyChildren<GitObjectDb.Models.Migration.IMigration> Migrations { get; }
 
     /// <inheritdoc />
+    [GitObjectDb.Attributes.PropertyName(GitObjectDb.FileSystemStorage.IndexFolder)]
+    public GitObjectDb.Models.ILazyChildren<GitObjectDb.Models.IObjectRepositoryIndex> Indexes { get; }
+
+    /// <inheritdoc />
     public LibGit2Sharp.ObjectId CommitId { get; private set; }
 
     /// <inheritdoc />

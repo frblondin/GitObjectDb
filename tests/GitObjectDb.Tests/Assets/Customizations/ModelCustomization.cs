@@ -81,13 +81,21 @@ namespace GitObjectDb.Tests.Assets.Customizations
             ObjectRepository CreateModule()
             {
                 createdPages.Clear();
-                lastRepository = new ObjectRepository(serviceProvider, container, UniqueId.CreateNew(), "Some repository", new Version(1, 0, 0), ImmutableList.Create<RepositoryDependency>(), new LazyChildren<IMigration>(), new LazyChildren<Application>(
-                    Enumerable.Range(1, ApplicationCount).Select(a =>
-                        new Application(serviceProvider, UniqueId.CreateNew(), $"Application {a}", new LazyChildren<Page>(
-                            Enumerable.Range(1, PagePerApplicationCount).Select(p =>
-                                CreatePage(p))
-                            .OrderBy(p => p.Id).ToImmutableList())))
-                    .OrderBy(a => a.Id).ToImmutableList()));
+                lastRepository = new ObjectRepository(serviceProvider, container,
+                    UniqueId.CreateNew(),
+                    "Some repository",
+                    new Version(1, 0, 0),
+                    ImmutableList.Create<RepositoryDependency>(),
+                    new LazyChildren<IMigration>(),
+                    new LazyChildren<IObjectRepositoryIndex>(
+                        ImmutableList.Create<IObjectRepositoryIndex>(new LinkFieldReferrerIndex(serviceProvider, UniqueId.CreateNew(), nameof(LinkFieldReferrerIndex)))),
+                    new LazyChildren<Application>(
+                        Enumerable.Range(1, ApplicationCount).Select(a =>
+                            new Application(serviceProvider, UniqueId.CreateNew(), $"Application {a}", new LazyChildren<Page>(
+                                Enumerable.Range(1, PagePerApplicationCount).Select(p =>
+                                    CreatePage(p))
+                                .OrderBy(p => p.Id).ToImmutableList())))
+                        .OrderBy(a => a.Id).ToImmutableList()));
                 return lastRepository;
             }
 

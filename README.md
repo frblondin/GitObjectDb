@@ -35,7 +35,7 @@ Here's a simple example:
         public ILazyChildren<Page> Pages { get; }
     }
     ```
-3. Basic commands
+### Basic commands
    - Initialize a new repository
         ```csharp
         var container = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, path);
@@ -59,6 +59,33 @@ Here's a simple example:
     - Migrations: migrations allows to define any action that must be executed when the commit containing the migration will be processed by a pull. See the [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/tests/GitObjectDb.Tests/Services/MigratorTests.cs) for more details.
     - [Pre/post commit & merge hook](https://github.com/frblondin/GitObjectDb/blob/master/tests/GitObjectDb.Tests/Git/Hooks/GitHooksTests.cs)
 	- Simple validation: see [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/tests/GitObjectDb.Tests/Validations/ModelValidationTests.cs) for more information.
+
+### Advanced
+   - Index can be automatically maintained by GitObjectDb. Any change made to the objects will be automatically tracked to update the index.
+        ```csharp
+        [Index]
+        public partial class LinkFieldReferrerIndex
+        {
+            partial void ComputeKeys(IModelObject node, ISet<string> result)
+            {
+                // The ComputeKeys method gets invoked by GitObjectDb for any modified node
+                // You can index whatever you want. Just return the key(s) for an object
+                if (node is Field field)
+                {
+                    var link = field.Content.MatchOrDefault(() => null, l => l.Target.Path);
+                    if (link != null)
+                    {
+                        result.Add(link.FullPath);
+                    }
+                }
+            }
+        }
+        ```
+     Index can be used this way:
+        ```csharp
+        var index = repository.Indexes.Single(i => i is LinkFieldReferrerIndex);
+        var referrers = index[node.Path.FullPath];
+        ```
 
 ## Prerequisites
 

@@ -31,6 +31,11 @@ namespace GitObjectDb.Models
         ILazyChildren<IMigration> Migrations { get; }
 
         /// <summary>
+        /// Gets the indexes.
+        /// </summary>
+        ILazyChildren<IObjectRepositoryIndex> Indexes { get; }
+
+        /// <summary>
         /// Gets the <see cref="LibGit2Sharp.Commit"/> id this instance has been load from.
         /// </summary>
         ObjectId CommitId { get; }

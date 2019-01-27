@@ -20,6 +20,11 @@ namespace GitObjectDb
         public const string MigrationFolder = SpecialFolderPrefix + "Migrations";
 
         /// <summary>
+        /// The index folder.
+        /// </summary>
+        public const string IndexFolder = SpecialFolderPrefix + "Indexes";
+
+        /// <summary>
         /// The prefix of special folders.
         /// </summary>
         public const string SpecialFolderPrefix = "$";

@@ -1,6 +1,7 @@
 using GitObjectDb;
 using GitObjectDb.Git.Hooks;
 using GitObjectDb.IO;
+using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Serialization;
 using System;
@@ -44,19 +45,6 @@ namespace LibGit2Sharp
             }
         }
 
-        /// <summary>
-        /// Inserts a <see cref="LibGit2Sharp.Commit" /> into the object database by applying a <see cref="TreeDefinition"/>.
-        /// </summary>
-        /// <param name="repository">The repository.</param>
-        /// <param name="changes">The changes.</param>
-        /// <param name="serializer">The serializer.</param>
-        /// <param name="message">The message.</param>
-        /// <param name="author">The author.</param>
-        /// <param name="committer">The committer.</param>
-        /// <param name="hooks">The hooks.</param>
-        /// <param name="options">The options.</param>
-        /// <param name="mergeParent">The parent commit for a merge.</param>
-        /// <returns>The created <see cref="LibGit2Sharp.Commit" />.</returns>
         internal static Commit CommitChanges(this IRepository repository, ObjectRepositoryChangeCollection changes, IObjectRepositorySerializer serializer, string message, Signature author, Signature committer, GitHooks hooks, CommitOptions options = null, Commit mergeParent = null)
         {
             TreeDefinition definition;
@@ -102,17 +90,66 @@ namespace LibGit2Sharp
                 throw new ArgumentNullException(nameof(definition));
             }
 
+            UpdateChangeTreeDefinitions(repository, changes.Modified, definition, serializer);
+            UpdateChangeTreeDefinitions(repository, changes.Added, definition, serializer);
+            UpdateDeletionTreeDefinitions(changes.Deleted, definition);
+            UpdateIndexTreeDefinitions(repository, changes, definition, serializer);
+        }
+
+        private static void UpdateChangeTreeDefinitions(IRepository repository, IEnumerable<ObjectRepositoryEntryChanges> changes, TreeDefinition definition, IObjectRepositorySerializer serializer)
+        {
             var buffer = new StringBuilder();
-            foreach (var change in changes.Modified.Concat(changes.Added))
+            foreach (var change in changes)
             {
+                if (change.New is IObjectRepositoryIndex index)
+                {
+                    // Index are managed separately
+                    continue;
+                }
                 buffer.Clear();
                 serializer.Serialize(change.New, buffer);
                 definition.Add(change.Path, repository.CreateBlob(buffer), Mode.NonExecutableFile);
             }
-            foreach (var deleted in changes.Deleted)
+        }
+
+        private static void UpdateDeletionTreeDefinitions(IEnumerable<ObjectRepositoryEntryChanges> deletions, TreeDefinition definition)
+        {
+            foreach (var deleted in deletions)
             {
                 definition.Remove(deleted.Path);
             }
+        }
+
+        private static void UpdateIndexTreeDefinitions(IRepository repository, ObjectRepositoryChangeCollection changes, TreeDefinition definition, IObjectRepositorySerializer serializer)
+        {
+            var buffer = new StringBuilder();
+            foreach (var index in changes.NewRepository.Indexes)
+            {
+                var fullScan = changes.Added.Any(c => c.New.Id == index.Id);
+                if (UpdateAndSerializerIndex(index, changes, serializer, buffer, fullScan))
+                {
+                    definition.Add(index.GetDataPath(), repository.CreateBlob(buffer), Mode.NonExecutableFile);
+                }
+            }
+        }
+
+        private static bool UpdateAndSerializerIndex(IObjectRepositoryIndex index, ObjectRepositoryChangeCollection changes, IObjectRepositorySerializer serializer, StringBuilder buffer, bool fullScan)
+        {
+            buffer.Clear();
+            var binding = index.DataAccessor.ConstructorParameterBinding;
+            var updatedIndex = fullScan ? index.FullScan() : index.Update(changes);
+            if (updatedIndex == null)
+            {
+                return false;
+            }
+
+            var cloned = (IObjectRepositoryIndex)binding.Cloner(index,
+                (instance, propertyName, type, fallback) =>
+                    propertyName == nameof(IObjectRepositoryIndex.Values) ? updatedIndex : fallback,
+                (childProperty, children, @new, dataAccessor) =>
+                    throw new NotSupportedException("Index should not contain child properties."));
+            serializer.Serialize(cloned, buffer);
+            return true;
         }
 
         /// <summary>

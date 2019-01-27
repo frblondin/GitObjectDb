@@ -62,8 +62,8 @@ namespace GitObjectDb.Tests
         {
             // Arrange
             var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
-            var stopwatch = Stopwatch.StartNew();
             var page = sut.Applications.PickRandom().Pages.PickRandom();
+            var stopwatch = Stopwatch.StartNew();
 
             // Act
             var result = search.Grep(sut, page.Id.ToString());
@@ -104,8 +104,8 @@ namespace GitObjectDb.Tests
                                                          .WithBackend(() => backend = new LiteDbBackend($"filename={dbFile}; journal=false"));
             var sut = loader.LoadFrom(container, repositoryDescription);
             sut.Execute(r => r.ObjectDatabase.CopyAllBlobs(backend));
-            var stopwatch = Stopwatch.StartNew();
             var page = sut.Applications.PickRandom().Pages.PickRandom();
+            var stopwatch = Stopwatch.StartNew();
 
             // Act
             var result = search.Grep(sut, page.Id.ToString());
@@ -134,6 +134,26 @@ namespace GitObjectDb.Tests
 
             // Assert
             // Child loading is lazy so root load time should be really short
+            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromMilliseconds(300)));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
+        public void SearchInLargeRepositoryUsingIndex(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        {
+            // Arrange
+            var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
+            var referencedPage = File.ReadAllText("Assets\\Benchmark.ReferencedPage.txt").Trim();
+            var index = sut.Indexes.Single(i => i is LinkFieldReferrerIndex);
+            var stopwatch = Stopwatch.StartNew();
+
+            // Act
+            var result = index[referencedPage].ToList();
+            stopwatch.Stop();
+            Console.WriteLine($"Grep total duration: {stopwatch.Elapsed}");
+
+            // Assert
+            Assert.That(result, Is.Not.Empty);
             Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromMilliseconds(300)));
         }
     }

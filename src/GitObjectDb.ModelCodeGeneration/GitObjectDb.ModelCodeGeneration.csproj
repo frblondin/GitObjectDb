@@ -26,11 +26,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Resources\IndexTemplate.cs" />
     <Compile Remove="Resources\ModelTemplate.cs" />
     <Compile Remove="Resources\RepositoryTemplate.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\IndexTemplate.cs" />
     <EmbeddedResource Include="Resources\ModelTemplate.cs" />
     <EmbeddedResource Include="Resources\RepositoryTemplate.cs" />
   </ItemGroup>

@@ -26,7 +26,7 @@ namespace GitObjectDb.Tests.Services
             var found = search.Grep(container, field.Id.ToString()).ToList();
 
             // Assert
-            Assert.That(found, Has.Count.EqualTo(1));
+            Assert.That(found, Is.Not.Empty);
         }
     }
 }
