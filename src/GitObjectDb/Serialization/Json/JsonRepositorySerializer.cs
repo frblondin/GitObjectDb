@@ -64,8 +64,6 @@ namespace GitObjectDb.Serialization.Json
             using (var writer = new StringWriter(builder))
             {
                 var jsonWriter = new JsonTextWriter(writer);
-                jsonWriter.QuoteName = false;
-
                 _serializer.Serialize(jsonWriter, node);
             }
         }
