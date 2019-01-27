@@ -26,7 +26,7 @@ namespace GitObjectDb.Transformations
             where TModel : IModelObject;
 
         /// <summary>
-        /// Adds a new child removal.
+        /// Adds a new child.
         /// </summary>
         /// <typeparam name="TModel">The type of the model.</typeparam>
         /// <typeparam name="TChildProperty">The type of the child property or field.</typeparam>
@@ -39,7 +39,7 @@ namespace GitObjectDb.Transformations
             where TChildProperty : ILazyChildren;
 
         /// <summary>
-        /// Removes a new child removal.
+        /// Removes a new child.
         /// </summary>
         /// <typeparam name="TModel">The type of the model.</typeparam>
         /// <typeparam name="TChildProperty">The type of the child property or field.</typeparam>
