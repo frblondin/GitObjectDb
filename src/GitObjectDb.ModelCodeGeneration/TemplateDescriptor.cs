@@ -20,8 +20,8 @@ namespace GitObjectDb.ModelCodeGeneration
             }
             var model = GetResourceContent(resourceName);
             SyntaxNode = CSharpSyntaxTree.ParseText(model).GetRoot();
-            TypeDeclaration = SyntaxNode.DescendantNodes().OfType<TypeDeclarationSyntax>().Single();
-            ConstructorDeclaration = TypeDeclaration.DescendantNodes().OfType<ConstructorDeclarationSyntax>().SingleOrDefault();
+            TypeDeclaration = SyntaxNode.DescendantNodes().OfType<TypeDeclarationSyntax>().First();
+            ConstructorDeclaration = TypeDeclaration.Members.OfType<ConstructorDeclarationSyntax>().SingleOrDefault();
         }
 
         public SyntaxNode SyntaxNode { get; }

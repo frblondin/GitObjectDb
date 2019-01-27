@@ -29,21 +29,24 @@ namespace GitObjectDb.ModelCodeGeneration
 
         internal abstract class Entry
         {
-            public Entry(SyntaxToken identifier, TypeSyntax type)
+            public Entry(SyntaxToken identifier, TypeSyntax type, bool isOptional = false)
             {
                 Identifier = identifier;
                 Type = type;
+                IsOptional = isOptional;
             }
 
             public SyntaxToken Identifier { get; }
 
             public TypeSyntax Type { get; }
+
+            public bool IsOptional { get; }
         }
 
         internal class SimpleEntry : Entry
         {
-            public SimpleEntry(SyntaxToken identifier, TypeSyntax type)
-                : base(identifier, type)
+            public SimpleEntry(SyntaxToken identifier, TypeSyntax type, bool isOptional = false)
+                : base(identifier, type, isOptional)
             {
             }
         }

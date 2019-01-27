@@ -10,11 +10,12 @@ namespace GitObjectDb.ModelCodeGeneration
 {
     internal static class ModelDescriptorExtensions
     {
-        public static ModelDescriptor.Entry ToRecordEntry(this PropertyDeclarationSyntax property)
+        public static ModelDescriptor.Entry ToRecordEntry(this PropertyDeclarationSyntax property, bool isOptional = false)
         {
             return new ModelDescriptor.SimpleEntry(
                 property.Identifier.WithoutTrivia(),
-                property.Type.WithoutTrivia());
+                property.Type.WithoutTrivia(),
+                isOptional);
         }
 
         public static ModelDescriptor ToRecordDescriptor(this ClassDeclarationSyntax typeDeclaration, ImmutableArray<TemplateDescriptor> templateDescriptors)

@@ -33,9 +33,11 @@ namespace GitObjectDb.ModelCodeGeneration
             public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
             {
                 var toBeRemoved = GetMembersToRemove(node);
-                var updated = node
-                    .WithIdentifier(Identifier(_descriptor.TypeIdentifier.Text))
-                    .WithMembers(RemoveMembers(node, toBeRemoved));
+                var updated = node.WithMembers(RemoveMembers(node, toBeRemoved));
+                if (IsModelTemplate(node.Identifier))
+                {
+                    updated = updated.WithIdentifier(Identifier(_descriptor.TypeIdentifier.Text));
+                }
                 return base.VisitClassDeclaration(updated);
             }
 
@@ -60,9 +62,12 @@ namespace GitObjectDb.ModelCodeGeneration
 
             public override SyntaxNode VisitConstructorDeclaration(ConstructorDeclarationSyntax node)
             {
-                var updated = node.WithIdentifier(Identifier(_descriptor.TypeIdentifier.Text));
-                return base.VisitConstructorDeclaration(updated);
+                return IsModelTemplate(node.Identifier) ?
+                    base.VisitConstructorDeclaration(node.WithIdentifier(Identifier(_descriptor.TypeIdentifier.Text))) :
+                    base.VisitConstructorDeclaration(node);
             }
+
+            private bool IsModelTemplate(SyntaxToken token) => token.Text == "ModelTemplate";
         }
     }
 }
