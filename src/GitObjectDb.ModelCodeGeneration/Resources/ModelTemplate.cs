@@ -47,6 +47,9 @@ public partial class ModelTemplate : GitObjectDb.Models.IModelObject
     /// <inheritdoc />
     public GitObjectDb.Models.IModelObject Parent { get; private set; }
 
+    /// <inheritdoc />
+    public GitObjectDb.Models.ObjectPath Path => new GitObjectDb.Models.ObjectPath(this);
+
     /// <summary>
     /// Gets the parent instance.
     /// </summary>

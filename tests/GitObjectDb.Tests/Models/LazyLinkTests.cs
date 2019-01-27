@@ -51,15 +51,12 @@ namespace GitObjectDb.Tests.Models
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
         public void LazyLinkCloneCopiesPath(IObjectRepositoryContainer<ObjectRepository> container, Page page)
         {
-            // Arrange
-            var path = new ObjectPath(page);
-
             // Act
-            var sut = (LazyLink<Page>)new LazyLink<Page>(container, path).Clone();
+            var sut = (LazyLink<Page>)new LazyLink<Page>(container, page.Path).Clone();
 
             // Assert
             Assert.That(sut.IsLinkCreated, Is.False);
-            Assert.That(sut.Path, Is.EqualTo(path));
+            Assert.That(sut.Path, Is.EqualTo(page.Path));
         }
 
         [Test]
@@ -71,7 +68,7 @@ namespace GitObjectDb.Tests.Models
 
             // Assert
             Assert.That(sut.IsLinkCreated, Is.False);
-            Assert.That(sut.Path, Is.EqualTo(new ObjectPath(page)));
+            Assert.That(sut.Path, Is.EqualTo(page.Path));
         }
     }
 }

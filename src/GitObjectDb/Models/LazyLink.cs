@@ -86,7 +86,7 @@ namespace GitObjectDb.Models
         private TLink ResolveLink()
         {
             var result = GetValueFromFactory();
-            _path = new ObjectPath(result);
+            _path = result.Path;
             return result;
         }
 
