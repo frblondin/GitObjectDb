@@ -115,7 +115,7 @@ namespace GitObjectDb.Models
                 {
                     builder.Append('/');
                 }
-                builder.Append(childProperty.Name);
+                builder.Append(childProperty.FolderName);
                 builder.Append('/');
             }
             if (!(node is IObjectRepository))
