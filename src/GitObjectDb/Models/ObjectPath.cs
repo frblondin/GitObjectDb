@@ -1,3 +1,4 @@
+using GitObjectDb.Attributes;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,9 @@ namespace GitObjectDb.Models
     /// Provides a description of an object path, including the repository.
     /// </summary>
     [DataContract]
-    public sealed class ObjectPath : IEquatable<ObjectPath>
+#pragma warning disable CA1036 // Override methods on comparable types
+    public sealed class ObjectPath : IEquatable<ObjectPath>, IComparable<ObjectPath>, IComparable
+#pragma warning restore CA1036 // Override methods on comparable types
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectPath"/> class.
@@ -46,6 +49,11 @@ namespace GitObjectDb.Models
         [DataMember]
         public string Path { get; }
 
+        /// <summary>
+        /// Gets the full path, including the repository id.
+        /// </summary>
+        public string FullPath => $"{Repository}:{Path}";
+
         /// <inheritdoc />
         public bool Equals(ObjectPath other) =>
             other != null &&
@@ -59,6 +67,14 @@ namespace GitObjectDb.Models
         public override int GetHashCode() => (Repository, Path).GetHashCode();
 
         /// <inheritdoc />
-        public override string ToString() => $"{Repository}:{Path}";
+        public override string ToString() => FullPath;
+
+        /// <inheritdoc />
+        [ExcludeFromGuardForNull]
+        public int CompareTo(ObjectPath other) => string.CompareOrdinal(FullPath, other?.FullPath);
+
+        /// <inheritdoc />
+        [ExcludeFromGuardForNull]
+        public int CompareTo(object obj) => CompareTo(obj as ObjectPath);
     }
 }
