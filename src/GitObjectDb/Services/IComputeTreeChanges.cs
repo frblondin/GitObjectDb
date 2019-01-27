@@ -49,6 +49,6 @@ namespace GitObjectDb.Services
         /// <param name="addedObjects">The added objects.</param>
         /// <param name="deletedObjects">The deleted objects.</param>
         /// <returns>A <see cref="ObjectRepositoryChangeCollection"/> containing all computed changes.</returns>
-        ObjectRepositoryChangeCollection Compute(IObjectRepository repository, IList<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects);
+        ObjectRepositoryChangeCollection Compute(IObjectRepository repository, IEnumerable<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects);
 }
 }
