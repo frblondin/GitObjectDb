@@ -95,6 +95,7 @@ namespace GitObjectDb.Services
         {
             var transformations = new TransformationFromChunkChanges(_rebase.ModifiedChunks, _rebase.AddedObjects, _rebase.DeletedObjects);
             var transformed = CurrentTransformedRepository.DataAccessor.With(CurrentTransformedRepository, transformations);
+            transformed.SetRepositoryData(CurrentTransformedRepository.RepositoryDescription, ObjectId.Zero);
             _rebase.Transformations.Add(transformed);
 
             _rebase.ClearChanges();
@@ -175,6 +176,13 @@ namespace GitObjectDb.Services
 
             foreach (var modifiedProperty in changes)
             {
+                if (typeof(IObjectRepositoryIndex).IsAssignableFrom(modifiedProperty.Property.Property.ReflectedType))
+                {
+                    // Indexes will be recomputed anyways from the changes when committed,
+                    // so there is no need to track them in the modified chunks
+                    continue;
+                }
+
                 _rebase.ModifiedChunks.Add(modifiedProperty);
             }
         }

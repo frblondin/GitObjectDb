@@ -41,10 +41,28 @@ namespace GitObjectDb.Tests.Models
             sut = container.AddRepository(sut, signature, message);
             var linkField = sut.Flatten().OfType<Field>().First(
                 f => f.Content.MatchOrDefault(matchLink: l => true));
+            var target = linkField.Content.MatchOrDefault(matchLink: c => c.Target).Link;
 
             // Act
-            var target = linkField.Content.MatchOrDefault(matchLink: c => c.Target).Link;
             var referrers = sut.GetReferrers(target);
+
+            // Assert
+            Assert.That(referrers, Does.Contain(linkField));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
+        public void ResolveLinkReferersUsingIndex(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
+        {
+            // Arrange
+            sut = container.AddRepository(sut, signature, message);
+            var linkField = sut.Flatten().OfType<Field>().First(
+                f => f.Content.MatchOrDefault(matchLink: l => true));
+            var target = linkField.Content.MatchOrDefault(matchLink: c => c.Target).Link;
+
+            // Act
+            var index = sut.Indexes.Single(i => i is LinkFieldReferrerIndex);
+            var referrers = index[target.Path.FullPath];
 
             // Assert
             Assert.That(referrers, Does.Contain(linkField));

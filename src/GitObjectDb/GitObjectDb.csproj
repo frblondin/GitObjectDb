@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\GitObjectDb.ModelCodeGeneration\Resources\IndexTemplate.cs" Link="Models\Templates\IndexTemplate.cs" />
     <Compile Include="..\GitObjectDb.ModelCodeGeneration\Resources\ModelTemplate.cs" Link="Models\Templates\ModelTemplate.cs" />
     <Compile Include="..\GitObjectDb.ModelCodeGeneration\Resources\RepositoryTemplate.cs" Link="Models\Templates\RepositoryTemplate.cs" />
   </ItemGroup>

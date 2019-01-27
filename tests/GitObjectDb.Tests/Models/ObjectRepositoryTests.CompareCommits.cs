@@ -1,10 +1,8 @@
-using GitObjectDb.Git;
 using GitObjectDb.Models;
 using GitObjectDb.Services;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Utils;
-using GitObjectDb.Tests.Git.Backends;
 using LibGit2Sharp;
 using NUnit.Framework;
 using System;
@@ -27,7 +25,8 @@ namespace GitObjectDb.Tests.Models
 
             // Act
             var changes = computeTreeChangesFactory(container, sut.RepositoryDescription)
-                .Compare(sut.CommitId, commit.CommitId);
+                .Compare(sut.CommitId, commit.CommitId)
+                .SkipIndexChanges();
 
             // Assert
             Assert.That(changes, Has.Count.EqualTo(1));
@@ -48,7 +47,8 @@ namespace GitObjectDb.Tests.Models
 
             // Act
             var changes = computeTreeChangesFactory(container, sut.RepositoryDescription)
-                .Compare(sut.CommitId, commit.CommitId);
+                .Compare(sut.CommitId, commit.CommitId)
+                .SkipIndexChanges();
 
             // Assert
             Assert.That(changes, Has.Count.EqualTo(1));
@@ -70,7 +70,8 @@ namespace GitObjectDb.Tests.Models
 
             // Act
             var changes = computeTreeChangesFactory(container, sut.RepositoryDescription)
-                .Compare(sut.CommitId, commit.CommitId);
+                .Compare(sut.CommitId, commit.CommitId)
+                .SkipIndexChanges();
 
             // Assert
             Assert.That(changes, Has.Count.EqualTo(1));
@@ -91,7 +92,8 @@ namespace GitObjectDb.Tests.Models
 
             // Act
             var changes = computeTreeChangesFactory(container, sut.RepositoryDescription)
-                .Compare(sut.CommitId, commit.CommitId);
+                .Compare(sut.CommitId, commit.CommitId)
+                .SkipIndexChanges();
 
             // Assert
             Assert.That(changes.Modified, Is.Empty);

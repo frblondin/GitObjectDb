@@ -74,5 +74,19 @@ namespace GitObjectDb.Models.Compare
 
         /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        /// <summary>
+        /// Returns a new instance of <see cref="ObjectRepositoryChangeCollection"/> skipping index
+        /// changes contained in the current instance.
+        /// </summary>
+        /// <returns>The <see cref="ObjectRepositoryChangeCollection"/> skipping index
+        /// changes contained in the current instance.</returns>
+        public ObjectRepositoryChangeCollection SkipIndexChanges()
+        {
+            var filteredChanges = this
+                .Where(c => !(c.Old is IObjectRepositoryIndex || c.New is IObjectRepositoryIndex))
+                .ToImmutableList();
+            return new ObjectRepositoryChangeCollection(NewRepository, filteredChanges, OldRepository);
+        }
     }
 }

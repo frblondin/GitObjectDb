@@ -215,6 +215,13 @@ namespace GitObjectDb.Models.Merge
 
             foreach (var modifiedProperty in changes)
             {
+                if (typeof(IObjectRepositoryIndex).IsAssignableFrom(modifiedProperty.Property.Property.ReflectedType))
+                {
+                    // Indexes will be recomputed anyways from the changes when committed,
+                    // so there is no need to track them in the modified chunks
+                    continue;
+                }
+
                 ModifiedChunks.Add(modifiedProperty);
             }
         }

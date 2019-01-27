@@ -44,7 +44,8 @@ namespace GitObjectDb.Tests.Services
 
             // Assert
             var changes = computeTreeChangesFactory(container, container[sut.Id].RepositoryDescription)
-                .Compare(commitC.CommitId, mergeCommit);
+                .Compare(commitC.CommitId, mergeCommit)
+                .SkipIndexChanges();
             Assert.That(changes, Has.Count.EqualTo(1));
             Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Modified));
             Assert.That(changes[0].Old.Name, Is.EqualTo(sut.Applications[0].Pages[0].Name));
@@ -73,7 +74,8 @@ namespace GitObjectDb.Tests.Services
 
             // Assert
             var changes = computeTreeChangesFactory(container, container[sut.Id].RepositoryDescription)
-                .Compare(commitC.CommitId, mergeCommit);
+                .Compare(commitC.CommitId, mergeCommit)
+                .SkipIndexChanges();
             Assert.That(changes, Has.Count.EqualTo(1));
             Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Added));
             Assert.That(changes[0].New.Name, Is.EqualTo("new field"));
@@ -102,7 +104,8 @@ namespace GitObjectDb.Tests.Services
 
             // Assert
             var changes = computeTreeChangesFactory(container, container[sut.Id].RepositoryDescription)
-                .Compare(commitC.CommitId, mergeCommit);
+                .Compare(commitC.CommitId, mergeCommit)
+                .SkipIndexChanges();
             Assert.That(changes, Has.Count.EqualTo(1));
             Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Deleted));
             Assert.That(changes[0].Old.Id, Is.EqualTo(page.Fields[1].Id));
@@ -191,7 +194,8 @@ namespace GitObjectDb.Tests.Services
 
             // Assert
             var changes = computeTreeChangesFactory(container, container[sut.Id].RepositoryDescription)
-                .Compare(commitC.CommitId, mergeCommit);
+                .Compare(commitC.CommitId, mergeCommit)
+                .SkipIndexChanges();
             Assert.That(changes, Has.Count.EqualTo(1));
             Assert.That(changes[0].Status, Is.EqualTo(ChangeKind.Modified));
             Assert.That(changes[0].Old.Name, Is.EqualTo("yet again modified name"));
