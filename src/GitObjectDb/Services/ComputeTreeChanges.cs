@@ -56,18 +56,18 @@ namespace GitObjectDb.Services
             }
         }
 
-        private void RemoveNode(IModelObject left, IList<ObjectRepositoryEntryChanges> changed, Stack<string> stack)
+        private void AddNodeRecursively(IModelObject node, IList<ObjectRepositoryEntryChanges> changed, Stack<string> stack, Func<string, IModelObject, ObjectRepositoryEntryChanges> changeFactory)
         {
             var path = stack.ToDataPath();
-            changed.Add(new ObjectRepositoryEntryChanges(path, ChangeKind.Deleted, old: left));
-            var dataAccessor = _modelDataProvider.Get(left.GetType());
+            changed.Add(changeFactory(path, node));
+            var dataAccessor = _modelDataProvider.Get(node.GetType());
             foreach (var childProperty in dataAccessor.ChildProperties)
             {
                 stack.Push(childProperty.Name);
-                foreach (var child in left.Children)
+                foreach (var child in node.Children)
                 {
                     stack.Push(child.Id.ToString());
-                    RemoveNode(child, changed, stack);
+                    AddNodeRecursively(child, changed, stack, changeFactory);
                     stack.Pop();
                 }
                 stack.Pop();
@@ -226,7 +226,7 @@ namespace GitObjectDb.Services
             {
                 stack.Push(enumerator.Right.Id.ToString());
                 var path = stack.ToDataPath();
-                changes.Add(new ObjectRepositoryEntryChanges(path, ChangeKind.Added, @new: enumerator.Right));
+                AddNodeRecursively(enumerator.Right, changes, stack, (p, n) => new ObjectRepositoryEntryChanges(p, ChangeKind.Added, @new: n));
                 stack.Pop();
                 enumerator.MoveNextRight();
                 return;
@@ -234,7 +234,7 @@ namespace GitObjectDb.Services
             else if (enumerator.NodeHasBeenRemoved)
             {
                 stack.Push(enumerator.Left.Id.ToString());
-                RemoveNode(enumerator.Left, changes, stack);
+                AddNodeRecursively(enumerator.Left, changes, stack, (p, n) => new ObjectRepositoryEntryChanges(p, ChangeKind.Deleted, old: n));
                 stack.Pop();
                 enumerator.MoveNextLeft();
                 return;
@@ -243,7 +243,7 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public ObjectRepositoryChangeCollection Compute(IObjectRepository repository, IList<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects)
+        public ObjectRepositoryChangeCollection Compute(IObjectRepository repository, IEnumerable<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects)
         {
             if (repository == null)
             {
@@ -269,10 +269,10 @@ namespace GitObjectDb.Services
                 .Union(deletedObjects.Select(d => d.Path), StringComparer.OrdinalIgnoreCase);
             var tempId = default(UniqueId);
             var forceVisit = new HashSet<UniqueId>(from path in allImpactedPaths
-                                                from part in path.Split('/')
-                                                where UniqueId.TryParse(part, out tempId)
-                                                let id = tempId
-                                                select id);
+                                                   from part in path.Split('/')
+                                                   where UniqueId.TryParse(part, out tempId)
+                                                   let id = tempId
+                                                   select id);
             object ProcessProperty(IModelObject node, string name, Type argumentType, object fallback)
             {
                 var path = node.GetDataPath();
