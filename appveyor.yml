@@ -58,14 +58,22 @@ build_script:
 test: off
 
 deploy:
-  provider: GitHub
-  tag: $(APPVEYOR_BUILD_VERSION)
-  release: GitObjectDb v$(APPVEYOR_BUILD_VERSION)
-  description: $(APPVEYOR_REPO_COMMIT_MESSAGE)
-  auth_token:
-    secure: PSEMQITxvJW1J/gjkbgXmr9W0GWEtqHkaHjPHKwShuUL4OJiqC+o9ExosP0z3mjc # your encrypted token from GitHub
-  artifact: /.*\.nupkg/            # upload all NuGet packages to release assets
-  draft: false
-  prerelease: true
-  on:
-    branch: master                 # release from master branch only
+  - provider: GitHub
+    tag: $(APPVEYOR_BUILD_VERSION)
+    release: GitObjectDb v$(APPVEYOR_BUILD_VERSION)
+    description: $(APPVEYOR_REPO_COMMIT_MESSAGE)
+    auth_token:
+      secure: PSEMQITxvJW1J/gjkbgXmr9W0GWEtqHkaHjPHKwShuUL4OJiqC+o9ExosP0z3mjc # your encrypted token from GitHub
+    artifact: /.*\.nupkg/            # upload all NuGet packages to release assets
+    draft: false
+    prerelease: true
+    on:
+      branch: master                 # release from master branch only
+
+  - provider: NuGet
+    api_key:
+      secure: xf1ber+UZ0o2T5HTpcCBSF34j4FCqcbY11+nr1IQn3Cy94AhFyzVgVblLLw2z+uS
+    skip_symbols: false
+    artifact: /.*\.nupkg/
+    on:
+      branch: master                 # release from master branch only
