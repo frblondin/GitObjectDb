@@ -50,7 +50,7 @@ namespace GitObjectDb.Git
             {
                 lock (_syncLock)
                 {
-                    entry.Counter--;
+                    entry._counter--;
                 }
                 StartScanForExpiredItems();
             }
@@ -101,8 +101,8 @@ namespace GitObjectDb.Git
                 {
                     _dictionary[description] = result = new CacheEntry(_repositoryFactory.CreateRepository(description));
                 }
-                result.Counter++;
-                result.LastUsed = DateTimeOffset.UtcNow;
+                result._counter++;
+                result._lastUsed = DateTimeOffset.UtcNow;
                 return result;
             }
         }
@@ -121,7 +121,7 @@ namespace GitObjectDb.Git
             lock (_syncLock)
             {
                 var expiredItems = (from kvp in _dictionary
-                                    where kvp.Value.Counter == 0 && kvp.Value.ShouldBeEvicted
+                                    where kvp.Value._counter == 0 && kvp.Value.ShouldBeEvicted
                                     select kvp).ToList();
                 foreach (var kvp in expiredItems)
                 {
@@ -150,8 +150,8 @@ namespace GitObjectDb.Git
         {
             private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(1);
 
-            public int Counter;
-            public DateTimeOffset LastUsed;
+            internal int _counter;
+            internal DateTimeOffset _lastUsed;
 
             public CacheEntry(IRepository repository)
             {
@@ -160,7 +160,7 @@ namespace GitObjectDb.Git
 
             public IRepository Repository { get; }
 
-            public bool ShouldBeEvicted => Counter == 0 && (DateTimeOffset.UtcNow - LastUsed) > _timeout;
+            public bool ShouldBeEvicted => _counter == 0 && (DateTimeOffset.UtcNow - _lastUsed) > _timeout;
 
             public void Evict() => Repository.Dispose();
         }
