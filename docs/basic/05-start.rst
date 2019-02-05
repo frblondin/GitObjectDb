@@ -5,6 +5,9 @@ Once the data model is created (see home page), you can initialize a new reposit
 
 .. code-block:: csharp
 
+    var serviceProvider = new ServiceCollection()
+        .AddGitObjectDb()
+        .BuildServiceProvider();
     var container = new ObjectRepositoryContainer<ObjectRepository>(
         serviceProvider,
         path);
