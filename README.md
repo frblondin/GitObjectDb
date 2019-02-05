@@ -35,57 +35,12 @@ Here's a simple example:
         public ILazyChildren<Page> Pages { get; }
     }
     ```
-### Basic commands
-   - Initialize a new repository
-        ```csharp
-        var container = new ObjectRepositoryContainer<ObjectRepository>(serviceProvider, path);
-        var repo = new ObjectRepository(...);
-        container.AddRepository(repo, signature, message);
-        ```
-   - Commit a new change
-        ```csharp
-        var modified = repo.With(page, p => p.Name, "modified");
-        container.Commit(modified.Repository, signature, message);
-        ```
-   - Commit multiple changes
-        ```csharp
-        var modified = repository.With(c => c
-            .Update(field, f => f.Name, "modified field name")
-            .Update(field, f => f.Content, FieldContent.NewLink(new FieldLinkContent(new LazyLink<Page>(container, newLinkedPage))))
-            .Update(page, p => p.Name, "modified page name"));
-        container.Commit(modified.Repository, signature, message);
-        ```
-    - Branch management: see [branch & merges](https://github.com/frblondin/GitObjectDb/blob/master/tests/GitObjectDb.Tests/Services/MergeProcessorTests.cs) and [rebase](https://github.com/frblondin/GitObjectDb/blob/master/tests/GitObjectDb.Tests/Services/RebaseProcessorTests.cs) unit tests.
-    - Migrations: migrations allows to define any action that must be executed when the commit containing the migration will be processed by a pull. See the [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/tests/GitObjectDb.Tests/Services/MigratorTests.cs) for more details.
-    - [Pre/post commit & merge hook](https://github.com/frblondin/GitObjectDb/blob/master/tests/GitObjectDb.Tests/Git/Hooks/GitHooksTests.cs)
-	- Simple validation: see [unit tests](https://github.com/frblondin/GitObjectDb/blob/master/tests/GitObjectDb.Tests/Validations/ModelValidationTests.cs) for more information.
 
-### Advanced
-   - Index can be automatically maintained by GitObjectDb. Any change made to the objects will be automatically tracked to update the index.
-        ```csharp
-        [Index]
-        public partial class LinkFieldReferrerIndex
-        {
-            partial void ComputeKeys(IModelObject node, ISet<string> result)
-            {
-                // The ComputeKeys method gets invoked by GitObjectDb for any modified node
-                // You can index whatever you want. Just return the key(s) for an object
-                if (node is Field field)
-                {
-                    var link = field.Content.MatchOrDefault(() => null, l => l.Target.Path);
-                    if (link != null)
-                    {
-                        result.Add(link.FullPath);
-                    }
-                }
-            }
-        }
-        ```
-     Index can be used this way:
-        ```csharp
-        var index = repository.Indexes.Single(i => i is LinkFieldReferrerIndex);
-        var referrers = index[node.Path.FullPath];
-        ```
+### Documentation
+
+See [Documentation][Documentation].
+
+ [Documentation]: https://gitobjectdb.readthedocs.io
 
 ## Prerequisites
 
