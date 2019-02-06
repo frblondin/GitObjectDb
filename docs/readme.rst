@@ -7,7 +7,17 @@ The Git repository is used as a pure database as the files containing the serial
 
 Here's a simple example:
 
-1. Define your own repository data model:
+1. Add a reference to `GitObjectDb`, `GitObjectDb.ModelCodeGeneration`, `GitObjectDb.ModelCodeGeneration.Attributes`, `CodeGeneration.Roslyn.BuildTime` NuGet packages
+
+2. Edit the project file (`MyProject.csproj`) and add the following:
+
+.. code-block:: xml
+
+    <ItemGroup>
+        <DotNetCliToolReference Include="dotnet-codegen" Version="0.4.88" />
+    </ItemGroup>
+
+3. Define your own repository data model:
 
 .. code-block:: csharp
 
@@ -21,7 +31,7 @@ Here's a simple example:
 
     This object contains `Applications` of type `ILazyChildren<Application>`. That's how you can create nested objects. They must be of type `ILazyChildren<Application>`._
 
-2. Create nested object types:
+4. Create nested object types:
 
 .. code-block:: csharp
 
