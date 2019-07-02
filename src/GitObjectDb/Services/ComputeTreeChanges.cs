@@ -108,7 +108,7 @@ namespace GitObjectDb.Services
             });
         }
 
-        private static IImmutableList<ObjectRepositoryEntryChanges> CollectModifiedNodes(IObjectRepository oldRepository, IObjectRepository newRepository, TreeChanges changes, Commit oldCommit) =>
+        private static IList<ObjectRepositoryEntryChanges> CollectModifiedNodes(IObjectRepository oldRepository, IObjectRepository newRepository, TreeChanges changes, Commit oldCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Modified)
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
@@ -116,26 +116,26 @@ namespace GitObjectDb.Services
              let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in old repository.")
              let newNode = newRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in new repository.")
              where !oldNode.Equals(newNode) // If new property have been defined in the data model we could end up with text differences even is object have same value (default values for ex.) = false positivies
-             select new ObjectRepositoryEntryChanges(c.Path, c.Status, oldNode, newNode))
-            .ToImmutableList();
+             select new ObjectRepositoryEntryChanges(newNode.GetDataPath(), c.Status, oldNode, newNode))
+            .ToList();
 
-        private static IImmutableList<ObjectRepositoryEntryChanges> CollectAddedNodes(IObjectRepository newRepository, TreeChanges changes, Commit newCommit) =>
+        private static IList<ObjectRepositoryEntryChanges> CollectAddedNodes(IObjectRepository newRepository, TreeChanges changes, Commit newCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Added)
              let newEntry = newCommit[c.Path]
              where newEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
              let newNode = newRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in new instance.")
              select new ObjectRepositoryEntryChanges(c.Path, c.Status, null, newNode))
-            .ToImmutableList();
+            .ToList();
 
-        private static IImmutableList<ObjectRepositoryEntryChanges> CollectDeletedNodes(IObjectRepository oldRepository, TreeChanges changes, Commit oldCommit) =>
+        private static IList<ObjectRepositoryEntryChanges> CollectDeletedNodes(IObjectRepository oldRepository, TreeChanges changes, Commit oldCommit) =>
             (from c in changes.Where(c => c.Status == ChangeKind.Deleted)
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
              let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in old instance.")
              select new ObjectRepositoryEntryChanges(c.Path, c.Status, oldNode, null))
-            .ToImmutableList();
+            .ToList();
 
         private static void ThrowIfNonSupportedChangeTypes(TreeChanges changes)
         {
@@ -242,15 +242,15 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public ObjectRepositoryChangeCollection Compute(IObjectRepository repository, IEnumerable<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects)
+        public ObjectRepositoryChangeCollection Compute(IObjectRepository repository, IEnumerable<ObjectRepositoryPropertyChange> modifiedProperties, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects)
         {
             if (repository == null)
             {
                 throw new ArgumentNullException(nameof(repository));
             }
-            if (modifiedChunks == null)
+            if (modifiedProperties == null)
             {
-                throw new ArgumentNullException(nameof(modifiedChunks));
+                throw new ArgumentNullException(nameof(modifiedProperties));
             }
             if (addedObjects == null)
             {
@@ -261,11 +261,12 @@ namespace GitObjectDb.Services
                 throw new ArgumentNullException(nameof(deletedObjects));
             }
 
-            var changes = modifiedChunks.ToLookup(c => c.Path, StringComparer.OrdinalIgnoreCase);
+            var changes = modifiedProperties.ToLookup(c => c.Path.GetSiblingFile(FileSystemStorage.DataFile), StringComparer.OrdinalIgnoreCase);
             var allImpactedPaths =
-                modifiedChunks.Select(c => c.Path)
-                .Union(addedObjects.Select(a => a.Path), StringComparer.OrdinalIgnoreCase)
-                .Union(deletedObjects.Select(d => d.Path), StringComparer.OrdinalIgnoreCase);
+                modifiedProperties.Select(c => c.Path)
+                .Concat(addedObjects.Select(a => a.Path))
+                .Concat(deletedObjects.Select(d => d.Path))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
             var tempId = default(UniqueId);
             var forceVisit = new HashSet<UniqueId>(from path in allImpactedPaths
                                                    from part in path.Split('/')

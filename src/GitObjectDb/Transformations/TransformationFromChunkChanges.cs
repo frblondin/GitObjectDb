@@ -19,7 +19,7 @@ namespace GitObjectDb.Transformations
         private readonly List<ITransformation> _transformations;
 
         [ActivatorUtilitiesConstructor]
-        public TransformationFromChunkChanges(IList<ObjectRepositoryChunkChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects)
+        public TransformationFromChunkChanges(IList<ObjectRepositoryPropertyChange> modifiedChunks, IList<ObjectRepositoryAdd> addedObjects, IList<ObjectRepositoryDelete> deletedObjects)
         {
             if (modifiedChunks == null)
             {

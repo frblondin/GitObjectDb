@@ -57,7 +57,7 @@ namespace GitObjectDb.Services
             {
                 throw new ArgumentNullException(nameof(merger));
             }
-            var remainingConflicts = _merge.ModifiedChunks.Where(c => c.IsInConflict).ToList();
+            var remainingConflicts = _merge.ModifiedProperties.Where(c => c.IsInConflict).ToList();
             if (remainingConflicts.Any())
             {
                 throw new RemainingConflictsException(remainingConflicts);
@@ -80,7 +80,7 @@ namespace GitObjectDb.Services
         private ObjectId ApplyMerge(Signature merger, IRepository repository)
         {
             var computeChanges = _computeTreeChangesFactory(_merge.Repository.Container, _merge.Repository.RepositoryDescription);
-            var treeChanges = computeChanges.Compute(_merge.Repository, _merge.ModifiedChunks, _merge.AddedObjects, _merge.DeletedObjects);
+            var treeChanges = computeChanges.Compute(_merge.Repository, _merge.ModifiedProperties, _merge.AddedObjects, _merge.DeletedObjects);
 
             if (!_hooks.OnMergeStarted(treeChanges))
             {

@@ -61,7 +61,7 @@ namespace GitObjectDb.Models.Rebase
         /// <summary>
         /// Gets the modified chunks.
         /// </summary>
-        IList<ObjectRepositoryChunkChange> ModifiedChunks { get; }
+        IList<ObjectRepositoryPropertyChange> ModifiedProperties { get; }
 
         /// <summary>
         /// Gets the added objects.

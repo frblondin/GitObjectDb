@@ -12,7 +12,7 @@ using System.Text;
 
 namespace GitObjectDb.Tests.Models.Compare
 {
-    public class ObjectRepositoryChunkChangeTests
+    public class ObjectRepositoryPropertyChangeTests
     {
         private static readonly ModifiablePropertyInfo _nameProperty = new ModifiablePropertyInfo(ExpressionReflector.GetProperty<Field>(p => p.Name));
 
@@ -25,7 +25,7 @@ namespace GitObjectDb.Tests.Models.Compare
             Field mergeBaseNode = page.Fields[0], branchNode = page.Fields[1], headNode = page.Fields[2];
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode));
+            var sut = new ObjectRepositoryPropertyChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode));
 
             // Assert
             Assert.That(sut.Path, Is.SameAs(path));
@@ -51,7 +51,7 @@ namespace GitObjectDb.Tests.Models.Compare
             Field mergeBaseNode = page.Fields[0], branchNode = page.Fields[1], headNode = page.Fields[2];
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode));
+            var sut = new ObjectRepositoryPropertyChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode));
             sut.Resolve(resolvedValue);
 
             // Assert
@@ -69,12 +69,12 @@ namespace GitObjectDb.Tests.Models.Compare
             Field mergeBaseNode = page.Fields[0], branchNode = page.Fields[1], headNode = page.Fields[2];
 
             // Act
-            var sut = new ObjectRepositoryChunkChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode));
+            var sut = new ObjectRepositoryPropertyChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode));
             sut.Resolve(resolvedValue);
             Assert.Throws<GitObjectDbException>(() => sut.Resolve(resolvedValue));
         }
 
-        private static ObjectRepositoryChunk CreateChunk(IModelObject @object) =>
-            new ObjectRepositoryChunk(@object, _nameProperty, @object.Name);
+        private static ObjectRepositoryPropertyValue CreateChunk(IModelObject @object) =>
+            new ObjectRepositoryPropertyValue(@object, _nameProperty, @object.Name);
     }
 }

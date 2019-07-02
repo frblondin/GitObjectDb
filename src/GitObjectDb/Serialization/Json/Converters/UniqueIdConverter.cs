@@ -55,7 +55,7 @@ namespace GitObjectDb.Serialization.Json.Converters
                     throw new JsonSerializationException($"Error parsing {nameof(UniqueId)} string: {reader.Value}", ex);
                 }
             }
-            throw new JsonSerializationException($"Unexpected token or value when parsing {nameof(UniqueId)}. Token: {reader.TokenType}, Value: {reader.Value}");
+            throw new JsonSerializationException($"Unexpected token or value when parsing {nameof(UniqueId)}. Token: {reader.TokenType}, Value: {reader.Value}.");
         }
 
         /// <inheritdoc/>
@@ -82,7 +82,7 @@ namespace GitObjectDb.Serialization.Json.Converters
                 writer.WriteValue(id.ToString());
                 return;
             }
-            throw new JsonSerializationException($"Expected {nameof(UniqueId)} object value");
+            throw new JsonSerializationException($"Expected {nameof(UniqueId)} object value.");
         }
     }
 }

@@ -10,9 +10,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Tests.Models
+namespace GitObjectDb.Tests.Features
 {
-    public partial class ObjectRepositoryTests
+    public class CompareCommitsTests
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]

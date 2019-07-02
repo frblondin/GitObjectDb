@@ -75,7 +75,7 @@ namespace GitObjectDb.Models.Rebase
         public int TotalStepCount => ReplayedCommits?.Count ?? 0;
 
         /// <inheritdoc/>
-        public IList<ObjectRepositoryChunkChange> ModifiedChunks { get; } = new List<ObjectRepositoryChunkChange>();
+        public IList<ObjectRepositoryPropertyChange> ModifiedProperties { get; } = new List<ObjectRepositoryPropertyChange>();
 
         /// <inheritdoc/>
         public IList<ObjectRepositoryAdd> AddedObjects { get; } = new List<ObjectRepositoryAdd>();
@@ -174,7 +174,7 @@ namespace GitObjectDb.Models.Rebase
         /// </summary>
         internal void ClearChanges()
         {
-            ModifiedChunks.Clear();
+            ModifiedProperties.Clear();
             AddedObjects.Clear();
             DeletedObjects.Clear();
         }
