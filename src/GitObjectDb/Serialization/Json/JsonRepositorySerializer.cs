@@ -37,40 +37,45 @@ namespace GitObjectDb.Serialization.Json
         private static CamelCasePropertyNamesContractResolver CreateContractResolver(ModelObjectContractCache modelObjectContractCache, ModelObjectSerializationContext context) =>
             context != null ? new ModelObjectContractResolver(context, modelObjectContractCache) : new CamelCasePropertyNamesContractResolver();
 
-        public IModelObject Deserialize(Stream stream)
+        public IModelObject Deserialize(Stream stream, Func<string, string> relativeFileDataResolver)
         {
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
+            }
+            if (relativeFileDataResolver is null)
+            {
+                throw new ArgumentNullException(nameof(relativeFileDataResolver));
             }
 
             using (var streamReader = new StreamReader(stream))
             {
-                return (IModelObject)_serializer.Deserialize(new JsonTextReader(streamReader));
+                return (IModelObject)_serializer.Deserialize(new JsonModelObjectReader(relativeFileDataResolver, streamReader));
             }
         }
 
-        public void Serialize(IModelObject node, StringBuilder builder)
+        public IList<ModelNestedObjectInfo> Serialize(IModelObject node, StringBuilder builder)
         {
-            if (node == null)
+            if (node is null)
             {
                 throw new ArgumentNullException(nameof(node));
             }
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
             using (var writer = new StringWriter(builder))
             {
-                var jsonWriter = new JsonTextWriter(writer);
+                var jsonWriter = new JsonModelObjectWriter(node, writer);
                 _serializer.Serialize(jsonWriter, node);
+                return jsonWriter.AdditionalObjects;
             }
         }
 
         public void ValidateSerializable(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }

@@ -107,7 +107,8 @@ namespace GitObjectDb.Services
                 currentCommit = repository.Lookup<Commit>(commitId);
             }
 
-            var instance = (IObjectRepository)LoadEntry(container, commitId, currentCommit[FileSystemStorage.DataFile], string.Empty);
+            var instance = (IObjectRepository)LoadEntry(container, commitId, currentCommit[FileSystemStorage.DataFile], string.Empty,
+                relativePath => (currentCommit[relativePath]?.Target as Blob)?.GetContentText() ?? string.Empty);
             instance.SetRepositoryData(repositoryDescription, commitId);
             return instance;
         }
@@ -119,12 +120,12 @@ namespace GitObjectDb.Services
             return (TRepository)LoadFrom((IObjectRepositoryContainer)container, repositoryDescription, commitId);
         }
 
-        private IModelObject LoadEntry(IObjectRepositoryContainer container, ObjectId commitId, TreeEntry entry, string path)
+        private IModelObject LoadEntry(IObjectRepositoryContainer container, ObjectId commitId, TreeEntry entry, string path, Func<string, string> relativeFileDataResolver)
         {
             var context = new ModelObjectSerializationContext(container, ResolveChildren);
             var serializer = _repositorySerializerFactory(context);
             var blob = (Blob)entry.Target;
-            return serializer.Deserialize(blob.GetContentStream());
+            return serializer.Deserialize(blob.GetContentStream(), relativeFileDataResolver);
 
             ILazyChildren ResolveChildren(Type type, string propertyName)
             {
@@ -160,6 +161,7 @@ namespace GitObjectDb.Services
             let childTree = (Tree)c.Target
             let data = childTree[FileSystemStorage.DataFile]
             where data != null
-            select LoadEntry(container, commitId, data, $"{childPath}/{c.Name}");
+            select LoadEntry(container, commitId, data, $"{childPath}/{c.Name}",
+                relativePath => (subTree[relativePath]?.Target as Blob)?.GetContentText() ?? string.Empty);
     }
 }

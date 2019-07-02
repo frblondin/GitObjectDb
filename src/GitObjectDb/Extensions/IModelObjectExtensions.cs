@@ -92,8 +92,9 @@ namespace GitObjectDb.Models
         /// Gets the path to the data file for a node.
         /// </summary>
         /// <param name="source">The node.</param>
+        /// <param name="fileName">The file name.</param>
         /// <returns>A <see cref="string"/> value containing the path to the data file.</returns>
-        internal static string GetDataPath(this IModelObject source)
+        internal static string GetDataPath(this IModelObject source, string fileName = null)
         {
             var result = new StringBuilder();
             GetFolderPath(source, result);
@@ -101,7 +102,7 @@ namespace GitObjectDb.Models
             {
                 result.Append('/');
             }
-            result.Append(FileSystemStorage.DataFile);
+            result.Append(fileName ?? FileSystemStorage.DataFile);
             return result.ToString();
         }
 

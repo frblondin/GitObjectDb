@@ -54,7 +54,7 @@ namespace GitObjectDb.Tests.Serialization
             var json = Serialize(sut, linkField);
             using (var stream = new MemoryStream(Encoding.Default.GetBytes(json)))
             {
-                var deserialized = (Field)sut.Deserialize(stream);
+                var deserialized = (Field)sut.Deserialize(stream, _ => throw new NotSupportedException());
                 var deserializedLazyLink = deserialized.Content.MatchOrDefault(matchLink: c => c.Target);
 
                 // Assert

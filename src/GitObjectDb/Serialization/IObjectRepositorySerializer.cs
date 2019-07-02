@@ -22,8 +22,9 @@ namespace GitObjectDb.Serialization
         /// Deserializes the structure contained in the specified <see cref="Stream"/>.
         /// </summary>
         /// <param name="stream">The <see cref="Stream" /> that contains the structure to deserialize.</param>
+        /// <param name="relativeFileDataResolver">The relative file data resolver.</param>
         /// <returns>The <see cref="IModelObject"/> being deserialized.</returns>
-        IModelObject Deserialize(Stream stream);
+        IModelObject Deserialize(Stream stream, Func<string, string> relativeFileDataResolver);
 
         /// <summary>
         /// Serializes the specified <see cref="IModelObject"/> and writes the structure
@@ -31,7 +32,8 @@ namespace GitObjectDb.Serialization
         /// </summary>
         /// <param name="node">The <see cref="IModelObject"/> to serialize.</param>
         /// <param name="builder">The <see cref="StringBuilder"/> used to write the structure.</param>
-        void Serialize(IModelObject node, StringBuilder builder);
+        /// <returns>The list of additional nested files to be serialized, if any.</returns>
+        IList<ModelNestedObjectInfo> Serialize(IModelObject node, StringBuilder builder);
 
         /// <summary>
         /// Validates that the given type can be serialized successfully.
