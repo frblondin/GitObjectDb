@@ -42,15 +42,27 @@ namespace System
             return parts;
         }
 
+        internal static string GetSiblingFile(this string path, string fileName)
+        {
+            var parentPath = path.GetParentPath();
+            return !string.IsNullOrEmpty(parentPath) ?
+                $"{parentPath}/{fileName}" :
+                fileName;
+        }
+
         /// <summary>
         /// Returns the parent path.
         /// </summary>
         /// <param name="path">The path.</param>
+        /// <param name="fileName">The file name.</param>
         /// <exception cref="ArgumentException">path</exception>
         /// <returns>The parent path.</returns>
-        internal static string GetDataParentDataPath(this string path)
+        internal static string GetDataParentDataPath(this string path, string fileName = null)
         {
-            return $"{path.GetParentPath(3)}/{FileSystemStorage.DataFile}";
+            var parentPath = path.GetParentPath(3);
+            return !string.IsNullOrEmpty(parentPath) ?
+                $"{parentPath}/{fileName ?? FileSystemStorage.DataFile}" :
+                (fileName ?? FileSystemStorage.DataFile);
         }
 
         /// <summary>

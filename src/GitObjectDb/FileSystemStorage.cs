@@ -28,5 +28,10 @@ namespace GitObjectDb
         /// The prefix of special folders.
         /// </summary>
         public const string SpecialFolderPrefix = "$";
+
+        /// <summary>
+        /// The blob extension.
+        /// </summary>
+        public const string BlobExtension = ".blob";
     }
 }

@@ -114,7 +114,8 @@ namespace GitObjectDb.Services
                 foreach (var change in changes.Where(c => c.Path.StartsWith(FileSystemStorage.MigrationFolder, StringComparison.OrdinalIgnoreCase) && (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))
                 {
                     var blob = (Blob)commit[change.Path].Target;
-                    yield return (IMigration)serializer.Deserialize(blob.GetContentStream());
+                    yield return (IMigration)serializer.Deserialize(blob.GetContentStream(),
+                        relativePath => (commit[change.Path.GetSiblingFile(relativePath)]?.Target as Blob)?.GetContentText() ?? string.Empty);
                 }
             }
         }

@@ -122,7 +122,7 @@ namespace GitObjectDb.Services
                 if (changes.Any())
                 {
                     var definition = TreeDefinition.From(lastCommit);
-                    r.UpdateTreeDefinition(changes, definition, _serializer);
+                    r.UpdateTreeDefinition(changes, definition, _serializer, lastCommit);
                     var tree = r.ObjectDatabase.CreateTree(definition);
                     previous = info.repository;
                     lastCommit = r.ObjectDatabase.CreateCommit(info.Item2.Author, info.Item2.Committer, info.Item2.Message, tree, new[] { lastCommit }, false);
@@ -140,24 +140,32 @@ namespace GitObjectDb.Services
         private void ComputeChanges(IRepository repository)
         {
             _rebase.ClearChanges();
-            var previousCommit = _rebase.CompletedStepCount == 0 ? _rebase.MergeBaseCommitId : _rebase.ReplayedCommits[_rebase.CompletedStepCount];
-            var commit = _rebase.ReplayedCommits[_rebase.CompletedStepCount];
+
+            var previousCommitId = _rebase.CompletedStepCount == 0 ? _rebase.MergeBaseCommitId : _rebase.ReplayedCommits[_rebase.CompletedStepCount];
+            var previousCommit = repository.Lookup<Commit>(previousCommitId);
+
+            var commitId = _rebase.ReplayedCommits[_rebase.CompletedStepCount];
+            var commit = repository.Lookup<Commit>(commitId);
+
             using (var changes = repository.Diff.Compare<Patch>(
-                repository.Lookup<Commit>(previousCommit).Tree,
-                repository.Lookup<Commit>(commit).Tree))
+                previousCommit.Tree,
+                commit.Tree))
             {
                 foreach (var change in changes)
                 {
                     switch (change.Status)
                     {
                         case ChangeKind.Modified:
-                            ComputeChanges_Modified(repository, change);
+                            ComputeChanges_Modified(change, relativePath => previousCommit[change.OldPath.GetSiblingFile(relativePath)]?.Target as Blob,
+                                relativePath => commit[change.Path.GetSiblingFile(relativePath)]?.Target as Blob);
                             break;
                         case ChangeKind.Added:
-                            ComputeChanges_Added(repository, change);
+                            ComputeChanges_Added(repository, change,
+                                relativePath => (commit[change.Path.GetSiblingFile(relativePath)]?.Target as Blob)?.GetContentText() ?? string.Empty);
                             break;
                         case ChangeKind.Deleted:
-                            ComputeChanges_Deleted(repository, change);
+                            ComputeChanges_Deleted(repository, change,
+                                relativePath => (previousCommit[change.OldPath.GetSiblingFile(relativePath)]?.Target as Blob)?.GetContentText() ?? string.Empty);
                             break;
                         default:
                             throw new NotImplementedException($"Change type '{change.Status}' for branch merge is not supported.");
@@ -166,13 +174,23 @@ namespace GitObjectDb.Services
             }
         }
 
-        private void ComputeChanges_Modified(IRepository repository, PatchEntryChanges change)
+        private void ComputeChanges_Modified(PatchEntryChanges change, Func<string, Blob> relativeFileDataResolverStart, Func<string, Blob> relativeFileDataResolverEnd)
         {
-            var currentObject = CurrentTransformedRepository.TryGetFromGitPath(change.Path) ??
+            // Get data file path, in the case where a blob has changed
+            var dataPath = change.Path.GetSiblingFile(FileSystemStorage.DataFile);
+
+            var currentObject = CurrentTransformedRepository.TryGetFromGitPath(dataPath) ??
                 throw new NotImplementedException($"Conflict as a modified node {change.Path} has been deleted in current rebase state.");
-            var changeStart = _serializer.Deserialize(repository.Lookup<Blob>(change.OldOid).GetContentStream());
-            var changeEnd = _serializer.Deserialize(repository.Lookup<Blob>(change.Oid).GetContentStream());
-            var changes = ObjectRepositoryMerge.ComputeModifiedChunks(change, changeStart, changeEnd, currentObject);
+
+            var changeStart = _serializer.Deserialize(
+                relativeFileDataResolverStart(FileSystemStorage.DataFile)?.GetContentStream() ?? throw new GitObjectDbException("Change start content could not be found."),
+                relativePath => relativeFileDataResolverStart(relativePath)?.GetContentText() ?? string.Empty);
+
+            var changeEnd = _serializer.Deserialize(
+                relativeFileDataResolverEnd(FileSystemStorage.DataFile)?.GetContentStream() ?? throw new GitObjectDbException("Change end content could not be found."),
+                relativePath => relativeFileDataResolverEnd(relativePath)?.GetContentText() ?? string.Empty);
+
+            var changes = ObjectRepositoryMerge.ComputeModifiedProperties(change, changeStart, changeEnd, currentObject);
 
             foreach (var modifiedProperty in changes)
             {
@@ -183,12 +201,19 @@ namespace GitObjectDb.Services
                     continue;
                 }
 
-                _rebase.ModifiedChunks.Add(modifiedProperty);
+                _rebase.ModifiedProperties.Add(modifiedProperty);
             }
         }
 
-        private void ComputeChanges_Added(IRepository repository, PatchEntryChanges change)
+        private void ComputeChanges_Added(IRepository repository, PatchEntryChanges change, Func<string, string> relativeFileDataResolver)
         {
+            // Only data file changes have to be taken into account
+            // Changes made to the blobs will product a 'modified' change as well
+            if (System.IO.Path.GetFileName(change.Path) != FileSystemStorage.DataFile)
+            {
+                return;
+            }
+
             if (CurrentTransformedRepository.TryGetFromGitPath(change.Path) != null)
             {
                 throw new NotImplementedException("Node already present in current state.");
@@ -199,13 +224,20 @@ namespace GitObjectDb.Services
                 throw new NotImplementedException("Node addition while parent has been deleted in head is not supported.");
             }
 
-            var @new = _serializer.Deserialize(repository.Lookup<Blob>(change.Oid).GetContentStream());
+            var @new = _serializer.Deserialize(repository.Lookup<Blob>(change.Oid).GetContentStream(), relativeFileDataResolver);
             var parentId = change.Path.GetDataParentId(_rebase.Repository);
             _rebase.AddedObjects.Add(new ObjectRepositoryAdd(change.Path, @new, parentId));
         }
 
-        private void ComputeChanges_Deleted(IRepository repository, PatchEntryChanges change)
+        private void ComputeChanges_Deleted(IRepository repository, PatchEntryChanges change, Func<string, string> relativeFileDataResolver)
         {
+            // Only data file changes have to be taken into account
+            // Changes made to the blobs will product a 'modified' change as well
+            if (System.IO.Path.GetFileName(change.Path) != FileSystemStorage.DataFile)
+            {
+                return;
+            }
+
             var folder = change.Path.Replace($"/{FileSystemStorage.DataFile}", string.Empty);
             if (_rebase.ModifiedUpstreamBranchEntries.Any(c =>
                 c.Path.Equals(folder, StringComparison.OrdinalIgnoreCase) &&
@@ -214,7 +246,7 @@ namespace GitObjectDb.Services
                 throw new NotImplementedException("Node deletion while children have been added or modified in head is not supported.");
             }
 
-            var mergeBaseObject = _serializer.Deserialize(repository.Lookup<Blob>(change.OldOid).GetContentStream());
+            var mergeBaseObject = _serializer.Deserialize(repository.Lookup<Blob>(change.OldOid).GetContentStream(), relativeFileDataResolver);
             _rebase.DeletedObjects.Add(new ObjectRepositoryDelete(change.Path, mergeBaseObject.Id));
         }
     }

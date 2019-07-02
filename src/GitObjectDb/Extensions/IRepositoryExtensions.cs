@@ -48,17 +48,19 @@ namespace LibGit2Sharp
         internal static Commit CommitChanges(this IRepository repository, ObjectRepositoryChangeCollection changes, IObjectRepositorySerializer serializer, string message, Signature author, Signature committer, GitHooks hooks, CommitOptions options = null, Commit mergeParent = null)
         {
             TreeDefinition definition;
+            Commit startCommit;
             if (changes.OldRepository?.CommitId != null)
             {
                 if (repository.Head.Tip.Id != changes.OldRepository.CommitId)
                 {
                     throw new GitObjectDbException("Changes are not based on the HEAD commit.");
                 }
-                var startCommit = repository.Lookup<Commit>(changes.OldRepository.CommitId);
+                startCommit = repository.Lookup<Commit>(changes.OldRepository.CommitId);
                 definition = TreeDefinition.From(startCommit);
             }
             else if (repository.Info.IsHeadUnborn)
             {
+                startCommit = null;
                 definition = new TreeDefinition();
             }
             else
@@ -71,7 +73,7 @@ namespace LibGit2Sharp
                 return null;
             }
 
-            repository.UpdateTreeDefinition(changes, definition, serializer);
+            repository.UpdateTreeDefinition(changes, definition, serializer, startCommit);
 
             var result = Commit(repository, definition, message, author, committer, options, mergeParent);
             hooks.OnCommitCompleted(changes, message, result.Id);
@@ -79,7 +81,7 @@ namespace LibGit2Sharp
             return result;
         }
 
-        internal static void UpdateTreeDefinition(this IRepository repository, ObjectRepositoryChangeCollection changes, TreeDefinition definition, IObjectRepositorySerializer serializer)
+        internal static void UpdateTreeDefinition(this IRepository repository, ObjectRepositoryChangeCollection changes, TreeDefinition definition, IObjectRepositorySerializer serializer, Commit oldCommit = null)
         {
             if (repository == null)
             {
@@ -92,7 +94,7 @@ namespace LibGit2Sharp
 
             UpdateChangeTreeDefinitions(repository, changes.Modified, definition, serializer);
             UpdateChangeTreeDefinitions(repository, changes.Added, definition, serializer);
-            UpdateDeletionTreeDefinitions(changes.Deleted, definition);
+            UpdateDeletionTreeDefinitions(changes.Deleted, definition, oldCommit);
             UpdateIndexTreeDefinitions(repository, changes, definition, serializer);
         }
 
@@ -107,16 +109,30 @@ namespace LibGit2Sharp
                     continue;
                 }
                 buffer.Clear();
-                serializer.Serialize(change.New, buffer);
+                var nested = serializer.Serialize(change.New, buffer);
                 definition.Add(change.Path, repository.CreateBlob(buffer), Mode.NonExecutableFile);
+                foreach (var info in nested)
+                {
+                    var nestedPath = change.New.GetDataPath(info.FileName);
+                    definition.Add(nestedPath, repository.CreateBlob(info.Data), Mode.NonExecutableFile);
+                }
             }
         }
 
-        private static void UpdateDeletionTreeDefinitions(IEnumerable<ObjectRepositoryEntryChanges> deletions, TreeDefinition definition)
+        private static void UpdateDeletionTreeDefinitions(IEnumerable<ObjectRepositoryEntryChanges> deletions, TreeDefinition definition, Commit oldCommit = null)
         {
             foreach (var deleted in deletions)
             {
-                definition.Remove(deleted.Path);
+                if (oldCommit == null)
+                {
+                    throw new GitObjectDbException("Unexpected state: no deletion should be detected on blank commit.");
+                }
+
+                var folderEntry = oldCommit[deleted.Path.GetParentPath()];
+                if (folderEntry != null)
+                {
+                    definition.Remove(folderEntry.Path);
+                }
             }
         }
 

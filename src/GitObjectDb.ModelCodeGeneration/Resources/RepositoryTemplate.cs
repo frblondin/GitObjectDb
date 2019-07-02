@@ -49,6 +49,10 @@ public partial class ModelTemplate : GitObjectDb.Models.IObjectRepository
         {
             throw new ArgumentNullException(nameof(path));
         }
+        if (path.Length == 0)
+        {
+            return this;
+        }
 
         if (path.Equals(GitObjectDb.FileSystemStorage.DataFile, StringComparison.OrdinalIgnoreCase))
         {
