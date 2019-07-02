@@ -9,21 +9,21 @@ using System.Text;
 namespace GitObjectDb.Models.Compare
 {
     /// <summary>
-    /// Represents a chunk change in a <see cref="IModelObject"/> while performing a merge.
+    /// Represents a property change in a <see cref="IModelObject"/> while performing a merge.
     /// </summary>
     [DebuggerDisplay("Property = {Property.Name}, Path = {Path}, IsInConflict = {IsInConflict}, WasInConflict = {WasInConflict}")]
     [ExcludeFromGuardForNull]
-    public class ObjectRepositoryChunkChange
+    public class ObjectRepositoryPropertyChange
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ObjectRepositoryChunkChange"/> class.
+        /// Initializes a new instance of the <see cref="ObjectRepositoryPropertyChange"/> class.
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="property">The property.</param>
         /// <param name="ancestor">The ancestor.</param>
         /// <param name="theirs">Their node.</param>
         /// <param name="ours">Our node.</param>
-        public ObjectRepositoryChunkChange(string path, ModifiablePropertyInfo property, ObjectRepositoryChunk ancestor, ObjectRepositoryChunk theirs, ObjectRepositoryChunk ours)
+        public ObjectRepositoryPropertyChange(string path, ModifiablePropertyInfo property, ObjectRepositoryPropertyValue ancestor, ObjectRepositoryPropertyValue theirs, ObjectRepositoryPropertyValue ours)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));
             Property = property ?? throw new ArgumentNullException(nameof(property));
@@ -48,17 +48,17 @@ namespace GitObjectDb.Models.Compare
         /// <summary>
         /// Gets the ancestor.
         /// </summary>
-        public ObjectRepositoryChunk Ancestor { get; }
+        public ObjectRepositoryPropertyValue Ancestor { get; }
 
         /// <summary>
         /// Gets their node.
         /// </summary>
-        public ObjectRepositoryChunk Theirs { get; }
+        public ObjectRepositoryPropertyValue Theirs { get; }
 
         /// <summary>
         /// Gets our node.
         /// </summary>
-        public ObjectRepositoryChunk Ours { get; }
+        public ObjectRepositoryPropertyValue Ours { get; }
 
         /// <summary>
         /// Gets the property.

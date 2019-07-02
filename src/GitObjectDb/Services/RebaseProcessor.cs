@@ -65,7 +65,7 @@ namespace GitObjectDb.Services
             {
                 throw new GitObjectDbException("The rebase process has completed.");
             }
-            if (_rebase.ModifiedChunks.Any(c => c.IsInConflict))
+            if (_rebase.ModifiedProperties.Any(c => c.IsInConflict))
             {
                 throw new GitObjectDbException("There are remaining unresolved conflicts.");
             }
@@ -81,7 +81,7 @@ namespace GitObjectDb.Services
         {
             ComputeChanges(repository);
 
-            if (_rebase.ModifiedChunks.Any(c => c.IsInConflict))
+            if (_rebase.ModifiedProperties.Any(c => c.IsInConflict))
             {
                 return RebaseStatus.Conflicts;
             }
@@ -93,7 +93,7 @@ namespace GitObjectDb.Services
 
         private RebaseStatus CompleteStep(IRepository repository)
         {
-            var transformations = new TransformationFromChunkChanges(_rebase.ModifiedChunks, _rebase.AddedObjects, _rebase.DeletedObjects);
+            var transformations = new TransformationFromChunkChanges(_rebase.ModifiedProperties, _rebase.AddedObjects, _rebase.DeletedObjects);
             var transformed = CurrentTransformedRepository.DataAccessor.With(CurrentTransformedRepository, transformations);
             transformed.SetRepositoryData(CurrentTransformedRepository.RepositoryDescription, ObjectId.Zero);
             _rebase.Transformations.Add(transformed);

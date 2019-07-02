@@ -188,7 +188,7 @@ namespace GitObjectDb.Tests.Services
             var updateNameOther = a.With(a.Applications[0].Pages[0], p => p.Name, "yet again modified name");
             var commitC = container.Commit(updateNameOther.Repository, signature, message); // C
             var merge = container.Merge(sut.Id, "newBranch");
-            var chunk = merge.ModifiedChunks.Single();
+            var chunk = merge.ModifiedProperties.Single();
             chunk.Resolve("merged name");
             var mergeCommit = merge.Apply(signature); // D
 

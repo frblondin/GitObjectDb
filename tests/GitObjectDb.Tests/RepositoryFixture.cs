@@ -38,7 +38,7 @@ namespace GitObjectDb.Tests
             string result;
             while (true)
             {
-                result = Path.Combine(TempRepoPath, i.ToString(CultureInfo.InvariantCulture));
+                result = Path.Combine(TempRepoPath, i.ToString("D4", CultureInfo.InvariantCulture));
                 if (!Directory.Exists(result))
                 {
                     return result;

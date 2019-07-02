@@ -79,7 +79,7 @@ namespace GitObjectDb.Models.Merge
         public bool RequiresMergeCommit { get; private set; }
 
         /// <inheritdoc/>
-        public IList<ObjectRepositoryChunkChange> ModifiedChunks { get; } = new List<ObjectRepositoryChunkChange>();
+        public IList<ObjectRepositoryPropertyChange> ModifiedProperties { get; } = new List<ObjectRepositoryPropertyChange>();
 
         /// <inheritdoc/>
         public IList<ObjectRepositoryAdd> AddedObjects { get; } = new List<ObjectRepositoryAdd>();
@@ -94,7 +94,8 @@ namespace GitObjectDb.Models.Merge
             {
                 throw new NotImplementedException($"Could not find node {path} in {branchInfo} tree.");
             }
-            return Serializer.Deserialize(blob.GetContentStream());
+            return Serializer.Deserialize(blob.GetContentStream(),
+                relativePath => (mergeBase[path.GetSiblingFile(relativePath)]?.Target as Blob)?.GetContentText() ?? string.Empty);
         }
 
         private void Initialize()
@@ -173,15 +174,25 @@ namespace GitObjectDb.Models.Merge
 
         private void ComputeMerge_Modified(Commit mergeBase, Commit branchTip, Commit headTip, Patch headChanges, PatchEntryChanges change)
         {
-            var mergeBaseObject = GetContent(mergeBase, change.Path, "merge base");
-            var branchObject = GetContent(branchTip, change.Path, "branch tip");
-            var headObject = GetContent(headTip, change.Path, "head tip");
+            // Get data file path, in the case where a blob has changed
+            var path = change.Path.GetSiblingFile(FileSystemStorage.DataFile);
 
-            AddModifiedChunks(change, mergeBaseObject, branchObject, headObject, headChanges[change.Path]);
+            var mergeBaseObject = GetContent(mergeBase, path, "merge base");
+            var branchObject = GetContent(branchTip, path, "branch tip");
+            var headObject = GetContent(headTip, path, "head tip");
+
+            AddModifiedProperties(change, mergeBaseObject, branchObject, headObject, headChanges[change.Path]);
         }
 
         private void ComputeMerge_Added(Commit branchTip, PatchEntryChanges change, Patch headChanges)
         {
+            // Only data file changes have to be taken into account
+            // Changes made to the blobs will product a 'modified' change as well
+            if (Path.GetFileName(change.Path) != FileSystemStorage.DataFile)
+            {
+                return;
+            }
+
             var parentDataPath = change.Path.GetDataParentDataPath();
             if (headChanges.Any(c => c.Path.Equals(parentDataPath, StringComparison.OrdinalIgnoreCase) && c.Status == ChangeKind.Deleted))
             {
@@ -195,6 +206,13 @@ namespace GitObjectDb.Models.Merge
 
         private void ComputeMerge_Deleted(Commit mergeBase, PatchEntryChanges change, Patch headChanges)
         {
+            // Only data file changes have to be taken into account
+            // Changes made to the blobs will product a 'modified' change as well
+            if (Path.GetFileName(change.Path) != FileSystemStorage.DataFile)
+            {
+                return;
+            }
+
             var folder = change.Path.Replace($"/{FileSystemStorage.DataFile}", string.Empty);
             if (headChanges.Any(c => c.Path.Equals(folder, StringComparison.OrdinalIgnoreCase) && (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))
             {
@@ -205,13 +223,13 @@ namespace GitObjectDb.Models.Merge
             DeletedObjects.Add(new ObjectRepositoryDelete(change.Path, mergeBaseObject.Id));
         }
 
-        private void AddModifiedChunks(PatchEntryChanges branchChange, IModelObject mergeBaseObject, IModelObject newObject, IModelObject headObject, PatchEntryChanges headChange)
+        private void AddModifiedProperties(PatchEntryChanges branchChange, IModelObject mergeBaseObject, IModelObject newObject, IModelObject headObject, PatchEntryChanges headChange)
         {
             if (headChange?.Status == ChangeKind.Deleted)
             {
                 throw new NotImplementedException($"Conflict as a modified node {branchChange.Path} in merge branch source has been deleted in head.");
             }
-            var changes = ComputeModifiedChunks(branchChange, mergeBaseObject, newObject, headObject);
+            var changes = ComputeModifiedProperties(branchChange, mergeBaseObject, newObject, headObject);
 
             foreach (var modifiedProperty in changes)
             {
@@ -222,22 +240,22 @@ namespace GitObjectDb.Models.Merge
                     continue;
                 }
 
-                ModifiedChunks.Add(modifiedProperty);
+                ModifiedProperties.Add(modifiedProperty);
             }
         }
 
-        internal static IEnumerable<ObjectRepositoryChunkChange> ComputeModifiedChunks(PatchEntryChanges changes, IModelObject ancestor, IModelObject theirs, IModelObject ours)
+        internal static IEnumerable<ObjectRepositoryPropertyChange> ComputeModifiedProperties(PatchEntryChanges changes, IModelObject ancestor, IModelObject theirs, IModelObject ours)
         {
             return from property in ours.DataAccessor.ModifiableProperties
                    let ancestorChunk = GetChunk(ancestor, property)
                    let theirChunk = GetChunk(theirs, property)
                    where !ancestorChunk.HasSameValue(theirChunk)
                    let ourChunk = GetChunk(ours, property)
-                   select new ObjectRepositoryChunkChange(changes.Path, property, ancestorChunk, theirChunk, ourChunk);
+                   select new ObjectRepositoryPropertyChange(changes.Path, property, ancestorChunk, theirChunk, ourChunk);
 
-            ObjectRepositoryChunk GetChunk(IModelObject @object, ModifiablePropertyInfo property)
+            ObjectRepositoryPropertyValue GetChunk(IModelObject @object, ModifiablePropertyInfo property)
             {
-                return new ObjectRepositoryChunk(@object, property, property.Accessor(@object));
+                return new ObjectRepositoryPropertyValue(@object, property, property.Accessor(@object));
             }
         }
 

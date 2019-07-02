@@ -187,8 +187,8 @@ namespace GitObjectDb.Tests.Services
 
             // Assert
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
-            Assert.That(rebase.ModifiedChunks, Has.Count.EqualTo(3));
-            Assert.That(rebase.ModifiedChunks, Has.Exactly(1).Items.Matches<ObjectRepositoryChunkChange>(c => c.IsInConflict));
+            Assert.That(rebase.ModifiedProperties, Has.Count.EqualTo(3));
+            Assert.That(rebase.ModifiedProperties, Has.Exactly(1).Items.Matches<ObjectRepositoryPropertyChange>(c => c.IsInConflict));
         }
 
         [Test]
@@ -197,7 +197,7 @@ namespace GitObjectDb.Tests.Services
         {
             // Act
             var rebase = CreateConflictingRebase(sut, container, signature, message);
-            rebase.ModifiedChunks.Single(c => c.IsInConflict).Resolve("resolved");
+            rebase.ModifiedProperties.Single(c => c.IsInConflict).Resolve("resolved");
             rebase.Continue();
 
             // Assert

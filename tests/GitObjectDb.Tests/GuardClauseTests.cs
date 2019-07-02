@@ -13,7 +13,6 @@ using GitObjectDb.Tests.Assets.Utils;
 using GitObjectDb.Validations;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using NSubstitute;
 using NUnit.Framework;
 using System;

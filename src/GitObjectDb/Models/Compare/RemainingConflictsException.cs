@@ -15,7 +15,7 @@ namespace GitObjectDb.Models.Compare
         /// </summary>
         /// <param name="conflicts">The conflicts.</param>
         /// <param name="innerException">The inner exception.</param>
-        public RemainingConflictsException(IEnumerable<ObjectRepositoryChunkChange> conflicts, Exception innerException = null)
+        public RemainingConflictsException(IEnumerable<ObjectRepositoryPropertyChange> conflicts, Exception innerException = null)
             : base(CreateMessage(conflicts), innerException)
         {
             Conflicts = conflicts ?? throw new ArgumentNullException(nameof(conflicts));
@@ -24,9 +24,9 @@ namespace GitObjectDb.Models.Compare
         /// <summary>
         /// Gets the conflicts.
         /// </summary>
-        public IEnumerable<ObjectRepositoryChunkChange> Conflicts { get; }
+        public IEnumerable<ObjectRepositoryPropertyChange> Conflicts { get; }
 
-        private static string CreateMessage(IEnumerable<ObjectRepositoryChunkChange> conflicts)
+        private static string CreateMessage(IEnumerable<ObjectRepositoryPropertyChange> conflicts)
         {
             if (conflicts == null)
             {
