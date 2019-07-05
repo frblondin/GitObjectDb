@@ -17,6 +17,8 @@ namespace GitObjectDb.Models
     [JsonConverter(typeof(UniqueIdConverter))]
     public struct UniqueId : IComparable<UniqueId>, IEquatable<UniqueId>, IEquatable<string>
     {
+        private static readonly RNGCryptoServiceProvider _rngCryptoServiceProvider = new RNGCryptoServiceProvider();
+
         /// <summary>
         /// The sha length used by <see cref="UniqueId"/>.
         /// </summary>
@@ -98,7 +100,7 @@ namespace GitObjectDb.Models
         private static char[] CreateNewCharArray()
         {
             var buffer = new byte[ShaLength];
-            new RNGCryptoServiceProvider().GetBytes(buffer);
+            _rngCryptoServiceProvider.GetBytes(buffer);
 
             var result = new char[ShaLength];
             for (var pos = 0; pos < ShaLength; pos++)

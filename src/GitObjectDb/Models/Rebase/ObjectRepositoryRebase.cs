@@ -119,7 +119,7 @@ namespace GitObjectDb.Models.Rebase
                 {
                     SortBy = CommitSortStrategies.Topological | CommitSortStrategies.Reverse,
                     ExcludeReachableFrom = rebaseCommit,
-                    IncludeReachableFrom = headTip
+                    IncludeReachableFrom = headTip,
                 }).Select(c => c.Id).ToImmutableList();
                 UpdateUpstreamBranchModifiedPaths(repository, rebaseCommit, mergeBaseCommit);
 

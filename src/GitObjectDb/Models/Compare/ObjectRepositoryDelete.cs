@@ -17,11 +17,6 @@ namespace GitObjectDb.Models.Compare
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="id">The object id.</param>
-        /// <exception cref="ArgumentNullException">
-        /// path
-        /// or
-        /// branchNode
-        /// </exception>
         public ObjectRepositoryDelete(string path, UniqueId id)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));

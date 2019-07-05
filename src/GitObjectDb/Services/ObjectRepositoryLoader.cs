@@ -73,7 +73,7 @@ namespace GitObjectDb.Services
 
         /// <inheritdoc />
         public TRepository Clone<TRepository>(IObjectRepositoryContainer<TRepository> container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
-            where TRepository : IObjectRepository
+            where TRepository : class, IObjectRepository
         {
             return (TRepository)Clone((IObjectRepositoryContainer)container, repository, repositoryDescription, commitId);
         }
@@ -115,7 +115,7 @@ namespace GitObjectDb.Services
 
         /// <inheritdoc />
         public TRepository LoadFrom<TRepository>(IObjectRepositoryContainer<TRepository> container, RepositoryDescription repositoryDescription, ObjectId commitId = null)
-            where TRepository : IObjectRepository
+            where TRepository : class, IObjectRepository
         {
             return (TRepository)LoadFrom((IObjectRepositoryContainer)container, repositoryDescription, commitId);
         }

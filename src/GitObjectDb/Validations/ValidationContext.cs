@@ -16,11 +16,6 @@ namespace GitObjectDb.Validations
         /// <param name="chain">The chain.</param>
         /// <param name="rules">The rules.</param>
         /// <param name="parent">The parent.</param>
-        /// <exception cref="ArgumentNullException">
-        /// instance
-        /// or
-        /// chain
-        /// </exception>
         public ValidationContext(IModelObject instance, ValidationChain chain, ValidationRules rules, ValidationContext parent = null)
         {
             Instance = instance ?? throw new ArgumentNullException(nameof(instance));

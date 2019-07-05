@@ -16,7 +16,6 @@ namespace GitObjectDb.Attributes
         /// Initializes a new instance of the <see cref="PropertyNameAttribute"/> class.
         /// </summary>
         /// <param name="name">The name.</param>
-        /// <exception cref="ArgumentNullException">name</exception>
         public PropertyNameAttribute(string name)
         {
             if (string.IsNullOrWhiteSpace(name))

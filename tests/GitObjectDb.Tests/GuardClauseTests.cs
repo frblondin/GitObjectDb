@@ -35,7 +35,7 @@ namespace GitObjectDb.Tests
         /// <param name="fixture">The fixture.</param>
         /// <param name="assertion">The assertion.</param>
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(CommonTypeProviderCustomization), typeof(NSubstituteForAbstractTypesCustomization))]
+        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization), typeof(CommonTypeProviderCustomization), typeof(NSubstituteForAbstractTypesCustomization))]
         public void VerifyGuardForNullClauses(IFixture fixture, GuardClauseAssertion assertion)
         {
             fixture.Customizations.OfType<NSubstituteForAbstractTypesCustomization>().Single().ExcludeEnumerableTypes = false;
@@ -71,13 +71,11 @@ namespace GitObjectDb.Tests
             {
                 fixture.Inject(new RepositoryDescription(RepositoryFixture.SmallRepositoryPath));
                 fixture.Register(UniqueId.CreateNew);
-                fixture.Register<IObjectRepository>(fixture.Create<ObjectRepository>);
                 fixture.Register<IMigration>(fixture.Create<DummyMigration>);
                 fixture.Register<IModelObject>(fixture.Create<ObjectRepository>);
                 fixture.Inject(fixture.Create<IServiceProvider>().GetRequiredService<ModelDataAccessorFactory>().Invoke(typeof(Page)));
                 fixture.Inject<ConstructorParameterBinding.ChildProcessor>((name, children, @new, dataAccessor) => children);
                 fixture.Inject<ConstructorParameterBinding.Clone>((@object, predicateReflector, processor) => @object);
-                fixture.Inject((ObjectRepositoryContainer)fixture.Create<IServiceProvider>().GetRequiredService<IObjectRepositoryContainerFactory>().Create<ObjectRepository>(RepositoryFixture.SmallRepositoryPath));
                 fixture.Register(() => new ObjectRepositoryChangeCollection(fixture.Create<IObjectRepository>(), ImmutableList.Create<ObjectRepositoryEntryChanges>()));
             }
 

@@ -118,12 +118,6 @@ namespace System.Text
         /// <param name="remainingByteToRead">The remaining byte to read.</param>
         /// <param name="encoding">The encoding.</param>
         /// <returns>Number of copied values.</returns>
-        /// <exception cref="ArgumentNullException">buffer</exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// bufferOffset
-        /// or
-        /// count
-        /// </exception>
         internal static int CopyTo(this StringBuilder source, byte[] buffer, int bufferOffset, int count, ref int positionInStringBuilder, long remainingByteToRead, Encoding encoding)
         {
             if (buffer == null)

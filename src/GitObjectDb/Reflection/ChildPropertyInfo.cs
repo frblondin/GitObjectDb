@@ -22,11 +22,6 @@ namespace GitObjectDb.Reflection
         /// </summary>
         /// <param name="property">The property.</param>
         /// <param name="itemType">Type of the item.</param>
-        /// <exception cref="ArgumentNullException">
-        /// property
-        /// or
-        /// itemType
-        /// </exception>
         public ChildPropertyInfo(PropertyInfo property, Type itemType)
         {
             Property = property ?? throw new ArgumentNullException(nameof(property));

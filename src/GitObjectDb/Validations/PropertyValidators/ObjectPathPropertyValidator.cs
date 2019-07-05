@@ -23,8 +23,19 @@ namespace GitObjectDb.Validations.PropertyValidators
         }
 
         /// <inheritdoc/>
-        public IEnumerable<ValidationFailure> Validate(string propertyName, object value, ValidationContext context) =>
-            ValidatePath(propertyName, (ObjectPath)value, context);
+        public IEnumerable<ValidationFailure> Validate(string propertyName, object value, ValidationContext context)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            return ValidatePath(propertyName, (ObjectPath)value, context);
+        }
 
         /// <summary>
         /// Validates the path.
@@ -33,7 +44,6 @@ namespace GitObjectDb.Validations.PropertyValidators
         /// <param name="path">The path.</param>
         /// <param name="context">The context.</param>
         /// <returns>The list of failures, if any.</returns>
-        /// <exception cref="GitObjectDbException">ObjectPath</exception>
         internal static IEnumerable<ValidationFailure> ValidatePath(string propertyName, ObjectPath path, ValidationContext context)
         {
             if (context.Instance.Repository != null)

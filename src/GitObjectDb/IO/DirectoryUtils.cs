@@ -17,7 +17,7 @@ namespace GitObjectDb.IO
         /// <param name="targetDir">The target dir.</param>
         /// <param name="continueOnError">if set to <c>true</c> ignore errors.</param>
         /// <param name="exclusionList">File/directory exclusion list.</param>
-        /// <returns><code>true</code> if all files and directories could be deleted, <code>true</code> otherwise.</returns>
+        /// <returns><code>true</code> if all files and directories could be deleted. <code>false</code> otherwise.</returns>
         internal static bool Delete(string targetDir, bool continueOnError, params string[] exclusionList)
         {
             var fixedExclusionList = exclusionList.Select(p => Path.GetFullPath(p)).ToArray();

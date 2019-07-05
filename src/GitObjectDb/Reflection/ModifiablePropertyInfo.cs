@@ -19,7 +19,6 @@ namespace GitObjectDb.Reflection
         /// Initializes a new instance of the <see cref="ModifiablePropertyInfo"/> class.
         /// </summary>
         /// <param name="property">The property.</param>
-        /// <exception cref="ArgumentNullException">property</exception>
         public ModifiablePropertyInfo(PropertyInfo property)
         {
             Property = property ?? throw new ArgumentNullException(nameof(property));
@@ -77,11 +76,6 @@ namespace GitObjectDb.Reflection
         /// <param name="old">The old.</param>
         /// <param name="new">The new.</param>
         /// <returns><code>true</code> is the objects contain the same property value.</returns>
-        /// <exception cref="ArgumentNullException">
-        /// old
-        /// or
-        /// new
-        /// </exception>
         public bool AreSame(IModelObject old, IModelObject @new)
         {
             if (old == null)

@@ -62,7 +62,7 @@ namespace GitObjectDb.Services
                 {
                     SortBy = CommitSortStrategies.Topological | CommitSortStrategies.Reverse,
                     ExcludeReachableFrom = migrationStart,
-                    IncludeReachableFrom = migrationEnd
+                    IncludeReachableFrom = migrationEnd,
                 });
                 var deferred = new List<IMigration>();
                 var result = ImmutableList.CreateBuilder<Migrator>();

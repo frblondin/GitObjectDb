@@ -34,11 +34,6 @@ namespace GitObjectDb.Services
         /// <param name="original">The original.</param>
         /// <param name="newRepository">The new.</param>
         /// <returns>A <see cref="ObjectRepositoryChangeCollection"/> containing all computed changes.</returns>
-        /// <exception cref="ArgumentNullException">
-        /// original
-        /// or
-        /// new
-        /// </exception>
         ObjectRepositoryChangeCollection Compare(IObjectRepository original, IObjectRepository newRepository);
 
         /// <summary>

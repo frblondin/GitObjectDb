@@ -42,9 +42,9 @@ namespace GitObjectDb.Tests.Validations
 
             // Assert
             Assert.That(result, Has.Property(nameof(ValidationResult.IsValid)).False);
-            Assert.That(result.Errors, Has.Exactly(1).Items);
+            Assert.That(result.Errors, Has.Count.EqualTo(1));
             Assert.That(result.ToString(), Does.Contain("is not added to the dependencies"));
-            Assert.That(result.Errors[0], Has.Property(nameof(ValidationFailure.PropertyName)).EqualTo("propertyName.Path"));
+            Assert.That(result.Errors[0], Has.Property(nameof(ValidationFailure.PropertyName)).EqualTo("Content.fieldLinkContent.<Target>k__BackingField.Path"));
             Assert.That(result.Errors[0].Context.Instance, Is.EqualTo(modified));
             Assert.That(result.Errors[0].Context.Parent.Instance, Is.EqualTo(modified.Parent));
         }
@@ -64,9 +64,9 @@ namespace GitObjectDb.Tests.Validations
 
             // Assert
             Assert.That(result, Has.Property(nameof(ValidationResult.IsValid)).False);
-            Assert.That(result.Errors, Has.Exactly(1).Items);
+            Assert.That(result.Errors, Has.Count.EqualTo(1));
             Assert.That(result.ToString(), Does.Contain("Unexisting object"));
-            Assert.That(result.Errors[0], Has.Property(nameof(ValidationFailure.PropertyName)).EqualTo("propertyName.Path"));
+            Assert.That(result.Errors[0], Has.Property(nameof(ValidationFailure.PropertyName)).EqualTo("Content.fieldLinkContent.<Target>k__BackingField.Path"));
             Assert.That(result.Errors[0].Context.Instance, Is.EqualTo(modified));
             Assert.That(result.Errors[0].Context.Parent.Instance, Is.EqualTo(modified.Parent));
         }

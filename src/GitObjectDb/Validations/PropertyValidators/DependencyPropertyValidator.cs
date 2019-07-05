@@ -25,6 +25,16 @@ namespace GitObjectDb.Validations.PropertyValidators
         /// <inheritdoc/>
         public IEnumerable<ValidationFailure> Validate(string propertyName, object value, ValidationContext context)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            return ValidateIterator(propertyName, value, context);
+        }
+
+        private IEnumerable<ValidationFailure> ValidateIterator(string propertyName, object value, ValidationContext context)
+        {
             var dependencies = value as IEnumerable<RepositoryDependency> ?? throw new GitObjectDbException($"Property of type {nameof(IEnumerable<RepositoryDependency>)} expected.");
             foreach (var dependency in dependencies)
             {

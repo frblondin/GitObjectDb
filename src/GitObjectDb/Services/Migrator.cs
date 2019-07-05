@@ -10,7 +10,7 @@ namespace GitObjectDb.Services
 {
     /// <summary>
     /// Migrator is used to apply existing migrations to a database. Migrator can be used to upgrade and downgrade
-    /// to any given migration. To scaffold migrations based on changes to your model use MigrationScaffolder
+    /// to any given migration. To scaffold migrations based on changes to your model use MigrationScaffolder.
     /// </summary>
     public class Migrator
     {
@@ -20,7 +20,6 @@ namespace GitObjectDb.Services
         /// <param name="migrations">The migrations.</param>
         /// <param name="mode">The mode.</param>
         /// <param name="commitId">The commit identifier containing the migrations.</param>
-        /// <exception cref="ArgumentNullException">migrations</exception>
         public Migrator(IImmutableList<IMigration> migrations, MigrationMode mode, ObjectId commitId)
         {
             Migrations = migrations ?? throw new ArgumentNullException(nameof(migrations));

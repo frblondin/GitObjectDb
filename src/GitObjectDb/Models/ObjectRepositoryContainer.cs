@@ -56,6 +56,15 @@ namespace GitObjectDb.Models
         /// <exception cref="GitObjectDbException">The current head commit id is different from the commit used by current repository.</exception>
         protected static void EnsureHeadCommit(IRepository repository, IObjectRepository current)
         {
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
+            }
+            if (current == null)
+            {
+                throw new ArgumentNullException(nameof(current));
+            }
+
             if (!repository.Head.Tip.Id.Equals(current.CommitId))
             {
                 throw new GitObjectDbException("The current head commit id is different from the commit used by current instance.");

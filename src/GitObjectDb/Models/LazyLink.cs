@@ -38,7 +38,6 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="container">The container.</param>
         /// <param name="value">The value.</param>
-        /// <exception cref="ArgumentNullException">value</exception>
         public LazyLink(IObjectRepositoryContainer container, TLink value)
             : this(container)
         {

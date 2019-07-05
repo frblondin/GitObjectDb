@@ -13,13 +13,6 @@ namespace GitObjectDb.Validations
         /// <param name="propertyName">Name of the property.</param>
         /// <param name="errorMessage">The error message.</param>
         /// <param name="context">The context.</param>
-        /// <exception cref="ArgumentNullException">
-        /// propertyName
-        /// or
-        /// errorMessage
-        /// or
-        /// context
-        /// </exception>
         public ValidationFailure(string propertyName, string errorMessage, ValidationContext context)
         {
             PropertyName = propertyName ?? throw new ArgumentNullException(nameof(propertyName));
@@ -33,7 +26,7 @@ namespace GitObjectDb.Validations
         public string PropertyName { get; }
 
         /// <summary>
-        /// Gets the error message
+        /// Gets the error message.
         /// </summary>
         public string ErrorMessage { get; }
 

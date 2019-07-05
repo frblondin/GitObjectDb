@@ -14,11 +14,6 @@ namespace GitObjectDb.Serialization
         /// </summary>
         /// <param name="container">The container.</param>
         /// <param name="childrenResolver">The children resolver.</param>
-        /// <exception cref="ArgumentNullException">
-        /// childrenResolver
-        /// or
-        /// container
-        /// </exception>
         public ModelObjectSerializationContext(IObjectRepositoryContainer container, ChildrenResolver childrenResolver = null)
         {
             Container = container ?? throw new ArgumentNullException(nameof(container));

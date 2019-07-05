@@ -22,6 +22,6 @@ namespace GitObjectDb
         /// <summary>
         /// The dependency rule.
         /// </summary>
-        Dependency = 1
+        Dependency = 1,
     }
 }

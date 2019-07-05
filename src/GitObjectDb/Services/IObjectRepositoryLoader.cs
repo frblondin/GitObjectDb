@@ -30,7 +30,7 @@ namespace GitObjectDb.Services
         /// <param name="commitId">The commit, HEAD tip is loaded if not provided.</param>
         /// <returns>The loaded instance.</returns>
         TRepository Clone<TRepository>(IObjectRepositoryContainer<TRepository> container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
-            where TRepository : IObjectRepository;
+            where TRepository : class, IObjectRepository;
 
         /// <summary>
         /// Loads the instance from a Git repository.
@@ -50,6 +50,6 @@ namespace GitObjectDb.Services
         /// <param name="commitId">The commit to load, HEAD tip is loaded if not provided.</param>
         /// <returns>The loaded instance.</returns>
         TRepository LoadFrom<TRepository>(IObjectRepositoryContainer<TRepository> container, RepositoryDescription repositoryDescription, ObjectId commitId = null)
-            where TRepository : IObjectRepository;
+            where TRepository : class, IObjectRepository;
     }
 }

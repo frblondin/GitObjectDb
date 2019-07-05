@@ -17,7 +17,6 @@ namespace System
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="count">The count.</param>
-        /// <exception cref="ArgumentException">path</exception>
         /// <returns>The parent path.</returns>
         internal static string GetParentPath(this string path, int count = 1)
         {
@@ -55,7 +54,6 @@ namespace System
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="fileName">The file name.</param>
-        /// <exception cref="ArgumentException">path</exception>
         /// <returns>The parent path.</returns>
         internal static string GetDataParentDataPath(this string path, string fileName = null)
         {
@@ -70,7 +68,6 @@ namespace System
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="repository">The repository.</param>
-        /// <exception cref="ArgumentException">path</exception>
         /// <returns>The parent <see cref="UniqueId"/>.</returns>
         internal static UniqueId GetDataParentId(this string path, IObjectRepository repository)
         {

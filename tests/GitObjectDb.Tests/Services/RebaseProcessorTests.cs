@@ -188,7 +188,7 @@ namespace GitObjectDb.Tests.Services
             // Assert
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
             Assert.That(rebase.ModifiedProperties, Has.Count.EqualTo(3));
-            Assert.That(rebase.ModifiedProperties, Has.Exactly(1).Items.Matches<ObjectRepositoryPropertyChange>(c => c.IsInConflict));
+            Assert.That(rebase.ModifiedProperties, Has.Exactly(1).Matches<ObjectRepositoryPropertyChange>(c => c.IsInConflict));
         }
 
         [Test]

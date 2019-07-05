@@ -24,7 +24,6 @@ namespace GitObjectDb.Validations
         /// </summary>
         /// <param name="modelDataAccessor">The model data accessor.</param>
         /// <param name="propertyValidators">The property validators.</param>
-        /// <exception cref="ArgumentNullException">serviceProvider</exception>
         public Validator(IModelDataAccessorProvider modelDataAccessor, IEnumerable<IPropertyValidator> propertyValidators)
         {
             _modelDataAccessorProvider = modelDataAccessor ?? throw new ArgumentNullException(nameof(modelDataAccessor));

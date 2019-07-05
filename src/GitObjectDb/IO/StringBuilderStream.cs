@@ -25,7 +25,6 @@ namespace GitObjectDb.IO
         /// </summary>
         /// <param name="stringBuilder">The string builder.</param>
         /// <param name="encoding">The encoding.</param>
-        /// <exception cref="ArgumentNullException">stringBuilder</exception>
         public StringBuilderStream(StringBuilder stringBuilder, Encoding encoding = null)
         {
             StringBuilder = stringBuilder ?? throw new ArgumentNullException(nameof(stringBuilder));

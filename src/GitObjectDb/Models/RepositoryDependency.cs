@@ -18,11 +18,6 @@ namespace GitObjectDb.Models
         /// <param name="id">The identifier.</param>
         /// <param name="name">The name.</param>
         /// <param name="version">The version.</param>
-        /// <exception cref="ArgumentNullException">
-        /// name
-        /// or
-        /// version
-        /// </exception>
         [JsonConstructor]
         public RepositoryDependency(UniqueId id, string name, Version version)
         {
@@ -36,7 +31,6 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="repository">The repository.</param>
         /// <param name="version">The version.</param>
-        /// <exception cref="ArgumentNullException">repository</exception>
         public RepositoryDependency(IObjectRepository repository, Version version = null)
         {
             if (repository == null)

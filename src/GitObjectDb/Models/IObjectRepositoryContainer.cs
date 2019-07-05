@@ -57,7 +57,7 @@ namespace GitObjectDb.Models
     /// </summary>
     /// <typeparam name="TRepository">The type of the object repository.</typeparam>
     public interface IObjectRepositoryContainer<TRepository> : IObjectRepositoryContainer
-        where TRepository : IObjectRepository
+        where TRepository : class, IObjectRepository
     {
         /// <summary>
         /// Gets all repositories.

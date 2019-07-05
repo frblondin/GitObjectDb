@@ -10,6 +10,7 @@ using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,10 +23,11 @@ namespace GitObjectDb.ModelCodeGeneration.Tests
 
         [Test]
         [TestCaseSource(typeof(GeneratorTests), nameof(TestCases))]
-        public async Task UseModelGenerator(Type unmodifiedType, Func<Type, dynamic> activator, (string Name, object Value)[] propertyValues)
+        public async Task UseModelGenerator(string typeName, Func<Type, dynamic> activator, (string Name, object Value)[] propertyValues)
         {
             // Act
-            var generatedType = await TestProjectFixture.Project.GenerateTypeAsync<ModelGenerator>(unmodifiedType, TestProjectFixture.Compilation, TestProjectFixture.Workspace);
+            var file = CodeGeneratorHelper.FindFile($"{typeName}.cs");
+            var generatedType = await CodeGeneratorHelper.GenerateTypeAsync<ModelGenerator>(File.ReadAllText(file), Path.GetFileNameWithoutExtension(file));
             var instance = activator(generatedType);
 
             // Assert
@@ -39,10 +41,11 @@ namespace GitObjectDb.ModelCodeGeneration.Tests
 
         [Test]
         [TestCaseSource(typeof(GeneratorTests), nameof(TestCases))]
-        public async Task UseRepositoryGenerator(Type unmodifiedType, Func<Type, dynamic> activator, (string Name, object Value)[] propertyValues)
+        public async Task UseRepositoryGenerator(string typeName, Func<Type, dynamic> activator, (string Name, object Value)[] propertyValues)
         {
             // Act
-            var generatedType = await TestProjectFixture.Project.GenerateTypeAsync<RepositoryGenerator>(unmodifiedType, TestProjectFixture.Compilation, TestProjectFixture.Workspace);
+            var file = CodeGeneratorHelper.FindFile($"{typeName}.cs");
+            var generatedType = await CodeGeneratorHelper.GenerateTypeAsync<RepositoryGenerator>(File.ReadAllText(file), Path.GetFileNameWithoutExtension(file));
             var instance = activator(generatedType);
 
             // Assert
@@ -57,7 +60,7 @@ namespace GitObjectDb.ModelCodeGeneration.Tests
         public static IEnumerable TestCases => new[]
         {
             new TestCaseData(
-                typeof(OneProperty),
+                nameof(OneProperty),
                 new Func<Type, dynamic>(t => Activator.CreateInstance(t, GetConstructorArguments(t).ToArray())),
                 new(string, object)[]
                 {

@@ -17,6 +17,6 @@ namespace GitObjectDb.Models.Migration
         /// <summary>
         /// Downgrade mode.
         /// </summary>
-        Downgrade
+        Downgrade,
     }
 }

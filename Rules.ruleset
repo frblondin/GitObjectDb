@@ -3,6 +3,7 @@
   <Rules AnalyzerId="Microsoft.Design" RuleNamespace="Microsoft.Design">
     <Rule Id="CA1032" Action="None" />
     <Rule Id="CA1043" Action="None" />
+    <Rule Id="CA1303" Action="None" />
     <Rule Id="CA1716" Action="None" />
   </Rules>
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">

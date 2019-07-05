@@ -15,7 +15,6 @@ namespace GitObjectDb.Git.Hooks
         /// </summary>
         /// <param name="changes">The changes.</param>
         /// <param name="commitId">The commit identifier.</param>
-        /// <exception cref="ArgumentNullException">message</exception>
         public MergeCompletedEventArgs(ObjectRepositoryChangeCollection changes, ObjectId commitId)
         {
             Changes = changes ?? throw new ArgumentNullException(nameof(changes));
