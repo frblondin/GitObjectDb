@@ -27,9 +27,10 @@ namespace GitObjectDb.Serialization.Json
                 NullValueHandling = NullValueHandling.Ignore,
                 ContractResolver = CreateContractResolver(modelObjectContractCache, context),
                 TypeNameHandling = TypeNameHandling.Objects,
+                SerializationBinder = NetCoreSerializationBinder.Instance,
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                 Formatting = Formatting.Indented,
-                DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate
+                DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate,
             };
             _serializer.Converters.Add(new VersionConverter());
         }
@@ -50,7 +51,10 @@ namespace GitObjectDb.Serialization.Json
 
             using (var streamReader = new StreamReader(stream))
             {
-                return (IModelObject)_serializer.Deserialize(new JsonModelObjectReader(relativeFileDataResolver, streamReader));
+                using (var reader = new JsonModelObjectReader(relativeFileDataResolver, streamReader))
+                {
+                    return (IModelObject)_serializer.Deserialize(reader);
+                }
             }
         }
 
@@ -67,9 +71,11 @@ namespace GitObjectDb.Serialization.Json
 
             using (var writer = new StringWriter(builder))
             {
-                var jsonWriter = new JsonModelObjectWriter(node, writer);
-                _serializer.Serialize(jsonWriter, node);
-                return jsonWriter.AdditionalObjects;
+                using (var jsonWriter = new JsonModelObjectWriter(node, writer))
+                {
+                    _serializer.Serialize(jsonWriter, node);
+                    return jsonWriter.AdditionalObjects;
+                }
             }
         }
 

@@ -39,6 +39,11 @@ namespace GitObjectDb.ModelCodeGeneration
 
         public Task<SyntaxList<MemberDeclarationSyntax>> GenerateAsync(TransformationContext context, IProgress<Diagnostic> progress, CancellationToken cancellationToken)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
             var templates = GetTemplateDescriptors().ToImmutableArray();
 
             var generatedMembers = SyntaxFactory.List<MemberDeclarationSyntax>();

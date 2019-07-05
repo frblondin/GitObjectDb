@@ -33,7 +33,7 @@ namespace GitObjectDb.Tests.Features
             container.Commit(modified.Repository, signature, message);
 
             // Assert
-            Assert.That(ComputeKeysCalls, Has.Exactly(2).Items); // Two calls to ComputeKeys for before/after
+            Assert.That(ComputeKeysCalls, Has.Count.EqualTo(2)); // Two calls to ComputeKeys for before/after
         }
 
         [Test]
@@ -53,7 +53,7 @@ namespace GitObjectDb.Tests.Features
             container.Commit(modified.Repository, signature, message);
 
             // Assert
-            Assert.That(ComputeKeysCalls, Has.Exactly(2).Items);
+            Assert.That(ComputeKeysCalls, Has.Count.EqualTo(2));
         }
 
         [Test]
@@ -72,7 +72,7 @@ namespace GitObjectDb.Tests.Features
 
             // Assert
             var nestedCount = repository.Applications[0].Pages[0].Flatten().Count();
-            Assert.That(ComputeKeysCalls, Has.Exactly(nestedCount).Items);
+            Assert.That(ComputeKeysCalls, Has.Count.EqualTo(nestedCount));
         }
 
         public static IList<IModelObject> ComputeKeysCalls { get; } = new List<IModelObject>();

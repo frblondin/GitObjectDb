@@ -1,4 +1,4 @@
-﻿using GitObjectDb.Reflection;
+using GitObjectDb.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -47,7 +47,7 @@ namespace GitObjectDb.Models.Compare
         /// Gets whether the given <paramref name="chunk"/> <see cref="Value"/> is equal to the current value.
         /// </summary>
         /// <param name="chunk">The chunk to compare to.</param>
-        /// <returns><code>true</code> if chunks have same value, <code>false</code> otherwise.</returns>
+        /// <returns><code>true</code> if chunks have same value. <code>false</code> otherwise.</returns>
         public bool HasSameValue(ObjectRepositoryPropertyValue chunk)
         {
             if (chunk == null)

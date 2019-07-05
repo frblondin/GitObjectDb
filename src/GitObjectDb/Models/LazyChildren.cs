@@ -19,19 +19,18 @@ namespace GitObjectDb.Models
 #pragma warning restore CA1710 // Identifiers should have correct suffix
         where TChild : class, IModelObject
     {
-        static readonly string _nullReturnedValueExceptionMessage =
+        private static readonly string _nullReturnedValueExceptionMessage =
             $"Value returned by {nameof(LazyChildren<TChild>)} was null.";
 
-        readonly Func<IModelObject, IRepository, IEnumerable<IModelObject>> _factoryWithRepo;
-        readonly Func<IModelObject, IEnumerable<TChild>> _factory;
-        IImmutableList<TChild> _children;
-        bool _parentAttachedInChildren;
+        private readonly Func<IModelObject, IRepository, IEnumerable<IModelObject>> _factoryWithRepo;
+        private readonly Func<IModelObject, IEnumerable<TChild>> _factory;
+        private IImmutableList<TChild> _children;
+        private bool _parentAttachedInChildren;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LazyChildren{TChild}"/> class.
         /// </summary>
         /// <param name="factory">The factory.</param>
-        /// <exception cref="ArgumentNullException">factory</exception>
         public LazyChildren(Func<IModelObject, IRepository, IEnumerable<IModelObject>> factory)
         {
             _factoryWithRepo = factory ?? throw new ArgumentNullException(nameof(factory));
@@ -41,7 +40,6 @@ namespace GitObjectDb.Models
         /// Initializes a new instance of the <see cref="LazyChildren{TChild}"/> class.
         /// </summary>
         /// <param name="factory">The factory.</param>
-        /// <exception cref="ArgumentNullException">factory</exception>
         public LazyChildren(Func<IModelObject, IImmutableList<TChild>> factory)
         {
             _factory = factory ?? throw new ArgumentNullException(nameof(factory));
@@ -51,7 +49,6 @@ namespace GitObjectDb.Models
         /// Initializes a new instance of the <see cref="LazyChildren{TChild}"/> class.
         /// </summary>
         /// <param name="value">The value.</param>
-        /// <exception cref="ArgumentNullException">value</exception>
         public LazyChildren(IImmutableList<TChild> value)
         {
             _children = value ?? throw new ArgumentNullException(nameof(value));
@@ -60,7 +57,6 @@ namespace GitObjectDb.Models
         /// <summary>
         /// Initializes a new instance of the <see cref="LazyChildren{TChild}"/> class.
         /// </summary>
-        /// <exception cref="ArgumentNullException">value</exception>
         public LazyChildren()
             : this(ImmutableList.Create<TChild>())
         {
@@ -166,7 +162,7 @@ namespace GitObjectDb.Models
                 .Union(added?.Cast<TChild>() ?? Enumerable.Empty<TChild>())
                 .ToImmutableList())
             {
-                ForceVisit = ForceVisit || forceVisit
+                ForceVisit = ForceVisit || forceVisit,
             };
         }
 

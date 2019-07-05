@@ -27,7 +27,7 @@ namespace GitObjectDb.Models
         /// Tries to get the lazy children interface if any.
         /// </summary>
         /// <param name="type">The type.</param>
-        /// <returns>The type if resolved, <code>null</code> otherwise.</returns>
+        /// <returns>The type if resolved. <code>null</code> otherwise.</returns>
         internal static Type TryGetLazyChildrenInterface(Type type) =>
             type.GetInterfaces().Prepend(type).FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ILazyChildren<>));
     }

@@ -17,11 +17,6 @@ namespace GitObjectDb.Git
         /// </summary>
         /// <param name="path">The path to the repository.</param>
         /// <param name="backend">The backend.</param>
-        /// <exception cref="ArgumentNullException">
-        /// path
-        /// or
-        /// backend
-        /// </exception>
         public RepositoryDescription(string path, Func<OdbBackend> backend = null)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));

@@ -14,7 +14,6 @@ namespace GitObjectDb.Git.Hooks
         /// Initializes a new instance of the <see cref="MergeStartedEventArgs"/> class.
         /// </summary>
         /// <param name="changes">The changes.</param>
-        /// <exception cref="ArgumentNullException">message</exception>
         public MergeStartedEventArgs(ObjectRepositoryChangeCollection changes)
         {
             Changes = changes ?? throw new ArgumentNullException(nameof(changes));

@@ -72,6 +72,11 @@ public partial class ModelTemplate : GitObjectDb.Models.IObjectRepositoryIndex
     /// <inheritdoc />
     public System.Collections.Immutable.ImmutableSortedDictionary<string, System.Collections.Immutable.ImmutableSortedSet<string>> Update(GitObjectDb.Models.Compare.ObjectRepositoryChangeCollection changes)
     {
+        if (changes == null)
+        {
+            throw new ArgumentNullException(nameof(changes));
+        }
+
         var builder = System.Collections.Immutable.ImmutableSortedDictionary.CreateBuilder<string, System.Collections.Generic.ISet<string>>();
         builder.AddRange(
             System.Linq.Enumerable.Select(

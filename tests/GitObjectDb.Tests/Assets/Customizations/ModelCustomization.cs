@@ -1,12 +1,15 @@
 using AutoFixture;
+using AutoFixture.Kernel;
 using GitObjectDb.Models;
 using GitObjectDb.Models.Migration;
+using GitObjectDb.Reflection;
 using GitObjectDb.Tests.Assets.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
 
 namespace GitObjectDb.Tests.Assets.Customizations
 {
@@ -45,10 +48,8 @@ namespace GitObjectDb.Tests.Assets.Customizations
             var containerFactory = serviceProvider.GetRequiredService<IObjectRepositoryContainerFactory>();
 
             var path = ContainerPath ?? RepositoryFixture.GetAvailableFolderPath();
-            var container = containerFactory.Create<ObjectRepository>(path);
-            fixture.Inject(container);
-            fixture.Inject<IObjectRepositoryContainer<ObjectRepository>>(container);
-            fixture.Inject<IObjectRepositoryContainer>(container);
+            fixture.Customizations.Add(new ObjectRepositoryContainerSpecimenBuilder(path));
+            var container = fixture.Freeze<IObjectRepositoryContainer<ObjectRepository>>();
 
             ObjectRepository lastRepository = default;
             var createdPages = new List<Page>();
@@ -107,9 +108,43 @@ namespace GitObjectDb.Tests.Assets.Customizations
             Field PickRandomField() => PickRandomPage(_ => true).Fields.PickRandom();
 
             fixture.Register(PickRandomApplication);
-                fixture.Register(() => PickRandomPage(_ => true));
-                fixture.Register(PickRandomField);
-                fixture.Register(CreateModule);
+            fixture.Register(() => PickRandomPage(_ => true));
+            fixture.Register(PickRandomField);
+            fixture.Register(CreateModule);
+        }
+
+        private class ObjectRepositoryContainerSpecimenBuilder : ISpecimenBuilder
+        {
+            private readonly string _path;
+            private static readonly MethodInfo _factoryCreate = ExpressionReflector.GetMethod<IObjectRepositoryContainerFactory>(
+                f => f.Create<ObjectRepository>(default(string)), true);
+
+            public ObjectRepositoryContainerSpecimenBuilder(string path)
+            {
+                _path = path ?? throw new ArgumentNullException(nameof(path));
+            }
+
+            public object Create(object request, ISpecimenContext context)
+            {
+                if (request is Type type)
+                {
+                    if (type == typeof(IObjectRepositoryContainer))
+                    {
+                        type = typeof(IObjectRepositoryContainer<ObjectRepository>);
+                    }
+                    if (type.IsGenericType &&
+                        (type.GetGenericTypeDefinition() == typeof(IObjectRepositoryContainer<>) ||
+                        type.GetGenericTypeDefinition() == typeof(ObjectRepositoryContainer<>)))
+                    {
+                        var serviceProvider = context.Create<IServiceProvider>();
+                        var containerFactory = serviceProvider.GetRequiredService<IObjectRepositoryContainerFactory>();
+                        var repositoryType = type.GetGenericArguments()[0];
+                        return _factoryCreate.MakeGenericMethod(repositoryType)
+                            .Invoke(containerFactory, new object[] { _path });
+                    }
+                }
+                return new NoSpecimen();
+            }
         }
     }
 }

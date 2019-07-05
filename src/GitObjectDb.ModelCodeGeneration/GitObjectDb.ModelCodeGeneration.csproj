@@ -44,13 +44,11 @@ The Git repository is used as a pure database as the files containing the serial
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeGeneration.Roslyn" Version="0.4.88" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="2.9.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.6.3">
+    <PackageReference Include="CodeGeneration.Roslyn" Version="0.6.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="2.9.0" />
   </ItemGroup>
 
   <ItemGroup>

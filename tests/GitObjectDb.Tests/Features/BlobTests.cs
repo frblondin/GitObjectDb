@@ -109,7 +109,7 @@ namespace GitObjectDb.Tests.Features
             container.Commit(modified.Repository, signature, message);
 
             // Assert
-            Assert.That(IndexTests.ComputeKeysCalls, Has.Exactly(2).Items); // Two calls to ComputeKeys for before/after
+            Assert.That(IndexTests.ComputeKeysCalls, Has.Count.EqualTo(2)); // Two calls to ComputeKeys for before/after
         }
 
         [Test]

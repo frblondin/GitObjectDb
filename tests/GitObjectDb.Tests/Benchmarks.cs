@@ -19,7 +19,7 @@ using System.Text;
 
 namespace GitObjectDb.Tests
 {
-    [Parallelizable(ParallelScope.All)]
+    [Parallelizable(ParallelScope.Children)]
     public class Benchmarks
     {
         [Ignore("Only used to create large repository. Quite long, normal as we want the load time to be short not necessarily the creation time.")]
@@ -43,7 +43,7 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void LoadLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        public void LoadLargeRepository(IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
             var stopwatch = Stopwatch.StartNew();
@@ -58,7 +58,7 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void SearchInLargeRepository(IObjectRepositorySearch search, ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        public void SearchInLargeRepository(IObjectRepositorySearch search, IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
             var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
@@ -77,7 +77,7 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void FullLoadInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        public void FullLoadInLargeRepository(IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
             var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
@@ -95,7 +95,7 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void SearchInLargeRepositoryUsingLightDbBackend(IObjectRepositorySearch search, ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        public void SearchInLargeRepositoryUsingLightDbBackend(IObjectRepositorySearch search, IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
             var dbFile = Path.Combine(RepositoryFixture.BenchmarkRepositoryDescription.Path, "lite.db");
@@ -119,7 +119,7 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ComputeChangesInLargeRepository(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader, ComputeTreeChangesFactory computeTreeChangesFactory)
+        public void ComputeChangesInLargeRepository(IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // Arrange
             var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
@@ -139,7 +139,7 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void SearchInLargeRepositoryUsingIndex(ObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        public void SearchInLargeRepositoryUsingIndex(IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
             var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);

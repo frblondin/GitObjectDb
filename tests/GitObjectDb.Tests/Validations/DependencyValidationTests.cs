@@ -14,7 +14,7 @@ namespace GitObjectDb.Tests.Validations
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ThrowIfMissingDependency(ObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, Signature signature, string message)
+        public void ThrowIfMissingDependency(IObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, Signature signature, string message)
         {
             // Arrange
             var wrongDependency = new RepositoryDependency(UniqueId.CreateNew(), "foo", new System.Version(1, 0));
@@ -30,7 +30,7 @@ namespace GitObjectDb.Tests.Validations
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ThrowIfWrongDependencyVersion(ObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, ObjectRepository dependency, Signature signature, string message)
+        public void ThrowIfWrongDependencyVersion(IObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, ObjectRepository dependency, Signature signature, string message)
         {
             // Arrange
             container.AddRepository(dependency, signature, message);
@@ -47,7 +47,7 @@ namespace GitObjectDb.Tests.Validations
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void NoValidationErrorIfVersionIsLowerOrEqual(ObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, ObjectRepository dependency, Signature signature, string message)
+        public void NoValidationErrorIfVersionIsLowerOrEqual(IObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, ObjectRepository dependency, Signature signature, string message)
         {
             // Arrange
             container.AddRepository(dependency, signature, message);

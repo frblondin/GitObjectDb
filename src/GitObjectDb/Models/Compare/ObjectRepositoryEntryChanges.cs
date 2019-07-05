@@ -18,7 +18,6 @@ namespace GitObjectDb.Models.Compare
         /// <param name="status">The change type.</param>
         /// <param name="old">The old value.</param>
         /// <param name="new">The new value.</param>
-        /// <exception cref="ArgumentNullException">old</exception>
         public ObjectRepositoryEntryChanges(string path, ChangeKind status, IModelObject old = null, IModelObject @new = null)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));

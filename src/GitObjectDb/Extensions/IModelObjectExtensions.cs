@@ -18,7 +18,6 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="node">The node.</param>
         /// <returns>The root <see cref="IModelObject"/> instance.</returns>
-        /// <exception cref="ArgumentNullException">node</exception>
         public static IModelObject Root(this IModelObject node)
         {
             if (node == null)

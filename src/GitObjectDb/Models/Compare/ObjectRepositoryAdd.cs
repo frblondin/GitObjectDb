@@ -20,11 +20,6 @@ namespace GitObjectDb.Models.Compare
         /// <param name="path">The path.</param>
         /// <param name="child">The child.</param>
         /// <param name="parentId">The parent id.</param>
-        /// <exception cref="ArgumentNullException">
-        /// path
-        /// or
-        /// branchNode
-        /// </exception>
         public ObjectRepositoryAdd(string path, IModelObject child, UniqueId parentId)
         {
             Path = path ?? throw new ArgumentNullException(nameof(path));

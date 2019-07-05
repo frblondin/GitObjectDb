@@ -1,11 +1,13 @@
 using GitObjectDb.Git;
 using GitObjectDb.IO;
 using NUnit.Framework;
+using NUnit.Framework.Internal;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
+using System.Reflection;
 using System.Text;
 
 namespace GitObjectDb.Tests
@@ -15,19 +17,22 @@ namespace GitObjectDb.Tests
     {
         private const string TempPath = @"C:\Temp";
 
-        private static string WorkDirectory => Directory.Exists(TempPath) ? TempPath : TestContext.CurrentContext.WorkDirectory;
+        private static readonly string _workDirectory =
+            Directory.Exists(TempPath) ?
+            TempPath :
+            Path.GetDirectoryName(AssemblyHelper.GetAssemblyPath(Assembly.GetExecutingAssembly()));
 
-        public static string BenchmarkRepositoryPath =>
-            Path.Combine(WorkDirectory, "Repos", "Benchmark");
+        public static string BenchmarkRepositoryPath { get; } =
+            Path.Combine(_workDirectory, "Repos", "Benchmark");
 
-        public static string TempRepoPath =>
-            Path.Combine(WorkDirectory, "TempRepos");
+        public static string TempRepoPath { get; } =
+            Path.Combine(_workDirectory, "TempRepos");
 
-        public static RepositoryDescription BenchmarkRepositoryDescription =>
+        public static RepositoryDescription BenchmarkRepositoryDescription { get; } =
             new RepositoryDescription(BenchmarkRepositoryPath);
 
-        public static string SmallRepositoryPath =>
-            Path.Combine(WorkDirectory, "Repos", "Small");
+        public static string SmallRepositoryPath { get; } =
+            Path.Combine(_workDirectory, "Repos", "Small");
 
         public static string GetRepositoryPath(string name) =>
             Path.Combine(TempRepoPath, name);

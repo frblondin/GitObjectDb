@@ -20,7 +20,6 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="repository">The repository.</param>
         /// <param name="path">The path.</param>
-        /// <exception cref="ArgumentNullException">path</exception>
         [JsonConstructor]
         public ObjectPath(UniqueId repository, string path)
         {

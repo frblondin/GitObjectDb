@@ -24,8 +24,13 @@ namespace GitObjectDb.Validations.PropertyValidators
         /// <inheritdoc/>
         public IEnumerable<ValidationFailure> Validate(string propertyName, object value, ValidationContext context)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
             var link = value as ILazyLink ?? throw new GitObjectDbException($"Property of type {nameof(ILazyLink)} expected.");
-            return ObjectPathPropertyValidator.ValidatePath($"propertyName.{nameof(ILazyLink.Path)}", link.Path, context);
+            return ObjectPathPropertyValidator.ValidatePath($"{propertyName}.{nameof(ILazyLink.Path)}", link.Path, context);
         }
     }
 }

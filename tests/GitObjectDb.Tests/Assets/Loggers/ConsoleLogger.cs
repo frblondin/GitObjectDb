@@ -50,7 +50,11 @@ namespace GitObjectDb.Tests.Assets.Loggers
                 _scopeProvider.ForEachScope((scope, sb) =>
                 {
                     var empty = sb.Length == 0;
+#if NETCOREAPP
                     var message = scope?.ToString().Replace("\n", string.Empty, StringComparison.OrdinalIgnoreCase) ?? "";
+#else
+                    var message = scope?.ToString().Replace("\n", string.Empty) ?? "";
+#endif
                     sb.Append(empty ? "=> " : " => ").Append(message);
                 }, stringBuilder);
             }

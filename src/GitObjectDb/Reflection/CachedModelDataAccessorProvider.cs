@@ -13,7 +13,6 @@ namespace GitObjectDb.Reflection
         /// Initializes a new instance of the <see cref="CachedModelDataAccessorProvider"/> class.
         /// </summary>
         /// <param name="inner">The inner.</param>
-        /// <exception cref="ArgumentNullException">inner</exception>
         public CachedModelDataAccessorProvider(IModelDataAccessorProvider inner) =>
             _inner = inner ?? throw new ArgumentNullException(nameof(inner));
 

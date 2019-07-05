@@ -1,7 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFrameworks>netcoreapp2.0;net472</TargetFrameworks>
+  </PropertyGroup>
+
+  <!-- Only required for Visial Studio 2017, natively managed by Visial Studio 2019 and above -->
+  <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^netcoreapp\d'))">
+    <DefineConstants>NETCOREAPP</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,23 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amadevus.RecordGenerator.Attributes" Version="0.4.0" />
-    <PackageReference Include="Amadevus.RecordGenerator.Generators" Version="0.4.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Appveyor.TestLogger" Version="2.0.0" />
-    <PackageReference Include="AutoFixture.Idioms" Version="4.6.0" />
-    <PackageReference Include="AutoFixture.NUnit3" Version="4.6.0" />
-    <PackageReference Include="CodeGeneration.Roslyn.BuildTime" Version="0.4.88">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="coverlet.msbuild" Version="2.1.1" />
-    <PackageReference Include="CSharpDiscriminatedUnion" Version="1.0.2" />
-    <PackageReference Include="LibGit2Sharp" Version="0.25.4" />
-    <PackageReference Include="LiteDB" Version="4.1.4" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="2.6.3">
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="2.9.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
@@ -43,11 +32,30 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Amadevus.RecordGenerator.Attributes" Version="0.4.1" />
+    <PackageReference Include="Amadevus.RecordGenerator.Generators" Version="0.4.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Appveyor.TestLogger" Version="2.0.0" />
+    <PackageReference Include="AutoFixture.Idioms" Version="4.10.0" />
+    <PackageReference Include="AutoFixture.NUnit3" Version="4.10.0" />
+    <PackageReference Include="CodeGeneration.Roslyn.BuildTime" Version="0.6.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.msbuild" Version="2.6.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="CSharpDiscriminatedUnion" Version="1.0.2" />
+    <PackageReference Include="LibGit2Sharp" Version="0.25.4" />
+    <PackageReference Include="LiteDB" Version="4.1.4" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
-    <PackageReference Include="NSubstitute" Version="3.1.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.12.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
+    <PackageReference Include="NSubstitute" Version="4.2.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
     <PackageReference Include="PowerAssert" Version="1.0.85" />
     <PackageReference Include="System.IO.Compression.ZipFile" Version="4.3.0" />
   </ItemGroup>
@@ -71,7 +79,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <DotNetCliToolReference Include="dotnet-codegen" Version="0.4.88" />
+    <DotNetCliToolReference Include="dotnet-codegen" Version="0.6.1" />
   </ItemGroup>
 
 </Project>

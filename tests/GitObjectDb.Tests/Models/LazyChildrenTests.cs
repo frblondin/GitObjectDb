@@ -165,7 +165,7 @@ namespace GitObjectDb.Tests.Models
             // Assert
             clone.AttachToParent(parent);
             Assert.That(clone.Count, Is.EqualTo(values.Count - 1));
-            Assert.That(clone, Does.Not.Contain(values[0]));
+            Assert.That(clone, Has.No.EqualTo(values[0]));
         }
 
         [Test]

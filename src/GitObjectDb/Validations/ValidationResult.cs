@@ -14,7 +14,6 @@ namespace GitObjectDb.Validations
         /// Initializes a new instance of the <see cref="ValidationResult"/> class.
         /// </summary>
         /// <param name="failures">The failures.</param>
-        /// <exception cref="ArgumentNullException">failures</exception>
         public ValidationResult(IList<ValidationFailure> failures)
         {
             Errors = failures ?? throw new ArgumentNullException(nameof(failures));

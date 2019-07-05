@@ -45,9 +45,9 @@ namespace GitObjectDb.Tests.IO
                 Assert.Throws<NotSupportedException>(() => sut.Seek(default, default));
                 Assert.Throws<NotSupportedException>(() => sut.ReadByte());
                 Assert.Throws<NotSupportedException>(() => sut.BeginRead(default, default, default, default, default));
-                Assert.ThrowsAsync<NotSupportedException>(async () => await sut.CopyToAsync(default, default).ConfigureAwait(false));
+                Assert.Throws<NotSupportedException>(() => sut.CopyToAsync(default, default).ConfigureAwait(false).GetAwaiter().GetResult());
                 Assert.Throws<NotSupportedException>(() => sut.Write(default, default, default));
-                Assert.ThrowsAsync<NotSupportedException>(async () => await sut.WriteAsync(default, default, default, default).ConfigureAwait(false));
+                Assert.Throws<NotSupportedException>(() => sut.WriteAsync(default, default, default, default).ConfigureAwait(false).GetAwaiter().GetResult());
                 Assert.Throws<NotSupportedException>(() => sut.WriteByte(default));
                 Assert.Throws<NotSupportedException>(() => sut.WriteTo(default));
                 Assert.Throws<NotSupportedException>(() => sut.BeginWrite(default, default, default, default, default));

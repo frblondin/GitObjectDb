@@ -12,9 +12,6 @@ namespace GitObjectDb.Serialization
         /// <summary>Initializes a new instance of the <see cref="ModelNestedObjectInfo"/> class.</summary>
         /// <param name="fileName">The path.</param>
         /// <param name="data">The data.</param>
-        /// <exception cref="ArgumentNullException">path
-        /// or
-        /// data</exception>
         public ModelNestedObjectInfo(string fileName, StringBuilder data)
         {
             FileName = fileName ?? throw new ArgumentNullException(nameof(fileName));
