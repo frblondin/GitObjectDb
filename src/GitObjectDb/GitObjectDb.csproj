@@ -43,8 +43,8 @@ The Git repository is used as a pure database as the files containing the serial
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-    <PackageReference Include="SourceLink.Copy.PdbFiles" Version="2.8.3" />
-    <PackageReference Include="SourceLink.Create.CommandLine" Version="2.8.3" />
+    <PackageReference Include="SourceLink.Copy.PdbFiles" Version="2.8.3" privateAssets="all" />
+    <PackageReference Include="SourceLink.Create.CommandLine" Version="2.8.3" privateAssets="all" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
