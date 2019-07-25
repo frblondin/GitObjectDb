@@ -32,6 +32,5 @@ steps:
   displayName: dotnet test
   inputs:
     command: test
-    arguments: '--configuration $(BuildConfiguration) --logger "trx;LogFileName=..\..\TestResults\TestResults.trx" /p:CollectCoverage=true /p:CoverletOutput=../TestResults/coverage.opencover.xml /p:CoverletOutputFormat=opencover'
+    arguments: '--no-build --configuration $(BuildConfiguration) --logger "trx;LogFileName=..\..\TestResults\TestResults.trx" /p:CollectCoverage=true /p:CoverletOutput=../TestResults/coverage.opencover.xml /p:CoverletOutputFormat=opencover'
     projects: 'tests/**/*.csproj'
-    nobuild: true
