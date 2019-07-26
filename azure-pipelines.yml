@@ -34,6 +34,7 @@ stages:
           projectKey: GitObjectDb
 
     - job: Build
+      steps:
       - task: DotNetCoreCLI@2
         displayName: Build
         inputs:
@@ -42,6 +43,7 @@ stages:
           arguments: '--configuration $(buildConfiguration) /p:SourceLinkCreate=true /p:IncludeSymbols=true /p:IncludeSource=true /v:n'
 
     - job: Tests
+      steps:
       - task: DotNetCoreCLI@2
         displayName: Run Tests
         inputs:
@@ -50,10 +52,12 @@ stages:
           projects: 'tests/**/*.csproj'
 
     - job: SonarCloud
+      steps:
       - task: SonarCloudAnalyze@1
 
     - job: Publish
       displayName: Publish Results
+      steps:
       - task: PublishTestResults@2
         inputs:
           testRunner: VSTest
