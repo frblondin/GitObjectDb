@@ -6,6 +6,9 @@
 trigger:
 - master
 
+pool:
+  vmImage: 'windows-latest'
+
 variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
@@ -13,11 +16,9 @@ variables:
 
 stages:
   - stage: Master
+    displayName: 'Build & Test'
     jobs:
-    - job: Build
-      displayName: 'Build & Test'
-      pool:
-        vmImage: 'windows-latest'
+    - job: Initialize
       steps:
       - task: NuGetToolInstaller@1
 
@@ -32,6 +33,7 @@ stages:
           scannerMode: MSBuild
           projectKey: GitObjectDb
 
+    - job: Build
       - task: DotNetCoreCLI@2
         displayName: Build
         inputs:
@@ -39,6 +41,7 @@ stages:
           projects: '$(solution)'
           arguments: '--configuration $(buildConfiguration) /p:SourceLinkCreate=true /p:IncludeSymbols=true /p:IncludeSource=true /v:n'
 
+    - job: Tests
       - task: DotNetCoreCLI@2
         displayName: Run Tests
         inputs:
@@ -46,8 +49,11 @@ stages:
           arguments: '--no-build --configuration $(BuildConfiguration) --logger:trx /p:CollectCoverage=true /p:CollectCoverage=true /p:CoverletOutputFormat=opencover'
           projects: 'tests/**/*.csproj'
 
+    - job: SonarCloud
       - task: SonarCloudAnalyze@1
 
+    - job: Publish
+      displayName: Publish Results
       - task: PublishTestResults@2
         inputs:
           testRunner: VSTest
@@ -71,13 +77,10 @@ stages:
   - stage: NuGet
     displayName: 'Upload to NuGet.org'
     dependsOn: Master
-    condition: succeeded('Master')
-    # condition: and(succeeded('Master'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    condition: and(succeeded('Master'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     jobs:
     - job: NuGet1
       displayName: 'Upload to NuGet feed'
-      pool:
-        vmImage: 'windows-latest'
       steps:
       - task: DownloadBuildArtifacts@0
         inputs:
