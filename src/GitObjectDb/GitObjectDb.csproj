@@ -22,6 +22,7 @@ The Git repository is used as a pure database as the files containing the serial
   <ItemGroup>
     <AdditionalFiles Include="$(SolutionDir)\stylecop.json" />
     <AdditionalFiles Include="$(SolutionDir)\Rules.ruleset" />
+    <AdditionalFiles Include="$(SolutionDir)\version.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -50,6 +51,10 @@ The Git repository is used as a pure database as the files containing the serial
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
     <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
+    <PackageReference Include="Nerdbank.GitVersioning" Version="2.3.167">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
