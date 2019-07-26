@@ -67,7 +67,7 @@ stages:
         inputs:
           artifactName: nuget
 
-  - stage: Push to NuGet.org
+  - stage: NuGet
     dependsOn: Build
     condition: and(succeeded('Build'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     jobs:
