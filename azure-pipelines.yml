@@ -6,53 +6,85 @@
 trigger:
 - master
 
-pool:
-  vmImage: 'windows-latest'
-
 variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
 
-steps:
-- task: NuGetToolInstaller@1
+stages:
+  - stage: Build
+    jobs:
+    - job: 'Build & Test'
+      pool:
+        vmImage: 'windows-latest'
+      steps:
+      - task: NuGetToolInstaller@1
 
-- task: NuGetCommand@2
-  inputs:
-    restoreSolution: '$(solution)'
+      - task: NuGetCommand@2
+        inputs:
+          restoreSolution: '$(solution)'
 
-- task: SonarCloudPrepare@1
-  inputs:
-    SonarCloud: 'Sonarcloud'
-    organization: 'frblondin-github'
-    scannerMode: 'MSBuild'
-    projectKey: 'GitObjectDb'
+      - task: SonarCloudPrepare@1
+        inputs:
+          SonarCloud: Sonarcloud
+          organization: 'frblondin-github'
+          scannerMode: MSBuild
+          projectKey: GitObjectDb
 
-- task: DotNetCoreCLI@2
-  displayName: Build
-  inputs:
-    command: 'build'
-    projects: '$(solution)'
-    arguments: '--configuration $(buildConfiguration) /p:SourceLinkCreate=true /p:IncludeSymbols=true /p:IncludeSource=true /v:n'
+      - task: DotNetCoreCLI@2
+        displayName: Build
+        inputs:
+          command: build
+          projects: '$(solution)'
+          arguments: '--configuration $(buildConfiguration) /p:SourceLinkCreate=true /p:IncludeSymbols=true /p:IncludeSource=true /v:n'
 
-- task: DotNetCoreCLI@2
-  displayName: Run Tests
-  inputs:
-    command: test
-    arguments: '--no-build --configuration $(BuildConfiguration) --logger:trx /p:CollectCoverage=true /p:CollectCoverage=true /p:CoverletOutputFormat=opencover'
-    projects: 'tests/**/*.csproj'
+      - task: DotNetCoreCLI@2
+        displayName: Run Tests
+        inputs:
+          command: test
+          arguments: '--no-build --configuration $(BuildConfiguration) --logger:trx /p:CollectCoverage=true /p:CollectCoverage=true /p:CoverletOutputFormat=opencover'
+          projects: 'tests/**/*.csproj'
 
-- task: SonarCloudAnalyze@1
+      - task: SonarCloudAnalyze@1
 
-- task: PublishTestResults@2
-  inputs:
-    testResultsFormat: 'VSTest'
-    testResultsFiles: '**/*.trx'
-    mergeTestResults: true
-    failTaskOnFailedTests: true
-    buildPlatform: '$(buildPlatform)'
-    buildConfiguration: '$(buildConfiguration)'
+      - task: PublishTestResults@2
+        inputs:
+          testRunner: VSTest
+          testResultsFiles: '**/*.trx'
 
-- task: SonarCloudPublish@1
-  inputs:
-    pollingTimeoutSec: '300'
+      - task: SonarCloudPublish@1
+        inputs:
+          pollingTimeoutSec: 300
+
+      - script: |
+          dotnet pack src\GitObjectDb --no-build --include-symbols --include-source --configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)
+          dotnet pack src\GitObjectDb.ModelCodeGeneration --no-build --include-symbols --include-source --configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)
+          dotnet pack src\GitObjectDb.ModelCodeGeneration.Attributes --no-build --include-symbols --include-source --configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)
+        displayName: Generate NuGet package
+
+      - task: PublishBuildArtifacts@1
+        displayName: Publish build artifacts
+        inputs:
+          artifactName: nuget
+
+  - stage: Push to NuGet.org
+    dependsOn: Build
+    condition: and(succeeded('Build'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    jobs:
+    - job: Upload to NuGet feed
+      pool:
+        vmImage: 'windows-latest'
+      steps:
+      - task: DownloadBuildArtifacts@0
+        inputs:
+          buildType: current
+          downloadPath: '$(Build.ArtifactStagingDirectory)'
+
+      - task: NuGetCommand@2
+        inputs:
+          command: push
+          packagesToPush: $(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg
+          nuGetFeedType: internal
+          publishVstsFeed: Enablon
+          feedsToUse: config
+          nugetConfigPath: NuGet.config
