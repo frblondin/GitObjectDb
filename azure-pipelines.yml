@@ -83,6 +83,7 @@ stages:
         inputs:
           buildType: current
           downloadPath: '$(Build.ArtifactStagingDirectory)'
+          artifactName: nuget
 
       - task: NuGetCommand@2
         inputs:
