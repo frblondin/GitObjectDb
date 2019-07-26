@@ -13,8 +13,10 @@ variables:
 
 stages:
   - stage: Build
+    displayName: 'Build & Test'
     jobs:
-    - job: 'Build & Test'
+    - job: Build1
+      displayName: 'Build & Test'
       pool:
         vmImage: 'windows-latest'
       steps:
@@ -68,10 +70,12 @@ stages:
           artifactName: nuget
 
   - stage: NuGet
+    displayName: 'Upload to NuGet feed'
     dependsOn: Build
     condition: and(succeeded('Build'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     jobs:
-    - job: Upload to NuGet feed
+    - job: NuGet1
+      displayName: 'Upload to NuGet feed'
       pool:
         vmImage: 'windows-latest'
       steps:
