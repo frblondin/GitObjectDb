@@ -156,16 +156,36 @@ namespace GitObjectDb.Services
                     switch (change.Status)
                     {
                         case ChangeKind.Modified:
-                            ComputeChanges_Modified(change, relativePath => previousCommit[change.OldPath.GetSiblingFile(relativePath)]?.Target as Blob,
+                            var modified = ComputeChanges_Modified(CurrentTransformedRepository, _serializer, change,
+                                relativePath => previousCommit[change.OldPath.GetSiblingFile(relativePath)]?.Target as Blob,
                                 relativePath => commit[change.Path.GetSiblingFile(relativePath)]?.Target as Blob);
+                            _rebase.ModifiedProperties.AddRange(modified);
                             break;
                         case ChangeKind.Added:
-                            ComputeChanges_Added(repository, change,
+                            var added = ComputeChanges_Added(CurrentTransformedRepository, _serializer, repository, change,
                                 relativePath => (commit[change.Path.GetSiblingFile(relativePath)]?.Target as Blob)?.GetContentText() ?? string.Empty);
+                            if (added != null)
+                            {
+                                _rebase.AddedObjects.Add(added);
+                            }
                             break;
                         case ChangeKind.Deleted:
-                            ComputeChanges_Deleted(repository, change,
-                                relativePath => (previousCommit[change.OldPath.GetSiblingFile(relativePath)]?.Target as Blob)?.GetContentText() ?? string.Empty);
+                            IList<TreeEntryChanges> DetectDeletionConflicts(string path)
+                            {
+                                var folder = change.Path.Replace($"/{FileSystemStorage.DataFile}", string.Empty);
+                                return _rebase.ModifiedUpstreamBranchEntries
+                                    .Where(c =>
+                                           c.Path.Equals(folder, StringComparison.OrdinalIgnoreCase) &&
+                                           (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified))
+                                    .ToList();
+                            }
+                            var deleted = ComputeChanges_Deleted(_serializer, repository, change,
+                                relativePath => (previousCommit[change.OldPath.GetSiblingFile(relativePath)]?.Target as Blob)?.GetContentText() ?? string.Empty,
+                                DetectDeletionConflicts);
+                            if (deleted != null)
+                            {
+                                _rebase.DeletedObjects.Add(deleted);
+                            }
                             break;
                         default:
                             throw new NotImplementedException($"Change type '{change.Status}' for branch merge is not supported.");
@@ -174,80 +194,73 @@ namespace GitObjectDb.Services
             }
         }
 
-        private void ComputeChanges_Modified(PatchEntryChanges change, Func<string, Blob> relativeFileDataResolverStart, Func<string, Blob> relativeFileDataResolverEnd)
+        internal static IEnumerable<ObjectRepositoryPropertyChange> ComputeChanges_Modified(IObjectRepository objectRepository, IObjectRepositorySerializer serializer, PatchEntryChanges change, Func<string, Blob> relativeFileDataResolverStart, Func<string, Blob> relativeFileDataResolverEnd)
         {
             // Get data file path, in the case where a blob has changed
             var dataPath = change.Path.GetSiblingFile(FileSystemStorage.DataFile);
 
-            var currentObject = CurrentTransformedRepository.TryGetFromGitPath(dataPath) ??
+            var currentObject = objectRepository.TryGetFromGitPath(dataPath) ??
                 throw new NotImplementedException($"Conflict as a modified node {change.Path} has been deleted in current rebase state.");
 
-            var changeStart = _serializer.Deserialize(
+            var changeStart = serializer.Deserialize(
                 relativeFileDataResolverStart(FileSystemStorage.DataFile)?.GetContentStream() ?? throw new GitObjectDbException("Change start content could not be found."),
                 relativePath => relativeFileDataResolverStart(relativePath)?.GetContentText() ?? string.Empty);
 
-            var changeEnd = _serializer.Deserialize(
+            var changeEnd = serializer.Deserialize(
                 relativeFileDataResolverEnd(FileSystemStorage.DataFile)?.GetContentStream() ?? throw new GitObjectDbException("Change end content could not be found."),
                 relativePath => relativeFileDataResolverEnd(relativePath)?.GetContentText() ?? string.Empty);
 
             var changes = ObjectRepositoryMerge.ComputeModifiedProperties(change, changeStart, changeEnd, currentObject);
 
-            foreach (var modifiedProperty in changes)
-            {
-                if (typeof(IObjectRepositoryIndex).IsAssignableFrom(modifiedProperty.Property.Property.ReflectedType))
-                {
-                    // Indexes will be recomputed anyways from the changes when committed,
-                    // so there is no need to track them in the modified chunks
-                    continue;
-                }
+            // Indexes will be recomputed anyways from the changes when committed,
+            // so there is no need to track them in the modified chunks
+            var changesWithoutIndexes = changes.Where(
+                modifiedProperty => !typeof(IObjectRepositoryIndex).IsAssignableFrom(modifiedProperty.Property.Property.ReflectedType));
 
-                _rebase.ModifiedProperties.Add(modifiedProperty);
-            }
+            return changesWithoutIndexes;
         }
 
-        private void ComputeChanges_Added(IRepository repository, PatchEntryChanges change, Func<string, string> relativeFileDataResolver)
+        internal static ObjectRepositoryAdd ComputeChanges_Added(IObjectRepository objectRepository, IObjectRepositorySerializer serializer, IRepository repository, PatchEntryChanges change, Func<string, string> relativeFileDataResolver)
         {
             // Only data file changes have to be taken into account
             // Changes made to the blobs will product a 'modified' change as well
             if (System.IO.Path.GetFileName(change.Path) != FileSystemStorage.DataFile)
             {
-                return;
+                return null;
             }
 
-            if (CurrentTransformedRepository.TryGetFromGitPath(change.Path) != null)
+            if (objectRepository.TryGetFromGitPath(change.Path) != null)
             {
                 throw new NotImplementedException("Node already present in current state.");
             }
             var parentDataPath = change.Path.GetDataParentDataPath();
-            if (CurrentTransformedRepository.TryGetFromGitPath(parentDataPath) == null)
+            if (objectRepository.TryGetFromGitPath(parentDataPath) == null)
             {
                 throw new NotImplementedException("Node addition while parent has been deleted in head is not supported.");
             }
 
-            var @new = _serializer.Deserialize(repository.Lookup<Blob>(change.Oid).GetContentStream(), relativeFileDataResolver);
-            var parentId = change.Path.GetDataParentId(_rebase.Repository);
-            _rebase.AddedObjects.Add(new ObjectRepositoryAdd(change.Path, @new, parentId));
+            var @new = serializer.Deserialize(repository.Lookup<Blob>(change.Oid).GetContentStream(), relativeFileDataResolver);
+            var parentId = change.Path.GetDataParentId(objectRepository);
+            return new ObjectRepositoryAdd(change.Path, @new, parentId);
         }
 
-        private void ComputeChanges_Deleted(IRepository repository, PatchEntryChanges change, Func<string, string> relativeFileDataResolver)
+        internal static ObjectRepositoryDelete ComputeChanges_Deleted(IObjectRepositorySerializer serializer, IRepository repository, PatchEntryChanges change, Func<string, string> relativeFileDataResolver, Func<string, IList<TreeEntryChanges>> deletionConflictProvider = null)
         {
             // Only data file changes have to be taken into account
             // Changes made to the blobs will product a 'modified' change as well
             if (System.IO.Path.GetFileName(change.Path) != FileSystemStorage.DataFile)
             {
-                return;
+                return null;
             }
 
-            var folder = change.Path.Replace($"/{FileSystemStorage.DataFile}", string.Empty);
-            if (_rebase.ModifiedUpstreamBranchEntries.Any(c =>
-                c.Path.Equals(folder, StringComparison.OrdinalIgnoreCase) &&
-                (c.Status == ChangeKind.Added || c.Status == ChangeKind.Modified)))
+            var conflicts = deletionConflictProvider?.Invoke(change.Path);
+            if (conflicts?.Any() ?? false)
             {
                 throw new NotImplementedException("Node deletion while children have been added or modified in head is not supported.");
             }
 
-            var mergeBaseObject = _serializer.Deserialize(repository.Lookup<Blob>(change.OldOid).GetContentStream(), relativeFileDataResolver);
-            _rebase.DeletedObjects.Add(new ObjectRepositoryDelete(change.Path, mergeBaseObject.Id));
+            var mergeBaseObject = serializer.Deserialize(repository.Lookup<Blob>(change.OldOid).GetContentStream(), relativeFileDataResolver);
+            return new ObjectRepositoryDelete(change.Path, mergeBaseObject.Id);
         }
     }
 }

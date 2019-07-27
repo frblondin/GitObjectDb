@@ -114,7 +114,7 @@ namespace GitObjectDb.Models.Rebase
                 var mergeBaseCommit = repository.ObjectDatabase.FindMergeBase(headTip, rebaseCommit);
                 MergeBaseCommitId = mergeBaseCommit.Id;
 
-                EnsureNoMigrations(repository);
+                EnsureNoMigrations();
                 ReplayedCommits = repository.Commits.QueryBy(new CommitFilter
                 {
                     SortBy = CommitSortStrategies.Topological | CommitSortStrategies.Reverse,
@@ -142,14 +142,13 @@ namespace GitObjectDb.Models.Rebase
             }
         }
 
-        private void EnsureNoMigrations(IRepository repository)
+        private void EnsureNoMigrations()
         {
             var migrationScaffolder = _migrationScaffolderFactory(Repository.Container, Repository.RepositoryDescription);
             var upstreamBranchMigrators = migrationScaffolder.Scaffold(MergeBaseCommitId, RebaseCommitId, MigrationMode.Upgrade);
-            var currentBranchMigrators = migrationScaffolder.Scaffold(MergeBaseCommitId, repository.Head.Tip.Id, MigrationMode.Upgrade);
-            if (upstreamBranchMigrators.Any() || currentBranchMigrators.Any())
+            if (upstreamBranchMigrators.Any())
             {
-                throw new NotSupportedException("Rebase is not supported when branches contain any migrator.");
+                throw new NotSupportedException("Rebase is not supported when the branch being merged contains any migrator.");
             }
         }
 
@@ -164,8 +163,11 @@ namespace GitObjectDb.Models.Rebase
         /// <inheritdoc />
         public IObjectRepositoryRebase Continue()
         {
-            Status = Repository.Execute(
-                r => _rebaseProcessorFactory(this).Continue(r));
+            Status = Repository.Execute(repository =>
+            {
+                EnsureHeadCommit(repository);
+                return _rebaseProcessorFactory(this).Continue(repository);
+            });
             return this;
         }
 
