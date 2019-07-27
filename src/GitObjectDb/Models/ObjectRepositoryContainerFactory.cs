@@ -1,5 +1,6 @@
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
+using GitObjectDb.Models.CherryPick;
 using GitObjectDb.Models.Merge;
 using GitObjectDb.Models.Rebase;
 using GitObjectDb.Serialization;
@@ -35,6 +36,7 @@ namespace GitObjectDb.Models
                 _serviceProvider.GetRequiredService<ComputeTreeChangesFactory>(),
                 _serviceProvider.GetRequiredService<ObjectRepositoryMergeFactory>(),
                 _serviceProvider.GetRequiredService<ObjectRepositoryRebaseFactory>(),
+                _serviceProvider.GetRequiredService<ObjectRepositoryCherryPickFactory>(),
                 _serviceProvider.GetRequiredService<IRepositoryProvider>(),
                 _serviceProvider.GetRequiredService<GitHooks>(),
                 _serviceProvider.GetRequiredService<ObjectRepositorySerializerFactory>(),
