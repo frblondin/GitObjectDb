@@ -1,13 +1,11 @@
 using GitObjectDb.Models;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Rebase;
-using GitObjectDb.Reflection;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Models.Migration;
 using GitObjectDb.Tests.Assets.Utils;
 using LibGit2Sharp;
-using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -25,7 +23,7 @@ namespace GitObjectDb.Tests.Services
         {
             // master:    A---B
             //             \
-            // newBranch:   C   ->   A---B---C
+            // newBranch:   C   ->   A---C---B
 
             // Arrange
             var a = container.AddRepository(sut, signature, message); // A
@@ -37,11 +35,12 @@ namespace GitObjectDb.Tests.Services
             var updateDescription = a.With(a.Applications[0].Pages[0], p => p.Description, "modified description");
             container.Commit(updateDescription.Repository, signature, message); // C
             var rebase = container.Rebase(sut.Id, "master");
+            var repository = container.Repositories.Single();
 
             // Assert
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
             Assert.That(rebase.TotalStepCount, Is.EqualTo(1));
-            var (commits, tip) = container.Repositories.Single().Execute(r =>
+            var (commits, tip) = repository.Execute(r =>
             {
                 var commitFilter = new CommitFilter
                 {
@@ -53,9 +52,9 @@ namespace GitObjectDb.Tests.Services
             Assert.That(commits[0], Is.EqualTo(a.CommitId));
             Assert.That(commits[1], Is.EqualTo(b.CommitId));
             Assert.That(commits[2], Is.EqualTo(tip));
-            Assert.That(container.Repositories.Single().CommitId, Is.EqualTo(tip));
-            Assert.That(container.Repositories.Single().Applications[0].Pages[0].Name, Is.EqualTo("modified name"));
-            Assert.That(container.Repositories.Single().Applications[0].Pages[0].Description, Is.EqualTo("modified description"));
+            Assert.That(repository.CommitId, Is.EqualTo(tip));
+            Assert.That(repository.Applications[0].Pages[0].Name, Is.EqualTo("modified name"));
+            Assert.That(repository.Applications[0].Pages[0].Description, Is.EqualTo("modified description"));
         }
 
         [Test]
@@ -64,7 +63,7 @@ namespace GitObjectDb.Tests.Services
         {
             // master:    A---B
             //             \
-            // newBranch:   C   ->   A---B---C
+            // newBranch:   C   ->   A---C---B
 
             // Arrange
             var a = container.AddRepository(sut, signature, message); // A
@@ -76,11 +75,12 @@ namespace GitObjectDb.Tests.Services
             var deletePage = a.With(c => c.Remove(a.Applications[0], app => app.Pages, a.Applications[0].Pages[0]));
             container.Commit(deletePage.Repository, signature, message); // C
             var rebase = container.Rebase(sut.Id, "master");
+            var repository = container.Repositories.Single();
 
             // Assert
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
             Assert.That(rebase.TotalStepCount, Is.EqualTo(1));
-            var (commits, tip) = container.Repositories.Single().Execute(r =>
+            var (commits, tip) = repository.Execute(r =>
             {
                 var commitFilter = new CommitFilter
                 {
@@ -92,9 +92,9 @@ namespace GitObjectDb.Tests.Services
             Assert.That(commits[0], Is.EqualTo(a.CommitId));
             Assert.That(commits[1], Is.EqualTo(b.CommitId));
             Assert.That(commits[2], Is.EqualTo(tip));
-            Assert.That(container.Repositories.Single().CommitId, Is.EqualTo(tip));
-            Assert.That(container.Repositories.Single().Applications[0].Name, Is.EqualTo("modified name"));
-            Assert.That(container.Repositories.Single().Applications[0].Pages, Has.Count.EqualTo(a.Applications[0].Pages.Count - 1));
+            Assert.That(repository.CommitId, Is.EqualTo(tip));
+            Assert.That(repository.Applications[0].Name, Is.EqualTo("modified name"));
+            Assert.That(repository.Applications[0].Pages, Has.Count.EqualTo(a.Applications[0].Pages.Count - 1));
         }
 
         [Test]
@@ -103,7 +103,7 @@ namespace GitObjectDb.Tests.Services
         {
             // master:    A---B
             //             \
-            // newBranch:   C   ->   A---B---C
+            // newBranch:   C   ->   A---C---B
 
             // Arrange
             var a = container.AddRepository(sut, signature, message); // A
@@ -116,11 +116,12 @@ namespace GitObjectDb.Tests.Services
             var addPage = a.With(c => c.Add(a.Applications[0], app => app.Pages, page));
             container.Commit(addPage.Repository, signature, message); // C
             var rebase = container.Rebase(sut.Id, "master");
+            var repository = container.Repositories.Single();
 
             // Assert
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
             Assert.That(rebase.TotalStepCount, Is.EqualTo(1));
-            var (commits, tip) = container.Repositories.Single().Execute(r =>
+            var (commits, tip) = repository.Execute(r =>
             {
                 var commitFilter = new CommitFilter
                 {
@@ -133,48 +134,30 @@ namespace GitObjectDb.Tests.Services
             Assert.That(commits[0], Is.EqualTo(a.CommitId));
             Assert.That(commits[1], Is.EqualTo(b.CommitId));
             Assert.That(commits[2], Is.EqualTo(tip));
-            Assert.That(container.Repositories.Single().CommitId, Is.EqualTo(tip));
-            Assert.That(container.Repositories.Single().Applications[0].Name, Is.EqualTo("modified name"));
-            Assert.That(container.Repositories.Single().Applications[0].Pages, Has.Count.EqualTo(a.Applications[0].Pages.Count + 1));
+            Assert.That(repository.CommitId, Is.EqualTo(tip));
+            Assert.That(repository.Applications[0].Name, Is.EqualTo("modified name"));
+            Assert.That(repository.Applications[0].Pages, Has.Count.EqualTo(a.Applications[0].Pages.Count + 1));
         }
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void RebaseFailsWhenSourceBranchContainsMigrations(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, DummyMigration migration)
+        public void RebaseFailsWhenUpstreamBranchContainsMigrations(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, DummyMigration migration)
         {
             // master:    A---B  (B contains a migration)
             //             \
-            // newBranch:   C   ->   A---B---C
+            // newBranch:   C   ->   A---C---B
 
             // Arrange
             var a = container.AddRepository(sut, signature, message); // A
 
             // Act
-            var updatedInstance = a.With(c => c.Add(a, r => r.Migrations, migration));
-            container.Commit(updatedInstance.Repository, signature, message); // B
+            container.Commit(
+                a.With(c => c.Add(a, r => r.Migrations, migration)).Repository,
+                signature, message); // B
             a = container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
-            var updateDescription = a.With(a.Applications[0].Pages[0], p => p.Description, "modified description");
-            container.Commit(updateDescription.Repository, signature, message); // C
-            Assert.Throws<NotSupportedException>(() => container.Rebase(sut.Id, "master"));
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void RebaseFailsWhenBranchContainsMigrations(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, DummyMigration migration)
-        {
-            // master:    A---B
-            //             \
-            // newBranch:   C  (C contains a migration)   ->   A---B---C
-
-            // Arrange
-            var a = container.AddRepository(sut, signature, message); // A
-
-            // Act
-            var updateName = a.With(a.Applications[0].Pages[0], p => p.Name, "modified name");
-            container.Commit(updateName.Repository, signature, message); // B
-            a = container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
-            var updatedInstance = a.With(c => c.Add(a, r => r.Migrations , migration));
-            container.Commit(updatedInstance.Repository, signature, message); // C
+            container.Commit(
+                a.With(a.Applications[0].Pages[0], p => p.Description, "modified description").Repository,
+                signature, message); // C
             Assert.Throws<NotSupportedException>(() => container.Rebase(sut.Id, "master"));
         }
 
@@ -209,8 +192,8 @@ namespace GitObjectDb.Tests.Services
         static IObjectRepositoryRebase CreateConflictingRebase(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // master:    A---B
-            //             \    (B & C change same value)
-            // newBranch:   C   ->   A---B---C
+            //             \    (B & C change same property)
+            // newBranch:   C   ->   A---C---B
             var a = container.AddRepository(sut, signature, message); // A
             var updateName = a.With(a.Applications[0].Pages[0], p => p.Name, "foo");
             container.Commit(updateName.Repository, signature, message); // B

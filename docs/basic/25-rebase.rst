@@ -38,3 +38,11 @@ Resolve conflicts
         "modified description");
     container.Commit(updateDescription.Repository, signature, message); // C
     var rebase = container.Rebase(sut.Id, "master");
+    if (rebase.Status == RebaseStatus.Conflicts)
+    {
+       // Merge conflicts by getting conflicting chunk changes
+       // and calling c.Resolve(...)
+    }
+
+    // An exception is thrown if there are remaining unresolved conflicts
+    rebase.Continue(signature);
