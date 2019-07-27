@@ -12,7 +12,7 @@ variables:
   buildConfiguration: 'Release'
 
 stages:
-  - stage: Build
+  - stage: Master
     jobs:
     - job: Build1
       displayName: 'Build & Test'
@@ -76,8 +76,8 @@ stages:
 
   - stage: NuGet
     displayName: Upload to NuGet.org
-    dependsOn: Build
-    condition: and(succeeded('Build'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    dependsOn: Master
+    condition: and(succeeded('Master'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     jobs:
     - job: NuGet1
       displayName: Upload
@@ -94,3 +94,13 @@ stages:
           packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
           nuGetFeedType: external
           publishFeedCredentials: 'NuGet thomas@caudal.fr'
+
+      - task: GitHubRelease@0
+        displayName: Create GitHub Release
+        inputs:
+          gitHubConnection: frblondin-github
+          repositoryName: '$(Build.Repository.Name)'
+          isPreRelease: true
+          tagSource: manual
+          tag: $(Build.BuildNumber)
+          assets: '$(Build.ArtifactStagingDirectory)/**/*.nupkg'
