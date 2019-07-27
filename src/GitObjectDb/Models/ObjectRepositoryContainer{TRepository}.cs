@@ -1,6 +1,7 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
+using GitObjectDb.Models.CherryPick;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Merge;
 using GitObjectDb.Models.Rebase;
@@ -29,6 +30,7 @@ namespace GitObjectDb.Models
         private readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
         private readonly ObjectRepositoryMergeFactory _objectRepositoryMergeFactory;
         private readonly ObjectRepositoryRebaseFactory _objectRepositoryRebaseFactory;
+        private readonly ObjectRepositoryCherryPickFactory _objectRepositoryCherryPickFactory;
         private readonly IRepositoryProvider _repositoryProvider;
         private readonly GitHooks _hooks;
         private readonly ObjectRepositorySerializerFactory _serializerFactory;
@@ -42,6 +44,7 @@ namespace GitObjectDb.Models
         /// <param name="computeTreeChangesFactory">The <see cref="IComputeTreeChanges"/> factory.</param>
         /// <param name="objectRepositoryMergeFactory">The <see cref="IObjectRepositoryMerge"/> factory.</param>
         /// <param name="objectRepositoryRebaseFactory">The <see cref="IObjectRepositoryRebase"/> factory.</param>
+        /// <param name="objectRepositoryCherryPickFactory">The <see cref="IObjectRepositoryCherryPick"/> factory.</param>
         /// <param name="repositoryProvider">The repository provider.</param>
         /// <param name="hooks">The hooks.</param>
         /// <param name="serializerFactory">The <see cref="IObjectRepositorySerializer"/> factory.</param>
@@ -49,6 +52,7 @@ namespace GitObjectDb.Models
         public ObjectRepositoryContainer(string path,
             IObjectRepositoryLoader repositoryLoader, ComputeTreeChangesFactory computeTreeChangesFactory,
             ObjectRepositoryMergeFactory objectRepositoryMergeFactory, ObjectRepositoryRebaseFactory objectRepositoryRebaseFactory,
+            ObjectRepositoryCherryPickFactory objectRepositoryCherryPickFactory,
             IRepositoryProvider repositoryProvider, GitHooks hooks,
             ObjectRepositorySerializerFactory serializerFactory, ILogger<ObjectRepositoryContainer> logger)
         {
@@ -56,6 +60,7 @@ namespace GitObjectDb.Models
             _computeTreeChangesFactory = computeTreeChangesFactory ?? throw new ArgumentNullException(nameof(computeTreeChangesFactory));
             _objectRepositoryMergeFactory = objectRepositoryMergeFactory ?? throw new ArgumentNullException(nameof(objectRepositoryMergeFactory));
             _objectRepositoryRebaseFactory = objectRepositoryRebaseFactory ?? throw new ArgumentNullException(nameof(objectRepositoryRebaseFactory));
+            _objectRepositoryCherryPickFactory = objectRepositoryCherryPickFactory ?? throw new ArgumentNullException(nameof(objectRepositoryCherryPickFactory));
             _repositoryProvider = repositoryProvider ?? throw new ArgumentNullException(nameof(repositoryProvider));
             _hooks = hooks ?? throw new ArgumentNullException(nameof(hooks));
             _serializerFactory = serializerFactory ?? throw new ArgumentNullException(nameof(serializerFactory));
@@ -422,6 +427,21 @@ namespace GitObjectDb.Models
             {
                 var commitId = repository.Execute(r => r.Branches[branchName].Tip.Id);
                 return _objectRepositoryRebaseFactory(repository, commitId, branchName);
+            }
+        }
+
+        /// <inheritdoc />
+        public IObjectRepositoryCherryPick CherryPick(UniqueId id, ObjectId commitId)
+        {
+            if (commitId == null)
+            {
+                throw new ArgumentNullException(nameof(commitId));
+            }
+
+            var repository = this[id];
+            using (_logger.BeginScope("Cherry picking commit '{CommitId}' in '{Repository}'.", commitId, repository.Id))
+            {
+                return _objectRepositoryCherryPickFactory(repository, commitId);
             }
         }
 

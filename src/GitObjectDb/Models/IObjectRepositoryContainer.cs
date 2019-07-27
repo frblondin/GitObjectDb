@@ -1,3 +1,4 @@
+using GitObjectDb.Models.CherryPick;
 using GitObjectDb.Models.Merge;
 using GitObjectDb.Models.Rebase;
 using GitObjectDb.Validations;
@@ -97,7 +98,7 @@ namespace GitObjectDb.Models
         /// <param name="signature">The signature.</param>
         /// <param name="message">The message.</param>
         /// <param name="options">The options.</param>
-        /// <returns>The commit identifier of the new repository HEAD.</returns>
+        /// <returns>The new instance of repository containing reflected changes.</returns>
         TRepository Commit(IObjectRepository repository, Signature signature, string message, CommitOptions options = null);
 
         /// <summary>
@@ -156,5 +157,13 @@ namespace GitObjectDb.Models
         /// <param name="branchName">Name of the branch.</param>
         /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
         IObjectRepositoryRebase Rebase(UniqueId id, string branchName);
+
+        /// <summary>
+        /// Cherry picks changes from the commit into the branch pointed at by HEAD.
+        /// </summary>
+        /// <param name="id">The repository id.</param>
+        /// <param name="commitId">The commit id to cherry pick into branch pointed at by HEAD.</param>
+        /// <returns>The <see cref="IObjectRepositoryCherryPick"/> instance used to apply the cherry pick.</returns>
+        IObjectRepositoryCherryPick CherryPick(UniqueId id, ObjectId commitId);
     }
 }

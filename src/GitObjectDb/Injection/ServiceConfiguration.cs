@@ -1,6 +1,7 @@
 using GitObjectDb.Git;
 using GitObjectDb.Git.Hooks;
 using GitObjectDb.Models;
+using GitObjectDb.Models.CherryPick;
 using GitObjectDb.Models.Merge;
 using GitObjectDb.Models.Rebase;
 using GitObjectDb.Reflection;
@@ -55,6 +56,7 @@ namespace Microsoft.Extensions.DependencyInjection
             source.AddSingleton<IObjectRepositorySearch, ObjectRepositorySearch>();
             source.AddFactoryDelegate<MergeProcessor>();
             source.AddFactoryDelegate<RebaseProcessor>();
+            source.AddFactoryDelegate<CherryPickProcessor>();
         }
 
         private static void ConfigureReflectionServices(IServiceCollection source)
@@ -95,6 +97,7 @@ namespace Microsoft.Extensions.DependencyInjection
             source.AddSingleton<IObjectRepositoryContainerFactory, ObjectRepositoryContainerFactory>();
             source.AddFactoryDelegate<ObjectRepositoryMergeFactory, ObjectRepositoryMerge>();
             source.AddFactoryDelegate<ObjectRepositoryRebaseFactory, ObjectRepositoryRebase>();
+            source.AddFactoryDelegate<ObjectRepositoryCherryPickFactory, ObjectRepositoryCherryPick>();
         }
     }
 }
