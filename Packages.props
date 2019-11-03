@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <PackageReference Update="Amadevus.RecordGenerator.Attributes"                          Version="0.4.1" />
+    <PackageReference Update="Amadevus.RecordGenerator.Generators"                          Version="0.4.1" />
+    <PackageReference Update="AutoFixture.Idioms"                                           Version="4.11.0" />
+    <PackageReference Update="AutoFixture.NUnit3"                                           Version="4.11.0" />
+    <PackageReference Update="CSharpDiscriminatedUnion"                                     Version="1.0.2" />
+    <PackageReference Update="CodeGeneration.Roslyn"                                        Version="0.6.1" />
+    <PackageReference Update="CodeGeneration.Roslyn.Attributes"                             Version="0.6.1" />
+    <PackageReference Update="CodeGeneration.Roslyn.BuildTime"                              Version="0.6.1" />
+	<PackageReference Update="CodeGeneration.Roslyn.Engine"                                 Version="0.6.1" />
+    <PackageReference Update="coverlet.msbuild"                                             Version="2.7.0" />
+    <PackageReference Update="LibGit2Sharp"                                                 Version="0.26.1" />
+    <PackageReference Update="LiteDB"                                                       Version="4.1.4" />
+    <PackageReference Update="Microsoft.CodeAnalysis.Analyzers"                             Version="2.9.7" />
+	<PackageReference Update="Microsoft.CodeAnalysis.CSharp.Workspaces"                     Version="3.1.0" />
+    <PackageReference Update="Microsoft.CodeAnalysis.FxCopAnalyzers"                        Version="2.9.7" />
+    <PackageReference Update="Microsoft.Extensions.DependencyInjection"                     Version="2.2.0" />
+    <PackageReference Update="Microsoft.Extensions.DependencyInjection.Abstractions"        Version="2.2.0" />
+    <PackageReference Update="Microsoft.Extensions.Logging"                                 Version="2.2.0" />
+    <PackageReference Update="Microsoft.NET.Test.Sdk"                                       Version="16.2.0" />
+    <PackageReference Update="NSubstitute"                                                  Version="4.2.1" />
+    <PackageReference Update="NUnit3TestAdapter"                                            Version="3.15.1" />
+    <PackageReference Update="Nerdbank.GitVersioning"                                       Version="3.0.26" />
+    <PackageReference Update="Newtonsoft.Json"                                              Version="12.0.2" />
+    <PackageReference Update="PowerAssert"                                                  Version="1.0.85" />
+    <PackageReference Update="SourceLink.Copy.PdbFiles"                                     Version="2.8.3" />
+    <PackageReference Update="SourceLink.Create.CommandLine"                                Version="2.8.3" />
+    <PackageReference Update="StyleCop.Analyzers"                                           Version="1.1.118" />
+    <PackageReference Update="System.Collections.Immutable"                                 Version="1.6.0" />
+    <PackageReference Update="System.IO.Compression.ZipFile"                                Version="4.3.0" />
+  </ItemGroup>
+</Project>

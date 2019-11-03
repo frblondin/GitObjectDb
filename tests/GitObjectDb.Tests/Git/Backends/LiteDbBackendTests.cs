@@ -23,15 +23,17 @@ namespace GitObjectDb.Tests.Git.Backends
             Repository.Init(path, true);
             using (var repository = new Repository(path))
             {
-                var sut = new LiteDbBackend(Path.Combine(path, "lite.db"));
-                repository.ObjectDatabase.AddBackend(sut, priority: 5);
+                using (var sut = new LiteDbBackend(Path.Combine(path, "lite.db")))
+                {
+                    repository.ObjectDatabase.AddBackend(sut, priority: 5);
 
-                var definition = !repository.Info.IsHeadUnborn ? TreeDefinition.From(repository.Head.Tip.Tree) : new TreeDefinition();
-                definition.Add("somefile.txt", repository.CreateBlob("foo"), Mode.NonExecutableFile);
-                repository.Commit(
-                    definition,
-                    message,
-                    signature, signature);
+                    var definition = !repository.Info.IsHeadUnborn ? TreeDefinition.From(repository.Head.Tip.Tree) : new TreeDefinition();
+                    definition.Add("somefile.txt", repository.CreateBlob("foo"), Mode.NonExecutableFile);
+                    repository.Commit(
+                        definition,
+                        message,
+                        signature, signature);
+                }
             }
         }
 

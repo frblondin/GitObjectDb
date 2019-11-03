@@ -2,28 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <LangVersion>latest</LangVersion>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>$(SolutionDir)\Rules.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\GitObjectDb.xml</DocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsAsErrors />
-	<Description>GitObjectDb is designed to simplify the configuration management versioning. It does so by removing the need for hand-coding the commands needed to interact with Git.
-
-The Git repository is used as a pure database as the files containing the serialized copy of the objects are never fetched in the filesystem. GitObjectDb only uses the blob storage provided by Git.</Description>
-	<PackageLicenseUrl>https://raw.githubusercontent.com/frblondin/GitObjectDb/master/LICENSE</PackageLicenseUrl>
-	<PackageProjectUrl>https://github.com/frblondin/GitObjectDb</PackageProjectUrl>
-    <PackageIconUrl>https://raw.githubusercontent.com/frblondin/GitObjectDb/master/GitObjectDb.png</PackageIconUrl>
   </PropertyGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Include="$(SolutionDir)\stylecop.json" />
-    <AdditionalFiles Include="$(SolutionDir)\Rules.ruleset" />
-    <AdditionalFiles Include="$(SolutionDir)\version.json" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\GitObjectDb.ModelCodeGeneration\Resources\IndexTemplate.cs" Link="Models\Templates\IndexTemplate.cs" />
@@ -32,26 +12,26 @@ The Git repository is used as a pure database as the files containing the serial
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeGeneration.Roslyn.BuildTime" Version="0.6.1">
+    <PackageReference Include="CodeGeneration.Roslyn.BuildTime">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="LibGit2Sharp" Version="0.25.4" />
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.3">
+    <PackageReference Include="LibGit2Sharp" />
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-    <PackageReference Include="SourceLink.Copy.PdbFiles" Version="2.8.3" privateAssets="all" />
-    <PackageReference Include="SourceLink.Create.CommandLine" Version="2.8.3" privateAssets="all" />
-    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="SourceLink.Copy.PdbFiles" privateAssets="all" />
+    <PackageReference Include="SourceLink.Create.CommandLine" privateAssets="all" />
+    <PackageReference Include="StyleCop.Analyzers">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
-    <PackageReference Include="Nerdbank.GitVersioning" Version="2.3.167">
+    <PackageReference Include="System.Collections.Immutable" />
+    <PackageReference Include="Nerdbank.GitVersioning">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
