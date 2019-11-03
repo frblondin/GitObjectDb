@@ -164,12 +164,16 @@ namespace GitObjectDb.ModelCodeGeneration.Tests.Tools
         private static Project CreateProject(params string[] sources)
         {
             var projectId = ProjectId.CreateNewId(debugName: TestProjectName);
+#pragma warning disable CA2000 // Dispose objects before losing scope
+#pragma warning disable IDE0067 // Dispose objects before losing scope
             var solution = new AdhocWorkspace()
                 .CurrentSolution
                 .AddProject(projectId, TestProjectName, TestProjectName, LanguageNames.CSharp)
                 .WithProjectCompilationOptions(projectId, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
                 .WithProjectParseOptions(projectId, new CSharpParseOptions(preprocessorSymbols: new[] { "SOMETHING_ACTIVE" }))
                 .AddMetadataReferences(projectId, MetadataReferences);
+#pragma warning restore IDE0067 // Dispose objects before losing scope
+#pragma warning restore CA2000 // Dispose objects before losing scope
 
             int count = 0;
             foreach (var source in sources)

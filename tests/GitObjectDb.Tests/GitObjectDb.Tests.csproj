@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp2.0;net472</TargetFrameworks>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
   </PropertyGroup>
 
   <!-- Only required for Visial Studio 2017, natively managed by Visial Studio 2019 and above -->
@@ -9,55 +10,35 @@
     <DefineConstants>NETCOREAPP</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <LangVersion>latest</LangVersion>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>$(SolutionDir)\Rules.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsAsErrors />
-    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
-  </PropertyGroup>
-
   <ItemGroup>
-    <AdditionalFiles Include="$(SolutionDir)\stylecop.json" />
-    <AdditionalFiles Include="$(SolutionDir)\Rules.ruleset" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="2.9.3">
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.6.3">
+    <PackageReference Include="Amadevus.RecordGenerator.Attributes" />
+    <PackageReference Include="Amadevus.RecordGenerator.Generators">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Amadevus.RecordGenerator.Attributes" Version="0.4.1" />
-    <PackageReference Include="Amadevus.RecordGenerator.Generators" Version="0.4.1">
+    <PackageReference Include="AutoFixture.Idioms" />
+    <PackageReference Include="AutoFixture.NUnit3" />
+    <PackageReference Include="CodeGeneration.Roslyn.BuildTime">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Appveyor.TestLogger" Version="2.0.0" />
-    <PackageReference Include="AutoFixture.Idioms" Version="4.10.0" />
-    <PackageReference Include="AutoFixture.NUnit3" Version="4.10.0" />
-    <PackageReference Include="CodeGeneration.Roslyn.BuildTime" Version="0.6.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="coverlet.msbuild" Version="2.6.3">
+    <PackageReference Include="coverlet.msbuild">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="CSharpDiscriminatedUnion" Version="1.0.2" />
-    <PackageReference Include="LibGit2Sharp" Version="0.25.4" />
-    <PackageReference Include="LiteDB" Version="4.1.4" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
-    <PackageReference Include="NSubstitute" Version="4.2.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
-    <PackageReference Include="PowerAssert" Version="1.0.85" />
-    <PackageReference Include="System.IO.Compression.ZipFile" Version="4.3.0" />
+    <PackageReference Include="CSharpDiscriminatedUnion" />
+    <PackageReference Include="LibGit2Sharp" />
+    <PackageReference Include="LiteDB" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="NUnit3TestAdapter" />
+    <PackageReference Include="PowerAssert" />
+    <PackageReference Include="System.IO.Compression.ZipFile" />
   </ItemGroup>
 
   <ItemGroup>
