@@ -1,7 +1,7 @@
 # GitObjectDb
 
 [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb)](https://www.nuget.org/packages/GitObjectDb/)
-[![Build Status](https://dev.azure.com/thomas0449/GitObjectDb/_apis/build/status/frblondin.GitObjectDb?branchName=master)](https://dev.azure.com/thomas0449/GitObjectDb/_build/latest?definitionId=1&branchName=master)
+[![Build Status](https://dev.azure.com/thomas0449/GitHub/_apis/build/status/frblondin.GitObjectDb?branchName=master)](https://dev.azure.com/thomas0449/GitHub/_build/latest?definitionId=1&branchName=master)
 [![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=alert_status)](https://sonarcloud.io/dashboard/index/GitObjectDb)
 [![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=bugs)](https://sonarcloud.io/project/issues?id=GitObjectDb&resolved=false&types=BUG)
 [![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=coverage)](https://sonarcloud.io/component_measures?id=GitObjectDb&metric=Coverage)
