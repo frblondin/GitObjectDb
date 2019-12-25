@@ -3,6 +3,7 @@ using GitObjectDb.Reflection;
 using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Utils;
+using GitObjectDb.Transformations;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -13,6 +14,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests.Features
 {
@@ -20,17 +22,17 @@ namespace GitObjectDb.Tests.Features
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void IndexUpdateWhenPropertyIsBeingChanged(IServiceProvider serviceProvider, ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, string name)
+        public async Task IndexUpdateWhenPropertyIsBeingChangedAsync(IServiceProvider serviceProvider, ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, string name)
         {
             // Arrange
             repository = repository.With(c => c
                 .Add(repository, r => r.Indexes, new Index(serviceProvider, UniqueId.CreateNew(), name, nameof(IModelObject.Name))));
-            repository = container.AddRepository(repository, signature, message);
+            repository = await container.AddRepositoryAsync(repository, signature, message).ConfigureAwait(false);
             ComputeKeysCalls.Clear();
 
             // Act
-            var modified = repository.With(repository.Applications[0].Pages[1], p => p.Description, "modified description");
-            container.Commit(modified.Repository, signature, message);
+            var modified = repository.WithAsync((await (await repository.Applications)[0].Pages)[1], p => p.Description, "modified description");
+            await container.CommitAsync(modified.Repository, signature, message).ConfigureAwait(false);
 
             // Assert
             Assert.That(ComputeKeysCalls, Has.Count.EqualTo(2)); // Two calls to ComputeKeys for before/after
@@ -38,41 +40,45 @@ namespace GitObjectDb.Tests.Features
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void IndexUpdateWhenObjectIsBeingAdded(IServiceProvider serviceProvider, ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, string name)
+        public async Task IndexUpdateWhenObjectIsBeingAddedAsync(IServiceProvider serviceProvider, ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, string name)
         {
             // Arrange
             repository = repository.With(c => c
                 .Add(repository, r => r.Indexes, new Index(serviceProvider, UniqueId.CreateNew(), name, nameof(IModelObject.Name))));
-            repository = container.AddRepository(repository, signature, message);
+            repository = await container.AddRepositoryAsync(repository, signature, message).ConfigureAwait(false);
             ComputeKeysCalls.Clear();
             var page = new Page(serviceProvider, UniqueId.CreateNew(), "name", "description", new LazyChildren<Field>(ImmutableList.Create(
                 new Field(serviceProvider, UniqueId.CreateNew(), "name", FieldContent.Default))));
 
             // Act
-            var modified = repository.With(c => c.Add(repository.Applications[0], app => app.Pages, page));
-            container.Commit(modified.Repository, signature, message);
+            var modified = await repository.WithAsync(AddPageAsync).ConfigureAwait(false);
+            await container.CommitAsync(modified.Repository, signature, message).ConfigureAwait(false);
 
             // Assert
             Assert.That(ComputeKeysCalls, Has.Count.EqualTo(2));
+
+            async Task<ITransformationComposer> AddPageAsync(ITransformationComposer c) => c.Add((await repository.Applications)[0], app => app.Pages, page);
         }
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void IndexUpdateWhenObjectIsBeingRemoved(IServiceProvider serviceProvider, ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, string name)
+        public async Task IndexUpdateWhenObjectIsBeingRemovedAsync(IServiceProvider serviceProvider, ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, string name)
         {
             // Arrange
             repository = repository.With(c => c
                 .Add(repository, r => r.Indexes, new Index(serviceProvider, UniqueId.CreateNew(), name, nameof(IModelObject.Name))));
-            repository = container.AddRepository(repository, signature, message);
+            repository = await container.AddRepositoryAsync(repository, signature, message).ConfigureAwait(false);
             ComputeKeysCalls.Clear();
 
             // Act
-            var modified = repository.With(c => c.Remove(repository.Applications[0], app => app.Pages, repository.Applications[0].Pages[0]));
-            container.Commit(modified.Repository, signature, message);
+            var modified = await repository.WithAsync(RemovePageAsync).ConfigureAwait(false);
+            await container.CommitAsync(modified.Repository, signature, message).ConfigureAwait(false);
 
             // Assert
-            var nestedCount = repository.Applications[0].Pages[0].Flatten().Count();
+            var nestedCount = (await (await repository.Applications)[0].Pages)[0].FlattenAsync().Count();
             Assert.That(ComputeKeysCalls, Has.Count.EqualTo(nestedCount));
+
+            async Task<ITransformationComposer> RemovePageAsync(ITransformationComposer c) => c.Remove((await repository.Applications)[0], app => app.Pages, (await (await repository.Applications)[0].Pages)[0]);
         }
 
         public static IList<IModelObject> ComputeKeysCalls { get; } = new List<IModelObject>();

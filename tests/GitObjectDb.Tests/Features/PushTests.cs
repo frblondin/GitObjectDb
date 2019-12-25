@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests.Features
 {
@@ -15,10 +16,10 @@ namespace GitObjectDb.Tests.Features
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void PushNewRemote(ObjectRepository sample, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
+        public async Task PushNewRemoteAsync(ObjectRepository sample, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // Act
-            var (tempPath, repository) = PushNewRemoteImpl(sample, container, signature, message);
+            var (tempPath, repository) = await PushNewRemoteImplAsync(sample, container, signature, message).ConfigureAwait(false);
 
             // Assert
             using (var repo = new Repository(tempPath))
@@ -30,15 +31,15 @@ namespace GitObjectDb.Tests.Features
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void PushExistingRemote(ObjectRepository sample, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
+        public async Task PushExistingRemoteAsync(ObjectRepository sample, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // Arrange
-            var (tempPath, repository) = PushNewRemoteImpl(sample, container, signature, message);
-            var change = repository.With(repository.Applications[0].Pages[0], p => p.Description, "bar");
-            repository = container.Commit(change.Repository, signature, message);
+            var (tempPath, repository) = await PushNewRemoteImplAsync(sample, container, signature, message).ConfigureAwait(false);
+            var change = repository.WithAsync((await (await repository.Applications)[0].Pages)[0], p => p.Description, "bar");
+            repository = await container.CommitAsync(change.Repository, signature, message).ConfigureAwait(false);
 
             // Act
-            container.Push(repository.Id);
+            await container.PushAsync(repository.Id).ConfigureAwait(false);
 
             // Assert
             using (var repo = new Repository(tempPath))
@@ -48,17 +49,17 @@ namespace GitObjectDb.Tests.Features
             }
         }
 
-        static (string, ObjectRepository) PushNewRemoteImpl(ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
+        static async Task<(string, ObjectRepository)> PushNewRemoteImplAsync(ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             var tempPath = RepositoryFixture.GetAvailableFolderPath();
             Repository.Init(tempPath, isBare: true);
-            repository = container.AddRepository(repository, signature, message);
-            repository.Execute(r => r.Network.Remotes.Add("origin", tempPath));
+            repository = await container.AddRepositoryAsync(repository, signature, message).ConfigureAwait(false);
+            await repository.ExecuteAsync(r => r.Network.Remotes.Add("origin", tempPath)).ConfigureAwait(false);
 
-            var change = repository.With(repository.Applications[0].Pages[0], p => p.Description, "foo");
-            repository = container.Commit(change.Repository, signature, message);
+            var change = repository.WithAsync((await (await repository.Applications)[0].Pages)[0], p => p.Description, "foo");
+            repository = await container.CommitAsync(change.Repository, signature, message).ConfigureAwait(false);
 
-            container.Push(repository.Id, "origin");
+            await container.PushAsync(repository.Id, "origin").ConfigureAwait(false);
             return (tempPath, repository);
         }
     }

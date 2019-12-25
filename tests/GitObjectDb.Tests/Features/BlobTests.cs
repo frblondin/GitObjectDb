@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests.Features
 {
@@ -17,31 +18,31 @@ namespace GitObjectDb.Tests.Features
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(BlobCustomization))]
-        public void BlobSerializedAsNestedFile(BlobRepository sut, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message)
+        public async Task BlobSerializedAsNestedFileAsync(BlobRepository sut, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message)
         {
             // Arrange
-            sut = container.AddRepository(sut, signature, message);
+            sut = await container.AddRepositoryAsync(sut, signature, message).ConfigureAwait(false);
 
             // Assert
-            sut.Execute(r =>
+            await sut.ExecuteAsync(r =>
             {
                 var blob = (Blob)r.Head[$"blob{FileSystemStorage.BlobExtension}"].Target;
                 Assert.AreEqual(sut.Blob.Value, blob.GetContentText());
-            });
+            }).ConfigureAwait(false);
         }
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(BlobCustomization))]
-        public void ResolveDiffsBlobUpdate(BlobRepository sut, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
+        public async Task ResolveDiffsBlobUpdateAsync(BlobRepository sut, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // Arrange
-            sut = container.AddRepository(sut, signature, message);
-            var modified = sut.With(sut, r => r.Blob, new StringBlob("z\nb\nz"));
-            var commit = container.Commit(modified.Repository, signature, message);
+            sut = await container.AddRepositoryAsync(sut, signature, message).ConfigureAwait(false);
+            var modified = sut.WithAsync(sut, r => r.Blob, new StringBlob("z\nb\nz"));
+            var commit = await container.CommitAsync(modified.Repository, signature, message).ConfigureAwait(false);
 
             // Act
-            var changes = computeTreeChangesFactory(container, sut.RepositoryDescription)
-                .Compare(sut.CommitId, commit.CommitId)
+            var changes = (await computeTreeChangesFactory(container, sut.RepositoryDescription)
+                .CompareAsync(sut.CommitId, commit.CommitId).ConfigureAwait(false))
                 .SkipIndexChanges();
 
             // Assert
@@ -53,13 +54,13 @@ namespace GitObjectDb.Tests.Features
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(BlobCustomization))]
-        public void RebaseBlobConflictsCanResolvedAndContinued(BlobRepository sut, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message)
+        public async Task RebaseBlobConflictsCanResolvedAndContinuedAsync(BlobRepository sut, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message)
         {
             // Act
-            CreateConflictingChange(sut, container, signature, message);
-            var rebase = container.Rebase(sut.Id, "master");
+            await CreateConflictingChangeAsync(sut, container, signature, message).ConfigureAwait(false);
+            var rebase = await container.RebaseAsync(sut.Id, "master").ConfigureAwait(false);
             rebase.ModifiedProperties.Single(c => c.IsInConflict).Resolve(new StringBlob("y\nb\nd"));
-            rebase.Continue();
+            await rebase.ContinueAsync().ConfigureAwait(false);
 
             // Assert
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
@@ -69,44 +70,44 @@ namespace GitObjectDb.Tests.Features
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(BlobCustomization))]
-        public void MergeBlobConflictsCanResolvedAndContinued(BlobRepository sut, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message)
+        public async Task MergeBlobConflictsCanResolvedAndContinuedAsync(BlobRepository sut, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message)
         {
             // Act
-            CreateConflictingChange(sut, container, signature, message);
-            var merge = container.Merge(sut.Id, "master");
+            await CreateConflictingChangeAsync(sut, container, signature, message).ConfigureAwait(false);
+            var merge = await container.MergeAsync(sut.Id, "master").ConfigureAwait(false);
             merge.ModifiedProperties.Single(c => c.IsInConflict).Resolve(new StringBlob("y\nb\nd"));
-            merge.Apply(signature);
+            await merge.ApplyAsync(signature).ConfigureAwait(false);
 
             // Assert
             Assert.That(container.Repositories.Single().Blob, Is.EqualTo(new StringBlob("y\nb\nd")));
         }
 
-        static void CreateConflictingChange(BlobRepository sut, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message)
+        static async Task CreateConflictingChangeAsync(BlobRepository sut, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message)
         {
             // master:    A---B
             //             \    (B & C change same value)
             // newBranch:   C   ->   A---B---C
-            var a = container.AddRepository(sut, signature, message); // A
-            var updateName = a.With(a, r => r.Blob, new StringBlob("x\nb\nc"));
-            container.Commit(updateName.Repository, signature, message); // B
-            container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
-            var updates = a.With(a, r => r.Blob, new StringBlob("z\nb\nd"));
-            container.Commit(updates, signature, message);
+            var a = await container.AddRepositoryAsync(sut, signature, message).ConfigureAwait(false); // A
+            var updateName = a.WithAsync(a, r => r.Blob, new StringBlob("x\nb\nc"));
+            await container.CommitAsync(updateName.Repository, signature, message).ConfigureAwait(false); // B
+            await container.CheckoutAsync(a.Id, "newBranch", createNewBranch: true, "HEAD~1").ConfigureAwait(false);
+            var updates = a.WithAsync(a, r => r.Blob, new StringBlob("z\nb\nd"));
+            await container.CommitAsync(updates, signature, message).ConfigureAwait(false);
         }
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(BlobCustomization))]
-        public void IndexUpdateWhenBlobIsBeingChanged(IServiceProvider serviceProvider, BlobRepository repository, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message, string name)
+        public async Task IndexUpdateWhenBlobIsBeingChangedAsync(IServiceProvider serviceProvider, BlobRepository repository, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message, string name)
         {
             // Arrange
             repository = repository.With(c => c
                 .Add(repository, r => r.Indexes, new Index(serviceProvider, UniqueId.CreateNew(), name, nameof(Car.Blob))));
-            repository = container.AddRepository(repository, signature, message);
+            repository = await container.AddRepositoryAsync(repository, signature, message).ConfigureAwait(false);
             IndexTests.ComputeKeysCalls.Clear();
 
             // Act
-            var modified = repository.With(repository, r => r.Blob, new StringBlob("modified blob"));
-            container.Commit(modified.Repository, signature, message);
+            var modified = repository.WithAsync(repository, r => r.Blob, new StringBlob("modified blob"));
+            await container.CommitAsync(modified.Repository, signature, message).ConfigureAwait(false);
 
             // Assert
             Assert.That(IndexTests.ComputeKeysCalls, Has.Count.EqualTo(2)); // Two calls to ComputeKeys for before/after
@@ -114,19 +115,21 @@ namespace GitObjectDb.Tests.Features
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(BlobCustomization))]
-        public void ObjectDeletionIsAlsoDeletingBlobs(BlobRepository repository, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message)
+        public async Task ObjectDeletionIsAlsoDeletingBlobsAsync(BlobRepository repository, IObjectRepositoryContainer<BlobRepository> container, Signature signature, string message)
         {
             // Arrange
-            var a = container.AddRepository(repository, signature, message);
+            var a = await container.AddRepositoryAsync(repository, signature, message).ConfigureAwait(false);
+            var firstCar = (await repository.Cars)[0];
 
             // Act
-            var b = container.Commit(
-                repository.With(c => c.Remove(repository, r => r.Cars, repository.Cars[0])),
+            var b = await container.CommitAsync(
+                repository.With(c => c.Remove(repository, r => r.Cars, firstCar)),
                 signature,
-                message);
+                message).ConfigureAwait(false);
 
             // Assert
-            b.Execute(r =>
+            firstCar = (await a.Cars)[0];
+            await b.ExecuteAsync(r =>
             {
                 var changes = r.Diff.Compare<TreeChanges>(
                     r.Lookup<Commit>(a.CommitId).Tree,
@@ -135,10 +138,10 @@ namespace GitObjectDb.Tests.Features
                     changes.Deleted.Select(c => c.Path),
                     Is.EquivalentTo(new[]
                     {
-                        $"Cars/{a.Cars[0].Id}/blob{FileSystemStorage.BlobExtension}",
-                        $"Cars/{a.Cars[0].Id}/{FileSystemStorage.DataFile}"
+                        $"Cars/{firstCar.Id}/blob{FileSystemStorage.BlobExtension}",
+                        $"Cars/{firstCar.Id}/{FileSystemStorage.DataFile}"
                     }));
-            });
+            }).ConfigureAwait(false);
         }
     }
 }

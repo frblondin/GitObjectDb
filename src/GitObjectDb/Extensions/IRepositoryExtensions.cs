@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace LibGit2Sharp
 {
@@ -45,7 +46,7 @@ namespace LibGit2Sharp
             }
         }
 
-        internal static Commit CommitChanges(this IRepository repository, ObjectRepositoryChangeCollection changes, IObjectRepositorySerializer serializer, string message, Signature author, Signature committer, GitHooks hooks, CommitOptions options = null, Commit mergeParent = null)
+        internal static async Task<Commit> CommitChangesAsync(this IRepository repository, ObjectRepositoryChangeCollection changes, IObjectRepositorySerializer serializer, string message, Signature author, Signature committer, GitHooks hooks, CommitOptions options = null, Commit mergeParent = null)
         {
             TreeDefinition definition;
             Commit startCommit;
@@ -73,7 +74,7 @@ namespace LibGit2Sharp
                 return null;
             }
 
-            repository.UpdateTreeDefinition(changes, definition, serializer, startCommit);
+            await repository.UpdateTreeDefinitionAsync(changes, definition, serializer, startCommit).ConfigureAwait(false);
 
             var result = Commit(repository, definition, message, author, committer, options, mergeParent);
             hooks.OnCommitCompleted(changes, message, result.Id);
@@ -81,7 +82,7 @@ namespace LibGit2Sharp
             return result;
         }
 
-        internal static void UpdateTreeDefinition(this IRepository repository, ObjectRepositoryChangeCollection changes, TreeDefinition definition, IObjectRepositorySerializer serializer, Commit oldCommit = null)
+        internal static async Task UpdateTreeDefinitionAsync(this IRepository repository, ObjectRepositoryChangeCollection changes, TreeDefinition definition, IObjectRepositorySerializer serializer, Commit oldCommit = null)
         {
             if (repository == null)
             {
@@ -95,7 +96,7 @@ namespace LibGit2Sharp
             UpdateChangeTreeDefinitions(repository, changes.Modified, definition, serializer);
             UpdateChangeTreeDefinitions(repository, changes.Added, definition, serializer);
             UpdateDeletionTreeDefinitions(changes.Deleted, definition, oldCommit);
-            UpdateIndexTreeDefinitions(repository, changes, definition, serializer);
+            await UpdateIndexTreeDefinitionsAsync(repository, changes, definition, serializer).ConfigureAwait(false);
         }
 
         private static void UpdateChangeTreeDefinitions(IRepository repository, IEnumerable<ObjectRepositoryEntryChanges> changes, TreeDefinition definition, IObjectRepositorySerializer serializer)
@@ -136,10 +137,10 @@ namespace LibGit2Sharp
             }
         }
 
-        private static void UpdateIndexTreeDefinitions(IRepository repository, ObjectRepositoryChangeCollection changes, TreeDefinition definition, IObjectRepositorySerializer serializer)
+        private static async Task UpdateIndexTreeDefinitionsAsync(IRepository repository, ObjectRepositoryChangeCollection changes, TreeDefinition definition, IObjectRepositorySerializer serializer)
         {
             var buffer = new StringBuilder();
-            foreach (var index in changes.NewRepository.Indexes)
+            foreach (var index in await changes.NewRepository.Indexes)
             {
                 var fullScan = changes.Added.Any(c => c.New.Id == index.Id);
                 if (UpdateAndSerializerIndex(index, changes, serializer, buffer, fullScan))
@@ -153,13 +154,13 @@ namespace LibGit2Sharp
         {
             buffer.Clear();
             var binding = index.DataAccessor.ConstructorParameterBinding;
-            var updatedIndex = fullScan ? index.FullScan() : index.Update(changes);
+            var updatedIndex = fullScan ? index.FullScanAsync() : index.Update(changes);
             if (updatedIndex == null)
             {
                 return false;
             }
 
-            var cloned = (IObjectRepositoryIndex)binding.Cloner(index,
+            var cloned = (IObjectRepositoryIndex)binding.ClonerAsync(index,
                 (instance, propertyName, type, fallback) =>
                     propertyName == nameof(IObjectRepositoryIndex.Values) ? updatedIndex : fallback,
                 (childProperty, children, @new, dataAccessor) =>

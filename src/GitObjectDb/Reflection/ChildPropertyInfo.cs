@@ -44,7 +44,7 @@ namespace GitObjectDb.Reflection
         /// <summary>
         /// Gets the children accessor.
         /// </summary>
-        public Func<IModelObject, IEnumerable<IModelObject>> Accessor { get; }
+        public Func<IModelObject, ILazyChildren> Accessor { get; }
 
         /// <summary>
         /// Gets whether children should be visited.
@@ -61,15 +61,15 @@ namespace GitObjectDb.Reflection
         /// </summary>
         public string FolderName => _childPropertyNameAttribute?.Name ?? Name;
 
-        private static Expression<Func<IModelObject, IEnumerable<IModelObject>>> CreateGetter(PropertyInfo property)
+        private static Expression<Func<IModelObject, ILazyChildren>> CreateGetter(PropertyInfo property)
         {
             var instanceParam = Expression.Parameter(typeof(IModelObject), "instance");
-            return Expression.Lambda<Func<IModelObject, IEnumerable<IModelObject>>>(
+            return Expression.Lambda<Func<IModelObject, ILazyChildren>>(
                 Expression.Convert(
                     Expression.Property(
                         Expression.Convert(instanceParam, property.DeclaringType),
                         property),
-                    typeof(IEnumerable<IModelObject>)),
+                    typeof(ILazyChildren)),
                 instanceParam);
         }
 
@@ -81,7 +81,7 @@ namespace GitObjectDb.Reflection
                 typeof(ILazyChildren));
             return Expression.Lambda<Func<IModelObject, bool>>(
                 Expression.OrElse(
-                    Expression.Property(lazyChildren, nameof(ILazyChildren.AreChildrenLoaded)),
+                    Expression.Property(lazyChildren, nameof(ILazyChildren.IsStarted)),
                     Expression.Property(lazyChildren, nameof(ILazyChildren.ForceVisit))),
                 instanceParam);
         }

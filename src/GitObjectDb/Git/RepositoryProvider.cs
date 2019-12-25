@@ -1,8 +1,9 @@
+using GitObjectDb.Threading;
 using LibGit2Sharp;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,13 +31,13 @@ namespace GitObjectDb.Git
         }
 
         /// <inheritdoc/>
-        public TResult Execute<TResult>(RepositoryDescription description, Func<IRepository, TResult> processor)
+        public async IAsyncEnumerable<TResult> ExecuteAsyncEnumerator<TResult>(RepositoryDescription description, Func<IRepository, IAsyncEnumerable<TResult>> processor, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            if (description == null)
+            if (description is null)
             {
                 throw new ArgumentNullException(nameof(description));
             }
-            if (processor == null)
+            if (processor is null)
             {
                 throw new ArgumentNullException(nameof(processor));
             }
@@ -44,7 +45,10 @@ namespace GitObjectDb.Git
             var entry = GetEntry(description);
             try
             {
-                return processor(entry.Repository);
+                await foreach (var item in await RepositoryTaskScheduler.Factory.StartNew(() => processor(entry.Repository), cancellationToken, TaskCreationOptions.None, RepositoryTaskScheduler.Scheduler).ConfigureAwait(false))
+                {
+                    yield return item;
+                }
             }
             finally
             {
@@ -57,7 +61,7 @@ namespace GitObjectDb.Git
         }
 
         /// <inheritdoc/>
-        public void Execute(RepositoryDescription description, Action<IRepository> processor)
+        public Task<TResult> ExecuteAsync<TResult>(RepositoryDescription description, Func<IRepository, TResult> processor, CancellationToken cancellationToken = default)
         {
             if (description == null)
             {
@@ -68,11 +72,70 @@ namespace GitObjectDb.Git
                 throw new ArgumentNullException(nameof(processor));
             }
 
-            Execute(description, repository =>
+            var entry = GetEntry(description);
+            return RepositoryTaskScheduler.ExecuteAsync(() => processor(entry.Repository), cancellationToken)
+                .ContinueWith((Task<TResult> task) =>
+                {
+                    lock (_syncLock)
+                    {
+                        entry.Counter--;
+                    }
+                    StartScanForExpiredItems();
+                    return WaitAndUnwrapException(task);
+                },
+                cancellationToken,
+                TaskContinuationOptions.ExecuteSynchronously,
+                RepositoryTaskScheduler.Scheduler);
+        }
+
+        private static TResult WaitAndUnwrapException<TResult>(Task<TResult> task) => task.GetAwaiter().GetResult();
+
+        /// <inheritdoc/>
+        public Task<TResult> ExecuteAsync<TResult>(RepositoryDescription description, Func<IRepository, Task<TResult>> processor, CancellationToken cancellationToken = default)
+        {
+            if (description == null)
+            {
+                throw new ArgumentNullException(nameof(description));
+            }
+            if (processor == null)
+            {
+                throw new ArgumentNullException(nameof(processor));
+            }
+
+            var entry = GetEntry(description);
+            return RepositoryTaskScheduler.ExecuteAsync<Task<TResult>>(() => processor(entry.Repository), cancellationToken)
+                .Unwrap()
+                .ContinueWith((Task<TResult> task) =>
+                {
+                    lock (_syncLock)
+                    {
+                        entry.Counter--;
+                    }
+                    StartScanForExpiredItems();
+                    return WaitAndUnwrapException(task);
+                },
+                cancellationToken,
+                TaskContinuationOptions.ExecuteSynchronously,
+                RepositoryTaskScheduler.Scheduler);
+        }
+
+        /// <inheritdoc/>
+        public async Task ExecuteAsync(RepositoryDescription description, Action<IRepository> processor, CancellationToken cancellationToken = default)
+        {
+            if (description == null)
+            {
+                throw new ArgumentNullException(nameof(description));
+            }
+            if (processor == null)
+            {
+                throw new ArgumentNullException(nameof(processor));
+            }
+
+            await ExecuteAsync<object>(description, repository =>
             {
                 processor(repository);
-                return default(object);
-            });
+                return null;
+            }, cancellationToken).ConfigureAwait(false);
         }
 
         /// <inheritdoc/>

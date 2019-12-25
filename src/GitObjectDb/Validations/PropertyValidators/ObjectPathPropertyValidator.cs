@@ -65,7 +65,7 @@ namespace GitObjectDb.Validations.PropertyValidators
 
         private static bool IsReferencedObjectExisting(ObjectPath path, IModelObject instance) =>
             path.Repository == instance.Repository.Id ?
-            instance.Repository.TryGetFromGitPath(path.Path) != null :
+            instance.Repository.TryGetFromGitPathAsync(path.Path) != null :
             instance.Container.TryGetFromGitPath(path) != null;
     }
 }

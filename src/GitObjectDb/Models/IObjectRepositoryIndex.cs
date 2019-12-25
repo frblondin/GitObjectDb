@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models
 {
@@ -27,18 +29,19 @@ namespace GitObjectDb.Models
         int Count { get; }
 
         /// <summary>
-        /// Gets the <see cref="IEnumerable{IModelObject}" /> sequence of values indexed by a specified key.
-        /// </summary>
-        /// <param name="key">The key of the desired sequence of values.</param>
-        /// <returns>The <see cref="IEnumerable{IModelObject}" /> sequence of values indexed by the specified key.</returns>
-        IEnumerable<IModelObject> this[string key] { get; }
-
-        /// <summary>
         /// Determines whether a specified key exists in the index.
         /// </summary>
         /// <param name="key">The key to search for in the index.</param>
         /// <returns><see langword="true" /> if <paramref name="key" /> is in the index; otherwise, <see langword="false" />.</returns>
         bool Contains(string key);
+
+        /// <summary>
+        /// Gets the <see cref="IEnumerable{IModelObject}" /> sequence of values indexed by a specified key.
+        /// </summary>
+        /// <param name="key">The key of the desired sequence of values.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> that will be assigned to the new task.</param>
+        /// <returns>The <see cref="IEnumerable{IModelObject}" /> sequence of values indexed by the specified key.</returns>
+        IAsyncEnumerable<IModelObject> GetAsync(string key, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Updates the index from the given changes.
@@ -51,6 +54,6 @@ namespace GitObjectDb.Models
         /// Goes through all repository objects and recomputes the index.
         /// </summary>
         /// <returns>The indexed values.</returns>
-        ImmutableSortedDictionary<string, ImmutableSortedSet<string>> FullScan();
+        Task<ImmutableSortedDictionary<string, ImmutableSortedSet<string>>> FullScanAsync();
     }
 }

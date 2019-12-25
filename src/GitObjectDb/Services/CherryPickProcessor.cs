@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Services
 {
@@ -46,7 +47,7 @@ namespace GitObjectDb.Services
         /// <returns>The newly created instance.</returns>
         internal delegate CherryPickProcessor Factory(ObjectRepositoryCherryPick objectRepositoryCherryPick);
 
-        internal (CherryPickStatus Status, IObjectRepository Result) Initialize(IRepository repository, Commit parentCommit)
+        internal async Task<(CherryPickStatus Status, IObjectRepository Result)> InitializeAsync(IRepository repository, Commit parentCommit)
         {
             ComputeChanges(repository, parentCommit);
 
@@ -56,11 +57,11 @@ namespace GitObjectDb.Services
             }
             else
             {
-                return Complete(repository);
+                return await CompleteAsync(repository).ConfigureAwait(false);
             }
         }
 
-        internal (CherryPickStatus Status, IObjectRepository Result) Complete(IRepository repository)
+        internal async Task<(CherryPickStatus Status, IObjectRepository Result)> CompleteAsync(IRepository repository)
         {
             if (_cherryPick.ModifiedProperties.Any(c => c.IsInConflict))
             {
@@ -78,7 +79,7 @@ namespace GitObjectDb.Services
             if (changes.Any())
             {
                 var definition = TreeDefinition.From(lastCommit);
-                repository.UpdateTreeDefinition(changes, definition, _serializer, lastCommit);
+                await repository.UpdateTreeDefinitionAsync(changes, definition, _serializer, lastCommit).ConfigureAwait(false);
                 var tree = repository.ObjectDatabase.CreateTree(definition);
                 lastCommit = repository.ObjectDatabase.CreateCommit(cherryPickCommit.Author, cherryPickCommit.Committer, cherryPickCommit.Message, tree, new[] { lastCommit }, false);
             }
@@ -88,7 +89,7 @@ namespace GitObjectDb.Services
             var result = default(IObjectRepository);
             if (_cherryPick.Repository.Container is ObjectRepositoryContainer container)
             {
-                result = container.ReloadRepository(_cherryPick.Repository, lastCommit.Id);
+                result = await container.ReloadRepositoryAsync(_cherryPick.Repository, lastCommit.Id).ConfigureAwait(false);
             }
             return (CherryPickStatus.CherryPicked, result);
         }

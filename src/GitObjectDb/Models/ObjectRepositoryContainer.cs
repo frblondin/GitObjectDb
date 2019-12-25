@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models
 {
@@ -26,7 +27,7 @@ namespace GitObjectDb.Models
         /// <param name="previousRepository">The previous repository.</param>
         /// <param name="commit">The commit.</param>
         /// <returns>The loaded repository.</returns>
-        internal abstract IObjectRepository ReloadRepository(IObjectRepository previousRepository, ObjectId commit = null);
+        internal abstract Task<IObjectRepository> ReloadRepositoryAsync(IObjectRepository previousRepository, ObjectId commit = null);
 
         /// <inheritdoc />
         public abstract IObjectRepository TryGetRepository(UniqueId id);
@@ -45,8 +46,9 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="current">The repository.</param>
         /// <exception cref="GitObjectDbException">The current head commit id is different from the commit used by current repository.</exception>
-        internal static void EnsureHeadCommit(IObjectRepository current) =>
-            current.Execute(r => EnsureHeadCommit(r, current));
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        internal static async Task EnsureHeadCommitAsync(IObjectRepository current) =>
+            await current.ExecuteAsync(r => EnsureHeadCommit(r, current)).ConfigureAwait(false);
 
         /// <summary>
         /// Ensures that the head tip refers to the right commit.
@@ -79,7 +81,7 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(path));
             }
 
-            return TryGetRepository(path.Repository)?.TryGetFromGitPath(path.Path);
+            return TryGetRepository(path.Repository)?.TryGetFromGitPathAsync(path.Path);
         }
 
         /// <inheritdoc />

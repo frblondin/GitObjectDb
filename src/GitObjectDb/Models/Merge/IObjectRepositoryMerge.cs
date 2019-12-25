@@ -5,6 +5,7 @@ using GitObjectDb.Reflection;
 using GitObjectDb.Services;
 using LibGit2Sharp;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models.Merge
 {
@@ -15,7 +16,7 @@ namespace GitObjectDb.Models.Merge
     /// <param name="mergeCommitId">The commit to be merged.</param>
     /// <param name="branchName">Name of the branch.</param>
     /// <returns>The newly created instance.</returns>
-    public delegate IObjectRepositoryMerge ObjectRepositoryMergeFactory(IObjectRepository repository, ObjectId mergeCommitId, string branchName);
+    public delegate Task<IObjectRepositoryMerge> ObjectRepositoryMergeFactoryAsync(IObjectRepository repository, ObjectId mergeCommitId, string branchName);
 
     /// <summary>
     /// Provides the ability to merge changes between two branches.
@@ -72,6 +73,6 @@ namespace GitObjectDb.Models.Merge
         /// </summary>
         /// <param name="merger">The merger.</param>
         /// <returns>The merge commit.</returns>
-        ObjectId Apply(Signature merger);
+        Task<ObjectId> ApplyAsync(Signature merger);
     }
 }

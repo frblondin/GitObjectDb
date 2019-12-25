@@ -27,6 +27,14 @@ namespace GitObjectDb.Serialization
         IModelObject Deserialize(Stream stream, Func<string, string> relativeFileDataResolver);
 
         /// <summary>
+        /// Deserializes the structure contained in the specified <see cref="Stream"/>.
+        /// </summary>
+        /// <param name="content">The structure to deserialize.</param>
+        /// <param name="relativeFileDataResolver">The relative file data resolver.</param>
+        /// <returns>The <see cref="IModelObject"/> being deserialized.</returns>
+        IModelObject Deserialize(string content, Func<string, string> relativeFileDataResolver);
+
+        /// <summary>
         /// Serializes the specified <see cref="IModelObject"/> and writes the structure
         /// using the specified <see cref="StringBuilder"/>.
         /// </summary>

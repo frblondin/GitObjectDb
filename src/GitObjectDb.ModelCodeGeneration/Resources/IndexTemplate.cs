@@ -20,7 +20,7 @@ public partial class ModelTemplate : GitObjectDb.Models.IObjectRepositoryIndex
         {
             if (_values == null)
             {
-                _values = FullScan();
+                _values = FullScanAsync();
             }
             return _values;
         }
@@ -34,32 +34,30 @@ public partial class ModelTemplate : GitObjectDb.Models.IObjectRepositoryIndex
     /// <inheritdoc/>
     public int Count => Values.Count;
 
+    /// <inheritdoc />
+    public bool Contains(string key) => Values.TryGetValue(key, out var result) && result?.Count > 0;
+
     /// <inheritdoc/>
-    public System.Collections.Generic.IEnumerable<GitObjectDb.Models.IModelObject> this[string key]
+    public async System.Collections.Generic.IAsyncEnumerable<GitObjectDb.Models.IModelObject> GetAsync(string key, [System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken)
     {
-        get
+        Values.TryGetValue(key, out var result);
+        if (result != null)
         {
-            Values.TryGetValue(key, out var result);
-            if (result != null)
+            foreach (var path in result)
             {
-                foreach (var path in result)
-                {
-                    yield return Repository.GetFromGitPath(path);
-                }
+                cancellationToken.ThrowIfCancellationRequested();
+                yield return await Repository.GetFromGitPathAsync(path).ConfigureAwait(false);
             }
         }
     }
 
     /// <inheritdoc />
-    public bool Contains(string key) => Values.TryGetValue(key, out var result) && result?.Count > 0;
-
-    /// <inheritdoc />
-    public System.Collections.Immutable.ImmutableSortedDictionary<string, System.Collections.Immutable.ImmutableSortedSet<string>> FullScan()
+    public async System.Threading.Tasks.Task<System.Collections.Immutable.ImmutableSortedDictionary<string, System.Collections.Immutable.ImmutableSortedSet<string>>> FullScanAsync()
     {
         var result = new System.Collections.Generic.SortedDictionary<string, System.Collections.Generic.ISet<string>>();
         if (Repository != null)
         {
-            foreach (var node in GitObjectDb.Models.IModelObjectExtensions.Flatten(Repository))
+            await foreach (var node in GitObjectDb.Models.IModelObjectExtensions.FlattenAsync(Repository))
             {
                 UpdateAdded(node, result);
             }

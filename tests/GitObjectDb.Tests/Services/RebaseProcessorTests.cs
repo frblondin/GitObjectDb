@@ -5,6 +5,7 @@ using GitObjectDb.Tests.Assets.Customizations;
 using GitObjectDb.Tests.Assets.Models;
 using GitObjectDb.Tests.Assets.Models.Migration;
 using GitObjectDb.Tests.Assets.Utils;
+using GitObjectDb.Transformations;
 using LibGit2Sharp;
 using NUnit.Framework;
 using System;
@@ -12,6 +13,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests.Services
 {
@@ -19,28 +21,28 @@ namespace GitObjectDb.Tests.Services
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void RebaseTwoDifferentPropertiesChanged(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
+        public async Task RebaseTwoDifferentPropertiesChangedAsync(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // master:    A---B
             //             \
             // newBranch:   C   ->   A---C---B
 
             // Arrange
-            var a = container.AddRepository(sut, signature, message); // A
+            var a = await container.AddRepositoryAsync(sut, signature, message).ConfigureAwait(false); // A
 
             // Act
-            var updateName = a.With(a.Applications[0].Pages[0], p => p.Name, "modified name");
-            var b = container.Commit(updateName.Repository, signature, message); // B
-            a = container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
-            var updateDescription = a.With(a.Applications[0].Pages[0], p => p.Description, "modified description");
-            container.Commit(updateDescription.Repository, signature, message); // C
-            var rebase = container.Rebase(sut.Id, "master");
+            var updateName = a.WithAsync((await (await a.Applications)[0].Pages)[0], p => p.Name, "modified name");
+            var b = await container.CommitAsync(updateName.Repository, signature, message).ConfigureAwait(false); // B
+            a = await container.CheckoutAsync(a.Id, "newBranch", createNewBranch: true, "HEAD~1").ConfigureAwait(false);
+            var updateDescription = a.WithAsync((await (await a.Applications)[0].Pages)[0], p => p.Description, "modified description");
+            await container.CommitAsync(updateDescription.Repository, signature, message).ConfigureAwait(false); // C
+            var rebase = await container.RebaseAsync(sut.Id, "master").ConfigureAwait(false);
             var repository = container.Repositories.Single();
 
             // Assert
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
             Assert.That(rebase.TotalStepCount, Is.EqualTo(1));
-            var (commits, tip) = repository.Execute(r =>
+            var (commits, tip) = await repository.ExecuteAsync(r =>
             {
                 var commitFilter = new CommitFilter
                 {
@@ -48,39 +50,40 @@ namespace GitObjectDb.Tests.Services
                     SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
                 };
                 return (r.Commits.QueryBy(commitFilter).Select(c => c.Id).ToList(), r.Head.Tip.Id);
-            });
+            }).ConfigureAwait(false);
             Assert.That(commits[0], Is.EqualTo(a.CommitId));
             Assert.That(commits[1], Is.EqualTo(b.CommitId));
             Assert.That(commits[2], Is.EqualTo(tip));
             Assert.That(repository.CommitId, Is.EqualTo(tip));
-            Assert.That(repository.Applications[0].Pages[0].Name, Is.EqualTo("modified name"));
-            Assert.That(repository.Applications[0].Pages[0].Description, Is.EqualTo("modified description"));
+            var firstPage = (await (await repository.Applications)[0].Pages)[0];
+            Assert.That(firstPage.Name, Is.EqualTo("modified name"));
+            Assert.That(firstPage.Description, Is.EqualTo("modified description"));
         }
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void RebaseChildDeletion(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
+        public async Task RebaseChildDeletionAsync(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // master:    A---B
             //             \
             // newBranch:   C   ->   A---C---B
 
             // Arrange
-            var a = container.AddRepository(sut, signature, message); // A
+            var a = await container.AddRepositoryAsync(sut, signature, message).ConfigureAwait(false); // A
 
             // Act
-            var updateName = a.With(a.Applications[0], app => app.Name, "modified name");
-            var b = container.Commit(updateName.Repository, signature, message); // B
-            a = container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
-            var deletePage = a.With(c => c.Remove(a.Applications[0], app => app.Pages, a.Applications[0].Pages[0]));
-            container.Commit(deletePage.Repository, signature, message); // C
-            var rebase = container.Rebase(sut.Id, "master");
+            var updateName = a.WithAsync((await a.Applications)[0], app => app.Name, "modified name");
+            var b = await container.CommitAsync(updateName.Repository, signature, message).ConfigureAwait(false); // B
+            a = await container.CheckoutAsync(a.Id, "newBranch", createNewBranch: true, "HEAD~1").ConfigureAwait(false);
+            var deletePage = await a.WithAsync(DeletePageTransformationAsync).ConfigureAwait(false);
+            await container.CommitAsync(deletePage.Repository, signature, message).ConfigureAwait(false); // C
+            var rebase = await container.RebaseAsync(sut.Id, "master").ConfigureAwait(false);
             var repository = container.Repositories.Single();
 
             // Assert
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
             Assert.That(rebase.TotalStepCount, Is.EqualTo(1));
-            var (commits, tip) = repository.Execute(r =>
+            var (commits, tip) = await repository.ExecuteAsync(r =>
             {
                 var commitFilter = new CommitFilter
                 {
@@ -88,40 +91,43 @@ namespace GitObjectDb.Tests.Services
                     SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
                 };
                 return (r.Commits.QueryBy(commitFilter).Select(c => c.Id).ToList(), r.Head.Tip.Id);
-            });
+            }).ConfigureAwait(false);
             Assert.That(commits[0], Is.EqualTo(a.CommitId));
             Assert.That(commits[1], Is.EqualTo(b.CommitId));
             Assert.That(commits[2], Is.EqualTo(tip));
             Assert.That(repository.CommitId, Is.EqualTo(tip));
-            Assert.That(repository.Applications[0].Name, Is.EqualTo("modified name"));
-            Assert.That(repository.Applications[0].Pages, Has.Count.EqualTo(a.Applications[0].Pages.Count - 1));
+            Assert.That((await repository.Applications)[0].Name, Is.EqualTo("modified name"));
+            Assert.That((await repository.Applications)[0].Pages, Has.Count.EqualTo((await (await repository.Applications)[0].Pages).Count - 1));
+
+            async Task<ITransformationComposer> DeletePageTransformationAsync(ITransformationComposer c) =>
+                c.Remove((await a.Applications)[0], app => app.Pages, (await (await a.Applications)[0].Pages)[0]);
         }
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void RebaseChildAddition(IServiceProvider serviceProvider, ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
+        public async Task RebaseChildAdditionAsync(IServiceProvider serviceProvider, ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // master:    A---B
             //             \
             // newBranch:   C   ->   A---C---B
 
             // Arrange
-            var a = container.AddRepository(sut, signature, message); // A
+            var a = await container.AddRepositoryAsync(sut, signature, message).ConfigureAwait(false); // A
 
             // Act
-            var updateName = a.With(a.Applications[0], app => app.Name, "modified name");
-            var b = container.Commit(updateName.Repository, signature, message); // B
-            a = container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
+            var updateName = a.WithAsync((await a.Applications)[0], app => app.Name, "modified name");
+            var b = await container.CommitAsync(updateName.Repository, signature, message).ConfigureAwait(false); // B
+            a = await container.CheckoutAsync(a.Id, "newBranch", createNewBranch: true, "HEAD~1").ConfigureAwait(false);
             var page = new Page(serviceProvider, UniqueId.CreateNew(), "name", "description", new LazyChildren<Field>());
-            var addPage = a.With(c => c.Add(a.Applications[0], app => app.Pages, page));
-            container.Commit(addPage.Repository, signature, message); // C
-            var rebase = container.Rebase(sut.Id, "master");
+            var addPage = await a.WithAsync(AddPageTransformationAsync).ConfigureAwait(false);
+            await container.CommitAsync(addPage.Repository, signature, message).ConfigureAwait(false); // C
+            var rebase = await container.RebaseAsync(sut.Id, "master").ConfigureAwait(false);
             var repository = container.Repositories.Single();
 
             // Assert
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
             Assert.That(rebase.TotalStepCount, Is.EqualTo(1));
-            var (commits, tip) = repository.Execute(r =>
+            var (commits, tip) = await repository.ExecuteAsync(r =>
             {
                 var commitFilter = new CommitFilter
                 {
@@ -129,44 +135,47 @@ namespace GitObjectDb.Tests.Services
                     SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
                 };
                 return (r.Commits.QueryBy(commitFilter).Select(c => c.Id).ToList(), r.Head.Tip.Id);
-            });
+            }).ConfigureAwait(false);
             Assert.That(commits, Has.Count.EqualTo(3));
             Assert.That(commits[0], Is.EqualTo(a.CommitId));
             Assert.That(commits[1], Is.EqualTo(b.CommitId));
             Assert.That(commits[2], Is.EqualTo(tip));
             Assert.That(repository.CommitId, Is.EqualTo(tip));
-            Assert.That(repository.Applications[0].Name, Is.EqualTo("modified name"));
-            Assert.That(repository.Applications[0].Pages, Has.Count.EqualTo(a.Applications[0].Pages.Count + 1));
+            Assert.That((await repository.Applications)[0].Name, Is.EqualTo("modified name"));
+            Assert.That((await repository.Applications)[0].Pages, Has.Count.EqualTo((await (await repository.Applications)[0].Pages).Count + 1));
+
+            async Task<ITransformationComposer> AddPageTransformationAsync(ITransformationComposer c) =>
+                c.Add((await a.Applications)[0], app => app.Pages, page);
         }
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void RebaseFailsWhenUpstreamBranchContainsMigrations(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, DummyMigration migration)
+        public async Task RebaseFailsWhenUpstreamBranchContainsMigrationsAsync(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message, DummyMigration migration)
         {
             // master:    A---B  (B contains a migration)
             //             \
             // newBranch:   C   ->   A---C---B
 
             // Arrange
-            var a = container.AddRepository(sut, signature, message); // A
+            var a = await container.AddRepositoryAsync(sut, signature, message).ConfigureAwait(false); // A
 
             // Act
-            container.Commit(
+            await container.CommitAsync(
                 a.With(c => c.Add(a, r => r.Migrations, migration)).Repository,
-                signature, message); // B
-            a = container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
-            container.Commit(
-                a.With(a.Applications[0].Pages[0], p => p.Description, "modified description").Repository,
-                signature, message); // C
-            Assert.Throws<NotSupportedException>(() => container.Rebase(sut.Id, "master"));
+                signature, message).ConfigureAwait(false); // B
+            a = await container.CheckoutAsync(a.Id, "newBranch", createNewBranch: true, "HEAD~1").ConfigureAwait(false);
+            await container.CommitAsync(
+                a.WithAsync((await (await a.Applications)[0].Pages)[0], p => p.Description, "modified description").Repository,
+                signature, message).ConfigureAwait(false); // C
+            Assert.Throws<NotSupportedException>(() => container.RebaseAsync(sut.Id, "master"));
         }
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void RebaseDetectsConflicts(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
+        public async Task RebaseDetectsConflictsAsync(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // Act
-            var rebase = CreateConflictingRebase(sut, container, signature, message);
+            var rebase = await CreateConflictingRebaseAsync(sut, container, signature, message).ConfigureAwait(false);
 
             // Assert
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
@@ -176,34 +185,41 @@ namespace GitObjectDb.Tests.Services
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void RebaseConflictsCanResolvedAndContinued(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
+        public async Task RebaseConflictsCanResolvedAndContinuedAsync(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // Act
-            var rebase = CreateConflictingRebase(sut, container, signature, message);
+            var rebase = await CreateConflictingRebaseAsync(sut, container, signature, message).ConfigureAwait(false);
             rebase.ModifiedProperties.Single(c => c.IsInConflict).Resolve("resolved");
-            rebase.Continue();
+            await rebase.ContinueAsync().ConfigureAwait(false);
 
             // Assert
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
             Assert.That(rebase.TotalStepCount, Is.EqualTo(1));
-            Assert.That(container.Repositories.Single().Applications[0].Pages[0].Name, Is.EqualTo("resolved"));
+            Assert.That((await (await container.Repositories.Single().Applications)[0].Pages)[0].Name, Is.EqualTo("resolved"));
         }
 
-        static IObjectRepositoryRebase CreateConflictingRebase(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
+        static async Task<IObjectRepositoryRebase> CreateConflictingRebaseAsync(ObjectRepository sut, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // master:    A---B
             //             \    (B & C change same property)
             // newBranch:   C   ->   A---C---B
-            var a = container.AddRepository(sut, signature, message); // A
-            var updateName = a.With(a.Applications[0].Pages[0], p => p.Name, "foo");
-            container.Commit(updateName.Repository, signature, message); // B
-            container.Checkout(a.Id, "newBranch", createNewBranch: true, "HEAD~1");
-            var updates = a.With(c => c
-                .Update(a.Applications[0].Pages[0], p => p.Name, "bar")
-                .Update(a.Applications[0].Pages[0], p => p.Description, "bar")
-                .Update(a.Applications[0].Pages[0].Fields[0], f => f.Name, "bar"));
-            container.Commit(updates, signature, message);
-            return container.Rebase(sut.Id, "master");
+            var a = await container.AddRepositoryAsync(sut, signature, message).ConfigureAwait(false); // A
+            var updateName = a.WithAsync((await (await a.Applications)[0].Pages)[0], p => p.Name, "foo");
+            await container.CommitAsync(updateName.Repository, signature, message).ConfigureAwait(false); // B
+            await container.CheckoutAsync(a.Id, "newBranch", createNewBranch: true, "HEAD~1").ConfigureAwait(false);
+            var updates = await a.WithAsync(MultipleChangesAsync).ConfigureAwait(false);
+            await container.CommitAsync(updates, signature, message).ConfigureAwait(false);
+            return await container.RebaseAsync(sut.Id, "master").ConfigureAwait(false);
+
+            async Task<ITransformationComposer> MultipleChangesAsync(ITransformationComposer c)
+            {
+                var firstApplication = (await a.Applications);
+                var firstPage = (await firstApplication[0].Pages)[0];
+                var firstField = (await firstPage.Fields)[0];
+                return c.Update(firstPage, p => p.Name, "bar")
+                    .Update(firstPage, p => p.Description, "bar")
+                    .Update(firstField, f => f.Name, "bar");
+            };
         }
     }
 }

@@ -1,5 +1,6 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Git;
+using GitObjectDb.Injection;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Services;
@@ -11,15 +12,17 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models.CherryPick
 {
     /// <inheritdoc />
     [ExcludeFromGuardForNull]
-    internal class ObjectRepositoryCherryPick : IObjectRepositoryCherryPick
+    internal class ObjectRepositoryCherryPick : IObjectRepositoryCherryPick, IAsyncInitialization
     {
         private readonly MigrationScaffolderFactory _migrationScaffolderFactory;
         private readonly CherryPickProcessor.Factory _cherryPickProcessorFactory;
+        private readonly Task _initialization;
 
         [ActivatorUtilitiesConstructor]
         public ObjectRepositoryCherryPick(IObjectRepository repository, ObjectId cherryPickCommitId,
@@ -32,8 +35,10 @@ namespace GitObjectDb.Models.CherryPick
             _migrationScaffolderFactory = migrationScaffolderFactory ?? throw new ArgumentNullException(nameof(migrationScaffolderFactory));
             _cherryPickProcessorFactory = cherryPickProcessorFactory ?? throw new ArgumentNullException(nameof(cherryPickProcessorFactory));
 
-            Initialize();
+            _initialization = InitializeAsync();
         }
+
+        Task IAsyncInitialization.Initialization => _initialization;
 
         /// <summary>
         /// Gets the repository.
@@ -66,9 +71,9 @@ namespace GitObjectDb.Models.CherryPick
         /// </summary>
         internal IImmutableList<TreeEntryChanges> ModifiedUpstreamBranchEntries { get; private set; }
 
-        private void Initialize()
+        private async Task InitializeAsync()
         {
-            Repository.Execute(repository =>
+            await Repository.ExecuteAsync(async repository =>
             {
                 EnsureHeadCommit(repository);
 
@@ -80,11 +85,11 @@ namespace GitObjectDb.Models.CherryPick
                 }
                 var parentCommit = parentCommits.Single();
 
-                EnsureNoMigrations(parentCommit);
+                await EnsureNoMigrations(parentCommit).ConfigureAwait(false);
                 UpdateUpstreamBranchModifiedPaths(repository, cherryPickCommit, parentCommit);
 
-                (Status, Result) = _cherryPickProcessorFactory(this).Initialize(repository, parentCommit);
-            });
+                await _cherryPickProcessorFactory(this).InitializeAsync(repository, parentCommit).ConfigureAwait(false);
+            }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -100,10 +105,10 @@ namespace GitObjectDb.Models.CherryPick
             }
         }
 
-        private void EnsureNoMigrations(Commit parentCommit)
+        private async Task EnsureNoMigrations(Commit parentCommit)
         {
             var migrationScaffolder = _migrationScaffolderFactory(Repository.Container, Repository.RepositoryDescription);
-            var migrators = migrationScaffolder.Scaffold(parentCommit.Id, CherryPickCommitId, MigrationMode.Upgrade);
+            var migrators = await migrationScaffolder.ScaffoldAsync(parentCommit.Id, CherryPickCommitId, MigrationMode.Upgrade).ConfigureAwait(false);
             if (migrators.Any())
             {
                 throw new NotSupportedException("Cherry pick is not supported when the commit containts any migrator.");
@@ -119,13 +124,13 @@ namespace GitObjectDb.Models.CherryPick
         }
 
         /// <inheritdoc />
-        public IObjectRepository Commit()
+        public async Task<IObjectRepository> CommitAsync()
         {
-            (Status, Result) = Repository.Execute(repository =>
-                {
-                    EnsureHeadCommit(repository);
-                    return _cherryPickProcessorFactory(this).Complete(repository);
-                });
+            (Status, Result) = await Repository.ExecuteAsync(repository =>
+            {
+                EnsureHeadCommit(repository);
+                return _cherryPickProcessorFactory(this).CompleteAsync(repository);
+            }).ConfigureAwait(false);
             return Result;
         }
     }

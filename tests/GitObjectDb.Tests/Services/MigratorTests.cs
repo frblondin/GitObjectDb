@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using GitObjectDb.Serialization;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests.Migrations
 {
@@ -21,17 +22,17 @@ namespace GitObjectDb.Tests.Migrations
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void MigrationScaffolderDetectsRequiredChanges(ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, IFixture fixture, IServiceProvider serviceProvider, Signature signature, string message)
+        public async Task MigrationScaffolderDetectsRequiredChangesAsync(ObjectRepository repository, IObjectRepositoryContainer<ObjectRepository> container, IFixture fixture, IServiceProvider serviceProvider, Signature signature, string message)
         {
             // Arrange
-            repository = container.AddRepository(repository, signature, message);
+            repository = await container.AddRepositoryAsync(repository, signature, message).ConfigureAwait(false);
             var updated = repository.With(c => c.Add(repository, r => r.Migrations, fixture.Create<DummyMigration>()));
-            var commit = container.Commit(updated, signature, message);
+            var commit = await container.CommitAsync(updated, signature, message).ConfigureAwait(false);
 
             // Act
             var migrationScaffolder = new MigrationScaffolder(container, repository.RepositoryDescription,
                 serviceProvider.GetRequiredService<IRepositoryProvider>(), serviceProvider.GetRequiredService<ObjectRepositorySerializerFactory>());
-            var migrators = migrationScaffolder.Scaffold(repository.CommitId, commit.CommitId, MigrationMode.Upgrade);
+            var migrators = await migrationScaffolder.ScaffoldAsync(repository.CommitId, commit.CommitId, MigrationMode.Upgrade).ConfigureAwait(false);
 
             // Assert
             Assert.That(migrators, Has.Count.EqualTo(1));

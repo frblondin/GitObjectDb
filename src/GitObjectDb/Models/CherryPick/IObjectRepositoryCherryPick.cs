@@ -3,6 +3,7 @@ using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models.CherryPick
 {
@@ -12,7 +13,7 @@ namespace GitObjectDb.Models.CherryPick
     /// <param name="repository">The repository on which to apply the merge.</param>
     /// <param name="commitId">The commit to be cherry picked.</param>
     /// <returns>The newly created instance.</returns>
-    public delegate IObjectRepositoryCherryPick ObjectRepositoryCherryPickFactory(IObjectRepository repository, ObjectId commitId);
+    public delegate Task<IObjectRepositoryCherryPick> ObjectRepositoryCherryPickFactoryAsync(IObjectRepository repository, ObjectId commitId);
 
     /// <summary>
     /// Encapsulates a cherry pick operation.
@@ -58,6 +59,6 @@ namespace GitObjectDb.Models.CherryPick
         /// Completes the cherry pick operation.
         /// </summary>
         /// <returns>The new instance of repository containing reflected changes.</returns>
-        IObjectRepository Commit();
+        Task<IObjectRepository> CommitAsync();
     }
 }

@@ -7,6 +7,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests.Validations
 {
@@ -14,12 +15,12 @@ namespace GitObjectDb.Tests.Validations
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ThrowIfMissingDependency(IObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, Signature signature, string message)
+        public async Task ThrowIfMissingDependencyAsync(IObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, Signature signature, string message)
         {
             // Arrange
             var wrongDependency = new RepositoryDependency(UniqueId.CreateNew(), "foo", new System.Version(1, 0));
-            repository = repository.With(repository, r => r.Dependencies, repository.Dependencies.Add(wrongDependency));
-            container.AddRepository(repository, signature, message);
+            repository = repository.WithAsync(repository, r => r.Dependencies, repository.Dependencies.Add(wrongDependency));
+            await container.AddRepositoryAsync(repository, signature, message).ConfigureAwait(false);
 
             // Act
             var result = container.Validate();
@@ -30,13 +31,13 @@ namespace GitObjectDb.Tests.Validations
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ThrowIfWrongDependencyVersion(IObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, ObjectRepository dependency, Signature signature, string message)
+        public async Task ThrowIfWrongDependencyVersionAsync(IObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, ObjectRepository dependency, Signature signature, string message)
         {
             // Arrange
-            container.AddRepository(dependency, signature, message);
+            await container.AddRepositoryAsync(dependency, signature, message).ConfigureAwait(false);
             var wrongDependency = new RepositoryDependency(dependency, new System.Version(dependency.Version.Major + 1, 0));
-            repository = repository.With(repository, r => r.Dependencies, repository.Dependencies.Add(wrongDependency));
-            container.AddRepository(repository, signature, message);
+            repository = repository.WithAsync(repository, r => r.Dependencies, repository.Dependencies.Add(wrongDependency));
+            await container.AddRepositoryAsync(repository, signature, message).ConfigureAwait(false);
 
             // Act
             var result = container.Validate();
@@ -47,13 +48,13 @@ namespace GitObjectDb.Tests.Validations
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void NoValidationErrorIfVersionIsLowerOrEqual(IObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, ObjectRepository dependency, Signature signature, string message)
+        public async Task NoValidationErrorIfVersionIsLowerOrEqualAsync(IObjectRepositoryContainer<ObjectRepository> container, ObjectRepository repository, ObjectRepository dependency, Signature signature, string message)
         {
             // Arrange
-            container.AddRepository(dependency, signature, message);
+            await container.AddRepositoryAsync(dependency, signature, message).ConfigureAwait(false);
             var newDependency = new RepositoryDependency(dependency, new System.Version(dependency.Version.Major - 1, 0));
-            repository = repository.With(repository, r => r.Dependencies, repository.Dependencies.Add(newDependency));
-            container.AddRepository(repository, signature, message);
+            repository = repository.WithAsync(repository, r => r.Dependencies, repository.Dependencies.Add(newDependency));
+            await container.AddRepositoryAsync(repository, signature, message).ConfigureAwait(false);
 
             // Act
             var result = container.Validate();

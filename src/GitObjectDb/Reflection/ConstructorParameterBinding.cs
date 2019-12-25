@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Reflection
 {
@@ -16,11 +17,11 @@ namespace GitObjectDb.Reflection
     public class ConstructorParameterBinding
     {
         private static readonly MethodInfo _serviceProviderGetServiceMethod = ExpressionReflector.GetMethod<IServiceProvider>(s => s.GetService(default));
-        private static readonly MethodInfo _childProcessorInvokeMethod = ExpressionReflector.GetMethod<ChildProcessor>(p => p.Invoke(default, default, default, default));
+        private static readonly MethodInfo _childProcessorInvokeMethod = ExpressionReflector.GetMethod<ChildProcessorAsync>(p => p.Invoke(default, default, default, default));
 
         private static readonly ParameterExpression _sourceObjectArg = Expression.Parameter(typeof(IModelObject), "sourceObject");
         private static readonly ParameterExpression _processArgumentArg = Expression.Parameter(typeof(ProcessArgument), "processArgument");
-        private static readonly ParameterExpression _childProcessorArg = Expression.Parameter(typeof(ChildProcessor), "childProcessor");
+        private static readonly ParameterExpression _childProcessorArg = Expression.Parameter(typeof(ChildProcessorAsync), "childProcessor");
 
         private readonly ParameterExpression _typedSourceObjectVar;
         private readonly ParameterExpression _resultVar;
@@ -46,7 +47,7 @@ namespace GitObjectDb.Reflection
             _resultVar = Expression.Variable(Constructor.DeclaringType);
 
             ClonerExpression = ComputeValueRetrievers();
-            Cloner = ClonerExpression.Compile();
+            ClonerAsync = ClonerExpression.Compile();
         }
 
         /// <summary>
@@ -64,7 +65,7 @@ namespace GitObjectDb.Reflection
         /// <param name="new">The new.</param>
         /// <param name="dataAccessor">The data accessor.</param>
         /// <returns>The new <see cref="ILazyChildren"/>.</returns>
-        internal delegate ILazyChildren ChildProcessor(ChildPropertyInfo childProperty, ILazyChildren children, IModelObject @new, IModelDataAccessor dataAccessor);
+        internal delegate Lazy<ILazyChildren> ChildProcessorAsync(ChildPropertyInfo childProperty, ILazyChildren children, IModelObject @new, IModelDataAccessor dataAccessor);
 
         /// <summary>
         /// Clones an existing <see cref="IModelObject"/> into a new instance after applying the changes contained in transformations.
@@ -73,7 +74,7 @@ namespace GitObjectDb.Reflection
         /// <param name="processArgument">The argument processor.</param>
         /// <param name="processor">The processor.</param>
         /// <returns>The newly created instance.</returns>
-        internal delegate IModelObject Clone(IModelObject @object, ProcessArgument processArgument, ChildProcessor processor);
+        internal delegate Task<IModelObject> CloneAsync(IModelObject @object, ProcessArgument processArgument, ChildProcessorAsync processor);
 
         /// <summary>
         /// Gets the constructor.
@@ -88,18 +89,18 @@ namespace GitObjectDb.Reflection
         /// <summary>
         /// Gets the cloner expression.
         /// </summary>
-        internal Expression<Clone> ClonerExpression { get; }
+        internal Expression<CloneAsync> ClonerExpression { get; }
 
         /// <summary>
         /// Gets the cloner function.
         /// </summary>
-        internal Clone Cloner { get; }
+        internal CloneAsync ClonerAsync { get; }
 
-        private Expression<Clone> ComputeValueRetrievers()
+        private Expression<CloneAsync> ComputeValueRetrievers()
         {
             var properties = Constructor.DeclaringType.GetTypeInfo().GetProperties();
             var dataProvider = _dataAccessorProvider.Get(Constructor.DeclaringType);
-            return Expression.Lambda<Clone>(
+            return Expression.Lambda<CloneAsync>(
 #pragma warning disable S3220 // Method calls should not resolve ambiguously to overloads with "params"
                 Expression.Block(
                     new[] { _typedSourceObjectVar, _resultVar },

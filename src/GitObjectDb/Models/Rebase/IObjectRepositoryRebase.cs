@@ -4,6 +4,7 @@ using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models.Rebase
 {
@@ -14,7 +15,7 @@ namespace GitObjectDb.Models.Rebase
     /// <param name="rebaseCommitId">The commit to be rebased.</param>
     /// <param name="branchName">Name of the branch.</param>
     /// <returns>The newly created instance.</returns>
-    public delegate IObjectRepositoryRebase ObjectRepositoryRebaseFactory(IObjectRepository repository, ObjectId rebaseCommitId, string branchName);
+    public delegate Task<IObjectRepositoryRebase> ObjectRepositoryRebaseFactoryAsync(IObjectRepository repository, ObjectId rebaseCommitId, string branchName);
 
     /// <summary>
     /// Encapsulates a rebase operation.
@@ -77,6 +78,6 @@ namespace GitObjectDb.Models.Rebase
         /// Continues the rebase operation.
         /// </summary>
         /// <returns>A current <see cref="IObjectRepositoryRebase"/> instance - used to allow chained calls.</returns>
-        IObjectRepositoryRebase Continue();
+        Task<IObjectRepositoryRebase> ContinueAsync();
     }
 }

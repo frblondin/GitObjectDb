@@ -1,5 +1,6 @@
 using GitObjectDb.Attributes;
 using GitObjectDb.Git;
+using GitObjectDb.Injection;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Services;
@@ -11,16 +12,18 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models.Rebase
 {
     /// <inheritdoc />
     [ExcludeFromGuardForNull]
-    internal class ObjectRepositoryRebase : IObjectRepositoryRebase
+    internal class ObjectRepositoryRebase : IObjectRepositoryRebase, IAsyncInitialization
     {
         private readonly IObjectRepositoryLoader _repositoryLoader;
         private readonly MigrationScaffolderFactory _migrationScaffolderFactory;
         private readonly RebaseProcessor.Factory _rebaseProcessorFactory;
+        private readonly Task _initialization;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryRebase"/> class.
@@ -45,8 +48,10 @@ namespace GitObjectDb.Models.Rebase
             _migrationScaffolderFactory = migrationScaffolderFactory ?? throw new ArgumentNullException(nameof(migrationScaffolderFactory));
             _rebaseProcessorFactory = rebaseProcessorFactory ?? throw new ArgumentNullException(nameof(rebaseProcessorFactory));
 
-            Initialize();
+            _initialization = InitializeAsync();
         }
+
+        Task IAsyncInitialization.Initialization => _initialization;
 
         /// <summary>
         /// Gets the repository.
@@ -103,9 +108,9 @@ namespace GitObjectDb.Models.Rebase
         /// </summary>
         internal IImmutableList<TreeEntryChanges> ModifiedUpstreamBranchEntries { get; private set; }
 
-        private void Initialize()
+        private async Task InitializeAsync()
         {
-            Repository.Execute(repository =>
+            await Repository.ExecuteAsync(async repository =>
             {
                 EnsureHeadCommit(repository);
 
@@ -114,7 +119,7 @@ namespace GitObjectDb.Models.Rebase
                 var mergeBaseCommit = repository.ObjectDatabase.FindMergeBase(headTip, rebaseCommit);
                 MergeBaseCommitId = mergeBaseCommit.Id;
 
-                EnsureNoMigrations();
+                await EnsureNoMigrationsAsync().ConfigureAwait(false);
                 ReplayedCommits = repository.Commits.QueryBy(new CommitFilter
                 {
                     SortBy = CommitSortStrategies.Topological | CommitSortStrategies.Reverse,
@@ -123,10 +128,10 @@ namespace GitObjectDb.Models.Rebase
                 }).Select(c => c.Id).ToImmutableList();
                 UpdateUpstreamBranchModifiedPaths(repository, rebaseCommit, mergeBaseCommit);
 
-                StartRepository = _repositoryLoader.LoadFrom(Repository.Container, Repository.RepositoryDescription, RebaseCommitId);
+                StartRepository = await _repositoryLoader.LoadFromAsync(Repository.Container, Repository.RepositoryDescription, RebaseCommitId).ConfigureAwait(false);
 
-                Status = _rebaseProcessorFactory(this).ContinueNext(repository);
-            });
+                Status = await _rebaseProcessorFactory(this).ContinueNextAsync(repository).ConfigureAwait(false);
+            }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -142,10 +147,10 @@ namespace GitObjectDb.Models.Rebase
             }
         }
 
-        private void EnsureNoMigrations()
+        private async Task EnsureNoMigrationsAsync()
         {
             var migrationScaffolder = _migrationScaffolderFactory(Repository.Container, Repository.RepositoryDescription);
-            var upstreamBranchMigrators = migrationScaffolder.Scaffold(MergeBaseCommitId, RebaseCommitId, MigrationMode.Upgrade);
+            var upstreamBranchMigrators = await migrationScaffolder.ScaffoldAsync(MergeBaseCommitId, RebaseCommitId, MigrationMode.Upgrade).ConfigureAwait(false);
             if (upstreamBranchMigrators.Any())
             {
                 throw new NotSupportedException("Rebase is not supported when the branch being merged contains any migrator.");
@@ -161,13 +166,13 @@ namespace GitObjectDb.Models.Rebase
         }
 
         /// <inheritdoc />
-        public IObjectRepositoryRebase Continue()
+        public async Task<IObjectRepositoryRebase> ContinueAsync()
         {
-            Status = Repository.Execute(repository =>
+            Status = await Repository.ExecuteAsync(repository =>
             {
                 EnsureHeadCommit(repository);
-                return _rebaseProcessorFactory(this).Continue(repository);
-            });
+                return _rebaseProcessorFactory(this).ContinueAsync(repository);
+            }).ConfigureAwait(false);
             return this;
         }
 

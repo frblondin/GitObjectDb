@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models
 {
@@ -28,19 +29,21 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc/>
-        public IObjectRepositoryContainer<TRepository> Create<TRepository>(string path)
+        public async Task<IObjectRepositoryContainer<TRepository>> CreateAsync<TRepository>(string path)
             where TRepository : class, IObjectRepository
         {
-            return new ObjectRepositoryContainer<TRepository>(path,
+            var result = new ObjectRepositoryContainer<TRepository>(path,
                 _serviceProvider.GetRequiredService<IObjectRepositoryLoader>(),
                 _serviceProvider.GetRequiredService<ComputeTreeChangesFactory>(),
-                _serviceProvider.GetRequiredService<ObjectRepositoryMergeFactory>(),
-                _serviceProvider.GetRequiredService<ObjectRepositoryRebaseFactory>(),
-                _serviceProvider.GetRequiredService<ObjectRepositoryCherryPickFactory>(),
+                _serviceProvider.GetRequiredService<ObjectRepositoryMergeFactoryAsync>(),
+                _serviceProvider.GetRequiredService<ObjectRepositoryRebaseFactoryAsync>(),
+                _serviceProvider.GetRequiredService<ObjectRepositoryCherryPickFactoryAsync>(),
                 _serviceProvider.GetRequiredService<IRepositoryProvider>(),
                 _serviceProvider.GetRequiredService<GitHooks>(),
                 _serviceProvider.GetRequiredService<ObjectRepositorySerializerFactory>(),
                 _serviceProvider.GetRequiredService<ILogger<ObjectRepositoryContainer>>());
+            await result.LoadRepositoriesAsync().ConfigureAwait(false);
+            return result;
         }
     }
 }

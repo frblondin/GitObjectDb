@@ -16,6 +16,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests
 {
@@ -25,7 +26,7 @@ namespace GitObjectDb.Tests
         [Ignore("Only used to create large repository. Quite long, normal as we want the load time to be short not necessarily the creation time.")]
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization))]
-        public void CreateLargeRepository(IFixture fixture, Signature signature, string message)
+        public async Task CreateLargeRepositoryAsync(IFixture fixture, Signature signature, string message)
         {
             // Arrange
             DirectoryUtils.Delete(RepositoryFixture.BenchmarkRepositoryPath, false);
@@ -34,7 +35,7 @@ namespace GitObjectDb.Tests
             // Act
             var container = fixture.Create<IObjectRepositoryContainer<ObjectRepository>>();
             var repository = fixture.Create<ObjectRepository>();
-            container.AddRepository(repository, signature, message);
+            await container.AddRepositoryAsync(repository, signature, message).ConfigureAwait(false);
 
             // Assert
             // No assertion, the goal of this test is to create a repository to update Assets\Benchmark.zip
@@ -43,13 +44,13 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void LoadLargeRepository(IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        public async Task LoadLargeRepositoryAsync(IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
             var stopwatch = Stopwatch.StartNew();
 
             // Act
-            loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
+            await loader.LoadFromAsync(container, RepositoryFixture.BenchmarkRepositoryDescription).ConfigureAwait(false);
 
             // Assert
             // Child loading is lazy so root load time should be really short
@@ -58,15 +59,16 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void SearchInLargeRepository(IObjectRepositorySearch search, IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        public async Task SearchInLargeRepositoryAsync(IObjectRepositorySearch search, IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
-            var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
-            var page = sut.Applications.PickRandom().Pages.PickRandom();
+            var sut = await loader.LoadFromAsync(container, RepositoryFixture.BenchmarkRepositoryDescription).ConfigureAwait(false);
+            var applications = await sut.Applications.ConfigureAwait(false);
+            var page = (await applications.PickRandom().Pages.ConfigureAwait(false)).PickRandom();
             var stopwatch = Stopwatch.StartNew();
 
             // Act
-            var result = search.Grep(sut, page.Id.ToString());
+            var result = await search.GrepAsync(sut, page.Id.ToString()).ToListAsync();
             stopwatch.Stop();
             Console.WriteLine($"Grep total duration: {stopwatch.Elapsed}");
 
@@ -77,14 +79,14 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void FullLoadInLargeRepository(IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        public async Task FullLoadInLargeRepositoryAsync(IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
-            var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
+            var sut = await loader.LoadFromAsync(container, RepositoryFixture.BenchmarkRepositoryDescription).ConfigureAwait(false);
             var stopwatch = Stopwatch.StartNew();
 
             // Act
-            var result = sut.Flatten().Last();
+            var result = sut.FlattenAsync().Last();
             stopwatch.Stop();
             Console.WriteLine($"Full load total duration: {stopwatch.Elapsed}");
 
@@ -95,20 +97,20 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void SearchInLargeRepositoryUsingLightDbBackend(IObjectRepositorySearch search, IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        public async Task SearchInLargeRepositoryUsingLightDbBackendAsync(IObjectRepositorySearch search, IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
             var dbFile = Path.Combine(RepositoryFixture.BenchmarkRepositoryDescription.Path, "lite.db");
             LiteDbBackend backend = default;
             var repositoryDescription = RepositoryFixture.BenchmarkRepositoryDescription
                                                          .WithBackend(() => backend = new LiteDbBackend($"filename={dbFile}; journal=false"));
-            var sut = loader.LoadFrom(container, repositoryDescription);
-            sut.Execute(r => r.ObjectDatabase.CopyAllBlobs(backend));
-            var page = sut.Applications.PickRandom().Pages.PickRandom();
+            var sut = await loader.LoadFromAsync(container, repositoryDescription).ConfigureAwait(false);
+            await sut.ExecuteAsync(r => r.ObjectDatabase.CopyAllBlobs(backend)).ConfigureAwait(false);
+            var page = (await (await sut.Applications).PickRandom().Pages).PickRandom();
             var stopwatch = Stopwatch.StartNew();
 
             // Act
-            var result = search.Grep(sut, page.Id.ToString());
+            var result = await search.GrepAsync(sut, page.Id.ToString()).ToListAsync();
             stopwatch.Stop();
             Console.WriteLine($"Grep total duration: {stopwatch.Elapsed}");
 
@@ -119,11 +121,11 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ComputeChangesInLargeRepository(IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader, ComputeTreeChangesFactory computeTreeChangesFactory)
+        public async Task ComputeChangesInLargeRepositoryAsync(IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader, ComputeTreeChangesFactory computeTreeChangesFactory)
         {
             // Arrange
-            var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
-            var fieldToModify = sut.Flatten().OfType<Field>().First(
+            var sut = await loader.LoadFromAsync(container, RepositoryFixture.BenchmarkRepositoryDescription).ConfigureAwait(false);
+            var fieldToModify = sut.FlattenAsync().OfType<Field>().First(
                 f => f.Content.MatchOrDefault(matchLink: l => true));
             var computeTreeChanges = computeTreeChangesFactory(container, RepositoryFixture.BenchmarkRepositoryDescription);
             var stopwatch = Stopwatch.StartNew();
@@ -139,12 +141,12 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void SearchInLargeRepositoryUsingIndex(IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
+        public async Task SearchInLargeRepositoryUsingIndexAsync(IObjectRepositoryContainer<ObjectRepository> container, IObjectRepositoryLoader loader)
         {
             // Arrange
-            var sut = loader.LoadFrom(container, RepositoryFixture.BenchmarkRepositoryDescription);
+            var sut = await loader.LoadFromAsync(container, RepositoryFixture.BenchmarkRepositoryDescription).ConfigureAwait(false);
             var referencedPage = File.ReadAllText("Assets\\Benchmark.ReferencedPage.txt").Trim();
-            var index = sut.Indexes.Single(i => i is LinkFieldReferrerIndex);
+            var index = (await sut.Indexes).Single(i => i is LinkFieldReferrerIndex);
             var stopwatch = Stopwatch.StartNew();
 
             // Act

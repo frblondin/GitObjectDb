@@ -2,6 +2,7 @@ using GitObjectDb.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Reflection
 {
@@ -11,5 +12,5 @@ namespace GitObjectDb.Reflection
     /// <param name="instance">The instance.</param>
     /// <param name="childProperty">Child property info.</param>
     /// <returns>The child additions and deletions.</returns>
-    public delegate (IEnumerable<IModelObject> Additions, IEnumerable<IModelObject> Deletions) ChildChangesGetter(IModelObject instance, ChildPropertyInfo childProperty);
+    public delegate Task<(IEnumerable<IModelObject> Additions, IEnumerable<IModelObject> Deletions)> ChildChangesGetter(IModelObject instance, ChildPropertyInfo childProperty);
 }

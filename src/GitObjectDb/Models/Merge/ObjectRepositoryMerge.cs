@@ -1,4 +1,5 @@
 using GitObjectDb.Attributes;
+using GitObjectDb.Injection;
 using GitObjectDb.Models.Compare;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Reflection;
@@ -12,15 +13,17 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models.Merge
 {
     /// <inheritdoc/>
     [ExcludeFromGuardForNull]
-    internal sealed class ObjectRepositoryMerge : IObjectRepositoryMerge
+    internal sealed class ObjectRepositoryMerge : IObjectRepositoryMerge, IAsyncInitialization
     {
         private readonly MigrationScaffolderFactory _migrationScaffolderFactory;
         private readonly MergeProcessor.Factory _mergeProcessorFactory;
+        private readonly Task _initialization;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObjectRepositoryMerge"/> class.
@@ -50,8 +53,10 @@ namespace GitObjectDb.Models.Merge
             _mergeProcessorFactory = mergeProcessorFactory ?? throw new ArgumentNullException(nameof(mergeProcessorFactory));
             Serializer = serializerFactory(new ModelObjectSerializationContext(Repository.Container));
 
-            Initialize();
+            _initialization = InitializeAsync();
         }
+
+        Task IAsyncInitialization.Initialization => _initialization;
 
         public IObjectRepositorySerializer Serializer { get; }
 
@@ -98,24 +103,24 @@ namespace GitObjectDb.Models.Merge
                 relativePath => (mergeBase[path.GetSiblingFile(relativePath)]?.Target as Blob)?.GetContentText() ?? string.Empty);
         }
 
-        private void Initialize()
+        private async Task InitializeAsync()
         {
-            Repository.Execute(repository =>
-            {
-                EnsureHeadCommit(repository);
+            await Repository.ExecuteAsync(async repository =>
+             {
+                 EnsureHeadCommit(repository);
 
-                var mergeCommit = repository.Lookup<Commit>(MergeCommitId);
-                var headTip = repository.Head.Tip;
-                var baseCommit = repository.ObjectDatabase.FindMergeBase(headTip, mergeCommit);
-                RequiresMergeCommit = headTip.Id != baseCommit.Id;
+                 var mergeCommit = repository.Lookup<Commit>(MergeCommitId);
+                 var headTip = repository.Head.Tip;
+                 var baseCommit = repository.ObjectDatabase.FindMergeBase(headTip, mergeCommit);
+                 RequiresMergeCommit = headTip.Id != baseCommit.Id;
 
-                var migrationScaffolder = _migrationScaffolderFactory(Repository.Container, Repository.RepositoryDescription);
-                var migrators = migrationScaffolder.Scaffold(baseCommit.Id, MergeCommitId, MigrationMode.Upgrade);
+                 var migrationScaffolder = _migrationScaffolderFactory(Repository.Container, Repository.RepositoryDescription);
+                 var migrators = await migrationScaffolder.ScaffoldAsync(baseCommit.Id, MergeCommitId, MigrationMode.Upgrade).ConfigureAwait(false);
 
-                mergeCommit = ResolveRequiredMigrator(repository, mergeCommit, migrators);
+                 mergeCommit = ResolveRequiredMigrator(repository, mergeCommit, migrators);
 
-                ComputeMerge(repository, baseCommit, mergeCommit, headTip);
-            });
+                 ComputeMerge(repository, baseCommit, mergeCommit, headTip);
+             }).ConfigureAwait(false);
         }
 
         private Commit ResolveRequiredMigrator(IRepository repository, Commit branchTip, IImmutableList<Migrator> migrators)
@@ -260,6 +265,6 @@ namespace GitObjectDb.Models.Merge
         }
 
         /// <inheritdoc/>
-        public ObjectId Apply(Signature merger) => _mergeProcessorFactory(this).Apply(merger);
+        public async Task<ObjectId> ApplyAsync(Signature merger) => await _mergeProcessorFactory(this).ApplyAsync(merger).ConfigureAwait(false);
     }
 }

@@ -8,6 +8,7 @@ using GitObjectDb.Models;
 using GitObjectDb.Models.Migration;
 using GitObjectDb.Tests.Assets.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Nito.AsyncEx;
 
 namespace GitObjectDb.Tests.Assets.Customizations
 {
@@ -20,7 +21,7 @@ namespace GitObjectDb.Tests.Assets.Customizations
             var serviceProvider = fixture.Create<IServiceProvider>();
             var containerFactory = serviceProvider.GetRequiredService<IObjectRepositoryContainerFactory>();
 
-            var container = containerFactory.Create<BlobRepository>(RepositoryFixture.GetAvailableFolderPath());
+            var container = AsyncContext.Run(() => containerFactory.CreateAsync<BlobRepository>(RepositoryFixture.GetAvailableFolderPath()));
             fixture.Inject(container);
             fixture.Inject<IObjectRepositoryContainer<BlobRepository>>(container);
             fixture.Inject<IObjectRepositoryContainer>(container);

@@ -2,7 +2,9 @@ using GitObjectDb.Reflection;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models
 {
@@ -17,7 +19,7 @@ namespace GitObjectDb.Models
         /// <param name="propertyInfo">The property information.</param>
         /// <param name="factory">The factory.</param>
         /// <returns>The new lazy children instance.</returns>
-        internal static ILazyChildren Create(ChildPropertyInfo propertyInfo, Func<IModelObject, IRepository, IEnumerable<IModelObject>> factory)
+        internal static ILazyChildren Create(ChildPropertyInfo propertyInfo, Func<IModelObject, IRepository, Task<IImmutableList<IModelObject>>> factory)
         {
             var targetType = typeof(LazyChildren<>).MakeGenericType(propertyInfo.ItemType);
             return (ILazyChildren)Activator.CreateInstance(targetType, factory);

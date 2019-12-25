@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models
 {
@@ -13,7 +14,7 @@ namespace GitObjectDb.Models
         /// <typeparam name="TRepository">The type of the repositories.</typeparam>
         /// <param name="path">The path where repositories should be stored.</param>
         /// <returns>The newly created instance.</returns>
-        IObjectRepositoryContainer<TRepository> Create<TRepository>(string path)
+        Task<IObjectRepositoryContainer<TRepository>> CreateAsync<TRepository>(string path)
             where TRepository : class, IObjectRepository;
     }
 }

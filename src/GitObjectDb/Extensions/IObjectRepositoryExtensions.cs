@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models
 {
@@ -23,7 +24,7 @@ namespace GitObjectDb.Models
         /// <param name="repository">The repository.</param>
         /// <param name="processor">The function.</param>
         /// <returns>The result of the function call.</returns>
-        internal static TResult Execute<TResult>(this IObjectRepository repository, Func<IRepository, TResult> processor)
+        internal static async Task<TResult> ExecuteAsync<TResult>(this IObjectRepository repository, Func<IRepository, Task<TResult>> processor)
         {
             if (repository == null)
             {
@@ -37,7 +38,31 @@ namespace GitObjectDb.Models
             {
                 throw new GitObjectDbException($"No {nameof(repository.RepositoryDescription)} has been set on this instance.");
             }
-            return repository.RepositoryProvider.Execute(repository.RepositoryDescription, processor);
+            return await repository.RepositoryProvider.ExecuteAsync(repository.RepositoryDescription, processor).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Returns the result of the provided function processing.
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result.</typeparam>
+        /// <param name="repository">The repository.</param>
+        /// <param name="processor">The function.</param>
+        /// <returns>The result of the function call.</returns>
+        internal static async Task<TResult> ExecuteAsync<TResult>(this IObjectRepository repository, Func<IRepository, TResult> processor)
+        {
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
+            }
+            if (processor == null)
+            {
+                throw new ArgumentNullException(nameof(processor));
+            }
+            if (repository.RepositoryDescription == null)
+            {
+                throw new GitObjectDbException($"No {nameof(repository.RepositoryDescription)} has been set on this instance.");
+            }
+            return await repository.RepositoryProvider.ExecuteAsync(repository.RepositoryDescription, processor).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -45,7 +70,8 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="repository">The repository.</param>
         /// <param name="processor">The function.</param>
-        internal static void Execute(this IObjectRepository repository, Action<IRepository> processor)
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        internal static async Task ExecuteAsync(this IObjectRepository repository, Action<IRepository> processor)
         {
             if (repository == null)
             {
@@ -59,7 +85,30 @@ namespace GitObjectDb.Models
             {
                 throw new GitObjectDbException($"No {nameof(repository.RepositoryDescription)} has been set on this instance.");
             }
-            repository.RepositoryProvider.Execute(repository.RepositoryDescription, processor);
+            await repository.RepositoryProvider.ExecuteAsync(repository.RepositoryDescription, processor).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Creates a copy of the repository and apply changes according to the new test values provided in the transformation.
+        /// </summary>
+        /// <typeparam name="TRepository">The type of the repository.</typeparam>
+        /// <param name="repository">The repository.</param>
+        /// <param name="transformation">The transformation.</param>
+        /// <returns>The newly created copy. Both parents and children nodes have been cloned as well.</returns>
+        public static async Task<TRepository> WithAsync<TRepository>(this TRepository repository, Func<ITransformationComposer, Task<ITransformationComposer>> transformation)
+            where TRepository : IObjectRepository
+        {
+            if (repository == null)
+            {
+                throw new ArgumentNullException(nameof(repository));
+            }
+            if (transformation == null)
+            {
+                throw new ArgumentNullException(nameof(transformation));
+            }
+
+            var composer = await transformation(new TransformationComposer(repository, ImmutableList.Create<ITransformation>())).ConfigureAwait(false);
+            return (TRepository)repository.DataAccessor.With(repository, composer);
         }
 
         /// <summary>
@@ -96,7 +145,7 @@ namespace GitObjectDb.Models
         /// <param name="propertyPicker">An expression that identifies the property or field that will have <paramref name="value" /> assigned.</param>
         /// <param name="value">The value to assign to the property or field identified by <paramref name="propertyPicker" />.</param>
         /// <returns>The newly created copy. Both parents and children nodes have been cloned as well.</returns>
-        public static TModel With<TRepository, TModel, TProperty>(this TRepository repository, TModel node, Expression<Func<TModel, TProperty>> propertyPicker, TProperty value = default)
+        public static async Task<TModel> WithAsync<TRepository, TModel, TProperty>(this TRepository repository, TModel node, Expression<Func<TModel, TProperty>> propertyPicker, TProperty value = default)
             where TRepository : IObjectRepository
             where TModel : IModelObject
         {
@@ -120,7 +169,7 @@ namespace GitObjectDb.Models
             var propertyTransformation = new PropertyTransformation(node, propertyPicker, value);
             var composer = new TransformationComposer(repository, ImmutableList.Create<ITransformation>(propertyTransformation));
             var result = (TRepository)repository.DataAccessor.With(repository, composer);
-            return (TModel)result.GetFromGitPath(node.GetDataPath());
+            return (TModel)await result.GetFromGitPathAsync(node.GetDataPath()).ConfigureAwait(false);
         }
     }
 }

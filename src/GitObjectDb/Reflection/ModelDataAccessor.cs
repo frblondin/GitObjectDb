@@ -11,6 +11,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Reflection
 {
@@ -106,7 +107,7 @@ namespace GitObjectDb.Reflection
             var deletions = new HashSet<UniqueId>(transformations
                 .OfType<ChildDeleteTransformation>().Select(d => d.ChildId));
             var impactedPaths = transformations.Select(c => c.Path).Distinct().ToList();
-            return DeepClone(repository, ProcessArgument, GetChildChanges, MustForceVisit);
+            return DeepClone(repository, ProcessArgument, GetChildChangesAsync, MustForceVisit);
 
             object ProcessArgument(IModelObject instance, string name, Type argumentType, object fallback = null)
             {
@@ -117,10 +118,11 @@ namespace GitObjectDb.Reflection
                 }
                 return fallback is ICloneable cloneable ? cloneable.Clone() : fallback;
             }
-            (IEnumerable<IModelObject> Additions, IEnumerable<IModelObject> Deletions) GetChildChanges(IModelObject instance, ChildPropertyInfo childProperty)
+            async Task<(IEnumerable<IModelObject> Additions, IEnumerable<IModelObject> Deletions)> GetChildChangesAsync(IModelObject instance, ChildPropertyInfo childProperty)
             {
                 var childrenToBeAdded = additions[(instance.Id, childProperty.FolderName)];
-                var childrenToBeRemoved = childProperty.Accessor(instance).Where(c => IsDeleted(c));
+                var childrenToBeRemoved = (await childProperty.Accessor(instance).ConfigureAwait(false))
+                    .Where(c => IsDeleted(c));
                 return (childrenToBeAdded, childrenToBeRemoved);
             }
             bool IsDeleted(IModelObject instance)
@@ -142,10 +144,10 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(instance));
             }
 
-            return (IObjectRepository)DeepClone((IModelObject)instance, processArgument, childChangesGetter, mustForceVisit);
+            return (IObjectRepository)DeepCloneAsync((IModelObject)instance, processArgument, childChangesGetter, mustForceVisit);
         }
 
-        private IModelObject DeepClone(IModelObject node, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IModelObject, bool> mustForceVisit)
+        private async Task<IModelObject> DeepCloneAsync(IModelObject node, ProcessArgument processArgument, ChildChangesGetter childChangesGetter, Func<IModelObject, bool> mustForceVisit)
         {
             if (node == null)
             {
@@ -164,17 +166,17 @@ namespace GitObjectDb.Reflection
                 throw new ArgumentNullException(nameof(mustForceVisit));
             }
 
-            ILazyChildren ProcessChildren(ChildPropertyInfo childProperty, ILazyChildren children, IModelObject @new, IModelDataAccessor childDataAccessor)
+            async Task<ILazyChildren> ProcessChildrenAsync(ChildPropertyInfo childProperty, ILazyChildren children, IModelObject @new, IModelDataAccessor childDataAccessor)
             {
-                var childChanges = childChangesGetter.Invoke(node, childProperty);
+                var childChanges = await childChangesGetter(node, childProperty).ConfigureAwait(false);
                 return children.Clone(
                     forceVisit: mustForceVisit(children.Parent),
-                    update: n => DeepClone(n, processArgument, childChangesGetter, mustForceVisit),
+                    update: async n => await DeepCloneAsync(n, processArgument, childChangesGetter, mustForceVisit).ConfigureAwait(false),
                     added: childChanges.Additions,
                     deleted: childChanges.Deletions);
             }
 
-            return node.DataAccessor.ConstructorParameterBinding.Cloner(node, processArgument, ProcessChildren);
+            return await node.DataAccessor.ConstructorParameterBinding.ClonerAsync(node, processArgument, ProcessChildrenAsync).ConfigureAwait(false);
         }
     }
 }

@@ -95,9 +95,9 @@ namespace Microsoft.Extensions.DependencyInjection
         private static void ConfigureModelServices(IServiceCollection source)
         {
             source.AddSingleton<IObjectRepositoryContainerFactory, ObjectRepositoryContainerFactory>();
-            source.AddFactoryDelegate<ObjectRepositoryMergeFactory, ObjectRepositoryMerge>();
-            source.AddFactoryDelegate<ObjectRepositoryRebaseFactory, ObjectRepositoryRebase>();
-            source.AddFactoryDelegate<ObjectRepositoryCherryPickFactory, ObjectRepositoryCherryPick>();
+            source.AddFactoryDelegate<ObjectRepositoryMergeFactoryAsync, ObjectRepositoryMerge>();
+            source.AddFactoryDelegate<ObjectRepositoryRebaseFactoryAsync, ObjectRepositoryRebase>();
+            source.AddFactoryDelegate<ObjectRepositoryCherryPickFactoryAsync, ObjectRepositoryCherryPick>();
         }
     }
 }

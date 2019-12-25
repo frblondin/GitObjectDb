@@ -3,8 +3,10 @@ using GitObjectDb.Reflection;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Serialization.Json.Converters
 {
@@ -59,7 +61,7 @@ namespace GitObjectDb.Serialization.Json.Converters
         {
             var dataAccessor = _dataAccessorProvider.Get(parentType);
             var childProperty = dataAccessor.ChildProperties.TryGetWithValue(p => p.Name, propertyName);
-            return LazyChildrenHelper.Create(childProperty, (o, r) => Enumerable.Empty<IModelObject>());
+            return LazyChildrenHelper.Create(childProperty, (o, r) => Task.FromResult((IImmutableList<IModelObject>)ImmutableList.Create<IModelObject>()));
         }
     }
 }

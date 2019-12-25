@@ -21,7 +21,7 @@ namespace GitObjectDb.Tests.Validations
         public void FullValidationDoesNotFail(ObjectRepository sut)
         {
             // Act
-            var result = sut.Validate(ValidationRules.All);
+            var result = sut.ValidateAsync(ValidationRules.All);
 
             // Assert
             Assert.That(result.IsValid, Is.True);
@@ -32,13 +32,13 @@ namespace GitObjectDb.Tests.Validations
         public void LinkWithWrongRepositoryIsDetected(IObjectRepositoryContainer container, ObjectRepository repository)
         {
             // Arrange
-            var linkField = repository.Flatten().OfType<Field>().FirstOrDefault(
+            var linkField = repository.FlattenAsync().OfType<Field>().FirstOrDefault(
                 f => f.Content.MatchOrDefault(matchLink: l => true));
 
             // Act
             var failingLink = new LazyLink<Page>(container, new ObjectPath(UniqueId.CreateNew(), "foo"));
             var modified = repository.With(linkField, f => f.Content, FieldContent.NewLink(new FieldLinkContent(failingLink)));
-            var result = modified.Repository.Validate();
+            var result = modified.Repository.ValidateAsync();
 
             // Assert
             Assert.That(result, Has.Property(nameof(ValidationResult.IsValid)).False);
@@ -54,13 +54,13 @@ namespace GitObjectDb.Tests.Validations
         public void LinkWithWrongObjectPathIsDetected(IObjectRepositoryContainer container, ObjectRepository repository)
         {
             // Arrange
-            var linkField = repository.Flatten().OfType<Field>().FirstOrDefault(
+            var linkField = repository.FlattenAsync().OfType<Field>().FirstOrDefault(
                 f => f.Content.MatchOrDefault(matchLink: l => true));
 
             // Act
             var failingLink = new LazyLink<Page>(container, new ObjectPath(linkField.Repository.Id, "foo"));
             var modified = repository.With(linkField, f => f.Content, FieldContent.NewLink(new FieldLinkContent(failingLink)));
-            var result = modified.Repository.Validate();
+            var result = modified.Repository.ValidateAsync();
 
             // Assert
             Assert.That(result, Has.Property(nameof(ValidationResult.IsValid)).False);

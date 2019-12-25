@@ -3,6 +3,7 @@ using GitObjectDb.Models;
 using GitObjectDb.Models.Migration;
 using LibGit2Sharp;
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Services
 {
@@ -26,6 +27,6 @@ namespace GitObjectDb.Services
         /// <param name="migrationEnd">The end.</param>
         /// <param name="mode">The mode.</param>
         /// <returns>The <see cref="Migrator"/> used to apply migrations.</returns>
-        IImmutableList<Migrator> Scaffold(ObjectId migrationStart, ObjectId migrationEnd, MigrationMode mode);
+        Task<IImmutableList<Migrator>> ScaffoldAsync(ObjectId migrationStart, ObjectId migrationEnd, MigrationMode mode);
     }
 }

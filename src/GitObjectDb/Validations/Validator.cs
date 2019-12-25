@@ -8,6 +8,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Validations
 {
@@ -31,7 +32,7 @@ namespace GitObjectDb.Validations
         }
 
         /// <inheritdoc/>
-        public ValidationResult Validate(ValidationContext context)
+        public async Task<ValidationResult> ValidateAsync(ValidationContext context)
         {
             if (context == null)
             {
@@ -39,19 +40,19 @@ namespace GitObjectDb.Validations
             }
 
             var result = new List<ValidationFailure>();
-            ValidateImpl(context, result);
+            await ValidateImplAsync(context, result).ConfigureAwait(false);
 
             return new ValidationResult(result);
         }
 
-        private void ValidateImpl(ValidationContext context, List<ValidationFailure> result)
+        private async Task ValidateImplAsync(ValidationContext context, List<ValidationFailure> result)
         {
             var dataProvider = _modelDataAccessorProvider.Get(context.Instance.GetType());
 
             ValidatePropertyValues(context, dataProvider, result);
             GetCustomValidationResult(context, result);
 
-            ValidateChildren(context, dataProvider, result);
+            await ValidateChildrenAsync(context, dataProvider, result).ConfigureAwait(false);
         }
 
         private void ValidatePropertyValues(ValidationContext context, IModelDataAccessor dataProvider, List<ValidationFailure> result)
@@ -114,32 +115,32 @@ namespace GitObjectDb.Validations
                             Enumerable.Empty<ValidationFailure>());
         }
 
-        private void ValidateChildren(ValidationContext context, IModelDataAccessor dataProvider, List<ValidationFailure> result)
+        private async Task ValidateChildrenAsync(ValidationContext context, IModelDataAccessor dataProvider, List<ValidationFailure> result)
         {
             foreach (var childProperty in dataProvider.ChildProperties)
             {
                 var children = childProperty.Accessor(context.Instance);
                 if (children != null)
                 {
-                    foreach (var child in children)
+                    foreach (var child in await children)
                     {
                         var nestedContext = context.NewNested(childProperty, child);
-                        ValidateImpl(nestedContext, result);
+                        await ValidateImplAsync(nestedContext, result).ConfigureAwait(false);
                     }
                 }
             }
 
-            ValidateContainer(context, result);
+            await ValidateContainerAsync(context, result).ConfigureAwait(false);
         }
 
-        private void ValidateContainer(ValidationContext context, List<ValidationFailure> result)
+        private async Task ValidateContainerAsync(ValidationContext context, List<ValidationFailure> result)
         {
             if (context.Instance is IObjectRepositoryContainer container)
             {
                 foreach (var repository in container.Repositories)
                 {
                     var repositoryContext = new ValidationContext(repository, ValidationChain.Empty, context.Rules, null);
-                    ValidateImpl(repositoryContext, result);
+                    await ValidateImplAsync(repositoryContext, result).ConfigureAwait(false);
                 }
             }
         }

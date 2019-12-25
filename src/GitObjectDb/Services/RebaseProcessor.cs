@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Services
 {
@@ -59,7 +60,7 @@ namespace GitObjectDb.Services
         /// </summary>
         /// <param name="repository">The repository.</param>
         /// <returns>The new <see cref="RebaseStatus"/>.</returns>
-        internal RebaseStatus Continue(IRepository repository)
+        internal async Task<RebaseStatus> ContinueAsync(IRepository repository)
         {
             if (_rebase.CompletedStepCount == _rebase.TotalStepCount)
             {
@@ -69,7 +70,7 @@ namespace GitObjectDb.Services
             {
                 throw new GitObjectDbException("There are remaining unresolved conflicts.");
             }
-            return CompleteStep(repository);
+            return await CompleteStepAsync(repository).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -77,7 +78,7 @@ namespace GitObjectDb.Services
         /// </summary>
         /// <param name="repository">The repository.</param>
         /// <returns>The new <see cref="RebaseStatus"/>.</returns>
-        internal RebaseStatus ContinueNext(IRepository repository)
+        internal async Task<RebaseStatus> ContinueNextAsync(IRepository repository)
         {
             ComputeChanges(repository);
 
@@ -87,11 +88,11 @@ namespace GitObjectDb.Services
             }
             else
             {
-                return CompleteStep(repository);
+                return await CompleteStepAsync(repository).ConfigureAwait(false);
             }
         }
 
-        private RebaseStatus CompleteStep(IRepository repository)
+        private async Task<RebaseStatus> CompleteStepAsync(IRepository repository)
         {
             var transformations = new TransformationFromChunkChanges(_rebase.ModifiedProperties, _rebase.AddedObjects, _rebase.DeletedObjects);
             var transformed = CurrentTransformedRepository.DataAccessor.With(CurrentTransformedRepository, transformations);
@@ -103,15 +104,15 @@ namespace GitObjectDb.Services
 
             if (_rebase.CompletedStepCount != _rebase.TotalStepCount)
             {
-                return ContinueNext(repository);
+                return await ContinueNextAsync(repository).ConfigureAwait(false);
             }
             else
             {
-                return CompleteRebase(repository);
+                return await CompleteRebaseAsync(repository).ConfigureAwait(false);
             }
         }
 
-        private RebaseStatus CompleteRebase(IRepository r)
+        private async Task<RebaseStatus> CompleteRebaseAsync(IRepository r)
         {
             var computeChanges = _computeTreeChangesFactory(_rebase.Repository.Container, _rebase.Repository.RepositoryDescription);
             var previous = _rebase.StartRepository;
@@ -122,7 +123,7 @@ namespace GitObjectDb.Services
                 if (changes.Any())
                 {
                     var definition = TreeDefinition.From(lastCommit);
-                    r.UpdateTreeDefinition(changes, definition, _serializer, lastCommit);
+                    await r.UpdateTreeDefinitionAsync(changes, definition, _serializer, lastCommit).ConfigureAwait(false);
                     var tree = r.ObjectDatabase.CreateTree(definition);
                     previous = info.repository;
                     lastCommit = r.ObjectDatabase.CreateCommit(info.Item2.Author, info.Item2.Committer, info.Item2.Message, tree, new[] { lastCommit }, false);
@@ -132,7 +133,7 @@ namespace GitObjectDb.Services
             r.UpdateHeadAndTerminalReference(lastCommit, logMessage);
             if (_rebase.Repository.Container is ObjectRepositoryContainer container)
             {
-                container.ReloadRepository(_rebase.Repository, lastCommit.Id);
+                await container.ReloadRepositoryAsync(_rebase.Repository, lastCommit.Id).ConfigureAwait(false);
             }
             return RebaseStatus.Complete;
         }
@@ -199,7 +200,7 @@ namespace GitObjectDb.Services
             // Get data file path, in the case where a blob has changed
             var dataPath = change.Path.GetSiblingFile(FileSystemStorage.DataFile);
 
-            var currentObject = objectRepository.TryGetFromGitPath(dataPath) ??
+            var currentObject = objectRepository.TryGetFromGitPathAsync(dataPath) ??
                 throw new NotImplementedException($"Conflict as a modified node {change.Path} has been deleted in current rebase state.");
 
             var changeStart = serializer.Deserialize(
@@ -229,12 +230,12 @@ namespace GitObjectDb.Services
                 return null;
             }
 
-            if (objectRepository.TryGetFromGitPath(change.Path) != null)
+            if (objectRepository.TryGetFromGitPathAsync(change.Path) != null)
             {
                 throw new NotImplementedException("Node already present in current state.");
             }
             var parentDataPath = change.Path.GetDataParentDataPath();
-            if (objectRepository.TryGetFromGitPath(parentDataPath) == null)
+            if (objectRepository.TryGetFromGitPathAsync(parentDataPath) == null)
             {
                 throw new NotImplementedException("Node addition while parent has been deleted in head is not supported.");
             }

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -24,6 +24,8 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="Nito.AsyncEx" Version="5.0.0" />
+    <PackageReference Include="System.Interactive.Async" Version="4.0.0" />
     <PackageReference Include="SourceLink.Copy.PdbFiles" privateAssets="all" />
     <PackageReference Include="SourceLink.Create.CommandLine" privateAssets="all" />
     <PackageReference Include="StyleCop.Analyzers">

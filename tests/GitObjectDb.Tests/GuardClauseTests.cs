@@ -74,8 +74,8 @@ namespace GitObjectDb.Tests
                 fixture.Register<IMigration>(fixture.Create<DummyMigration>);
                 fixture.Register<IModelObject>(fixture.Create<ObjectRepository>);
                 fixture.Inject(fixture.Create<IServiceProvider>().GetRequiredService<ModelDataAccessorFactory>().Invoke(typeof(Page)));
-                fixture.Inject<ConstructorParameterBinding.ChildProcessor>((name, children, @new, dataAccessor) => children);
-                fixture.Inject<ConstructorParameterBinding.Clone>((@object, predicateReflector, processor) => @object);
+                fixture.Inject<ConstructorParameterBinding.ChildProcessorAsync>((name, children, @new, dataAccessor) => children);
+                fixture.Inject<ConstructorParameterBinding.CloneAsync>((@object, predicateReflector, processor) => @object);
                 fixture.Register(() => new ObjectRepositoryChangeCollection(fixture.Create<IObjectRepository>(), ImmutableList.Create<ObjectRepositoryEntryChanges>()));
             }
 

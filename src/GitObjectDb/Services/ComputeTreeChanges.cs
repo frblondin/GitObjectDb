@@ -11,6 +11,8 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Services
 {
@@ -56,7 +58,7 @@ namespace GitObjectDb.Services
             }
         }
 
-        private void AddNodeRecursively(IModelObject node, IList<ObjectRepositoryEntryChanges> changed, Stack<string> stack, Func<string, IModelObject, ObjectRepositoryEntryChanges> changeFactory)
+        private async Task AddNodeRecursivelyAsync(IModelObject node, IList<ObjectRepositoryEntryChanges> changed, Stack<string> stack, Func<string, IModelObject, ObjectRepositoryEntryChanges> changeFactory)
         {
             var path = stack.ToDataPath();
             changed.Add(changeFactory(path, node));
@@ -64,10 +66,10 @@ namespace GitObjectDb.Services
             foreach (var childProperty in dataAccessor.ChildProperties)
             {
                 stack.Push(childProperty.Name);
-                foreach (var child in node.Children)
+                foreach (var child in await node.GetChildrenAsync(default(CancellationToken)))
                 {
                     stack.Push(child.Id.ToString());
-                    AddNodeRecursively(child, changed, stack, changeFactory);
+                    await AddNodeRecursivelyAsync(child, changed, stack, changeFactory).ConfigureAwait(false);
                     stack.Pop();
                 }
                 stack.Pop();
@@ -75,7 +77,7 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public ObjectRepositoryChangeCollection Compare(ObjectId oldCommitId, ObjectId newCommitId)
+        public async Task<ObjectRepositoryChangeCollection> CompareAsync(ObjectId oldCommitId, ObjectId newCommitId)
         {
             if (oldCommitId == null)
             {
@@ -86,10 +88,10 @@ namespace GitObjectDb.Services
                 throw new ArgumentNullException(nameof(newCommitId));
             }
 
-            return _repositoryProvider.Execute(_repositoryDescription, repository =>
+            return await _repositoryProvider.ExecuteAsync(_repositoryDescription, async repository =>
             {
-                var oldRepository = _objectRepositoryLoader.LoadFrom(_container, _repositoryDescription, oldCommitId);
-                var newRepository = _objectRepositoryLoader.LoadFrom(_container, _repositoryDescription, newCommitId);
+                var oldRepository = await _objectRepositoryLoader.LoadFromAsync(_container, _repositoryDescription, oldCommitId).ConfigureAwait(false);
+                var newRepository = await _objectRepositoryLoader.LoadFromAsync(_container, _repositoryDescription, newCommitId).ConfigureAwait(false);
 
                 var oldCommit = repository.Lookup<Commit>(oldCommitId);
                 var newCommit = repository.Lookup<Commit>(newCommitId);
@@ -105,7 +107,7 @@ namespace GitObjectDb.Services
 
                     return new ObjectRepositoryChangeCollection(newRepository, added.Concat(modified).Concat(deleted).ToImmutableList(), oldRepository);
                 }
-            });
+            }).ConfigureAwait(false);
         }
 
         private static IList<ObjectRepositoryEntryChanges> CollectModifiedNodes(IObjectRepository oldRepository, IObjectRepository newRepository, TreeChanges changes, Commit oldCommit) =>
@@ -113,8 +115,8 @@ namespace GitObjectDb.Services
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
-             let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in old repository.")
-             let newNode = newRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in new repository.")
+             let oldNode = oldRepository.TryGetFromGitPathAsync(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in old repository.")
+             let newNode = newRepository.TryGetFromGitPathAsync(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in new repository.")
              where !oldNode.Equals(newNode) // If new property have been defined in the data model we could end up with text differences even is object have same value (default values for ex.) = false positivies
              select new ObjectRepositoryEntryChanges(newNode.GetDataPath(), c.Status, oldNode, newNode))
             .ToList();
@@ -124,7 +126,7 @@ namespace GitObjectDb.Services
              let newEntry = newCommit[c.Path]
              where newEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
-             let newNode = newRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in new instance.")
+             let newNode = newRepository.TryGetFromGitPathAsync(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in new instance.")
              select new ObjectRepositoryEntryChanges(c.Path, c.Status, null, newNode))
             .ToList();
 
@@ -133,7 +135,7 @@ namespace GitObjectDb.Services
              let oldEntry = oldCommit[c.Path]
              where oldEntry.TargetType == TreeEntryTargetType.Blob
              let path = c.Path.GetParentPath()
-             let oldNode = oldRepository.TryGetFromGitPath(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in old instance.")
+             let oldNode = oldRepository.TryGetFromGitPathAsync(path) ?? throw new ObjectNotFoundException($"Node {path} could not be found in old instance.")
              select new ObjectRepositoryEntryChanges(c.Path, c.Status, oldNode, null))
             .ToList();
 
@@ -225,7 +227,7 @@ namespace GitObjectDb.Services
             else if (enumerator.NodeHasBeenAdded)
             {
                 stack.Push(enumerator.Right.Id.ToString());
-                AddNodeRecursively(enumerator.Right, changes, stack, (p, n) => new ObjectRepositoryEntryChanges(p, ChangeKind.Added, @new: n));
+                AddNodeRecursivelyAsync(enumerator.Right, changes, stack, (p, n) => new ObjectRepositoryEntryChanges(p, ChangeKind.Added, @new: n));
                 stack.Pop();
                 enumerator.MoveNextRight();
                 return;
@@ -233,7 +235,7 @@ namespace GitObjectDb.Services
             else if (enumerator.NodeHasBeenRemoved)
             {
                 stack.Push(enumerator.Left.Id.ToString());
-                AddNodeRecursively(enumerator.Left, changes, stack, (p, n) => new ObjectRepositoryEntryChanges(p, ChangeKind.Deleted, old: n));
+                AddNodeRecursivelyAsync(enumerator.Left, changes, stack, (p, n) => new ObjectRepositoryEntryChanges(p, ChangeKind.Deleted, old: n));
                 stack.Pop();
                 enumerator.MoveNextLeft();
                 return;

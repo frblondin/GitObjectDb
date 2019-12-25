@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Services
 {
@@ -40,7 +41,7 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc/>
-        public IImmutableList<Migrator> Scaffold(ObjectId migrationStart, ObjectId migrationEnd, MigrationMode mode)
+        public async Task<IImmutableList<Migrator>> ScaffoldAsync(ObjectId migrationStart, ObjectId migrationEnd, MigrationMode mode)
         {
             if (migrationStart == null)
             {
@@ -56,7 +57,7 @@ namespace GitObjectDb.Services
                 throw new NotImplementedException(MigrationMode.Downgrade.ToString());
             }
 
-            return _repositoryProvider.Execute(_repositoryDescription, repository =>
+            return await _repositoryProvider.ExecuteAsync(_repositoryDescription, repository =>
             {
                 var log = repository.Commits.QueryBy(new CommitFilter
                 {
@@ -82,7 +83,7 @@ namespace GitObjectDb.Services
                     }
                 }
                 return result.ToImmutable();
-            });
+            }).ConfigureAwait(false);
         }
 
         private IEnumerable<Migrator> GetLogMigrators(IRepository repository, ICommitLog log, List<IMigration> deferred, Commit previousCommit, MigrationMode mode)

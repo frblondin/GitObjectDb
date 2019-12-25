@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Services
 {
@@ -51,7 +52,7 @@ namespace GitObjectDb.Services
         /// </summary>
         /// <param name="merger">The merger.</param>
         /// <returns>The merge commit id.</returns>
-        internal ObjectId Apply(Signature merger)
+        internal async Task<ObjectId> ApplyAsync(Signature merger)
         {
             if (merger == null)
             {
@@ -63,21 +64,21 @@ namespace GitObjectDb.Services
                 throw new RemainingConflictsException(remainingConflicts);
             }
 
-            return _merge.Repository.Execute(repository =>
+            return await _merge.Repository.ExecuteAsync(repository =>
             {
                 _merge.EnsureHeadCommit(repository);
 
-                var resultId = ApplyMerge(merger, repository);
+                var resultId = ApplyMergeAsync(merger, repository);
                 if (resultId == null)
                 {
                     return null;
                 }
                 _merge.RequiredMigrator?.Apply();
                 return resultId;
-            });
+            }).ConfigureAwait(false);
         }
 
-        private ObjectId ApplyMerge(Signature merger, IRepository repository)
+        private async Task<ObjectId> ApplyMergeAsync(Signature merger, IRepository repository)
         {
             var computeChanges = _computeTreeChangesFactory(_merge.Repository.Container, _merge.Repository.RepositoryDescription);
             var treeChanges = computeChanges.Compute(_merge.Repository, _merge.ModifiedProperties, _merge.AddedObjects, _merge.DeletedObjects);
@@ -87,10 +88,10 @@ namespace GitObjectDb.Services
                 return null;
             }
 
-            var commit = CommitChanges(merger, repository, treeChanges);
+            var commit = await CommitChangesAsync(merger, repository, treeChanges).ConfigureAwait(false);
             if (_merge.Repository.Container is ObjectRepositoryContainer container)
             {
-                container.ReloadRepository(_merge.Repository, commit);
+                await container.ReloadRepositoryAsync(_merge.Repository, commit).ConfigureAwait(false);
             }
 
             _hooks.OnMergeCompleted(treeChanges, commit);
@@ -98,12 +99,13 @@ namespace GitObjectDb.Services
             return commit;
         }
 
-        private ObjectId CommitChanges(Signature merger, IRepository repository, ObjectRepositoryChangeCollection treeChanges)
+        private async Task<ObjectId> CommitChangesAsync(Signature merger, IRepository repository, ObjectRepositoryChangeCollection treeChanges)
         {
             if (_merge.RequiresMergeCommit)
             {
                 var message = $"Merge branch {_merge.BranchName} into {repository.Head.FriendlyName}";
-                return repository.CommitChanges(treeChanges, _merge.Serializer, message, merger, merger, hooks: _hooks, mergeParent: repository.Lookup<Commit>(_merge.MergeCommitId)).Id;
+                var commit = await repository.CommitChangesAsync(treeChanges, _merge.Serializer, message, merger, merger, hooks: _hooks, mergeParent: repository.Lookup<Commit>(_merge.MergeCommitId)).ConfigureAwait(false);
+                return commit.Id;
             }
             else
             {

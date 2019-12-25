@@ -2,11 +2,14 @@ using GitObjectDb.Git;
 using GitObjectDb.Models;
 using GitObjectDb.Reflection;
 using GitObjectDb.Serialization;
+using GitObjectDb.Threading;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Services
 {
@@ -32,7 +35,7 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc />
-        public IObjectRepository Clone(IObjectRepositoryContainer container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
+        public async Task<IObjectRepository> CloneAsync(IObjectRepositoryContainer container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
         {
             if (container == null)
             {
@@ -47,12 +50,12 @@ namespace GitObjectDb.Services
                 throw new ArgumentNullException(nameof(repositoryDescription));
             }
 
-            Repository.Init(repositoryDescription.Path);
-            return _repositoryProvider.Execute(repositoryDescription, r =>
+            await RepositoryTaskScheduler.ExecuteAsync(() => Repository.Init(repositoryDescription.Path)).ConfigureAwait(false);
+            return await _repositoryProvider.ExecuteAsync(repositoryDescription, async r =>
             {
                 Clone(repository, r, commitId);
-                return LoadFrom(container, repositoryDescription, r, commitId);
-            });
+                return await LoadFromAsync(container, repositoryDescription, r, commitId).ConfigureAwait(false);
+            }).ConfigureAwait(false);
         }
 
         private static void Clone(string repository, IRepository r, ObjectId commitId = null)
@@ -72,14 +75,14 @@ namespace GitObjectDb.Services
         }
 
         /// <inheritdoc />
-        public TRepository Clone<TRepository>(IObjectRepositoryContainer<TRepository> container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
+        public async Task<TRepository> CloneAsync<TRepository>(IObjectRepositoryContainer<TRepository> container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
             where TRepository : class, IObjectRepository
         {
-            return (TRepository)Clone((IObjectRepositoryContainer)container, repository, repositoryDescription, commitId);
+            return (TRepository)await CloneAsync((IObjectRepositoryContainer)container, repository, repositoryDescription, commitId).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public IObjectRepository LoadFrom(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, ObjectId commitId = null)
+        public async Task<IObjectRepository> LoadFromAsync(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, ObjectId commitId = null)
         {
             if (container == null)
             {
@@ -90,11 +93,23 @@ namespace GitObjectDb.Services
                 throw new ArgumentNullException(nameof(repositoryDescription));
             }
 
-            return _repositoryProvider.Execute(repositoryDescription, repository =>
-                LoadFrom(container, repositoryDescription, repository, commitId));
+            return await _repositoryProvider.ExecuteAsync(repositoryDescription, repository =>
+                LoadFromAsync(container, repositoryDescription, repository, commitId)).ConfigureAwait(false);
         }
 
-        private IObjectRepository LoadFrom(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IRepository repository, ObjectId commitId = null)
+        private async Task<IObjectRepository> LoadFromAsync(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, IRepository repository, ObjectId commitId = null)
+        {
+            var currentCommit = GetCurrentCommit(repository, ref commitId);
+            var entry = currentCommit[FileSystemStorage.DataFile];
+
+            var instance = (IObjectRepository)await LoadEntryAsync(container, commitId, entry, string.Empty, RelativeFileDataResolver).ConfigureAwait(false);
+            instance.SetRepositoryData(repositoryDescription, commitId);
+            return instance;
+
+            string RelativeFileDataResolver(string relativePath) => (currentCommit[relativePath]?.Target as Blob)?.GetContentText() ?? string.Empty;
+        }
+
+        private static Commit GetCurrentCommit(IRepository repository, ref ObjectId commitId)
         {
             Commit currentCommit;
             if (commitId == null)
@@ -107,25 +122,22 @@ namespace GitObjectDb.Services
                 currentCommit = repository.Lookup<Commit>(commitId);
             }
 
-            var instance = (IObjectRepository)LoadEntry(container, commitId, currentCommit[FileSystemStorage.DataFile], string.Empty,
-                relativePath => (currentCommit[relativePath]?.Target as Blob)?.GetContentText() ?? string.Empty);
-            instance.SetRepositoryData(repositoryDescription, commitId);
-            return instance;
+            return currentCommit;
         }
 
         /// <inheritdoc />
-        public TRepository LoadFrom<TRepository>(IObjectRepositoryContainer<TRepository> container, RepositoryDescription repositoryDescription, ObjectId commitId = null)
+        public async Task<TRepository> LoadFromAsync<TRepository>(IObjectRepositoryContainer<TRepository> container, RepositoryDescription repositoryDescription, ObjectId commitId = null)
             where TRepository : class, IObjectRepository
         {
-            return (TRepository)LoadFrom((IObjectRepositoryContainer)container, repositoryDescription, commitId);
+            return (TRepository)await LoadFromAsync((IObjectRepositoryContainer)container, repositoryDescription, commitId).ConfigureAwait(false);
         }
 
-        private IModelObject LoadEntry(IObjectRepositoryContainer container, ObjectId commitId, TreeEntry entry, string path, Func<string, string> relativeFileDataResolver)
+        private async Task<IModelObject> LoadEntryAsync(IObjectRepositoryContainer container, ObjectId commitId, TreeEntry entry, string path, Func<string, string> relativeFileDataResolver)
         {
             var context = new ModelObjectSerializationContext(container, ResolveChildren);
             var serializer = _repositorySerializerFactory(context);
-            var blob = (Blob)entry.Target;
-            return serializer.Deserialize(blob.GetContentStream(), relativeFileDataResolver);
+            var content = await RepositoryTaskScheduler.ExecuteAsync(() => ((Blob)entry.Target).GetContentText()).ConfigureAwait(false);
+            return serializer.Deserialize(content, relativeFileDataResolver);
 
             ILazyChildren ResolveChildren(Type type, string propertyName)
             {
@@ -140,28 +152,40 @@ namespace GitObjectDb.Services
         }
 
         private ILazyChildren LoadEntryChildren(IObjectRepositoryContainer container, ObjectId commitId, string path, ChildPropertyInfo childProperty) =>
-            LazyChildrenHelper.Create(childProperty, (parent, repository) =>
+            LazyChildrenHelper.Create(childProperty, async (parent, repository) =>
             {
                 var childPath = string.IsNullOrEmpty(path) ? childProperty.FolderName : $"{path}/{childProperty.FolderName}";
                 var commit = repository.Lookup<Commit>(commitId);
                 var entry = commit[childPath];
                 if (entry == null)
                 {
-                    return Enumerable.Empty<IModelObject>();
+                    return ImmutableList.Create<IModelObject>();
                 }
                 var subTree = (Tree)entry.Target;
                 return subTree.Any() ?
-                    LoadEntryChildren(container, commitId, childPath, subTree) :
-                    Enumerable.Empty<IModelObject>();
+                    await LoadEntryChildrenAsync(container, commitId, childPath, subTree).ConfigureAwait(false) :
+                    ImmutableList.Create<IModelObject>();
             });
 
-        private IEnumerable<IModelObject> LoadEntryChildren(IObjectRepositoryContainer container, ObjectId commitId, string childPath, Tree subTree) =>
-            from c in subTree
-            where c.TargetType == TreeEntryTargetType.Tree
-            let childTree = (Tree)c.Target
-            let data = childTree[FileSystemStorage.DataFile]
-            where data != null
-            select LoadEntry(container, commitId, data, $"{childPath}/{c.Name}",
-                relativePath => (subTree[relativePath]?.Target as Blob)?.GetContentText() ?? string.Empty);
+        private async Task<IImmutableList<IModelObject>> LoadEntryChildrenAsync(IObjectRepositoryContainer container, ObjectId commitId, string childPath, Tree subTree)
+        {
+            var result = ImmutableList.CreateBuilder<IModelObject>();
+            foreach (var c in subTree)
+            {
+                if (c.TargetType == TreeEntryTargetType.Tree)
+                {
+                    var childTree = (Tree)c.Target;
+                    var data = childTree[FileSystemStorage.DataFile];
+                    if (data == null)
+                    {
+                        continue;
+                    }
+                    var entry = await LoadEntryAsync(container, commitId, data, $"{childPath}/{c.Name}",
+                        relativePath => (subTree[relativePath]?.Target as Blob)?.GetContentText() ?? string.Empty).ConfigureAwait(false);
+                    result.Add(entry);
+                }
+            }
+            return result.ToImmutable();
+        }
     }
 }

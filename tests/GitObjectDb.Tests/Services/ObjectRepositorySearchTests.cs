@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests.Services
 {
@@ -17,13 +18,13 @@ namespace GitObjectDb.Tests.Services
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void Search(IObjectRepositorySearch search, ObjectRepository repository, Field field, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
+        public async Task SearchAsync(IObjectRepositorySearch search, ObjectRepository repository, Field field, IObjectRepositoryContainer<ObjectRepository> container, Signature signature, string message)
         {
             // Arrange
-            container.AddRepository(repository, signature, message);
+            await container.AddRepositoryAsync(repository, signature, message).ConfigureAwait(false);
 
             // Act
-            var found = search.Grep(container, field.Id.ToString()).ToList();
+            var found = await search.GrepAsync(container, field.Id.ToString()).ToListAsync();
 
             // Assert
             Assert.That(found, Is.Not.Empty);

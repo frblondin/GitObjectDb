@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models
 {
@@ -28,31 +29,18 @@ namespace GitObjectDb.Models
     {
         private readonly IObjectRepositoryLoader _repositoryLoader;
         private readonly ComputeTreeChangesFactory _computeTreeChangesFactory;
-        private readonly ObjectRepositoryMergeFactory _objectRepositoryMergeFactory;
-        private readonly ObjectRepositoryRebaseFactory _objectRepositoryRebaseFactory;
-        private readonly ObjectRepositoryCherryPickFactory _objectRepositoryCherryPickFactory;
+        private readonly ObjectRepositoryMergeFactoryAsync _objectRepositoryMergeFactory;
+        private readonly ObjectRepositoryRebaseFactoryAsync _objectRepositoryRebaseFactory;
+        private readonly ObjectRepositoryCherryPickFactoryAsync _objectRepositoryCherryPickFactory;
         private readonly IRepositoryProvider _repositoryProvider;
         private readonly GitHooks _hooks;
         private readonly ObjectRepositorySerializerFactory _serializerFactory;
         private readonly ILogger<ObjectRepositoryContainer> _logger;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ObjectRepositoryContainer{TRepository}"/> class.
-        /// </summary>
-        /// <param name="path">The path.</param>
-        /// <param name="repositoryLoader">The repository loader.</param>
-        /// <param name="computeTreeChangesFactory">The <see cref="IComputeTreeChanges"/> factory.</param>
-        /// <param name="objectRepositoryMergeFactory">The <see cref="IObjectRepositoryMerge"/> factory.</param>
-        /// <param name="objectRepositoryRebaseFactory">The <see cref="IObjectRepositoryRebase"/> factory.</param>
-        /// <param name="objectRepositoryCherryPickFactory">The <see cref="IObjectRepositoryCherryPick"/> factory.</param>
-        /// <param name="repositoryProvider">The repository provider.</param>
-        /// <param name="hooks">The hooks.</param>
-        /// <param name="serializerFactory">The <see cref="IObjectRepositorySerializer"/> factory.</param>
-        /// <param name="logger">The logger.</param>
-        public ObjectRepositoryContainer(string path,
+        internal ObjectRepositoryContainer(string path,
             IObjectRepositoryLoader repositoryLoader, ComputeTreeChangesFactory computeTreeChangesFactory,
-            ObjectRepositoryMergeFactory objectRepositoryMergeFactory, ObjectRepositoryRebaseFactory objectRepositoryRebaseFactory,
-            ObjectRepositoryCherryPickFactory objectRepositoryCherryPickFactory,
+            ObjectRepositoryMergeFactoryAsync objectRepositoryMergeFactory, ObjectRepositoryRebaseFactoryAsync objectRepositoryRebaseFactory,
+            ObjectRepositoryCherryPickFactoryAsync objectRepositoryCherryPickFactory,
             IRepositoryProvider repositoryProvider, GitHooks hooks,
             ObjectRepositorySerializerFactory serializerFactory, ILogger<ObjectRepositoryContainer> logger)
         {
@@ -68,8 +56,6 @@ namespace GitObjectDb.Models
 
             Path = path ?? throw new ArgumentNullException(nameof(path));
             Directory.CreateDirectory(path);
-
-            Repositories = LoadRepositories();
 
             _logger.ContainerCreated(path);
         }
@@ -91,7 +77,7 @@ namespace GitObjectDb.Models
         /// <inheritdoc />
         protected override IEnumerable<IObjectRepository> GetRepositoriesCore() => Repositories;
 
-        private IImmutableSet<TRepository> LoadRepositories()
+        internal async Task LoadRepositoriesAsync()
         {
             var builder = ImmutableSortedSet.CreateBuilder(ObjectRepositoryIdComparer<TRepository>.Instance);
             foreach (var repositoryPath in Directory.EnumerateDirectories(Path))
@@ -99,10 +85,10 @@ namespace GitObjectDb.Models
                 if (Repository.IsValid(repositoryPath))
                 {
                     var description = new RepositoryDescription(repositoryPath);
-                    builder.Add(_repositoryLoader.LoadFrom(this, description));
+                    builder.Add(await _repositoryLoader.LoadFromAsync(this, description).ConfigureAwait(false));
                 }
             }
-            return builder.ToImmutable();
+            Repositories = builder.ToImmutable();
         }
 
         /// <inheritdoc />
@@ -110,7 +96,7 @@ namespace GitObjectDb.Models
             Repositories.FirstOrDefault(r => r.Id == id);
 
         /// <inheritdoc />
-        public TRepository Clone(string repository, ObjectId commitId = null, Func<OdbBackend> backend = null)
+        public async Task<TRepository> CloneAsync(string repository, ObjectId commitId = null, Func<OdbBackend> backend = null)
         {
             if (repository == null)
             {
@@ -122,7 +108,7 @@ namespace GitObjectDb.Models
                 // Clone & load in a temp folder to extract the repository id
                 var tempPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), UniqueId.CreateNew().ToString());
                 var tempRepoDescription = new RepositoryDescription(tempPath, backend);
-                var cloned = _repositoryLoader.Clone(this, repository, tempRepoDescription, commitId);
+                var cloned = await _repositoryLoader.CloneAsync(this, repository, tempRepoDescription, commitId).ConfigureAwait(false);
 
                 // Evict temp repository from repo provider
                 _repositoryProvider.Evict(tempRepoDescription);
@@ -132,12 +118,12 @@ namespace GitObjectDb.Models
                 Directory.Move(tempPath, path);
 
                 var repositoryDescription = new RepositoryDescription(path, backend);
-                return ReloadRepository(repositoryDescription, cloned.CommitId);
+                return await ReloadRepositoryAsync(repositoryDescription, cloned.CommitId).ConfigureAwait(false);
             }
         }
 
         /// <inheritdoc />
-        public TRepository AddRepository(TRepository repository, Signature signature, string message, Func<OdbBackend> backend = null, bool isBare = false)
+        public async Task<TRepository> AddRepositoryAsync(TRepository repository, Signature signature, string message, Func<OdbBackend> backend = null, bool isBare = false)
         {
             if (repository == null)
             {
@@ -158,17 +144,17 @@ namespace GitObjectDb.Models
                 EnsureNewRepository(repository, repositoryDescription);
                 LibGit2Sharp.Repository.Init(repositoryDescription.Path, isBare);
 
-                return _repositoryProvider.Execute(repositoryDescription, r =>
+                return await _repositoryProvider.ExecuteAsync(repositoryDescription, async r =>
                 {
-                    var all = repository.Flatten().Select(o => new ObjectRepositoryEntryChanges(o.GetDataPath(), ChangeKind.Added, @new: o));
+                    var all = repository.FlattenAsync().Select(o => new ObjectRepositoryEntryChanges(o.GetDataPath(), ChangeKind.Added, @new: o));
                     var changes = new ObjectRepositoryChangeCollection(repository, all.ToImmutableList());
-                    var commit = r.CommitChanges(changes, _serializerFactory(), message, signature, signature, _hooks);
+                    var commit = await r.CommitChangesAsync(changes, _serializerFactory(), message, signature, signature, _hooks).ConfigureAwait(false);
                     if (commit == null)
                     {
                         return null;
                     }
-                    return ReloadRepository(repositoryDescription, commit.Id);
-                });
+                    return await ReloadRepositoryAsync(repositoryDescription, commit.Id).ConfigureAwait(false);
+                }).ConfigureAwait(false);
             }
         }
 
@@ -185,7 +171,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public TRepository Commit(IObjectRepository repository, Signature signature, string message, CommitOptions options = null)
+        public async Task<TRepository> CommitAsync(IObjectRepository repository, Signature signature, string message, CommitOptions options = null)
         {
             if (repository == null)
             {
@@ -206,7 +192,7 @@ namespace GitObjectDb.Models
                     throw new NotImplementedException("The repository to update could not be found.");
 
                 var repositoryDescription = previousRepository.RepositoryDescription;
-                return previousRepository.Execute(r =>
+                return await previousRepository.ExecuteAsync(async r =>
                 {
                     EnsureHeadCommit(r, previousRepository);
 
@@ -214,19 +200,20 @@ namespace GitObjectDb.Models
                     var changes = computeChanges.Compare(previousRepository, repository);
                     if (changes.Any())
                     {
-                        var commit = r.CommitChanges(changes, _serializerFactory(), message, signature, signature, _hooks, options).Id;
-                        return (TRepository)ReloadRepository(previousRepository, commit);
+                        var commit = await r.CommitChangesAsync(changes, _serializerFactory(), message, signature, signature, _hooks, options).ConfigureAwait(false);
+                        var commitId = commit.Id;
+                        return (TRepository)await ReloadRepositoryAsync(previousRepository, commitId).ConfigureAwait(false);
                     }
                     else
                     {
                         return previousRepository;
                     }
-                });
+                }).ConfigureAwait(false);
             }
         }
 
         /// <inheritdoc />
-        public void Push(UniqueId id, string remoteName = null, PushOptions options = null)
+        public async Task PushAsync(UniqueId id, string remoteName = null, PushOptions options = null)
         {
             if (options == null)
             {
@@ -236,7 +223,7 @@ namespace GitObjectDb.Models
             var repository = this[id];
             using (_logger.BeginScope("Pushing repository '{Repository}' changes.", repository.Id))
             {
-                repository.Execute(r =>
+                await repository.ExecuteAsync(r =>
                 {
                     EnsureHeadCommit(r, repository);
 
@@ -252,7 +239,7 @@ namespace GitObjectDb.Models
                     r.Network.Push(remote, r.Head.CanonicalName, options);
 
                     SetRemoteBranchIfRequired(remoteName, r);
-                });
+                }).ConfigureAwait(false);
             }
         }
 
@@ -268,12 +255,12 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        internal override IObjectRepository ReloadRepository(IObjectRepository previousRepository, ObjectId commit = null) =>
-            ReloadRepository(previousRepository.RepositoryDescription, commit);
+        internal override async Task<IObjectRepository> ReloadRepositoryAsync(IObjectRepository previousRepository, ObjectId commit = null) =>
+            await ReloadRepositoryAsync(previousRepository.RepositoryDescription, commit).ConfigureAwait(false);
 
-        private TRepository ReloadRepository(RepositoryDescription repositoryDescription, ObjectId commit = null)
+        private async Task<TRepository> ReloadRepositoryAsync(RepositoryDescription repositoryDescription, ObjectId commit = null)
         {
-            var result = _repositoryLoader.LoadFrom(this, repositoryDescription, commit);
+            var result = await _repositoryLoader.LoadFromAsync(this, repositoryDescription, commit).ConfigureAwait(false);
             return AddOrReplace(result);
         }
 
@@ -293,7 +280,7 @@ namespace GitObjectDb.Models
         }
 
         /// <inheritdoc />
-        public TRepository Checkout(UniqueId id, string branchName, bool createNewBranch = false, string committish = null)
+        public async Task<TRepository> CheckoutAsync(UniqueId id, string branchName, bool createNewBranch = false, string committish = null)
         {
             if (branchName == null)
             {
@@ -303,7 +290,7 @@ namespace GitObjectDb.Models
             var repository = this[id];
             using (_logger.BeginScope("Checking out repository '{Repository}' at '{BranchName}'.", repository.Id, branchName))
             {
-                return repository.Execute(r =>
+                return await repository.ExecuteAsync(async r =>
                 {
                     var head = r.Head;
                     var branch = r.Branches[branchName];
@@ -323,14 +310,14 @@ namespace GitObjectDb.Models
 
                     r.Refs.MoveHeadTarget(branch.CanonicalName);
 
-                    var newRepository = _repositoryLoader.LoadFrom(this, repository.RepositoryDescription, branch.Tip.Id);
+                    var newRepository = await _repositoryLoader.LoadFromAsync(this, repository.RepositoryDescription, branch.Tip.Id).ConfigureAwait(false);
                     return AddOrReplace(newRepository);
-                });
+                }).ConfigureAwait(false);
             }
         }
 
         /// <inheritdoc />
-        public TRepository Fetch(UniqueId id, FetchOptions options = null)
+        public async Task<TRepository> FetchAsync(UniqueId id, FetchOptions options = null)
         {
             if (options == null)
             {
@@ -340,19 +327,19 @@ namespace GitObjectDb.Models
             var repository = this[id];
             using (_logger.BeginScope("Fetching repository '{Repository}'.", repository.Id))
             {
-                return repository.Execute(r =>
+                return await repository.ExecuteAsync(async r =>
                 {
                     var concrete = r as Repository ??
                         throw new NotSupportedException($"Object of type {nameof(Repository)} expected.");
                     Commands.Fetch(concrete, r.Head.RemoteName, Array.Empty<string>(), options, null);
 
-                    return _repositoryLoader.LoadFrom(this, repository.RepositoryDescription, r.Head.TrackedBranch.Tip.Id);
-                });
+                    return await _repositoryLoader.LoadFromAsync(this, repository.RepositoryDescription, r.Head.TrackedBranch.Tip.Id).ConfigureAwait(false);
+                }).ConfigureAwait(false);
             }
         }
 
         /// <inheritdoc />
-        public void FetchAll(UniqueId id, FetchOptions options = null)
+        public async Task FetchAllAsync(UniqueId id, FetchOptions options = null)
         {
             if (options == null)
             {
@@ -362,7 +349,7 @@ namespace GitObjectDb.Models
             var repository = this[id];
             using (_logger.BeginScope("Fetching all remotes for repository '{Repository}'.", repository.Id))
             {
-                repository.RepositoryProvider.Execute(repository.RepositoryDescription, r =>
+                await repository.RepositoryProvider.ExecuteAsync(repository.RepositoryDescription, r =>
                 {
                     var concrete = r as Repository ??
                         throw new NotSupportedException($"Object of type {nameof(Repository)} expected.");
@@ -371,12 +358,12 @@ namespace GitObjectDb.Models
                         var refSpecs = remote.FetchRefSpecs.Select(x => x.Specification);
                         Commands.Fetch(concrete, remote.Name, refSpecs, options, null);
                     }
-                });
+                }).ConfigureAwait(false);
             }
         }
 
         /// <inheritdoc />
-        public IObjectRepositoryMerge Pull(UniqueId id, FetchOptions options = null)
+        public async Task<IObjectRepositoryMerge> PullAsync(UniqueId id, FetchOptions options = null)
         {
             if (options == null)
             {
@@ -386,20 +373,20 @@ namespace GitObjectDb.Models
             var repository = this[id];
             using (_logger.BeginScope("Pulling repository '{Repository}'.", repository.Id))
             {
-                var (originTip, remoteBranch) = repository.Execute(r =>
+                var (originTip, remoteBranch) = await repository.ExecuteAsync(r =>
                 {
                     var concrete = r as Repository ??
                         throw new NotSupportedException($"Object of type {nameof(Repository)} expected.");
                     Commands.Fetch(concrete, r.Head.RemoteName, Array.Empty<string>(), options, null);
 
                     return (r.Head.TrackedBranch.Tip.Id, r.Head.TrackedBranch.FriendlyName);
-                });
-                return _objectRepositoryMergeFactory(repository, originTip, remoteBranch);
+                }).ConfigureAwait(false);
+                return await _objectRepositoryMergeFactory(repository, originTip, remoteBranch).ConfigureAwait(false);
             }
         }
 
         /// <inheritdoc />
-        public IObjectRepositoryMerge Merge(UniqueId id, string branchName)
+        public async Task<IObjectRepositoryMerge> MergeAsync(UniqueId id, string branchName)
         {
             if (branchName == null)
             {
@@ -409,13 +396,13 @@ namespace GitObjectDb.Models
             var repository = this[id];
             using (_logger.BeginScope("Merging repository '{Repository}' with '{BranchName}'.", repository.Id, branchName))
             {
-                var commitId = repository.Execute(r => r.Branches[branchName].Tip.Id);
-                return _objectRepositoryMergeFactory(repository, commitId, branchName);
+                var commitId = await repository.ExecuteAsync(r => r.Branches[branchName].Tip.Id).ConfigureAwait(false);
+                return await _objectRepositoryMergeFactory(repository, commitId, branchName).ConfigureAwait(false);
             }
         }
 
         /// <inheritdoc />
-        public IObjectRepositoryRebase Rebase(UniqueId id, string branchName)
+        public async Task<IObjectRepositoryRebase> RebaseAsync(UniqueId id, string branchName)
         {
             if (branchName == null)
             {
@@ -425,13 +412,13 @@ namespace GitObjectDb.Models
             var repository = this[id];
             using (_logger.BeginScope("Merging repository '{Repository}' with '{BranchName}'.", repository.Id, branchName))
             {
-                var commitId = repository.Execute(r => r.Branches[branchName].Tip.Id);
-                return _objectRepositoryRebaseFactory(repository, commitId, branchName);
+                var commitId = await repository.ExecuteAsync(r => r.Branches[branchName].Tip.Id).ConfigureAwait(false);
+                return await _objectRepositoryRebaseFactory(repository, commitId, branchName).ConfigureAwait(false);
             }
         }
 
         /// <inheritdoc />
-        public IObjectRepositoryCherryPick CherryPick(UniqueId id, ObjectId commitId)
+        public async Task<IObjectRepositoryCherryPick> CherryPickAsync(UniqueId id, ObjectId commitId)
         {
             if (commitId == null)
             {
@@ -441,12 +428,12 @@ namespace GitObjectDb.Models
             var repository = this[id];
             using (_logger.BeginScope("Cherry picking commit '{CommitId}' in '{Repository}'.", commitId, repository.Id))
             {
-                return _objectRepositoryCherryPickFactory(repository, commitId);
+                return await _objectRepositoryCherryPickFactory(repository, commitId).ConfigureAwait(false);
             }
         }
 
         /// <inheritdoc />
         public override ValidationResult Validate(ValidationRules rules = ValidationRules.All) =>
-            new ValidationResult(Repositories.SelectMany(r => r.Validate(rules).Errors).ToList());
+            new ValidationResult(Repositories.SelectMany(r => r.ValidateAsync(rules).Errors).ToList());
     }
 }

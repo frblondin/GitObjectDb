@@ -19,7 +19,7 @@ namespace GitObjectDb.Tests.Models
         public void WithModifiesLink(ObjectRepository repository, Page newLinkedPage)
         {
             // Arrange
-            var field = repository.Flatten().OfType<Field>().First(
+            var field = repository.FlattenAsync().OfType<Field>().First(
                 f => f.Content.Match(() => false, matchLink: l => true));
 
             // Act
@@ -35,7 +35,7 @@ namespace GitObjectDb.Tests.Models
         public void WithDuplicatesImmutableObjectRepository(ObjectRepository repository, Page page, string newName)
         {
             // Act
-            var modified = repository.With(page, p => p.Name, newName);
+            var modified = repository.WithAsync(page, p => p.Name, newName);
 
             // Assert
             PAssert.IsTrue(AreFunctionnally.Equivalent<Page>(() => page == modified, nameof(Page.Name)));
@@ -46,7 +46,7 @@ namespace GitObjectDb.Tests.Models
         public void CloneableParametersGetCloned(ObjectRepository repository, string newName)
         {
             // Arrange
-            var linkField = repository.Flatten().OfType<Field>().First(f => f.Content.IsLink);
+            var linkField = repository.FlattenAsync().OfType<Field>().First(f => f.Content.IsLink);
 
             // Act
             var modified = repository.With(linkField, l => l.Name, newName);

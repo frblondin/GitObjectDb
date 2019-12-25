@@ -2,6 +2,7 @@ using GitObjectDb.Git;
 using GitObjectDb.Models;
 using LibGit2Sharp;
 using System;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Services
 {
@@ -18,7 +19,7 @@ namespace GitObjectDb.Services
         /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="commitId">The commit to load, HEAD tip is loaded if not provided.</param>
         /// <returns>The loaded instance.</returns>
-        IObjectRepository Clone(IObjectRepositoryContainer container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null);
+        Task<IObjectRepository> CloneAsync(IObjectRepositoryContainer container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null);
 
         /// <summary>
         /// Loads the instance from a Git repository.
@@ -29,7 +30,7 @@ namespace GitObjectDb.Services
         /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="commitId">The commit, HEAD tip is loaded if not provided.</param>
         /// <returns>The loaded instance.</returns>
-        TRepository Clone<TRepository>(IObjectRepositoryContainer<TRepository> container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
+        Task<TRepository> CloneAsync<TRepository>(IObjectRepositoryContainer<TRepository> container, string repository, RepositoryDescription repositoryDescription, ObjectId commitId = null)
             where TRepository : class, IObjectRepository;
 
         /// <summary>
@@ -39,7 +40,7 @@ namespace GitObjectDb.Services
         /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="commitId">The commit to load, HEAD tip is loaded if not provided.</param>
         /// <returns>The loaded instance.</returns>
-        IObjectRepository LoadFrom(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, ObjectId commitId = null);
+        Task<IObjectRepository> LoadFromAsync(IObjectRepositoryContainer container, RepositoryDescription repositoryDescription, ObjectId commitId = null);
 
         /// <summary>
         /// Loads the instance from a Git repository.
@@ -49,7 +50,7 @@ namespace GitObjectDb.Services
         /// <param name="repositoryDescription">The repository description.</param>
         /// <param name="commitId">The commit to load, HEAD tip is loaded if not provided.</param>
         /// <returns>The loaded instance.</returns>
-        TRepository LoadFrom<TRepository>(IObjectRepositoryContainer<TRepository> container, RepositoryDescription repositoryDescription, ObjectId commitId = null)
+        Task<TRepository> LoadFromAsync<TRepository>(IObjectRepositoryContainer<TRepository> container, RepositoryDescription repositoryDescription, ObjectId commitId = null)
             where TRepository : class, IObjectRepository;
     }
 }

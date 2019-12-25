@@ -58,6 +58,26 @@ namespace GitObjectDb.Serialization.Json
             }
         }
 
+        public IModelObject Deserialize(string content, Func<string, string> relativeFileDataResolver)
+        {
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+            if (relativeFileDataResolver is null)
+            {
+                throw new ArgumentNullException(nameof(relativeFileDataResolver));
+            }
+
+            using (var streamReader = new StringReader(content))
+            {
+                using (var reader = new JsonModelObjectReader(relativeFileDataResolver, streamReader))
+                {
+                    return (IModelObject)_serializer.Deserialize(reader);
+                }
+            }
+        }
+
         public IList<ModelNestedObjectInfo> Serialize(IModelObject node, StringBuilder builder)
         {
             if (node is null)

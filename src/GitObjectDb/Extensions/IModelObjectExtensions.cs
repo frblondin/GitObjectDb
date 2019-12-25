@@ -63,12 +63,12 @@ namespace GitObjectDb.Models
         /// </summary>
         /// <param name="source">The source.</param>
         /// <returns>An enumerable containing the source and its nested children.</returns>
-        internal static IEnumerable<IModelObject> Flatten(this IModelObject source)
+        internal static async IAsyncEnumerable<IModelObject> FlattenAsync(this IModelObject source)
         {
             yield return source;
-            foreach (var child in source.Children)
+            await foreach (var child in source.GetChildrenAsync())
             {
-                foreach (var flattened in child.Flatten())
+                await foreach (var flattened in child.FlattenAsync())
                 {
                     yield return flattened;
                 }

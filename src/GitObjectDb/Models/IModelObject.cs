@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models
 {
@@ -44,11 +47,6 @@ namespace GitObjectDb.Models
         string Name { get; }
 
         /// <summary>
-        /// Gets the children.
-        /// </summary>
-        IEnumerable<IModelObject> Children { get; }
-
-        /// <summary>
         /// Gets the <see cref="ObjectPath"/>.
         /// </summary>
         ObjectPath Path { get; }
@@ -61,10 +59,17 @@ namespace GitObjectDb.Models
         void AttachToParent(IModelObject parent);
 
         /// <summary>
+        /// Gets the children.
+        /// </summary>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> that will be assigned to the new task.</param>
+        /// <returns>The children.</returns>
+        IAsyncEnumerable<IModelObject> GetChildrenAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Validates the specified rules.
         /// </summary>
         /// <param name="rules">The rules.</param>
         /// <returns>A <see cref="ValidationResult"/> object containing any validation failures.</returns>
-        ValidationResult Validate(ValidationRules rules = ValidationRules.All);
+        Task<ValidationResult> ValidateAsync(ValidationRules rules = ValidationRules.All);
     }
 }

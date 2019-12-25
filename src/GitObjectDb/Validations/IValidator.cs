@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+
 namespace GitObjectDb.Validations
 {
     /// <summary>
@@ -10,6 +12,6 @@ namespace GitObjectDb.Validations
         /// </summary>
         /// <param name="context">The context.</param>
         /// <returns>The validation result.</returns>
-        ValidationResult Validate(ValidationContext context);
+        Task<ValidationResult> ValidateAsync(ValidationContext context);
     }
 }

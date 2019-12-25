@@ -1,48 +1,88 @@
 using GitObjectDb.Attributes;
+using GitObjectDb.Git;
+using GitObjectDb.Threading;
 using LibGit2Sharp;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models
 {
-    /// <inheritdoc />
-    [DebuggerDisplay("AreChildrenLoaded = {AreChildrenLoaded}")]
-#pragma warning disable CA1710 // Identifiers should have correct suffix
-    public sealed class LazyChildren<TChild> : ILazyChildren<TChild>
-#pragma warning restore CA1710 // Identifiers should have correct suffix
+    /// <summary>
+    /// Provides support for asynchronous lazy children loading.
+    /// </summary>
+    /// <typeparam name="TChild">The type of the children.</typeparam>
+    [DebuggerDisplay("Id = {Id}, State = {GetStateForDebugger}")]
+    [DebuggerTypeProxy(typeof(LazyChildren<>.DebugView))]
+    public sealed partial class LazyChildren<TChild> : ILazyChildren<TChild>
         where TChild : class, IModelObject
     {
         private static readonly string _nullReturnedValueExceptionMessage =
             $"Value returned by {nameof(LazyChildren<TChild>)} was null.";
 
-        private readonly Func<IModelObject, IRepository, IEnumerable<IModelObject>> _factoryWithRepo;
-        private readonly Func<IModelObject, IEnumerable<TChild>> _factory;
-        private IImmutableList<TChild> _children;
-        private bool _parentAttachedInChildren;
+        /// <summary>
+        /// The synchronization object protecting <c>_instance</c>.
+        /// </summary>
+        private readonly object _mutex = new object();
+
+        /// <summary>
+        /// The underlying lazy task.
+        /// </summary>
+        private Lazy<Task<IImmutableList<TChild>>> _instance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LazyChildren{TChild}"/> class.
         /// </summary>
         /// <param name="factory">The factory.</param>
-        public LazyChildren(Func<IModelObject, IRepository, IEnumerable<IModelObject>> factory)
+        public LazyChildren(Func<IModelObject, IRepository, Task<IImmutableList<IModelObject>>> factory)
         {
-            _factoryWithRepo = factory ?? throw new ArgumentNullException(nameof(factory));
+            if (factory is null)
+            {
+                throw new ArgumentNullException(nameof(factory));
+            }
+
+            var internalFactory = RetryOnFailure(async () =>
+            {
+                ThrowIfNoParent();
+
+                var objectRepository = Parent.Repository;
+                return await objectRepository.Repository.ExecuteAsync(
+                    async repository =>
+                    {
+                        var nodes = (await factory(Parent, repository).ConfigureAwait(false)) ?? throw new GitObjectDbException(_nullReturnedValueExceptionMessage);
+                        return AttachChildrenToParent(Parent, nodes.Cast<TChild>().ToImmutableList());
+                    }).ConfigureAwait(false);
+            });
+            _instance = new Lazy<Task<IImmutableList<TChild>>>(internalFactory);
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LazyChildren{TChild}"/> class.
         /// </summary>
-        /// <param name="factory">The factory.</param>
-        public LazyChildren(Func<IModelObject, IImmutableList<TChild>> factory)
+        /// <param name="factory">The asynchronous delegate that is invoked to produce the value when it is needed. May not be <c>null</c>.</param>
+        public LazyChildren(Func<IModelObject, Task<IImmutableList<TChild>>> factory)
         {
-            _factory = factory ?? throw new ArgumentNullException(nameof(factory));
+            if (factory is null)
+            {
+                throw new ArgumentNullException(nameof(factory));
+            }
+
+            var internalFactory = RetryOnFailure(async () =>
+            {
+                ThrowIfNoParent();
+
+                return await RepositoryTaskScheduler.ExecuteAsync(() => factory(Parent)).ConfigureAwait(false);
+            });
+            _instance = new Lazy<Task<IImmutableList<TChild>>>(internalFactory);
         }
 
         /// <summary>
@@ -51,7 +91,17 @@ namespace GitObjectDb.Models
         /// <param name="value">The value.</param>
         public LazyChildren(IImmutableList<TChild> value)
         {
-            _children = value ?? throw new ArgumentNullException(nameof(value));
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            _instance = new Lazy<Task<IImmutableList<TChild>>>(() =>
+            {
+                ThrowIfNoParent();
+
+                return System.Threading.Tasks.Task.FromResult(AttachChildrenToParent(Parent, value));
+            });
         }
 
         /// <summary>
@@ -66,43 +116,78 @@ namespace GitObjectDb.Models
         public IModelObject Parent { get; private set; }
 
         /// <inheritdoc />
-        public bool AreChildrenLoaded => _children != null;
-
-        /// <inheritdoc />
         public bool ForceVisit { get; private set; }
 
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        IImmutableList<TChild> Children
+        /// <inheritdoc />
+        public bool IsStarted
         {
             get
             {
-                ThrowIfNoParent();
-
-                try
+                lock (_mutex)
                 {
-                    if (_children != null)
-                    {
-                        return _children;
-                    }
-
-                    var initialized = false;
-                    var syncLock = (object)_factoryWithRepo ?? _factory;
-                    return LazyInitializer.EnsureInitialized(ref _children, ref initialized, ref syncLock,
-                        () => GetValueFromFactory(Parent).ToImmutableList());
-                }
-                finally
-                {
-                    AttachChildrenToParentIfNeeded(Parent);
+                    return _instance.IsValueCreated;
                 }
             }
         }
 
         /// <inheritdoc />
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public int Count => Children.Count;
+        public Task<IImmutableList<TChild>> Task
+        {
+            get
+            {
+                lock (_mutex)
+                {
+                    return _instance.Value;
+                }
+            }
+        }
+
+        private Func<Task<IImmutableList<TChild>>> RetryOnFailure(Func<Task<IImmutableList<TChild>>> factory)
+        {
+            return async () =>
+            {
+                try
+                {
+                    return await factory().ConfigureAwait(false);
+                }
+                catch
+                {
+                    lock (_mutex)
+                    {
+                        _instance = new Lazy<Task<IImmutableList<TChild>>>(factory);
+                    }
+                    throw;
+                }
+            };
+        }
 
         /// <inheritdoc />
-        public TChild this[int index] => Children[index];
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public TaskAwaiter<IImmutableList<TChild>> GetAwaiter()
+        {
+            return Task.GetAwaiter();
+        }
+
+        /// <inheritdoc />
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public ConfiguredTaskAwaitable<IImmutableList<TChild>> ConfigureAwait(bool continueOnCapturedContext)
+        {
+            return Task.ConfigureAwait(continueOnCapturedContext);
+        }
+
+        /// <inheritdoc />
+        public void Start()
+        {
+        }
+
+        TaskAwaiter<IEnumerable<IModelObject>> ILazyChildren.GetAwaiter() =>
+            GetEnumerableTask().GetAwaiter();
+
+        ConfiguredTaskAwaitable<IEnumerable<IModelObject>> ILazyChildren.ConfigureAwait(bool continueOnCapturedContext) =>
+            GetEnumerableTask().ConfigureAwait(continueOnCapturedContext);
+
+        private async Task<IEnumerable<IModelObject>> GetEnumerableTask() =>
+            await Task.ConfigureAwait(false);
 
         void ThrowIfNoParent()
         {
@@ -112,38 +197,13 @@ namespace GitObjectDb.Models
             }
         }
 
-        IEnumerable<TChild> GetValueFromFactory(IModelObject parent)
+        private IImmutableList<TChild> AttachChildrenToParent(IModelObject parent, IImmutableList<TChild> children)
         {
-            if (_factory != null)
-            {
-                return _factory(parent) ?? throw new GitObjectDbException(_nullReturnedValueExceptionMessage);
-            }
-            else if (_factoryWithRepo != null)
-            {
-                var objectRepository = parent.Repository;
-                return objectRepository.RepositoryProvider.Execute(
-                    objectRepository.RepositoryDescription,
-                    repository =>
-                    {
-                        var nodes = _factoryWithRepo(parent, repository) ?? throw new GitObjectDbException(_nullReturnedValueExceptionMessage);
-                        return nodes.Cast<TChild>();
-                    });
-            }
-            throw new GitObjectDbException("Factory cannot be null.");
-        }
-
-        void AttachChildrenToParentIfNeeded(IModelObject parent)
-        {
-            if (_parentAttachedInChildren || _children == null)
-            {
-                return;
-            }
-
-            foreach (var child in _children)
+            foreach (var child in children)
             {
                 child.AttachToParent(parent);
             }
-            _parentAttachedInChildren = true;
+            return children;
         }
 
         /// <inheritdoc />
@@ -155,8 +215,8 @@ namespace GitObjectDb.Models
                 throw new ArgumentNullException(nameof(update));
             }
 
-            return new LazyChildren<TChild>(parent =>
-                Children
+            return new LazyChildren<TChild>(async parent =>
+                (await this)
                 .Except(deleted?.Cast<TChild>() ?? Enumerable.Empty<TChild>())
                 .Select(c => (TChild)update.Invoke(c) ?? throw new ObjectNotFoundException("No child returned while cloning children."))
                 .Union(added?.Cast<TChild>() ?? Enumerable.Empty<TChild>())
@@ -180,14 +240,7 @@ namespace GitObjectDb.Models
             }
 
             Parent = parent;
-            AttachChildrenToParentIfNeeded(parent);
             return this;
         }
-
-        /// <inheritdoc />
-        public IEnumerator<TChild> GetEnumerator() => Children.GetEnumerator();
-
-        /// <inheritdoc />
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

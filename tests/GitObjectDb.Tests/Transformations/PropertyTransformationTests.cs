@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests.Transformations
 {
@@ -30,14 +31,6 @@ namespace GitObjectDb.Tests.Transformations
         {
             Assert.Throws<GitObjectDbException>(() =>
                 new PropertyTransformation(page, CreateExpression<Page>(p => p.Id), null));
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void PropertyTransformationFailsForIndexedProperties(Page page)
-        {
-            Assert.Throws<GitObjectDbException>(() =>
-                new PropertyTransformation(page, CreateExpression<Page>(p => p.Fields[0].Name), null));
         }
 
         [Test]

@@ -4,6 +4,7 @@ using GitObjectDb.Models.Compare;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Services
 {
@@ -26,7 +27,7 @@ namespace GitObjectDb.Services
         /// <param name="oldCommitId">The old commit id.</param>
         /// <param name="newCommitId">The new commit id.</param>
         /// <returns>A <see cref="ObjectRepositoryChangeCollection"/> containing all computed changes.</returns>
-        ObjectRepositoryChangeCollection Compare(ObjectId oldCommitId, ObjectId newCommitId);
+        Task<ObjectRepositoryChangeCollection> CompareAsync(ObjectId oldCommitId, ObjectId newCommitId);
 
         /// <summary>
         /// Compares two <see cref="IObjectRepository"/> instances and generates a new <see cref="TreeDefinition"/> instance containing the tree changes to be committed.

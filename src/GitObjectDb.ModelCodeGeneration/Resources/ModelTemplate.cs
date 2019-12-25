@@ -41,10 +41,6 @@ public partial class ModelTemplate : GitObjectDb.Models.IModelObject
     public string Name { get; }
 
     /// <inheritdoc />
-    [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
-    public System.Collections.Generic.IEnumerable<GitObjectDb.Models.IModelObject> Children => System.Linq.Enumerable.SelectMany(_dataAccessor.ChildProperties, p => p.Accessor(this));
-
-    /// <inheritdoc />
     public GitObjectDb.Models.IModelObject Parent { get; private set; }
 
     /// <inheritdoc />
@@ -89,10 +85,24 @@ public partial class ModelTemplate : GitObjectDb.Models.IModelObject
     }
 
     /// <inheritdoc />
-    public GitObjectDb.Validations.ValidationResult Validate(GitObjectDb.ValidationRules rules = GitObjectDb.ValidationRules.All)
+    public async System.Collections.Generic.IAsyncEnumerable<GitObjectDb.Models.IModelObject> GetChildrenAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken)
+    {
+        foreach (var property in _dataAccessor.ChildProperties)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            foreach (var child in await property.Accessor(this))
+            {
+                yield return child;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public async System.Threading.Tasks.Task<GitObjectDb.Validations.ValidationResult> ValidateAsync(GitObjectDb.ValidationRules rules = GitObjectDb.ValidationRules.All)
     {
         var context = new GitObjectDb.Validations.ValidationContext(this, GitObjectDb.Validations.ValidationChain.Empty, rules, null);
-        return _validator.Validate(context);
+        return await _validator.ValidateAsync(context).ConfigureAwait(false);
     }
 
     partial void Initialize();

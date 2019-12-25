@@ -9,6 +9,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests.Models.Compare
 {
@@ -18,11 +19,11 @@ namespace GitObjectDb.Tests.Models.Compare
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ObjectRepositoryMergeChunkChangePropertiesAreMatchingEntryParameterValues(Page page)
+        public async Task ObjectRepositoryMergeChunkChangePropertiesAreMatchingEntryParameterValuesAsync(Page page)
         {
             // Arrange
             var path = RepositoryFixture.GetAvailableFolderPath();
-            Field mergeBaseNode = page.Fields[0], branchNode = page.Fields[1], headNode = page.Fields[2];
+            Field mergeBaseNode = (await page.Fields)[0], branchNode = (await page.Fields)[1], headNode = (await page.Fields)[2];
 
             // Act
             var sut = new ObjectRepositoryPropertyChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode));
@@ -44,11 +45,11 @@ namespace GitObjectDb.Tests.Models.Compare
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ObjectRepositoryMergeChunkChangeResolveConflict(Page page, string resolvedValue)
+        public async Task ObjectRepositoryMergeChunkChangeResolveConflictAsync(Page page, string resolvedValue)
         {
             // Arrange
             var path = RepositoryFixture.GetAvailableFolderPath();
-            Field mergeBaseNode = page.Fields[0], branchNode = page.Fields[1], headNode = page.Fields[2];
+            Field mergeBaseNode = (await page.Fields)[0], branchNode = (await page.Fields)[1], headNode = (await page.Fields)[2];
 
             // Act
             var sut = new ObjectRepositoryPropertyChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode));
@@ -62,11 +63,11 @@ namespace GitObjectDb.Tests.Models.Compare
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(ModelCustomization))]
-        public void ObjectRepositoryMergeChunkChangeResolveConflictOnlyOnce(Page page, string resolvedValue)
+        public async Task ObjectRepositoryMergeChunkChangeResolveConflictOnlyOnceAsync(Page page, string resolvedValue)
         {
             // Arrange
             var path = RepositoryFixture.GetAvailableFolderPath();
-            Field mergeBaseNode = page.Fields[0], branchNode = page.Fields[1], headNode = page.Fields[2];
+            Field mergeBaseNode = (await page.Fields)[0], branchNode = (await page.Fields)[1], headNode = (await page.Fields)[2];
 
             // Act
             var sut = new ObjectRepositoryPropertyChange(path, _nameProperty, CreateChunk(mergeBaseNode), CreateChunk(branchNode), CreateChunk(headNode));

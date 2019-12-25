@@ -6,6 +6,7 @@ using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Models
 {
@@ -80,7 +81,7 @@ namespace GitObjectDb.Models
         /// <param name="backend">The backend (optional).</param>
         /// <param name="isBare">if set to <c>true</c> a bare Git repository will be created.</param>
         /// <returns>The commit identifier of the new repository HEAD.</returns>
-        TRepository AddRepository(TRepository repository, Signature signature, string message, Func<OdbBackend> backend = null, bool isBare = false);
+        Task<TRepository> AddRepositoryAsync(TRepository repository, Signature signature, string message, Func<OdbBackend> backend = null, bool isBare = false);
 
         /// <summary>
         /// Loads the instance from a Git repository.
@@ -89,7 +90,7 @@ namespace GitObjectDb.Models
         /// <param name="commitId">The commit id to clone.</param>
         /// <param name="backend">The backend (optional).</param>
         /// <returns>The loaded instance.</returns>
-        TRepository Clone(string repository, ObjectId commitId = null, Func<OdbBackend> backend = null);
+        Task<TRepository> CloneAsync(string repository, ObjectId commitId = null, Func<OdbBackend> backend = null);
 
         /// <summary>
         /// Commits all changes by comparing the current instance with a new one.
@@ -99,7 +100,7 @@ namespace GitObjectDb.Models
         /// <param name="message">The message.</param>
         /// <param name="options">The options.</param>
         /// <returns>The new instance of repository containing reflected changes.</returns>
-        TRepository Commit(IObjectRepository repository, Signature signature, string message, CommitOptions options = null);
+        Task<TRepository> CommitAsync(IObjectRepository repository, Signature signature, string message, CommitOptions options = null);
 
         /// <summary>
         /// Update remote repository along with associated objects.
@@ -107,7 +108,8 @@ namespace GitObjectDb.Models
         /// <param name="id">The repository id.</param>
         /// <param name="remoteName">Name of the remote.</param>
         /// <param name="options">The options.</param>
-        void Push(UniqueId id, string remoteName = null, PushOptions options = null);
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        Task PushAsync(UniqueId id, string remoteName = null, PushOptions options = null);
 
         /// <summary>
         /// Checkouts the specified branch name.
@@ -117,7 +119,7 @@ namespace GitObjectDb.Models
         /// <param name="createNewBranch">Create a new branch.</param>
         /// <param name="committish">The revparse spec for the target commit.</param>
         /// <returns>The newly created <typeparamref name="TRepository"/>.</returns>
-        TRepository Checkout(UniqueId id, string branchName, bool createNewBranch = false, string committish = null);
+        Task<TRepository> CheckoutAsync(UniqueId id, string branchName, bool createNewBranch = false, string committish = null);
 
         /// <summary>
         /// Download objects and refs from the remote repository.
@@ -125,14 +127,15 @@ namespace GitObjectDb.Models
         /// <param name="id">The repository id.</param>
         /// <param name="options">The options.</param>
         /// <returns>The remote HEAD commit <typeparamref name="TRepository"/>.</returns>
-        TRepository Fetch(UniqueId id, FetchOptions options = null);
+        Task<TRepository> FetchAsync(UniqueId id, FetchOptions options = null);
 
         /// <summary>
         /// Download objects and refs from all remote branches.
         /// </summary>
         /// <param name="id">The repository id.</param>
         /// <param name="options">The options.</param>
-        void FetchAll(UniqueId id, FetchOptions options = null);
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        Task FetchAllAsync(UniqueId id, FetchOptions options = null);
 
         /// <summary>
         /// Download objects and refs from the remote repository.
@@ -140,7 +143,7 @@ namespace GitObjectDb.Models
         /// <param name="id">The repository id.</param>
         /// <param name="options">The options.</param>
         /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
-        IObjectRepositoryMerge Pull(UniqueId id, FetchOptions options = null);
+        Task<IObjectRepositoryMerge> PullAsync(UniqueId id, FetchOptions options = null);
 
         /// <summary>
         /// Merges changes from branch into the branch pointed at by HEAD.
@@ -148,7 +151,7 @@ namespace GitObjectDb.Models
         /// <param name="id">The repository id.</param>
         /// <param name="branchName">Name of the branch.</param>
         /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
-        IObjectRepositoryMerge Merge(UniqueId id, string branchName);
+        Task<IObjectRepositoryMerge> MergeAsync(UniqueId id, string branchName);
 
         /// <summary>
         /// Rebases changes from branch into the branch pointed at by HEAD.
@@ -156,7 +159,7 @@ namespace GitObjectDb.Models
         /// <param name="id">The repository id.</param>
         /// <param name="branchName">Name of the branch.</param>
         /// <returns>The <see cref="IObjectRepositoryMerge"/> instance used to apply the merge.</returns>
-        IObjectRepositoryRebase Rebase(UniqueId id, string branchName);
+        Task<IObjectRepositoryRebase> RebaseAsync(UniqueId id, string branchName);
 
         /// <summary>
         /// Cherry picks changes from the commit into the branch pointed at by HEAD.
@@ -164,6 +167,6 @@ namespace GitObjectDb.Models
         /// <param name="id">The repository id.</param>
         /// <param name="commitId">The commit id to cherry pick into branch pointed at by HEAD.</param>
         /// <returns>The <see cref="IObjectRepositoryCherryPick"/> instance used to apply the cherry pick.</returns>
-        IObjectRepositoryCherryPick CherryPick(UniqueId id, ObjectId commitId);
+        Task<IObjectRepositoryCherryPick> CherryPickAsync(UniqueId id, ObjectId commitId);
     }
 }

@@ -43,7 +43,7 @@ public partial class ModelTemplate : GitObjectDb.Models.IObjectRepository
     }
 
     /// <inheritdoc />
-    public GitObjectDb.Models.IModelObject TryGetFromGitPath(string path)
+    public async System.Threading.Tasks.Task<GitObjectDb.Models.IModelObject> TryGetFromGitPathAsync(string path)
     {
         if (path == null)
         {
@@ -77,7 +77,7 @@ public partial class ModelTemplate : GitObjectDb.Models.IObjectRepository
                 return null;
             }
 
-            var children = propertyInfo.Accessor(result);
+            var children = await propertyInfo.Accessor(result).ConfigureAwait(false);
             result = GitObjectDb.Models.UniqueId.TryParse(chunks[i + 1], out var id) ?
                 System.Linq.Enumerable.FirstOrDefault(children, c => c.Id == id) :
                 null;
@@ -86,8 +86,8 @@ public partial class ModelTemplate : GitObjectDb.Models.IObjectRepository
     }
 
     /// <inheritdoc />
-    public GitObjectDb.Models.IModelObject GetFromGitPath(string path) =>
-        TryGetFromGitPath(path) ?? throw new LibGit2Sharp.NotFoundException($"The element with path '{path}' could not be found.");
+    public async System.Threading.Tasks.Task<GitObjectDb.Models.IModelObject> GetFromGitPathAsync(string path) =>
+        await TryGetFromGitPathAsync(path).ConfigureAwait(false) ?? throw new LibGit2Sharp.NotFoundException($"The element with path '{path}' could not be found.");
 
     /// <inheritdoc/>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -98,7 +98,12 @@ public partial class ModelTemplate : GitObjectDb.Models.IObjectRepository
     }
 
     /// <inheritdoc />
-    public System.Collections.Generic.IEnumerable<GitObjectDb.Models.IModelObject> GetReferrers<TModel>(TModel node)
+    public System.Collections.Generic.IAsyncEnumerable<GitObjectDb.Models.IModelObject> GetReferrers<TModel>(TModel node)
         where TModel : class, GitObjectDb.Models.IModelObject =>
         _repositorySearch.GetReferrers(node);
+
+    /// <inheritdoc />
+    public System.Collections.Generic.IAsyncEnumerable<GitObjectDb.Models.IModelObject> GetReferrers<TModel>(TModel node, System.Threading.CancellationToken cancellationToken)
+        where TModel : class, GitObjectDb.Models.IModelObject =>
+        _repositorySearch.GetReferrersAsync(node, cancellationToken);
 }
