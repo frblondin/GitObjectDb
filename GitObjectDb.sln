@@ -1,40 +1,21 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27703.2026
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29709.97
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{BED345FF-9F06-43A5-A10A-B31F42CA5FCA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb", "GitObjectDb\GitObjectDb.csproj", "{5A22B9EF-1751-4B3D-835F-0624FA53CAC3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb.Tests", "GitObjectDb.Tests\GitObjectDb.Tests.csproj", "{D1D6EC57-E265-4B5E-A600-B262CFFAC63E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{67988695-E80F-41D8-AD10-1E978CE1BA12}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
-		.sonarcloud.properties = .sonarcloud.properties
-		appveyor.yml = appveyor.yml
-		GitObjectDb.png = GitObjectDb.png
-		global.json = global.json
-		LICENSE = LICENSE
-		README.md = README.md
-		Rules.ruleset = Rules.ruleset
-		Settings.StyleCop = Settings.StyleCop
-		stylecop.json = stylecop.json
+		Directory.Build.targets = Directory.Build.targets
+		Packages.props = Packages.props
+		version.json = version.json
 	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{FE2F09D4-3FB4-48F8-A6F0-659ABE58D735}"
-	ProjectSection(SolutionItems) = preProject
-		src\Directory.Build.props = src\Directory.Build.props
-	EndProjectSection
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb", "src\GitObjectDb\GitObjectDb.csproj", "{6FBA4636-5E95-4C72-8A71-FDAE0D4D913B}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{171298F1-AB00-4ECF-8797-58B451DF75E0}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb.Tests", "tests\GitObjectDb.Tests\GitObjectDb.Tests.csproj", "{3C47ED23-B40C-4AAF-B0F2-0B6A5030E8CC}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb.ModelCodeGeneration.Attributes", "src\GitObjectDb.ModelCodeGeneration.Attributes\GitObjectDb.ModelCodeGeneration.Attributes.csproj", "{7CD228A8-4CEF-48B1-8FF5-325A4D5B6DD6}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb.ModelCodeGeneration", "src\GitObjectDb.ModelCodeGeneration\GitObjectDb.ModelCodeGeneration.csproj", "{DF61264E-2EE3-41B5-9C3D-DD1E598D9E7C}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb.ModelCodeGeneration.Tests", "tests\GitObjectDb.ModelCodeGeneration.Tests\GitObjectDb.ModelCodeGeneration.Tests.csproj", "{F6202628-003B-4DF9-A8C0-4D73F64A6DCE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,38 +23,19 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{6FBA4636-5E95-4C72-8A71-FDAE0D4D913B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6FBA4636-5E95-4C72-8A71-FDAE0D4D913B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6FBA4636-5E95-4C72-8A71-FDAE0D4D913B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6FBA4636-5E95-4C72-8A71-FDAE0D4D913B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3C47ED23-B40C-4AAF-B0F2-0B6A5030E8CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3C47ED23-B40C-4AAF-B0F2-0B6A5030E8CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3C47ED23-B40C-4AAF-B0F2-0B6A5030E8CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3C47ED23-B40C-4AAF-B0F2-0B6A5030E8CC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7CD228A8-4CEF-48B1-8FF5-325A4D5B6DD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7CD228A8-4CEF-48B1-8FF5-325A4D5B6DD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7CD228A8-4CEF-48B1-8FF5-325A4D5B6DD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7CD228A8-4CEF-48B1-8FF5-325A4D5B6DD6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DF61264E-2EE3-41B5-9C3D-DD1E598D9E7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DF61264E-2EE3-41B5-9C3D-DD1E598D9E7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DF61264E-2EE3-41B5-9C3D-DD1E598D9E7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DF61264E-2EE3-41B5-9C3D-DD1E598D9E7C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F6202628-003B-4DF9-A8C0-4D73F64A6DCE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F6202628-003B-4DF9-A8C0-4D73F64A6DCE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F6202628-003B-4DF9-A8C0-4D73F64A6DCE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F6202628-003B-4DF9-A8C0-4D73F64A6DCE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A22B9EF-1751-4B3D-835F-0624FA53CAC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A22B9EF-1751-4B3D-835F-0624FA53CAC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A22B9EF-1751-4B3D-835F-0624FA53CAC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A22B9EF-1751-4B3D-835F-0624FA53CAC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1D6EC57-E265-4B5E-A600-B262CFFAC63E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1D6EC57-E265-4B5E-A600-B262CFFAC63E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1D6EC57-E265-4B5E-A600-B262CFFAC63E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1D6EC57-E265-4B5E-A600-B262CFFAC63E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{6FBA4636-5E95-4C72-8A71-FDAE0D4D913B} = {FE2F09D4-3FB4-48F8-A6F0-659ABE58D735}
-		{3C47ED23-B40C-4AAF-B0F2-0B6A5030E8CC} = {171298F1-AB00-4ECF-8797-58B451DF75E0}
-		{7CD228A8-4CEF-48B1-8FF5-325A4D5B6DD6} = {FE2F09D4-3FB4-48F8-A6F0-659ABE58D735}
-		{DF61264E-2EE3-41B5-9C3D-DD1E598D9E7C} = {FE2F09D4-3FB4-48F8-A6F0-659ABE58D735}
-		{F6202628-003B-4DF9-A8C0-4D73F64A6DCE} = {171298F1-AB00-4ECF-8797-58B451DF75E0}
-	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {BEBF5E9D-6842-4E8E-BA74-F33D16ECA5D9}
+		SolutionGuid = {909F3182-5E05-4EE3-8A7E-65188A32A31E}
 	EndGlobalSection
 EndGlobal

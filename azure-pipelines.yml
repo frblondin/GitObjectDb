@@ -79,8 +79,6 @@ stages:
 
       - script: |
           dotnet pack src\GitObjectDb --no-build --include-symbols --include-source --configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)
-          dotnet pack src\GitObjectDb.ModelCodeGeneration --no-build --include-symbols --include-source --configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)
-          dotnet pack src\GitObjectDb.ModelCodeGeneration.Attributes --no-build --include-symbols --include-source --configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)
         displayName: Generate NuGet Packages
 
       - task: PublishBuildArtifacts@1
