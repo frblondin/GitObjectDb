@@ -1,7 +1,7 @@
 # GitObjectDb
 
 [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb)](https://www.nuget.org/packages/GitObjectDb/)
-[![Build Status](https://dev.azure.com/thomas0449/GitHub/_apis/build/status/frblondin.GitObjectDb?branchName=master)](https://dev.azure.com/thomas0449/GitHub/_build/latest?definitionId=1&branchName=master)
+[![Build Status](https://dev.azure.com/thomas0449/GitObjectDb/_apis/build/status/frblondin.GitObjectDb?branchName=master)](https://dev.azure.com/thomas0449/GitObjectDb/_build/latest?definitionId=1&branchName=master)
 [![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=alert_status)](https://sonarcloud.io/dashboard/index/GitObjectDb)
 [![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=bugs)](https://sonarcloud.io/project/issues?id=GitObjectDb&resolved=false&types=BUG)
 [![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=coverage)](https://sonarcloud.io/component_measures?id=GitObjectDb&metric=Coverage)
@@ -18,23 +18,40 @@ The Git repository is used as a pure database as the files containing the serial
 Here's a simple example:
 1. Define your own repository data model:
     ```csharp
-    [Repository]
-    public class ObjectRepository
+    [GitPath("Applications")]
+    public class Application : Node
     {
-        public ILazyChildren<Application> Applications { get; }
+        public Application(UniqueId id) : base(id)
+        {
+        }
+
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        public IEnumerable<Table> GetTables(IConnection connection) => (this).GetChildren<Table>(connection);
+    }
+    [GitPath("Pages")]
+    public class Table : Node
+    {
+        public Table(UniqueId id) : base(id)
+        {
+        }
+
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        public IEnumerable<Field> GetFields(IConnection connection) => (this).GetChildren<Field>(connection);
     }
     ```
-    _Note that this object contains `Applications` of type `ILazyChildren<Application>`. That's how you can create nested objects. They must be of type `ILazyChildren<Application>`._
-2. Create nested object types:
+2. Manipulate objects as follows:
     ```csharp
-    [Model]
-    public class Application
-    {
-        [Modifiable]
-        public string SomeNewProperty { get; }
-
-        public ILazyChildren<Page> Pages { get; }
-    }
+	var application = connection.Get<Application>(applicationId);
+	var table = new Table(UniqueId.CreateNew()) { ... };
+	connection
+	    .Update(c => c.Add(table, application))
+		.Commit("Added table.", author, committer);
     ```
 
 ### Documentation

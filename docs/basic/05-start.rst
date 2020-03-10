@@ -8,13 +8,8 @@ Once the data model is created (see home page), you can initialize a new reposit
     var serviceProvider = new ServiceCollection()
         .AddGitObjectDb()
         .BuildServiceProvider();
-    var container = new ObjectRepositoryContainer<ObjectRepository>(
-        serviceProvider,
-        path);
-   
-    // Optional: add new repository
-    var repo = new ObjectRepository(...);
-    container.AddRepository(repo, signature, message);
+    var factory = serviceProvider.GetRequiredService<ConnectionFactory>();
+    var connection = factory(path);
 
 .. note::
-    Once a repository has been added, the container will load the repositories automatically when it gets instantiated.
+    Once a connection has been established, the repository can be queried / updated using the connection object.
