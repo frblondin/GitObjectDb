@@ -48,11 +48,11 @@ stages:
         inputs:
           command: test
           arguments: '--no-build --configuration $(BuildConfiguration) --logger:trx /p:CollectCoverage=true /p:CollectCoverage=true /p:CoverletOutputFormat=opencover'
-          projects: 'tests/**/*.csproj'
+          projects: '**/*.Tests.csproj'
 
       - task: reportgenerator@4
         inputs:
-          reports: '$(Build.SourcesDirectory)/tests/*/*cover.xml'
+          reports: '$(Build.SourcesDirectory)/**/*cover.xml'
           targetdir: '$(Build.SourcesDirectory)/CodeCoverage'
           reporttypes: 'HtmlInline_AzurePipelines;Cobertura;SonarQube'
 
@@ -78,7 +78,7 @@ stages:
           pollingTimeoutSec: 300
 
       - script: |
-          dotnet pack src\GitObjectDb --no-build --include-symbols --include-source --configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)
+          dotnet pack GitObjectDb --no-build --include-symbols --include-source --configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)
         displayName: Generate NuGet Packages
 
       - task: PublishBuildArtifacts@1
