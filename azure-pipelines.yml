@@ -52,7 +52,7 @@ stages:
 
       - task: reportgenerator@4
         inputs:
-          reports: '$(Build.SourcesDirectory)/tests/*/*cover.xml'
+          reports: '$(Build.SourcesDirectory)/**/*cover.xml'
           targetdir: '$(Build.SourcesDirectory)/CodeCoverage'
           reporttypes: 'HtmlInline_AzurePipelines;Cobertura;SonarQube'
 
