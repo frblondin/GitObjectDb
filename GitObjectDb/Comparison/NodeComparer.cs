@@ -23,76 +23,9 @@ namespace GitObjectDb.Comparison
             return _compareLogic.Compare(expectedObject, actualObject);
         }
 
-        internal static object HasConflicts(object ancestor, object ours, object theirs, NodeMergerPolicy policy = null)
-        {
-            if (policy == null)
-            {
-                policy = NodeMergerPolicy.Default;
-            }
-            var type = ancestor.GetType();
-            var result = Reflect.Constructor(type).Invoke();
-            foreach (var property in GetProperties(type))
-            {
-                var getter = Reflect.PropertyGetter(property);
-                var ancestorValue = getter(ancestor);
-                var ourValue = getter(ours);
-                var theirValue = getter(theirs);
-                if (!_compareLogic.Compare(ourValue, theirValue).AreEqual &&
-                    !_compareLogic.Compare(ancestorValue, ourValue).AreEqual &&
-                    !_compareLogic.Compare(ancestorValue, theirValue).AreEqual)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        internal static object Merge(object ancestor, object ours, object theirs, ConflictResolver resolver, NodeMergerPolicy policy = null)
-        {
-            if (policy == null)
-            {
-                policy = NodeMergerPolicy.Default;
-            }
-            var type = ancestor.GetType();
-            var result = Reflect.Constructor(type).Invoke();
-            foreach (var property in GetProperties(type))
-            {
-                var getter = Reflect.PropertyGetter(property);
-                if (!TryMergePropertyValue(property, getter(ancestor), getter(ours), getter(theirs), resolver, out var mergedValue))
-                {
-                    return null;
-                }
-
-                var setter = Reflect.PropertySetter(property);
-                setter(result, mergedValue);
-            }
-            return result;
-        }
-
         internal static IEnumerable<PropertyInfo> GetProperties(Type type) =>
             type.GetTypeInfo().GetProperties(BindingFlags.Instance | BindingFlags.Public)
             .Where(p => p.CanRead && p.CanWrite);
-
-        private static bool TryMergePropertyValue(PropertyInfo property, object ancestorValue, object ourValue, object theirValue, ConflictResolver resolver, out object result)
-        {
-            if (_compareLogic.Compare(ourValue, theirValue).AreEqual)
-            {
-                result = ourValue;
-            }
-            else if (_compareLogic.Compare(ancestorValue, ourValue).AreEqual)
-            {
-                result = theirValue;
-            }
-            else if (_compareLogic.Compare(ancestorValue, theirValue).AreEqual)
-            {
-                result = ancestorValue;
-            }
-            else
-            {
-                return resolver(property, ancestorValue, ourValue, theirValue, out result);
-            }
-            return true;
-        }
 
         internal static IEnumerable<NodeMergeChange> CollectChanges(NodeChanges localChanges, NodeChanges toBeMergedIntoLocal, NodeMergerPolicy policy, bool isRebase)
         {
@@ -134,7 +67,7 @@ namespace GitObjectDb.Comparison
                         }.Initialize();
 
                         // Node or child node added in our changes... ?
-                        foreach (var ourAddition in localChanges.Added.Where(c => c.New.Path.DataPath.StartsWith(their.Old.Path.FolderPath)))
+                        if (localChanges.Added.Any(c => c.New.Path.DataPath.StartsWith(their.Old.Path.FolderPath)))
                         {
                             throw new NotImplementedException();
                         }
