@@ -119,7 +119,7 @@ namespace GitObjectDb.Tests.Assets.Models.Software
                     var path = new DataPath(
                         $"Path{_random.Next(1, 2)}",
                         $"File{_random.Next(1, 100)}.txt");
-                    var resource = node.Resources.Add(path, Encoding.Default.GetBytes(fixture.Create<string>()));
+                    var resource = new Resource(node, path, Encoding.Default.GetBytes(fixture.Create<string>()));
                     composer = composer.CreateOrUpdate(resource);
                 });
                 return composer;
@@ -133,7 +133,7 @@ namespace GitObjectDb.Tests.Assets.Models.Software
             Application PickFirstApplication() => fixture.Create<IConnection>().GetApplications().First();
             Table PickRandomTable() => PickFirstApplication().GetTables(fixture.Create<IConnection>()).First();
             Field PickRandomField() => PickRandomTable().GetFields(fixture.Create<IConnection>()).First();
-            Resource PickRandomResource() => PickRandomTable().Resources.First();
+            Resource PickRandomResource() => fixture.Create<IConnection>().GetResources(PickRandomTable()).First();
         }
     }
 }
