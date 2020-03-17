@@ -50,7 +50,7 @@ namespace GitObjectDb.Tests.Commands
             // Arrange
             var (updateCommand, comparer, sut, connection) = Arrange(fixture);
             var relativePath = new DataPath("Some/Folder", "File.txt");
-            var resource = table.Resources.Add(relativePath, Encoding.Default.GetBytes(fileContent));
+            var resource = new Resource(table, relativePath, Encoding.Default.GetBytes(fileContent));
 
             // Act
             var transformations = new NodeTransformationComposer(updateCommand, sut, connection)
@@ -90,33 +90,6 @@ namespace GitObjectDb.Tests.Commands
             // Assert
             var changes = comparer.Compare(connection.Repository, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
             Assert.That(changes, Has.Count.GreaterThan(1));
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
-        public void EditResource(IFixture fixture, Table table, string fileContent, string message, Signature signature)
-        {
-            // Arrange
-            var (updateCommand, comparer, sut, connection) = Arrange(fixture);
-            var resource = table.Resources.First();
-            resource.SetContentStream(
-                new MemoryStream(Encoding.Default.GetBytes(fileContent)));
-
-            // Act
-            var transformations = new NodeTransformationComposer(updateCommand, sut, connection)
-                .CreateOrUpdate(resource)
-                .Transformations;
-            var result = sut.Commit(
-                connection.Repository,
-                transformations.Select(t => t.Transformation),
-                message, signature, signature);
-
-            // Assert
-            var changes = comparer.Compare(connection.Repository, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
-            Assert.That(changes, Has.Count.EqualTo(1));
-            var loaded = (Resource)changes.Modified.Single().New;
-            var content = new StreamReader(loaded.GetContentStream()).ReadToEnd();
-            Assert.That(content, Is.EqualTo(fileContent));
         }
 
         [Test]

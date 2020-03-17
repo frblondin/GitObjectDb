@@ -18,9 +18,9 @@ namespace GitObjectDb.Internal
         private readonly NodeTransformationComposerFactory _nodeTransformationComposerFactory;
         private readonly NodeRebaseFactory _rebaseFactory;
         private readonly NodeMergeFactory _mergeFactory;
-        private readonly IQuery<DataPath, string, Node> _queryNode;
-        private readonly IQuery<Node, string, IEnumerable<Node>> _queryNodeChildren;
-        private readonly IQuery<Tree, Stack<string>, IEnumerable<Node>> _queryTreeChildren;
+        private readonly IQuery<Tree, DataPath, ITreeItem> _loader;
+        private readonly IQuery<DataPath, Tree, IEnumerable<Node>> _queryNodes;
+        private readonly IQuery<DataPath, Tree, IEnumerable<Resource>> _queryResources;
 
         [FactoryDelegateConstructor(typeof(ConnectionFactory))]
         public Connection(
@@ -28,9 +28,9 @@ namespace GitObjectDb.Internal
             NodeTransformationComposerFactory transformationComposerFactory,
             NodeRebaseFactory rebaseFactory,
             NodeMergeFactory mergeFactory,
-            IQuery<DataPath, string, Node> queryNode,
-            IQuery<Node, string, IEnumerable<Node>> queryNodeChildren,
-            IQuery<Tree, Stack<string>, IEnumerable<Node>> queryTreeChildren)
+            IQuery<Tree, DataPath, ITreeItem> loader,
+            IQuery<DataPath, Tree, IEnumerable<Node>> queryNodes,
+            IQuery<DataPath, Tree, IEnumerable<Resource>> queryResources)
         {
             if (!Repository.IsValid(path))
             {
@@ -40,9 +40,9 @@ namespace GitObjectDb.Internal
             _nodeTransformationComposerFactory = transformationComposerFactory ?? throw new ArgumentNullException(nameof(transformationComposerFactory));
             _rebaseFactory = rebaseFactory ?? throw new ArgumentNullException(nameof(rebaseFactory));
             _mergeFactory = mergeFactory ?? throw new ArgumentNullException(nameof(mergeFactory));
-            _queryNode = queryNode ?? throw new ArgumentNullException(nameof(queryNode));
-            _queryNodeChildren = queryNodeChildren ?? throw new ArgumentNullException(nameof(queryNodeChildren));
-            _queryTreeChildren = queryTreeChildren ?? throw new ArgumentNullException(nameof(queryTreeChildren));
+            _loader = loader ?? throw new ArgumentNullException(nameof(loader));
+            _queryNodes = queryNodes ?? throw new ArgumentNullException(nameof(queryNodes));
+            _queryResources = queryResources ?? throw new ArgumentNullException(nameof(queryResources));
         }
 
         public Repository Repository { get; }
@@ -58,18 +58,45 @@ namespace GitObjectDb.Internal
         }
 
         public TNode Get<TNode>(DataPath path, string committish = null)
-            where TNode : Node =>
-            (TNode)_queryNode.Execute(Repository, path, committish);
+            where TNode : Node
+        {
+            var tree = GetTree(path, committish);
+            return (TNode)_loader.Execute(Repository, tree, path);
+        }
 
-        public IEnumerable<Node> GetNodes(Node parent = null, string committish = null) =>
-            _queryNodeChildren.Execute(Repository, parent, committish);
+        public IEnumerable<Node> GetNodes(Node parent = null, string committish = null)
+        {
+            var tree = GetTree(parent?.Path, committish);
+            return _queryNodes.Execute(Repository, parent?.Path, tree);
+        }
 
         public IEnumerable<TNode> GetNodes<TNode>(Node parent, string committish = null)
             where TNode : Node =>
             GetNodes(parent, committish).OfType<TNode>();
 
+        private Tree GetTree(DataPath path = null, string committish = null)
+        {
+            var commit = committish != null ?
+                (Commit)Repository.Lookup(committish) :
+                Repository.Head.Tip;
+            return path == null || string.IsNullOrEmpty(path.FolderPath) ?
+                commit.Tree :
+                commit.Tree[path.FolderPath].Target.Peel<Tree>();
+        }
+
         public IEnumerator<Node> GetEnumerator() =>
-            _queryTreeChildren.Execute(Repository, Repository.Head.Tip.Tree, new Stack<string>()).GetEnumerator();
+            GetNodes().GetEnumerator();
+
+        public IEnumerable<Resource> GetResources(Node node, string committish = null)
+        {
+            if (node is null)
+            {
+                throw new ArgumentNullException(nameof(node));
+            }
+
+            var tree = GetTree(node.Path, committish);
+            return _queryResources.Execute(Repository, node.Path, tree);
+        }
 
         public Branch Checkout(string branchName, bool createNewBranch = false, string committish = null)
         {

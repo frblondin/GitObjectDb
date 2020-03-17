@@ -22,5 +22,16 @@ namespace GitObjectDb
         internal static ISet<string> ReservedNames { get; } = new HashSet<string>(
             new[] { DataFile, ResourceFolder },
             StringComparer.OrdinalIgnoreCase);
+
+        internal static void ThrowIfAnyReservedName(string path)
+        {
+            foreach (var reserved in ReservedNames)
+            {
+                if (path.Contains($"/{reserved}/"))
+                {
+                    throw new GitObjectDbException("The path contains reserved folder names;");
+                }
+            }
+        }
     }
 }

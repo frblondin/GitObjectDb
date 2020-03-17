@@ -48,6 +48,14 @@ namespace GitObjectDb
         IEnumerable<TNode> GetNodes<TNode>(Node parent = null, string committish = null)
             where TNode : Node;
 
+        /// <summary>
+        /// Gets the resources associated to the node.
+        /// </summary>
+        /// <param name="node">The parent node.</param>
+        /// <param name="committish">The committish.</param>
+        /// <returns>All nested resources.</returns>
+        public IEnumerable<Resource> GetResources(Node node, string committish = null);
+
         /// <summary>Checkouts the specified branch name.</summary>
         /// <param name="branchName">Name of the branch.</param>
         /// <param name="createNewBranch">If set to <c>true</c>, create new branch.</param>
