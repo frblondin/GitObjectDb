@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace GitObjectDb.Tests.Assets.Models.Software
 {
@@ -17,6 +18,9 @@ namespace GitObjectDb.Tests.Assets.Models.Software
         public const int DefaultApplicationCount = 2;
         public const int DefaultTablePerApplicationCount = 3;
         public const int DefaultFieldPerTableCount = 10;
+        public const int DefaultResourcePerNodeCount = 5;
+
+        private Random _random = new Random();
 
         public SoftwareCustomization()
             : this(DefaultApplicationCount, DefaultTablePerApplicationCount, DefaultFieldPerTableCount)
@@ -66,15 +70,15 @@ namespace GitObjectDb.Tests.Assets.Models.Software
             INodeTransformationComposer CreateApplications(INodeTransformationComposer composer)
             {
                 Enumerable.Range(1, ApplicationCount).ForEach(position =>
+                {
+                    var application = new Application(fixture.Create<UniqueId>())
                     {
-                        var application = new Application(fixture.Create<UniqueId>())
-                        {
-                            Description = fixture.Create<string>(),
-                            Name = fixture.Create<string>(),
-                        };
-                        composer = composer.Create(application, null);
-                        composer = CreateTables(application, composer);
-                    });
+                        Description = fixture.Create<string>(),
+                        Name = fixture.Create<string>(),
+                    };
+                    composer = composer.CreateOrUpdate(application, null);
+                    composer = CreateTables(application, composer);
+                });
                 return composer;
             }
 
@@ -87,8 +91,9 @@ namespace GitObjectDb.Tests.Assets.Models.Software
                         Description = fixture.Create<string>(),
                         Name = fixture.Create<string>(),
                     };
-                    composer = composer.Create(table, parent: application);
+                    composer = composer.CreateOrUpdate(table, parent: application);
                     composer = CreateFields(table, composer);
+                    composer = CreateResource(table, composer);
                 });
                 return composer;
             }
@@ -102,7 +107,20 @@ namespace GitObjectDb.Tests.Assets.Models.Software
                         A = fixture.Create<NestedA[]>(),
                         SomeValue = fixture.Create<NestedA>(),
                     };
-                    composer = composer.Create(field, parent: table);
+                    composer = composer.CreateOrUpdate(field, parent: table);
+                });
+                return composer;
+            }
+
+            INodeTransformationComposer CreateResource(Node node, INodeTransformationComposer composer)
+            {
+                Enumerable.Range(1, DefaultResourcePerNodeCount).ForEach(position =>
+                {
+                    var path = new DataPath(
+                        $"Path{_random.Next(1, 2)}",
+                        $"File{_random.Next(1, 100)}.txt");
+                    var resource = node.Resources.Add(path, Encoding.Default.GetBytes(fixture.Create<string>()));
+                    composer = composer.CreateOrUpdate(resource);
                 });
                 return composer;
             }
@@ -110,10 +128,12 @@ namespace GitObjectDb.Tests.Assets.Models.Software
             fixture.Register(PickFirstApplication);
             fixture.Register(PickRandomTable);
             fixture.Register(PickRandomField);
+            fixture.Register(PickRandomResource);
 
             Application PickFirstApplication() => fixture.Create<IConnection>().GetApplications().First();
             Table PickRandomTable() => PickFirstApplication().GetTables(fixture.Create<IConnection>()).First();
             Field PickRandomField() => PickRandomTable().GetFields(fixture.Create<IConnection>()).First();
+            Resource PickRandomResource() => PickRandomTable().Resources.First();
         }
     }
 }

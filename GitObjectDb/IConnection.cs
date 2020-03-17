@@ -31,7 +31,7 @@ namespace GitObjectDb
         /// <param name="path">The path.</param>
         /// <param name="committish">The committish.</param>
         /// <returns>The node being found, if any.</returns>
-        TNode Get<TNode>(Path path, string committish = null)
+        TNode Get<TNode>(DataPath path, string committish = null)
             where TNode : Node;
 
         /// <summary>Gets the node collection in the parent node or in the root of the tree.</summary>
@@ -67,14 +67,14 @@ namespace GitObjectDb
         /// <param name="upstreamCommittish">The upstream committish.</param>
         /// <param name="policy">The merge policy.</param>
         /// <returns>The resut of the rebase operation.</returns>
-        INodeRebase Rebase(Branch branch = null, string upstreamCommittish = null, NodeMergerPolicy policy = null);
+        INodeRebase Rebase(Branch branch = null, string upstreamCommittish = null, ComparisonPolicy policy = null);
 
         /// <summary>Merges changes from upstream into the branch.</summary>
         /// <param name="branch">The branch to merge changes into.</param>
         /// <param name="upstreamCommittish">The upstream committish.</param>
         /// <param name="policy">The merge policy.</param>
         /// <returns>The resut of the rebase operation.</returns>
-        INodeMerge Merge(Branch branch = null, string upstreamCommittish = null, NodeMergerPolicy policy = null);
+        INodeMerge Merge(Branch branch = null, string upstreamCommittish = null, ComparisonPolicy policy = null);
     }
 
     internal interface IConnectionInternal : IConnection

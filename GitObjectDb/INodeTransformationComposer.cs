@@ -9,25 +9,25 @@ namespace GitObjectDb
         /// <summary>Gets the list of transformations.</summary>
         IList<INodeTransformation> Transformations { get; }
 
-        /// <summary>Creates the specified node.</summary>
+        /// <summary>Creates the specified node under an existing parent.</summary>
         /// <param name="node">The node to be added.</param>
         /// <param name="parent">The parent to insert the node into.</param>
         /// <returns>The current <see cref="INodeTransformationComposer"/>.</returns>
-        INodeTransformationComposer Create(Node node, Node parent);
+        INodeTransformationComposer CreateOrUpdate(Node node, Node parent = null);
 
         /// <summary>
-        /// Updates the specified node.
+        /// Updates the specified resource.
         /// </summary>
-        /// <param name="node">The node to update.</param>
+        /// <param name="resource">The item to update.</param>
         /// <returns>The current <see cref="INodeTransformationComposer"/>.</returns>
-        INodeTransformationComposer Update(Node node);
+        INodeTransformationComposer CreateOrUpdate(Resource resource);
 
         /// <summary>
-        /// Deletes the specified node.
+        /// Deletes the specified item.
         /// </summary>
-        /// <param name="node">The node to update.</param>
+        /// <param name="item">The node to update.</param>
         /// <returns>The current <see cref="INodeTransformationComposer"/>.</returns>
-        INodeTransformationComposer Delete(Node node);
+        INodeTransformationComposer Delete(ITreeItem item);
 
         /// <summary>Applies the transformation and store them in a new commit.</summary>
         /// <param name="message">The message of the commit.</param>

@@ -7,16 +7,16 @@ using System.Text.Json;
 
 namespace GitObjectDb.Serialization.Json
 {
-    internal static class DefaultSerializer
+    internal class DefaultSerializer : INodeSerializer
     {
-        private static readonly JsonWriterOptions _writerOptions = new JsonWriterOptions
+        private readonly JsonWriterOptions _writerOptions = new JsonWriterOptions
         {
             Indented = true,
         };
 
-        private static readonly JsonSerializerOptions _serializerOptions;
+        private readonly JsonSerializerOptions _serializerOptions;
 
-        static DefaultSerializer()
+        public DefaultSerializer()
         {
             _serializerOptions = new JsonSerializerOptions
             {
@@ -28,16 +28,16 @@ namespace GitObjectDb.Serialization.Json
             _serializerOptions.Converters.Add(new NodeConverterFactory());
         }
 
-        internal static Stream Serialize(NonScalar value)
+        public Stream Serialize(Node node)
         {
             var result = new MemoryStream();
             using var writer = new Utf8JsonWriter(result, _writerOptions);
-            JsonSerializer.Serialize(writer, value, value.GetType(), _serializerOptions);
+            JsonSerializer.Serialize(writer, new NonScalar(node), _serializerOptions);
             result.Seek(0L, SeekOrigin.Begin);
             return result;
         }
 
-        internal static NonScalar Deserialize(Stream stream, Path path)
+        public NonScalar Deserialize(Stream stream, DataPath path)
         {
             using var reader = new Utf8JsonStreamReader(stream, 1024);
             reader.Read();

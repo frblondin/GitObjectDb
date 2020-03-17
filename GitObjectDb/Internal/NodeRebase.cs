@@ -15,17 +15,21 @@ namespace GitObjectDb.Internal
     [DebuggerDisplay("Status = {Status}, ReplayedCommits = {ReplayedCommits.Count}, Completed = {CompletedCommits.Count}")]
     internal sealed class NodeRebase : INodeRebase
     {
+        private readonly Comparer _treeComparer;
+        private readonly UpdateTreeCommand _updateCommand;
         private readonly CommitCommand _commitCommand;
         private readonly IConnectionInternal _connection;
 
         [FactoryDelegateConstructor(typeof(Factories.NodeRebaseFactory))]
-        public NodeRebase(CommitCommand commitCommand, IConnectionInternal connection, Branch branch = null, string upstreamCommittish = null, NodeMergerPolicy policy = null)
+        public NodeRebase(Comparer treeComparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand, IConnectionInternal connection, Branch branch = null, string upstreamCommittish = null, ComparisonPolicy policy = null)
         {
+            _treeComparer = treeComparer ?? throw new ArgumentNullException(nameof(treeComparer));
+            _updateCommand = updateCommand ?? throw new ArgumentNullException(nameof(updateCommand));
             _commitCommand = commitCommand ?? throw new ArgumentNullException(nameof(commitCommand));
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             Branch = branch ?? connection.Repository.Head;
             UpstreamCommit = FindUpstreamCommit(upstreamCommittish);
-            Policy = policy ?? NodeMergerPolicy.Default;
+            Policy = policy ?? ComparisonPolicy.Default;
             (MergeBaseCommit, ReplayedCommits) = Initialize();
 
             ContinueNext();
@@ -35,7 +39,7 @@ namespace GitObjectDb.Internal
 
         public Commit UpstreamCommit { get; private set; }
 
-        public NodeMergerPolicy Policy { get; }
+        public ComparisonPolicy Policy { get; }
 
         public Commit MergeBaseCommit { get; }
 
@@ -43,7 +47,7 @@ namespace GitObjectDb.Internal
 
         public IImmutableList<Commit> CompletedCommits { get; private set; } = ImmutableList.Create<Commit>();
 
-        public IList<NodeMergeChange> CurrentChanges { get; private set; } = new List<NodeMergeChange>();
+        public IList<MergeChange> CurrentChanges { get; private set; } = new List<MergeChange>();
 
         public RebaseStatus Status { get; private set; }
 
@@ -78,21 +82,23 @@ namespace GitObjectDb.Internal
 
         private void ContinueNext()
         {
-            var branchChanges = TreeComparer.Compare(
+            var branchChanges = _treeComparer.Compare(
                 _connection.Repository,
                 (CompletedCommits.Count > 0 ? ReplayedCommits[CompletedCommits.Count - 1] : MergeBaseCommit).Tree,
-                ReplayedCommits[CompletedCommits.Count].Tree);
-            var upstreamChanges = TreeComparer.Compare(
+                ReplayedCommits[CompletedCommits.Count].Tree,
+                Policy);
+            var upstreamChanges = _treeComparer.Compare(
                 _connection.Repository,
                 MergeBaseCommit.Tree,
-                UpstreamCommit.Tree);
+                UpstreamCommit.Tree,
+                Policy);
 
-            CurrentChanges = NodeComparer.CollectChanges(upstreamChanges, branchChanges, Policy, isRebase: true).ToList();
+            CurrentChanges = Comparer.Compare(upstreamChanges, branchChanges, Policy).ToList();
             if (!CurrentChanges.Any())
             {
                 ContinueNext();
             }
-            else if (!CurrentChanges.Any(c => c.Status == NodeMergeStatus.EditConflict || c.Status == NodeMergeStatus.TreeConflict))
+            else if (!CurrentChanges.Any(c => c.Status == Comparison.ItemMergeStatus.EditConflict || c.Status == Comparison.ItemMergeStatus.TreeConflict))
             {
                 Continue();
             }
@@ -118,7 +124,7 @@ namespace GitObjectDb.Internal
 
         private void CommitChanges()
         {
-            if (CurrentChanges.Any(c => c.Status == NodeMergeStatus.EditConflict || c.Status == NodeMergeStatus.TreeConflict))
+            if (CurrentChanges.Any(c => c.Status == Comparison.ItemMergeStatus.EditConflict || c.Status == Comparison.ItemMergeStatus.TreeConflict))
             {
                 throw new GitObjectDbException("Remaining conflicts were not resolved.");
             }
@@ -130,7 +136,9 @@ namespace GitObjectDb.Internal
             var commit = _commitCommand.Commit(
                 _connection.Repository,
                 tip,
-                CurrentChanges.Select(c => (Action<ObjectDatabase, TreeDefinition>)c.Transform),
+                CurrentChanges.Select(c =>
+                    (ApplyUpdateTreeDefinition)((ObjectDatabase db, TreeDefinition t, Tree @ref) =>
+                    c.Transform(_updateCommand, db, t, @ref))),
                 replayedCommit.Message, replayedCommit.Author, replayedCommit.Committer,
                 updateHead: false);
 

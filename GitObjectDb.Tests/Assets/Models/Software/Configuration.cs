@@ -7,7 +7,8 @@ namespace GitObjectDb.Tests.Assets.Models.Software
     [GitPath("Configuration")]
     public class Configuration : Node
     {
-        public Configuration(UniqueId id) : base(id)
+        public Configuration(UniqueId id)
+            : base(id)
         {
         }
     }
