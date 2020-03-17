@@ -20,8 +20,7 @@ namespace GitObjectDb.Tests.Assets
                 .AddGitObjectDb()
                 .AddLogging(builder =>
                     builder.SetMinimumLevel(LogLevel.Trace)
-                           .AddProvider(new ConsoleProvider())
-                )
+                           .AddProvider(new ConsoleProvider()))
                 .BuildServiceProvider();
         }
 

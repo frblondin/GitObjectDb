@@ -9,7 +9,8 @@ namespace GitObjectDb.Tests.Assets.Models.Software
     [GitPath("Applications")]
     public class Application : Node
     {
-        public Application(UniqueId id) : base(id)
+        public Application(UniqueId id)
+            : base(id)
         {
         }
 
@@ -17,7 +18,7 @@ namespace GitObjectDb.Tests.Assets.Models.Software
 
         public string Description { get; set; }
 
-        public IEnumerable<Table> GetTables(IConnection connection) => (this).GetChildren<Table>(connection);
+        public IEnumerable<Table> GetTables(IConnection connection) => this.GetChildren<Table>(connection);
     }
 
     public static class IConnectionExtensions

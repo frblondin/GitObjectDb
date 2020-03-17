@@ -7,6 +7,6 @@ namespace GitObjectDb
     public interface INodeTransformation
     {
         /// <summary>Gets the transformation that can be applied in the git database.</summary>
-        Action<ObjectDatabase, TreeDefinition> Transformation { get; }
+        ApplyUpdateTreeDefinition Transformation { get; }
     }
 }

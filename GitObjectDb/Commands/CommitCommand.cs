@@ -16,26 +16,24 @@ namespace GitObjectDb.Commands
             _treeValidation = treeValidation;
         }
 
-        internal Commit Commit(Repository repository, IEnumerable<Action<ObjectDatabase, TreeDefinition>> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, Commit mergeParent = null)
+        internal Commit Commit(Repository repository, IEnumerable<ApplyUpdateTreeDefinition> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, Commit mergeParent = null)
         {
-            var tree = repository.Info.IsHeadUnborn ? null : repository.Head.Tip;
-            var definition = tree != null ?
-                TreeDefinition.From(tree) :
-                new TreeDefinition();
+            var tip = repository.Info.IsHeadUnborn ? null : repository.Head.Tip;
+            var definition = tip != null ? TreeDefinition.From(tip) : new TreeDefinition();
             foreach (var transformation in transformations)
             {
-                transformation(repository.ObjectDatabase, definition);
+                transformation(repository.ObjectDatabase, definition, tip?.Tree);
             }
             var parents = RetrieveParentsOfTheCommitBeingCreated(repository, amendPreviousCommit, mergeParent).ToList();
             return Commit(repository, definition, message, author, committer, parents, amendPreviousCommit, true);
         }
 
-        internal Commit Commit(Repository repository, Commit predecessor, IEnumerable<Action<ObjectDatabase, TreeDefinition>> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, bool updateHead = true, Commit mergeParent = null)
+        internal Commit Commit(Repository repository, Commit predecessor, IEnumerable<ApplyUpdateTreeDefinition> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, bool updateHead = true, Commit mergeParent = null)
         {
             var definition = TreeDefinition.From(predecessor);
             foreach (var transformation in transformations)
             {
-                transformation(repository.ObjectDatabase, definition);
+                transformation(repository.ObjectDatabase, definition, predecessor.Tree);
             }
             var parents = new List<Commit> { predecessor };
             if (mergeParent != null)

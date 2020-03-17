@@ -6,7 +6,7 @@ using System.Text;
 
 namespace GitObjectDb
 {
-    /// <summary>Instructs the GitToObjectDb engine in which folder name to store nodes.</summary>
+    /// <summary>Instructs the engine in which folder name to store nodes.</summary>
     /// <seealso cref="Attribute" />
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public class GitPathAttribute : Attribute
@@ -21,6 +21,10 @@ namespace GitObjectDb
             if (string.IsNullOrWhiteSpace(folderName) || folderName.Contains('/'))
             {
                 throw new ArgumentException("Folder name cannot be empty and cannot containt '/' character.", nameof(folderName));
+            }
+            if (FileSystemStorage.ReservedNames.Contains(folderName))
+            {
+                throw new ArgumentException($"'{FolderName}' is a reserved name and cannot be used as a folder name.", nameof(folderName));
             }
 
             FolderName = folderName;

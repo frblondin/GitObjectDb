@@ -1,6 +1,8 @@
 using GitObjectDb.Commands;
+using GitObjectDb.Comparison;
 using GitObjectDb.Internal;
 using GitObjectDb.Queries;
+using GitObjectDb.Serialization.Json;
 using GitObjectDb.Validations;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -34,6 +36,8 @@ namespace GitObjectDb
         private static IServiceCollection ConfigureServices(IServiceCollection source)
         {
             ConfigureMain(source);
+            ConfigureQueries(source);
+            ConfigureCommands(source);
 
             return source;
         }
@@ -45,9 +49,20 @@ namespace GitObjectDb
                 .GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
                 .Where(t => typeof(Delegate).IsAssignableFrom(t));
             source.AddFactoryDelegates(internalFactories);
+            source.AddSingleton<INodeSerializer, DefaultSerializer>();
+            source.AddSingleton<Comparer>();
+            source.AddSingleton<ITreeValidation, TreeValidation>();
+        }
+
+        private static void ConfigureQueries(IServiceCollection source)
+        {
             source.AddServicesImplementing(typeof(IQuery<,>), ServiceLifetime.Singleton);
             source.AddServicesImplementing(typeof(IQuery<,,>), ServiceLifetime.Singleton);
-            source.AddSingleton<ITreeValidation, TreeValidation>();
+        }
+
+        private static void ConfigureCommands(IServiceCollection source)
+        {
+            source.AddSingleton<UpdateTreeCommand>();
             source.AddSingleton<CommitCommand>();
         }
     }

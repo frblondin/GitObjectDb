@@ -1,3 +1,4 @@
+using AutoFixture;
 using FakeItEasy;
 using GitObjectDb.Comparison;
 using GitObjectDb.Queries;
@@ -18,14 +19,13 @@ namespace GitObjectDb.Tests.Queries
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization))]
-        public void GetRootNodes(Repository repository)
+        public void GetRootNodes(IFixture fixture)
         {
             // Arrange
-            var connection = A.Fake<IConnectionInternal>(x => x.Strict());
-            A.CallTo(() => connection.Repository).Returns(repository);
+            var (sut, repository) = Arrange<IQuery<Node, string, IEnumerable<Node>>>(fixture);
 
             // Act
-            var applications = new QueryNodes().Execute(repository, default(Node), null).OfType<Application>().ToList();
+            var applications = sut.Execute(repository, default, default).OfType<Application>().ToList();
 
             // Assert
             Assert.That(applications, Has.Count.EqualTo(SoftwareCustomization.DefaultApplicationCount));
@@ -36,14 +36,13 @@ namespace GitObjectDb.Tests.Queries
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization))]
-        public void GetChildNodes(Repository repository, Application application)
+        public void GetChildNodes(IFixture fixture, Application application)
         {
             // Arrange
-            var connection = A.Fake<IConnectionInternal>(x => x.Strict());
-            A.CallTo(() => connection.Repository).Returns(repository);
+            var (sut, repository) = Arrange<IQuery<Node, string, IEnumerable<Node>>>(fixture);
 
             // Act
-            var tables = new QueryNodes().Execute(repository, application, null).OfType<Table>().ToList();
+            var tables = sut.Execute(repository, application, default).OfType<Table>().ToList();
 
             // Assert
             Assert.That(tables, Has.Count.EqualTo(SoftwareCustomization.DefaultTablePerApplicationCount));
@@ -51,5 +50,11 @@ namespace GitObjectDb.Tests.Queries
             Assert.That(tables[0].Name, Is.Not.Null);
             Assert.That(tables[0].Description, Is.Not.Null);
         }
+
+        private static (TQuery, Repository) Arrange<TQuery>(IFixture fixture) =>
+        (
+            fixture.Create<TQuery>(),
+            fixture.Create<Repository>()
+        );
     }
 }

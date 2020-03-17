@@ -12,6 +12,11 @@ namespace GitObjectDb.Validations
         {
             foreach (var child in tree.Where(e => e.TargetType == TreeEntryTargetType.Tree))
             {
+                if (child.Name == FileSystemStorage.ResourceFolder)
+                {
+                    continue;
+                }
+
                 switch (child.TargetType)
                 {
                     case TreeEntryTargetType.Tree:

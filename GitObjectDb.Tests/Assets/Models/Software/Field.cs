@@ -7,7 +7,8 @@ namespace GitObjectDb.Tests.Assets.Models.Software
     [GitPath("Fields")]
     public class Field : Node
     {
-        public Field(UniqueId id) : base(id)
+        public Field(UniqueId id)
+            : base(id)
         {
         }
 

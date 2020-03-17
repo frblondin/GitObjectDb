@@ -15,23 +15,12 @@ namespace GitObjectDb
         public const string DataFile = "data.json";
 
         /// <summary>
-        /// The migration folder.
+        /// The data file name used to store information in Git.
         /// </summary>
-        public const string MigrationFolder = SpecialFolderPrefix + "Migrations";
+        public const string ResourceFolder = "Resources";
 
-        /// <summary>
-        /// The index folder.
-        /// </summary>
-        public const string IndexFolder = SpecialFolderPrefix + "Indexes";
-
-        /// <summary>
-        /// The prefix of special folders.
-        /// </summary>
-        public const string SpecialFolderPrefix = "$";
-
-        /// <summary>
-        /// The blob extension.
-        /// </summary>
-        public const string BlobExtension = ".blob";
+        internal static ISet<string> ReservedNames { get; } = new HashSet<string>(
+            new[] { DataFile, ResourceFolder },
+            StringComparer.OrdinalIgnoreCase);
     }
 }

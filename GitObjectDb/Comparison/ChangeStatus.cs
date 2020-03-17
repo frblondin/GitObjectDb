@@ -1,7 +1,7 @@
 namespace GitObjectDb.Comparison
 {
     /// <summary>The status of what happened as a result of a node comparison.</summary>
-    public enum NodeChangeStatus
+    public enum ChangeStatus
     {
         /// <summary>The node was edited.</summary>
         Edit,

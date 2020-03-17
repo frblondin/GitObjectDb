@@ -1,5 +1,6 @@
 using GitObjectDb.Commands;
 using GitObjectDb.Injection;
+using GitObjectDb.Serialization.Json;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -15,12 +16,14 @@ namespace GitObjectDb.Internal
     [DebuggerDisplay("Transformations: {Transformations.Count}")]
     internal class NodeTransformationComposer : INodeTransformationComposer
     {
+        private readonly UpdateTreeCommand _updateTreeCommand;
         private readonly CommitCommand _commitCommand;
 
         [FactoryDelegateConstructor(typeof(Factories.NodeTransformationComposerFactory))]
-        public NodeTransformationComposer(CommitCommand commitCommand, IConnectionInternal connection)
+        public NodeTransformationComposer(UpdateTreeCommand updateTreeCommand, CommitCommand commitCommand, IConnectionInternal connection)
             : this(connection, new List<INodeTransformation>())
         {
+            _updateTreeCommand = updateTreeCommand ?? throw new ArgumentNullException(nameof(updateTreeCommand));
             _commitCommand = commitCommand ?? throw new ArgumentNullException(nameof(commitCommand));
         }
 
@@ -34,28 +37,35 @@ namespace GitObjectDb.Internal
 
         public IList<INodeTransformation> Transformations { get; }
 
-        public INodeTransformationComposer Create(Node node, Node parent) =>
-            CreateOrUpdate(node, parent);
+        public INodeTransformationComposer CreateOrUpdate(Node item, Node parent = null) =>
+            CreateOrUpdate((ITreeItem)item, parent);
 
-        public INodeTransformationComposer Update(Node node) =>
-            CreateOrUpdate(node);
+        public INodeTransformationComposer CreateOrUpdate(Resource item) =>
+            CreateOrUpdate(item, default);
 
-        public INodeTransformationComposer Delete(Node node)
+        public INodeTransformationComposer Delete(ITreeItem item)
         {
             var transformation = new NodeTransformation(
-                UpdateTreeCommand.Delete(node),
-                $"Removing {node.Path.FolderPath}.");
+                _updateTreeCommand.Delete(item),
+                $"Removing {item.Path.FolderPath}.");
             Transformations.Add(transformation);
             return this;
         }
 
-        private INodeTransformationComposer CreateOrUpdate(Node node, Node parent = null)
+        private INodeTransformationComposer CreateOrUpdate(ITreeItem item, Node parent = null)
         {
-            UpdateNodePathIfNeeded(node, parent);
+            if (item is Node node)
+            {
+                UpdateNodePathIfNeeded(node, parent);
+            }
+            else if (item.Path == null)
+            {
+                throw new InvalidOperationException("Item has no path defined.");
+            }
 
             var transformation = new NodeTransformation(
-                UpdateTreeCommand.CreateOrUpdate(node),
-                $"Adding or updating {node.Path.FolderPath}.");
+                _updateTreeCommand.CreateOrUpdate(item),
+                $"Adding or updating {item.Path.FolderPath}.");
             Transformations.Add(transformation);
             return this;
         }
@@ -72,7 +82,7 @@ namespace GitObjectDb.Internal
             }
             if (node.Path == null)
             {
-                node.Path = Path.Root(node);
+                node.Path = DataPath.Root(node);
             }
         }
 

@@ -9,52 +9,51 @@ using System.Reflection;
 
 namespace GitObjectDb.Comparison
 {
-    /// <summary>Contains all details about a node merge.</summary>
+    /// <summary>Contains all details about an item merge.</summary>
     [DebuggerDisplay("Status = {Status}, Path = {Path}")]
-    public sealed class NodeMergeChange
+    public sealed class MergeChange
     {
-        internal NodeMergeChange(NodeMergerPolicy policy)
+        internal MergeChange(ComparisonPolicy policy)
         {
-            Policy = policy ?? NodeMergerPolicy.Default;
+            Policy = policy ?? ComparisonPolicy.Default;
         }
 
         /// <summary>Gets the ancestor.</summary>
-        public Node Ancestor { get; internal set; }
+        public ITreeItem Ancestor { get; internal set; }
 
         /// <summary>Gets the node on our side.</summary>
-        public Node Ours { get; internal set; }
+        public ITreeItem Ours { get; internal set; }
 
         /// <summary>Gets the node on their side.</summary>
-        public Node Theirs { get; internal set; }
+        public ITreeItem Theirs { get; internal set; }
 
         /// <summary>Gets the parent root deleted node on our side.</summary>
-        public Node OurRootDeletedParent { get; internal set; }
+        public ITreeItem OurRootDeletedParent { get; internal set; }
 
         /// <summary>Gets the parent root deleted node on their side.</summary>
-        public Node TheirRootDeletedParent { get; internal set; }
+        public ITreeItem TheirRootDeletedParent { get; internal set; }
 
         /// <summary>Gets the merged node.</summary>
-        public Node Merged { get; private set; }
+        public ITreeItem Merged { get; private set; }
 
         /// <summary>Gets the node path.</summary>
-        public Path Path => (Theirs ?? Ours ?? Ancestor).Path;
+        public DataPath Path => (Theirs ?? Ours ?? Ancestor).Path;
 
         /// <summary>Gets the list of conflicts.</summary>
         public IImmutableList<MergeValueConflict> Conflicts { get; internal set; }
 
         /// <summary>Gets the merge policy.</summary>
-        public NodeMergerPolicy Policy { get; private set; }
+        public ComparisonPolicy Policy { get; private set; }
 
         /// <summary>Gets the merge status.</summary>
-        public NodeMergeStatus Status { get; internal set; }
+        public ItemMergeStatus Status { get; internal set; }
 
-        internal NodeMergeChange Initialize()
+        internal MergeChange Initialize()
         {
-            var (type, id, path) = GetPrimaryInformation();
-            Merged = (Node)Reflect.Constructor(type, typeof(UniqueId)).Invoke(id);
-            Merged.Path = path;
+            var type = CreateMergeInstance();
+
             var conflicts = ImmutableList.CreateBuilder<MergeValueConflict>();
-            foreach (var property in NodeComparer.GetProperties(type))
+            foreach (var property in Comparer.GetProperties(type, Policy))
             {
                 if (!TryMergePropertyValue(property, out var setter, out var ancestorValue, out var ourValue, out var theirValue))
                 {
@@ -72,51 +71,65 @@ namespace GitObjectDb.Comparison
             return this;
         }
 
-        internal void Transform(ObjectDatabase database, TreeDefinition tree)
+        private Type CreateMergeInstance()
         {
-            if (Status == NodeMergeStatus.EditConflict || Status == NodeMergeStatus.TreeConflict)
+            var nonNull = Ours ?? Theirs ?? Ancestor ?? throw new NullReferenceException();
+            var type = nonNull.GetType();
+            var path = nonNull.Path ?? throw new NullReferenceException();
+            if (nonNull is Node node)
+            {
+                Merged = (ITreeItem)Reflect.Constructor(type, typeof(UniqueId)).Invoke(node.Id);
+                ((ITreeItemInternal)Merged).Path = path;
+            }
+            else if (nonNull is Resource resource)
+            {
+                Merged = new Resource(resource.Path, Array.Empty<byte>());
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+            return type;
+        }
+
+        internal void Transform(UpdateTreeCommand update, ObjectDatabase database, TreeDefinition tree, Tree reference)
+        {
+            if (Status == ItemMergeStatus.EditConflict || Status == ItemMergeStatus.TreeConflict)
             {
                 throw new GitObjectDbException("Remaining conflicts.");
             }
-            UpdateTreeCommand.CreateOrUpdate(Merged).Invoke(database, tree);
+            update.CreateOrUpdate(Merged).Invoke(database, tree, reference);
         }
 
         private void UpdateStatus()
         {
             if (OurRootDeletedParent != null || TheirRootDeletedParent != null)
             {
-                Status = NodeMergeStatus.TreeConflict;
+                Status = ItemMergeStatus.TreeConflict;
             }
-            else if (Ancestor == null && (Theirs == null || Ours == null))
+            else if (Ancestor == null && (Theirs != null || Ours != null))
             {
-                Status = NodeMergeStatus.Add;
+                Status = ItemMergeStatus.Add;
             }
             else if (Ancestor != null && (Theirs == null || Ours == null))
             {
-                Status = NodeMergeStatus.Delete;
+                Status = ItemMergeStatus.Delete;
             }
             else
             {
-                Status = Conflicts.Any(c => !c.IsResolved) ? NodeMergeStatus.EditConflict : NodeMergeStatus.Edit;
+                if (Conflicts.Any(c => !c.IsResolved))
+                {
+                    Status = ItemMergeStatus.EditConflict;
+                }
+                else if (Comparer.Compare(Ours, Merged, Policy).AreEqual)
+                {
+                    Status = ItemMergeStatus.NoChange;
+                }
+                else
+                {
+                    Status = ItemMergeStatus.Edit;
+                }
             }
-        }
-
-        private (Type, UniqueId, Path) GetPrimaryInformation()
-        {
-            if (Ancestor != null)
-            {
-                return (Ancestor.GetType(), Ancestor.Id, Ancestor.Path);
-            }
-            if (Ours != null)
-            {
-                return (Ours.GetType(), Ours.Id, Ours.Path);
-            }
-            if (Theirs != null)
-            {
-                return (Theirs.GetType(), Theirs.Id, Theirs.Path);
-            }
-
-            throw new NotSupportedException();
         }
 
         private bool TryMergePropertyValue(PropertyInfo property, out MemberSetter setter, out object ancestorValue, out object ourValue, out object theirValue)
@@ -130,21 +143,21 @@ namespace GitObjectDb.Comparison
             if (Ours != null && Theirs != null)
             {
                 // Both values are equal -> no conflict
-                if (NodeComparer.Compare(ourValue, theirValue).AreEqual)
+                if (Comparer.Compare(ourValue, theirValue, Policy).AreEqual)
                 {
                     setter(Merged, ourValue);
                     return true;
                 }
 
                 // Only changed in their changes -> no conflict
-                if (Ancestor != null && NodeComparer.Compare(ancestorValue, ourValue).AreEqual)
+                if (Ancestor != null && Comparer.Compare(ancestorValue, ourValue, Policy).AreEqual)
                 {
                     setter(Merged, theirValue);
                     return true;
                 }
 
                 // Only changed in our changes -> no conflict
-                if (Ancestor != null && NodeComparer.Compare(ancestorValue, theirValue).AreEqual)
+                if (Ancestor != null && Comparer.Compare(ancestorValue, theirValue, Policy).AreEqual)
                 {
                     setter(Merged, ourValue);
                     return true;

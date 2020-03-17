@@ -15,19 +15,23 @@ namespace GitObjectDb.Internal
     [DebuggerDisplay("Status = {Status}, ReplayedCommits = {ReplayedCommits.Count}, Completed = {CompletedCommits.Count}")]
     internal sealed class NodeMerge : INodeMerge
     {
+        private readonly Comparer _treeComparer;
+        private readonly UpdateTreeCommand _updateCommand;
         private readonly CommitCommand _commitCommand;
         private readonly IConnectionInternal _connection;
         private readonly string _upstreamCommittish;
 
         [FactoryDelegateConstructor(typeof(Factories.NodeMergeFactory))]
-        public NodeMerge(CommitCommand commitCommand, IConnectionInternal connection, Branch branch = null, string upstreamCommittish = null, NodeMergerPolicy policy = null)
+        public NodeMerge(Comparer treeComparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand, IConnectionInternal connection, Branch branch = null, string upstreamCommittish = null, ComparisonPolicy policy = null)
         {
+            _treeComparer = treeComparer ?? throw new ArgumentNullException(nameof(treeComparer));
+            _updateCommand = updateCommand ?? throw new ArgumentNullException(nameof(updateCommand));
             _commitCommand = commitCommand ?? throw new ArgumentNullException(nameof(commitCommand));
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             Branch = branch ?? connection.Repository.Head;
             _upstreamCommittish = upstreamCommittish;
             UpstreamCommit = FindUpstreamCommit(upstreamCommittish);
-            Policy = policy ?? NodeMergerPolicy.Default;
+            Policy = policy ?? ComparisonPolicy.Default;
             (MergeBaseCommit, Commits, RequiresMergeCommit) = Initialize();
 
             Start();
@@ -37,7 +41,7 @@ namespace GitObjectDb.Internal
 
         public Commit UpstreamCommit { get; private set; }
 
-        public NodeMergerPolicy Policy { get; }
+        public ComparisonPolicy Policy { get; }
 
         public Commit MergeBaseCommit { get; }
 
@@ -45,7 +49,7 @@ namespace GitObjectDb.Internal
 
         public IImmutableList<Commit> Commits { get; }
 
-        public IList<NodeMergeChange> CurrentChanges { get; private set; } = new List<NodeMergeChange>();
+        public IList<MergeChange> CurrentChanges { get; private set; } = new List<MergeChange>();
 
         public MergeStatus Status { get; private set; }
 
@@ -82,21 +86,23 @@ namespace GitObjectDb.Internal
 
         private void Start()
         {
-            var branchChanges = TreeComparer.Compare(
+            var branchChanges = _treeComparer.Compare(
                 _connection.Repository,
                 MergeBaseCommit.Tree,
-                Branch.Tip.Tree);
-            var upstreamChanges = TreeComparer.Compare(
+                Branch.Tip.Tree,
+                Policy);
+            var upstreamChanges = _treeComparer.Compare(
                 _connection.Repository,
                 MergeBaseCommit.Tree,
-                UpstreamCommit.Tree);
+                UpstreamCommit.Tree,
+                Policy);
 
-            CurrentChanges = NodeComparer.CollectChanges(branchChanges, upstreamChanges, Policy, isRebase: false).ToList();
+            CurrentChanges = Comparer.Compare(branchChanges, upstreamChanges, Policy).ToList();
             if (!CurrentChanges.Any())
             {
                 Status = MergeStatus.UpToDate;
             }
-            else if (!CurrentChanges.Any(c => c.Status == NodeMergeStatus.EditConflict || c.Status == NodeMergeStatus.TreeConflict))
+            else if (!CurrentChanges.Any(c => c.Status == ItemMergeStatus.EditConflict || c.Status == ItemMergeStatus.TreeConflict))
             {
                 Status = RequiresMergeCommit ? MergeStatus.NonFastForward : MergeStatus.FastForward;
             }
@@ -112,7 +118,7 @@ namespace GitObjectDb.Internal
             {
                 throw new GitObjectDbException("Merge is already completed.");
             }
-            if (CurrentChanges.Any(c => c.Status == NodeMergeStatus.EditConflict || c.Status == NodeMergeStatus.TreeConflict))
+            if (CurrentChanges.Any(c => c.Status == ItemMergeStatus.EditConflict || c.Status == ItemMergeStatus.TreeConflict))
             {
                 throw new GitObjectDbException("Remaining conflicts were not resolved.");
             }
@@ -124,13 +130,15 @@ namespace GitObjectDb.Internal
                 MergeCommit = _commitCommand.Commit(
                     _connection.Repository,
                     Branch.Tip,
-                    CurrentChanges.Select(c => (Action<ObjectDatabase, TreeDefinition>)c.Transform),
+                    CurrentChanges.Select(c =>
+                        (ApplyUpdateTreeDefinition)((ObjectDatabase db, TreeDefinition t, Tree @ref) =>
+                        c.Transform(_updateCommand, db, t, @ref))),
                     message, author, committer,
                     updateHead: false,
                     mergeParent: UpstreamCommit);
                 var logMessage = MergeCommit.BuildCommitLogMessage(false, false, isMergeCommit: true);
                 _connection.Repository.UpdateTerminalReference(Branch.Reference, MergeCommit, logMessage);
-                Status = MergeStatus.NonFastForward;
+                Status = LibGit2Sharp.MergeStatus.NonFastForward;
                 return MergeCommit;
             }
             else
@@ -138,7 +146,7 @@ namespace GitObjectDb.Internal
                 MergeCommit = UpstreamCommit;
                 var logMessage = MergeCommit.BuildCommitLogMessage(false, false, false);
                 _connection.Repository.UpdateTerminalReference(Branch.Reference, UpstreamCommit, logMessage);
-                Status = MergeStatus.FastForward;
+                Status = LibGit2Sharp.MergeStatus.FastForward;
                 return UpstreamCommit;
             }
         }
