@@ -1,8 +1,11 @@
 namespace GitObjectDb.Comparison
 {
     /// <summary>The status of what happened as a result of a node merge.</summary>
-    public enum NodeMergeStatus
+    public enum ItemMergeStatus
     {
+        /// <summary>The node will remain the same after merge.</summary>
+        NoChange,
+
         /// <summary>The node was edited.</summary>
         Edit,
 

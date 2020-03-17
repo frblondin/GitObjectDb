@@ -10,8 +10,8 @@ namespace GitObjectDb.Internal
     {
         internal delegate INodeTransformationComposer NodeTransformationComposerFactory(IConnectionInternal connection);
 
-        internal delegate INodeRebase NodeRebaseFactory(IConnectionInternal connection, Branch branch = null, string upstreamCommittish = null, NodeMergerPolicy policy = null);
+        internal delegate INodeRebase NodeRebaseFactory(IConnectionInternal connection, Branch branch = null, string upstreamCommittish = null, ComparisonPolicy policy = null);
 
-        internal delegate INodeMerge NodeMergeFactory(IConnectionInternal connection, Branch branch = null, string upstreamCommittish = null, NodeMergerPolicy policy = null);
+        internal delegate INodeMerge NodeMergeFactory(IConnectionInternal connection, Branch branch = null, string upstreamCommittish = null, ComparisonPolicy policy = null);
     }
 }

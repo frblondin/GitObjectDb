@@ -8,7 +8,8 @@ namespace GitObjectDb.Tests.Assets.Models.Software
     [GitPath("Pages")]
     public class Table : Node
     {
-        public Table(UniqueId id) : base(id)
+        public Table(UniqueId id)
+            : base(id)
         {
         }
 
@@ -16,6 +17,8 @@ namespace GitObjectDb.Tests.Assets.Models.Software
 
         public string Description { get; set; }
 
-        public IEnumerable<Field> GetFields(IConnection connection) => (this).GetChildren<Field>(connection);
+        public Blob<string> Blob { get; set; }
+
+        public IEnumerable<Field> GetFields(IConnection connection) => this.GetChildren<Field>(connection);
     }
 }

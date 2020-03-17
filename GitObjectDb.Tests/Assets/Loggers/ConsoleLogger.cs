@@ -1,8 +1,8 @@
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using Microsoft.Extensions.Logging;
 
 namespace GitObjectDb.Tests.Assets.Loggers
 {
@@ -51,7 +51,7 @@ namespace GitObjectDb.Tests.Assets.Loggers
                 {
                     var empty = sb.Length == 0;
 #if NETCOREAPP
-                    var message = scope?.ToString().Replace("\n", string.Empty, StringComparison.OrdinalIgnoreCase) ?? "";
+                    var message = scope?.ToString().Replace("\n", string.Empty, StringComparison.OrdinalIgnoreCase) ?? string.Empty;
 #else
                     var message = scope?.ToString().Replace("\n", string.Empty) ?? "";
 #endif

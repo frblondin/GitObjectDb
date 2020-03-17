@@ -24,13 +24,13 @@ namespace GitObjectDb.Tests
             var oldDescription = table.Description;
             table.Description = newDescription;
             var b = sut
-                .Update(c => c.Update(table))
+                .Update(c => c.CreateOrUpdate(table))
                 .Commit("B", signature, signature);
             var branch = sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
             table.Description = oldDescription;
             table.Name = newName;
             var c = sut
-                .Update(c => c.Update(table))
+                .Update(c => c.CreateOrUpdate(table))
                 .Commit("C", signature, signature);
 
             // Act
@@ -61,7 +61,7 @@ namespace GitObjectDb.Tests
             var a = repository.Head.Tip;
             table.Description = newDescription;
             var b = sut
-                .Update(c => c.Update(table))
+                .Update(c => c.CreateOrUpdate(table))
                 .Commit("B", signature, signature);
             var branch = sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
 
@@ -89,12 +89,12 @@ namespace GitObjectDb.Tests
             var oldValue = table.Description;
             table.Description = bValue;
             sut
-                .Update(c => c.Update(table))
+                .Update(c => c.CreateOrUpdate(table))
                 .Commit("B", signature, signature);
             var branch = sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
             table.Description = cValue;
             sut
-                .Update(c => c.Update(table))
+                .Update(c => c.CreateOrUpdate(table))
                 .Commit("C", signature, signature);
 
             // Act
@@ -104,7 +104,7 @@ namespace GitObjectDb.Tests
             Assert.That(merge.Status, Is.EqualTo(MergeStatus.Conflicts));
             Assert.Throws<GitObjectDbException>(() => merge.Commit(signature, signature));
             Assert.That(merge.CurrentChanges, Has.Count.EqualTo(1));
-            Assert.That(merge.CurrentChanges[0].Status, Is.EqualTo(NodeMergeStatus.EditConflict));
+            Assert.That(merge.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.EditConflict));
             Assert.That(merge.CurrentChanges[0].Conflicts, Has.Count.EqualTo(1));
             Assert.That(merge.CurrentChanges[0].Conflicts[0].Property.Name, Is.EqualTo(nameof(table.Description)));
             Assert.That(merge.CurrentChanges[0].Conflicts[0].AncestorValue, Is.EqualTo(oldValue));
@@ -115,7 +115,7 @@ namespace GitObjectDb.Tests
             merge.CurrentChanges[0].Conflicts[0].Resolve("resolved");
             Assert.That(merge.CurrentChanges[0].Conflicts[0].IsResolved, Is.True);
             Assert.That(merge.CurrentChanges[0].Conflicts[0].ResolvedValue, Is.EqualTo("resolved"));
-            Assert.That(merge.CurrentChanges[0].Status, Is.EqualTo(NodeMergeStatus.Edit));
+            Assert.That(merge.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.Edit));
 
             // Act
             var mergeCommit = merge.Commit(signature, signature);
@@ -136,7 +136,7 @@ namespace GitObjectDb.Tests
             // Arrange
             field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
             sut
-                .Update(c => c.Update(field).Update(parentApplication))
+                .Update(c => c.CreateOrUpdate(field).CreateOrUpdate(parentApplication))
                 .Commit("C", signature, signature);
             var branch = sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
             parentApplication.Name = newName;
@@ -151,10 +151,10 @@ namespace GitObjectDb.Tests
             Assert.That(merge.Status, Is.EqualTo(MergeStatus.Conflicts));
             Assert.Throws<GitObjectDbException>(() => merge.Commit(signature, signature));
             Assert.That(merge.CurrentChanges, Has.Count.EqualTo(1));
-            Assert.That(merge.CurrentChanges, Has.Exactly(1).Matches<NodeMergeChange>(c => c.Status == NodeMergeStatus.TreeConflict));
-            var conflict = merge.CurrentChanges.Single(c => c.Status == NodeMergeStatus.TreeConflict);
-            Assert.That(conflict.Theirs.Id, Is.EqualTo(field.Id));
-            Assert.That(conflict.OurRootDeletedParent.Id, Is.EqualTo(parentTable.Id));
+            Assert.That(merge.CurrentChanges, Has.Exactly(1).Matches<MergeChange>(c => c.Status == ItemMergeStatus.TreeConflict));
+            var conflict = merge.CurrentChanges.Single(c => c.Status == ItemMergeStatus.TreeConflict);
+            Assert.That(((Node)conflict.Theirs).Id, Is.EqualTo(field.Id));
+            Assert.That(((Node)conflict.OurRootDeletedParent).Id, Is.EqualTo(parentTable.Id));
             merge.CurrentChanges.Remove(conflict);
 
             // Act

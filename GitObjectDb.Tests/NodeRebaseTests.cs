@@ -24,13 +24,13 @@ namespace GitObjectDb.Tests
             var oldDescription = table.Description;
             table.Description = newDescription;
             var b = sut
-                .Update(c => c.Update(table))
+                .Update(c => c.CreateOrUpdate(table))
                 .Commit("B", signature, signature);
             var branch = sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
             table.Description = oldDescription;
             table.Name = newName;
             sut
-                .Update(c => c.Update(table))
+                .Update(c => c.CreateOrUpdate(table))
                 .Commit("C", signature, signature);
 
             // Act
@@ -66,12 +66,12 @@ namespace GitObjectDb.Tests
             var oldValue = table.Description;
             table.Description = bValue;
             sut
-                .Update(c => c.Update(table))
+                .Update(c => c.CreateOrUpdate(table))
                 .Commit("B", signature, signature);
             var branch = sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
             table.Description = cValue;
             sut
-                .Update(c => c.Update(table))
+                .Update(c => c.CreateOrUpdate(table))
                 .Commit("C", signature, signature);
 
             // Act
@@ -81,7 +81,7 @@ namespace GitObjectDb.Tests
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
             Assert.Throws<GitObjectDbException>(() => rebase.Continue());
             Assert.That(rebase.CurrentChanges, Has.Count.EqualTo(1));
-            Assert.That(rebase.CurrentChanges[0].Status, Is.EqualTo(NodeMergeStatus.EditConflict));
+            Assert.That(rebase.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.EditConflict));
             Assert.That(rebase.CurrentChanges[0].Conflicts, Has.Count.EqualTo(1));
             Assert.That(rebase.CurrentChanges[0].Conflicts[0].Property.Name, Is.EqualTo(nameof(table.Description)));
             Assert.That(rebase.CurrentChanges[0].Conflicts[0].AncestorValue, Is.EqualTo(oldValue));
@@ -92,7 +92,7 @@ namespace GitObjectDb.Tests
             rebase.CurrentChanges[0].Conflicts[0].Resolve("resolved");
             Assert.That(rebase.CurrentChanges[0].Conflicts[0].IsResolved, Is.True);
             Assert.That(rebase.CurrentChanges[0].Conflicts[0].ResolvedValue, Is.EqualTo("resolved"));
-            Assert.That(rebase.CurrentChanges[0].Status, Is.EqualTo(NodeMergeStatus.Edit));
+            Assert.That(rebase.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.Edit));
 
             // Act
             Assert.That(rebase.Continue(), Is.EqualTo(RebaseStatus.Complete));
@@ -118,7 +118,7 @@ namespace GitObjectDb.Tests
             field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
             parentApplication.Name = newName;
             sut
-                .Update(c => c.Update(field).Update(parentApplication))
+                .Update(c => c.CreateOrUpdate(field).CreateOrUpdate(parentApplication))
                 .Commit("C", signature, signature);
 
             // Act
@@ -128,10 +128,10 @@ namespace GitObjectDb.Tests
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
             Assert.Throws<GitObjectDbException>(() => rebase.Continue());
             Assert.That(rebase.CurrentChanges, Has.Count.EqualTo(2));
-            Assert.That(rebase.CurrentChanges, Has.Exactly(1).Matches<NodeMergeChange>(c => c.Status == NodeMergeStatus.TreeConflict));
-            var conflict = rebase.CurrentChanges.Single(c => c.Status == NodeMergeStatus.TreeConflict);
-            Assert.That(conflict.Theirs.Id, Is.EqualTo(field.Id));
-            Assert.That(conflict.OurRootDeletedParent.Id, Is.EqualTo(parentTable.Id));
+            Assert.That(rebase.CurrentChanges, Has.Exactly(1).Matches<MergeChange>(c => c.Status == ItemMergeStatus.TreeConflict));
+            var conflict = rebase.CurrentChanges.Single(c => c.Status == ItemMergeStatus.TreeConflict);
+            Assert.That(((Node)conflict.Theirs).Id, Is.EqualTo(field.Id));
+            Assert.That(((Node)conflict.OurRootDeletedParent).Id, Is.EqualTo(parentTable.Id));
             rebase.CurrentChanges.Remove(conflict);
 
             // Act

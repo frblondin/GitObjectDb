@@ -18,7 +18,7 @@ namespace GitObjectDb.Internal
         private readonly NodeTransformationComposerFactory _nodeTransformationComposerFactory;
         private readonly NodeRebaseFactory _rebaseFactory;
         private readonly NodeMergeFactory _mergeFactory;
-        private readonly IQuery<Path, string, Node> _queryNode;
+        private readonly IQuery<DataPath, string, Node> _queryNode;
         private readonly IQuery<Node, string, IEnumerable<Node>> _queryNodeChildren;
         private readonly IQuery<Tree, Stack<string>, IEnumerable<Node>> _queryTreeChildren;
 
@@ -28,7 +28,7 @@ namespace GitObjectDb.Internal
             NodeTransformationComposerFactory transformationComposerFactory,
             NodeRebaseFactory rebaseFactory,
             NodeMergeFactory mergeFactory,
-            IQuery<Path, string, Node> queryNode,
+            IQuery<DataPath, string, Node> queryNode,
             IQuery<Node, string, IEnumerable<Node>> queryNodeChildren,
             IQuery<Tree, Stack<string>, IEnumerable<Node>> queryTreeChildren)
         {
@@ -57,7 +57,7 @@ namespace GitObjectDb.Internal
             return transformations(empty);
         }
 
-        public TNode Get<TNode>(Path path, string committish = null)
+        public TNode Get<TNode>(DataPath path, string committish = null)
             where TNode : Node =>
             (TNode)_queryNode.Execute(Repository, path, committish);
 
@@ -92,10 +92,10 @@ namespace GitObjectDb.Internal
             return branch;
         }
 
-        public INodeRebase Rebase(Branch branch = null, string upstreamCommittish = null, NodeMergerPolicy policy = null) =>
+        public INodeRebase Rebase(Branch branch = null, string upstreamCommittish = null, ComparisonPolicy policy = null) =>
             _rebaseFactory(this, branch, upstreamCommittish, policy);
 
-        public INodeMerge Merge(Branch branch = null, string upstreamCommittish = null, NodeMergerPolicy policy = null) =>
+        public INodeMerge Merge(Branch branch = null, string upstreamCommittish = null, ComparisonPolicy policy = null) =>
             _mergeFactory(this, branch, upstreamCommittish, policy);
 
         public T Lookup<T>(string objectish)

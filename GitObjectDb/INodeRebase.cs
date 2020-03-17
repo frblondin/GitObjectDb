@@ -15,7 +15,7 @@ namespace GitObjectDb
         Commit UpstreamCommit { get; }
 
         /// <summary>Gets the merge policy.</summary>
-        NodeMergerPolicy Policy { get; }
+        ComparisonPolicy Policy { get; }
 
         /// <summary>Gets the common commit between the two diverging branches.</summary>
         Commit MergeBaseCommit { get; }
@@ -27,7 +27,7 @@ namespace GitObjectDb
         IImmutableList<Commit> CompletedCommits { get; }
 
         /// <summary>Gets the current changes involved for replaying the current commit.</summary>
-        IList<NodeMergeChange> CurrentChanges { get; }
+        IList<MergeChange> CurrentChanges { get; }
 
         /// <summary>Gets the rebase status.</summary>
         RebaseStatus Status { get; }
