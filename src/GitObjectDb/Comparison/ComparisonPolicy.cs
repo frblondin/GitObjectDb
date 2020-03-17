@@ -21,8 +21,7 @@ namespace GitObjectDb.Comparison
 
         /// <summary>Gets the default policy.</summary>
         public static ComparisonPolicy Default { get; } = new ComparisonPolicy()
-            .IgnoreProperty<Node>(n => n.Path)
-            .IgnoreProperty<Node>(n => n.Resources);
+            .IgnoreProperty<Node>(n => n.Path);
 
         internal IImmutableList<PropertyInfo> IgnoredProperties { get; }
 

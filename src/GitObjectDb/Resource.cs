@@ -14,6 +14,20 @@ namespace GitObjectDb
         private Lazy<DataPath> _nodePath;
         private Func<Stream> _value;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Resource"/> class.
+        /// </summary>
+        /// <param name="node">The node this resources will belong to.</param>
+        /// <param name="relativePath">The relative path.</param>
+        /// <param name="values">The resource content.</param>
+        public Resource(Node node, DataPath relativePath, byte[] values)
+            : this(
+                  DataPath.FromGitBlobPath($"{node.Path.FolderPath}/{FileSystemStorage.ResourceFolder}/{relativePath.FilePath}"),
+                  values)
+        {
+            FileSystemStorage.ThrowIfAnyReservedName(relativePath.FilePath);
+        }
+
         internal Resource(DataPath path, Blob blob)
             : this(path, blob.GetContentStream)
         {

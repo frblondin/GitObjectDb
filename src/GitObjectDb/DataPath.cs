@@ -39,15 +39,11 @@ namespace GitObjectDb
         /// <summary>Gets the root path of the specified node.</summary>
         /// <param name="node">The node.</param>
         /// <returns>The root path.</returns>
-        public static DataPath Root(Node node) => new DataPath(GetSuffix(node), FileSystemStorage.DataFile);
+        public static DataPath Root(Node node) =>
+            new DataPath(GetSuffix(node), FileSystemStorage.DataFile);
 
-        internal static Stack<string> ToStack(DataPath path) =>
-            string.IsNullOrEmpty(path?.FolderPath) ?
-            new Stack<string>() :
-            new Stack<string>(path.FolderPath.Split('/', StringSplitOptions.RemoveEmptyEntries));
-
-        internal static DataPath FromStack(Stack<string> stack, string dataFile) =>
-            new DataPath(string.Join('/', stack.Reverse()), dataFile);
+        internal static DataPath Root(string folderName, UniqueId id) =>
+            new DataPath($"{folderName}/{id}", FileSystemStorage.DataFile);
 
         internal static DataPath FromGitBlobPath(string path)
         {
@@ -71,16 +67,16 @@ namespace GitObjectDb
             return folder.Trim('/');
         }
 
-        /// <summary>Returns the path of a child being added to the current path.</summary>
-        /// <param name="node">The node.</param>
-        /// <returns>The path of a node being added to the path.</returns>
-        public DataPath AddChild(Node node)
+        internal DataPath AddChild(Node node)
         {
             var path = string.IsNullOrEmpty(FolderPath) ?
                 GetSuffix(node) :
                 $"{FolderPath}/{GetSuffix(node)}";
             return new DataPath(path, FileSystemStorage.DataFile);
         }
+
+        internal DataPath AddChild(string folderName, UniqueId id) =>
+            new DataPath($"{FolderPath}/{folderName}/{id}", FileSystemStorage.DataFile);
 
         private static string GetSuffix(Node node)
         {

@@ -50,43 +50,6 @@ namespace GitObjectDb.Commands
             definition.Add(node.Path.FilePath, blob, Mode.NonExecutableFile);
         }
 
-        private static void CreateOrUpdateOrDeleteResourceBlobs(Node node, ObjectDatabase database, TreeDefinition definition, Tree reference)
-        {
-            if (node.Resources == null)
-            {
-                return;
-            }
-
-            // Add all resources
-            var set = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var resource in node.Resources)
-            {
-                // Only update resource that are detached
-                if (resource.IsDetached)
-                {
-                    CreateOrUpdateResourceBlob(database, definition, resource);
-                    set.Add(resource.Path.FilePath);
-                }
-            }
-
-            // Go through all current git tree resources and remove any resource that no longer exists
-            // in new node resources
-            var resourceFolderPath = $"{node.Path.FolderPath}/{FileSystemStorage.ResourceFolder}";
-            var referenceResourceTree = reference?[resourceFolderPath];
-            if (referenceResourceTree?.TargetType == TreeEntryTargetType.Tree)
-            {
-                var traversed = referenceResourceTree.Traverse(resourceFolderPath);
-                foreach (var entry in traversed)
-                {
-                    if (entry.Entry.TargetType == TreeEntryTargetType.Blob &&
-                        !set.Contains(entry.Path))
-                    {
-                        definition.Remove(entry.Path);
-                    }
-                }
-            }
-        }
-
         private static void CreateOrUpdateResourceBlob(ObjectDatabase database, TreeDefinition definition, Resource resource)
         {
             var stream = resource.GetContentStream();

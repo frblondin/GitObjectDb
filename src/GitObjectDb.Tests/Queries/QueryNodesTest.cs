@@ -22,10 +22,10 @@ namespace GitObjectDb.Tests.Queries
         public void GetRootNodes(IFixture fixture)
         {
             // Arrange
-            var (sut, repository) = Arrange<IQuery<Node, string, IEnumerable<Node>>>(fixture);
+            var (sut, repository) = Arrange(fixture);
 
             // Act
-            var applications = sut.Execute(repository, default, default).OfType<Application>().ToList();
+            var applications = sut.Execute(repository, default, repository.Head.Tip.Tree).OfType<Application>().ToList();
 
             // Assert
             Assert.That(applications, Has.Count.EqualTo(SoftwareCustomization.DefaultApplicationCount));
@@ -39,10 +39,11 @@ namespace GitObjectDb.Tests.Queries
         public void GetChildNodes(IFixture fixture, Application application)
         {
             // Arrange
-            var (sut, repository) = Arrange<IQuery<Node, string, IEnumerable<Node>>>(fixture);
+            var (sut, repository) = Arrange(fixture);
+            var tree = repository.Head.Tip.Tree[application.Path.FolderPath].Target.Peel<Tree>();
 
             // Act
-            var tables = sut.Execute(repository, application, default).OfType<Table>().ToList();
+            var tables = sut.Execute(repository, application.Path, tree).OfType<Table>().ToList();
 
             // Assert
             Assert.That(tables, Has.Count.EqualTo(SoftwareCustomization.DefaultTablePerApplicationCount));
@@ -51,9 +52,9 @@ namespace GitObjectDb.Tests.Queries
             Assert.That(tables[0].Description, Is.Not.Null);
         }
 
-        private static (TQuery, Repository) Arrange<TQuery>(IFixture fixture) =>
+        private static (IQuery<DataPath, Tree, IEnumerable<Node>>, Repository) Arrange(IFixture fixture) =>
         (
-            fixture.Create<TQuery>(),
+            fixture.Create<IQuery<DataPath, Tree, IEnumerable<Node>>>(),
             fixture.Create<Repository>()
         );
     }

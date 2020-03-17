@@ -16,17 +16,10 @@ namespace GitObjectDb
         public Node(UniqueId id)
         {
             Id = id;
-            Resources = new ResourceCollection(this);
         }
 
         /// <summary>Gets the unique node identifier.</summary>
         public UniqueId Id { get; }
-
-        /// <summary>
-        /// Gets the resources declared by the object.
-        /// </summary>
-        [JsonIgnore]
-        public ResourceCollection Resources { get; private set; }
 
         /// <summary>Gets the node path.</summary>
         [JsonIgnore]
