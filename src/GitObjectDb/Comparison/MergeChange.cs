@@ -19,28 +19,28 @@ namespace GitObjectDb.Comparison
         }
 
         /// <summary>Gets the ancestor.</summary>
-        public ITreeItem Ancestor { get; internal set; }
+        public ITreeItem? Ancestor { get; internal set; }
 
         /// <summary>Gets the node on our side.</summary>
-        public ITreeItem Ours { get; internal set; }
+        public ITreeItem? Ours { get; internal set; }
 
         /// <summary>Gets the node on their side.</summary>
-        public ITreeItem Theirs { get; internal set; }
+        public ITreeItem? Theirs { get; internal set; }
 
         /// <summary>Gets the parent root deleted node on our side.</summary>
-        public ITreeItem OurRootDeletedParent { get; internal set; }
+        public ITreeItem? OurRootDeletedParent { get; internal set; }
 
         /// <summary>Gets the parent root deleted node on their side.</summary>
-        public ITreeItem TheirRootDeletedParent { get; internal set; }
+        public ITreeItem? TheirRootDeletedParent { get; internal set; }
 
         /// <summary>Gets the merged node.</summary>
-        public ITreeItem Merged { get; private set; }
+        public ITreeItem? Merged { get; private set; }
 
         /// <summary>Gets the node path.</summary>
-        public DataPath Path => (Theirs ?? Ours ?? Ancestor).Path;
+        public DataPath Path => (Theirs ?? Ours ?? Ancestor)?.Path ?? throw new InvalidOperationException();
 
         /// <summary>Gets the list of conflicts.</summary>
-        public IImmutableList<MergeValueConflict> Conflicts { get; internal set; }
+        public IImmutableList<MergeValueConflict> Conflicts { get; internal set; } = ImmutableList.Create<MergeValueConflict>();
 
         /// <summary>Gets the merge policy.</summary>
         public ComparisonPolicy Policy { get; private set; }
@@ -92,9 +92,11 @@ namespace GitObjectDb.Comparison
             return type;
         }
 
-        internal void Transform(UpdateTreeCommand update, ObjectDatabase database, TreeDefinition tree, Tree reference)
+        internal void Transform(UpdateTreeCommand update, ObjectDatabase database, TreeDefinition tree, Tree? reference)
         {
-            if (Status == ItemMergeStatus.EditConflict || Status == ItemMergeStatus.TreeConflict)
+            if (Status == ItemMergeStatus.EditConflict ||
+                Status == ItemMergeStatus.TreeConflict ||
+                Merged == null)
             {
                 throw new GitObjectDbException("Remaining conflicts.");
             }
@@ -132,7 +134,7 @@ namespace GitObjectDb.Comparison
             }
         }
 
-        private bool TryMergePropertyValue(PropertyInfo property, out MemberSetter setter, out object ancestorValue, out object ourValue, out object theirValue)
+        private bool TryMergePropertyValue(PropertyInfo property, out MemberSetter setter, out object? ancestorValue, out object? ourValue, out object? theirValue)
         {
             var getter = Reflect.PropertyGetter(property);
             setter = Reflect.PropertySetter(property);

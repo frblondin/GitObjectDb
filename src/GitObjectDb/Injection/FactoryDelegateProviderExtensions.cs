@@ -19,11 +19,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal static IServiceCollection AddServicesImplementing(this IServiceCollection services, Type interfaceType, ServiceLifetime lifetime)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
             var query = from implementationType in Assembly.GetExecutingAssembly().GetTypes()
                         where implementationType.IsClass
                         from serviceType in implementationType.GetInterfaces()
@@ -47,15 +42,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         internal static IServiceCollection AddFactoryDelegates(this IServiceCollection services, IEnumerable<Type> delegateTypes)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-            if (delegateTypes is null)
-            {
-                throw new ArgumentNullException(nameof(delegateTypes));
-            }
-
             foreach (var delegateType in delegateTypes)
             {
                 var invokeMethod = delegateType.GetMethod("Invoke");
@@ -83,11 +69,6 @@ namespace Microsoft.Extensions.DependencyInjection
             where TDelegate : Delegate
             where TImplementation : class
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
             var invoker = CreateInvoker(typeof(TImplementation), typeof(TDelegate));
             return services.AddSingleton(typeof(TDelegate), (Func<IServiceProvider, object>)invoker.Compile());
         }
@@ -101,11 +82,6 @@ namespace Microsoft.Extensions.DependencyInjection
         internal static IServiceCollection AddFactoryDelegate<TImplementation>(this IServiceCollection services)
             where TImplementation : class
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
             var delegateType = typeof(TImplementation).Assembly.GetType($"{typeof(TImplementation).FullName}+Factory", true);
             var invoker = CreateInvoker(typeof(TImplementation), delegateType);
             return services.AddSingleton(delegateType, (Func<IServiceProvider, object>)invoker.Compile());
@@ -149,9 +125,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static Expression MapParameter(ParameterInfo p, int?[] map, IList<ParameterExpression> delegateArgs, Expression serviceProvider)
         {
-            if (map[p.Position] != null)
+            var mapped = map[p.Position];
+            if (mapped.HasValue)
             {
-                return delegateArgs[(int)map[p.Position]];
+                return delegateArgs[mapped.Value];
             }
             else if (p.ParameterType == typeof(IServiceProvider))
             {

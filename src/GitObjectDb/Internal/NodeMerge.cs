@@ -19,15 +19,15 @@ namespace GitObjectDb.Internal
         private readonly UpdateTreeCommand _updateCommand;
         private readonly CommitCommand _commitCommand;
         private readonly IConnectionInternal _connection;
-        private readonly string _upstreamCommittish;
+        private readonly string? _upstreamCommittish;
 
         [FactoryDelegateConstructor(typeof(Factories.NodeMergeFactory))]
-        public NodeMerge(Comparer treeComparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand, IConnectionInternal connection, Branch branch = null, string upstreamCommittish = null, ComparisonPolicy policy = null)
+        public NodeMerge(Comparer treeComparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand, IConnectionInternal connection, Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null)
         {
-            _treeComparer = treeComparer ?? throw new ArgumentNullException(nameof(treeComparer));
-            _updateCommand = updateCommand ?? throw new ArgumentNullException(nameof(updateCommand));
-            _commitCommand = commitCommand ?? throw new ArgumentNullException(nameof(commitCommand));
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _treeComparer = treeComparer;
+            _updateCommand = updateCommand;
+            _commitCommand = commitCommand;
+            _connection = connection;
             Branch = branch ?? connection.Repository.Head;
             _upstreamCommittish = upstreamCommittish;
             UpstreamCommit = FindUpstreamCommit(upstreamCommittish);
@@ -53,9 +53,9 @@ namespace GitObjectDb.Internal
 
         public MergeStatus Status { get; private set; }
 
-        public Commit MergeCommit { get; private set; }
+        public Commit? MergeCommit { get; private set; }
 
-        private Commit FindUpstreamCommit(string committish)
+        private Commit FindUpstreamCommit(string? committish)
         {
             if (committish != null)
             {
@@ -126,12 +126,12 @@ namespace GitObjectDb.Internal
             // If last commit, update head so it points to the new commit
             if (RequiresMergeCommit && CurrentChanges.Any())
             {
-                var message = $"Merge {_upstreamCommittish} into {Branch.FriendlyName}";
+                var message = $"Merge {_upstreamCommittish ?? UpstreamCommit.Sha} into {Branch.FriendlyName}";
                 MergeCommit = _commitCommand.Commit(
                     _connection.Repository,
                     Branch.Tip,
                     CurrentChanges.Select(c =>
-                        (ApplyUpdateTreeDefinition)((ObjectDatabase db, TreeDefinition t, Tree @ref) =>
+                        (ApplyUpdateTreeDefinition)((ObjectDatabase db, TreeDefinition t, Tree? @ref) =>
                         c.Transform(_updateCommand, db, t, @ref))),
                     message, author, committer,
                     updateHead: false,

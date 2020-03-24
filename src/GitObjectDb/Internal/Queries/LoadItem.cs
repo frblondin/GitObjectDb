@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace GitObjectDb.Queries
+namespace GitObjectDb.Internal.Queries
 {
     internal class LoadItem : IQuery<Tree, DataPath, ITreeItem>
     {
@@ -12,20 +12,13 @@ namespace GitObjectDb.Queries
 
         public LoadItem(INodeSerializer serializer)
         {
-            _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+            _serializer = serializer;
         }
 
-        public ITreeItem Execute(Repository repository, Tree tree, DataPath path)
-        {
-            if (tree is null)
-            {
-                throw new ArgumentNullException(nameof(tree));
-            }
-
-            return path.FileName == FileSystemStorage.DataFile ?
+        public ITreeItem Execute(Repository repository, Tree tree, DataPath path) =>
+            path.FileName == FileSystemStorage.DataFile ?
                 LoadNode(tree, path) :
                 LoadResource(tree, path);
-        }
 
         private ITreeItem LoadNode(Tree tree, DataPath path)
         {

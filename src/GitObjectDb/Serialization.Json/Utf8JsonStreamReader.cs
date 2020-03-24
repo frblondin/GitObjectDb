@@ -9,7 +9,6 @@ namespace GitObjectDb.Serialization.Json
 {
     internal ref struct Utf8JsonStreamReader
     {
-#nullable enable
         private readonly Stream _stream;
         private readonly int _bufferSize;
 

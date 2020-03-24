@@ -20,8 +20,8 @@ namespace GitObjectDb.Serialization.Json.Converters
 
             ReadNextToken(ref reader, JsonTokenType.StartObject);
             var result = (Node)JsonSerializer.Deserialize(ref reader, type, options);
-
             ReadNextToken(ref reader, JsonTokenType.EndObject);
+
             return new NonScalar(result);
         }
 
@@ -35,7 +35,7 @@ namespace GitObjectDb.Serialization.Json.Converters
             return type;
         }
 
-        private bool ReadNextToken(ref Utf8JsonReader reader, JsonTokenType expectedToken, string expectedString = null)
+        private static bool ReadNextToken(ref Utf8JsonReader reader, JsonTokenType expectedToken, string? expectedString = null)
         {
             if (!reader.Read() || reader.TokenType != expectedToken)
             {
@@ -59,7 +59,7 @@ namespace GitObjectDb.Serialization.Json.Converters
             writer.WriteEndObject();
         }
 
-        private static string BindToName(Type type) => $"{type.FullName}, {type.Assembly.FullName}";
+        internal static string BindToName(Type type) => $"{type.FullName}, {type.Assembly.FullName}";
 
         private static Type BindToType(string name)
         {

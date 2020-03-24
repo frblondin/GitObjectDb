@@ -21,23 +21,18 @@ namespace GitObjectDb.Internal
 
         [FactoryDelegateConstructor(typeof(Factories.NodeTransformationComposerFactory))]
         public NodeTransformationComposer(UpdateTreeCommand updateTreeCommand, CommitCommand commitCommand, IConnectionInternal connection)
-            : this(connection, new List<INodeTransformation>())
         {
-            _updateTreeCommand = updateTreeCommand ?? throw new ArgumentNullException(nameof(updateTreeCommand));
-            _commitCommand = commitCommand ?? throw new ArgumentNullException(nameof(commitCommand));
-        }
-
-        public NodeTransformationComposer(IConnectionInternal connection, List<INodeTransformation> transformations)
-        {
+            _updateTreeCommand = updateTreeCommand;
+            _commitCommand = commitCommand;
             Connection = connection;
-            Transformations = transformations ?? throw new ArgumentNullException(nameof(transformations));
+            Transformations = new List<INodeTransformation>();
         }
 
         public IConnectionInternal Connection { get; }
 
         public IList<INodeTransformation> Transformations { get; }
 
-        public INodeTransformationComposer CreateOrUpdate(Node item, Node parent = null) =>
+        public INodeTransformationComposer CreateOrUpdate(Node item, Node? parent = null) =>
             CreateOrUpdate((ITreeItem)item, parent);
 
         public INodeTransformationComposer CreateOrUpdate(Resource item) =>
@@ -45,6 +40,10 @@ namespace GitObjectDb.Internal
 
         public INodeTransformationComposer Delete(ITreeItem item)
         {
+            if (item.Path is null)
+            {
+                throw new InvalidOperationException("Item has no path defined.");
+            }
             var transformation = new NodeTransformation(
                 _updateTreeCommand.Delete(item),
                 $"Removing {item.Path.FolderPath}.");
@@ -52,38 +51,44 @@ namespace GitObjectDb.Internal
             return this;
         }
 
-        private INodeTransformationComposer CreateOrUpdate(ITreeItem item, Node parent = null)
+        private INodeTransformationComposer CreateOrUpdate(ITreeItem item, Node? parent = null)
         {
+            var path = item.Path;
             if (item is Node node)
             {
-                UpdateNodePathIfNeeded(node, parent);
+                path = UpdateNodePathIfNeeded(node, parent);
             }
-            else if (item.Path == null)
+            else if (path is null)
             {
                 throw new InvalidOperationException("Item has no path defined.");
             }
 
             var transformation = new NodeTransformation(
                 _updateTreeCommand.CreateOrUpdate(item),
-                $"Adding or updating {item.Path.FolderPath}.");
+                $"Adding or updating {path.FolderPath}.");
             Transformations.Add(transformation);
             return this;
         }
 
-        private static void UpdateNodePathIfNeeded(Node node, Node parent)
+        private static DataPath UpdateNodePathIfNeeded(Node node, Node? parent)
         {
-            if (parent != null)
+            if (!(parent is null))
             {
-                if (node.Path != null)
+                if (parent.Path is null)
+                {
+                    throw new GitObjectDbException("Parent path has not been set.");
+                }
+                if (!(node.Path is null))
                 {
                     throw new GitObjectDbException("Node path has already been set. This generally means that a node has been created multiple times.");
                 }
                 node.Path = parent.Path.AddChild(node);
             }
-            if (node.Path == null)
+            if (node.Path is null)
             {
                 node.Path = DataPath.Root(node);
             }
+            return node.Path;
         }
 
         public Commit Commit(string message, Signature author, Signature committer, bool amendPreviousCommit = false) =>

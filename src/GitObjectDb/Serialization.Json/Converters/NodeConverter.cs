@@ -107,7 +107,7 @@ namespace GitObjectDb.Serialization.Json.Converters
             return default;
         }
 
-        private void ReadIgnoredValue(ref Utf8JsonReader reader)
+        private static void ReadIgnoredValue(ref Utf8JsonReader reader)
         {
             var token = reader.TokenType;
 
@@ -138,7 +138,7 @@ namespace GitObjectDb.Serialization.Json.Converters
             }
         }
 
-        private bool ReadNextToken(ref Utf8JsonReader reader, JsonTokenType expectedToken, string expectedString = null)
+        private static bool ReadNextToken(ref Utf8JsonReader reader, JsonTokenType expectedToken, string? expectedString = null)
         {
             if (!reader.Read() || reader.TokenType != expectedToken)
             {
@@ -153,11 +153,6 @@ namespace GitObjectDb.Serialization.Json.Converters
 
         public override void Write(Utf8JsonWriter writer, TNode value, JsonSerializerOptions options)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             writer.WriteStartObject();
             writer.WriteString(_idName, value.Id.ToString());
             foreach (var kvp in _properties)

@@ -21,7 +21,7 @@ namespace GitObjectDb.Tests.Commands
     public class CommitCommandTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
         public void AddNewField(IFixture fixture, Table table, UniqueId newFieldId, string message, Signature signature)
         {
             // Arrange
@@ -44,7 +44,7 @@ namespace GitObjectDb.Tests.Commands
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
         public void AddNewResource(IFixture fixture, Table table, string fileContent, string message, Signature signature)
         {
             // Arrange
@@ -72,7 +72,7 @@ namespace GitObjectDb.Tests.Commands
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
         public void DeletingNodeRemovesNestedChildren(IFixture fixture, Table table, string message, Signature signature)
         {
             // Arrange
@@ -93,7 +93,7 @@ namespace GitObjectDb.Tests.Commands
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
         public void EditNestedProperty(IFixture fixture, Field field, string message, Signature signature)
         {
             // Arrange

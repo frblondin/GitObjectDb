@@ -1,7 +1,7 @@
 using GitObjectDb.Commands;
 using GitObjectDb.Comparison;
 using GitObjectDb.Internal;
-using GitObjectDb.Queries;
+using GitObjectDb.Internal.Queries;
 using GitObjectDb.Serialization.Json;
 using GitObjectDb.Validations;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,15 +23,8 @@ namespace GitObjectDb
         /// </summary>
         /// <param name="source">The source.</param>
         /// <returns>The source <see cref="IServiceCollection"/>.</returns>
-        public static IServiceCollection AddGitObjectDb(this IServiceCollection source)
-        {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
-            return ConfigureServices(source);
-        }
+        public static IServiceCollection AddGitObjectDb(this IServiceCollection source) =>
+            ConfigureServices(source);
 
         private static IServiceCollection ConfigureServices(IServiceCollection source)
         {

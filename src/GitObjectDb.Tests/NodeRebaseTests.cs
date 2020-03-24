@@ -12,7 +12,7 @@ namespace GitObjectDb.Tests
     public class NodeRebaseTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization))]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
         public void TwoDifferentPropertyEdits(IConnection sut, Repository repository, Table table, string newDescription, string newName, Signature signature)
         {
             // master:    A---B
@@ -49,13 +49,13 @@ namespace GitObjectDb.Tests
             Assert.That(commits[1], Is.EqualTo(b));
             Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
             Assert.That(commits[2], Is.EqualTo(repository.Head.Tip));
-            var newTable = sut.Get<Table>(table.Path);
+            var newTable = sut.Lookup<Table>(table.Path);
             Assert.That(newTable.Name, Is.EqualTo(newName));
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization))]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
         public void SamePropertyEdits(IConnection sut, Table table, string bValue, string cValue, Signature signature)
         {
             // master:    A---B
@@ -98,12 +98,12 @@ namespace GitObjectDb.Tests
             Assert.That(rebase.Continue(), Is.EqualTo(RebaseStatus.Complete));
 
             // Assert
-            var newTable = sut.Get<Table>(table.Path);
+            var newTable = sut.Lookup<Table>(table.Path);
             Assert.That(newTable.Description, Is.EqualTo("resolved"));
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization))]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
         public void EditOnTheirParentDeletion(IConnection sut, Application parentApplication, Table parentTable, Field field, string newName, Signature signature)
         {
             // master:    A---B
@@ -138,7 +138,7 @@ namespace GitObjectDb.Tests
             Assert.That(rebase.Continue(), Is.EqualTo(RebaseStatus.Complete));
 
             // Assert
-            var newApplication = sut.Get<Application>(parentApplication.Path);
+            var newApplication = sut.Lookup<Application>(parentApplication.Path);
             Assert.That(newApplication.Name, Is.EqualTo(newName));
         }
     }

@@ -7,11 +7,11 @@ namespace GitObjectDb
     public interface ITreeItem
     {
         /// <summary>Gets the blob path.</summary>
-        DataPath Path { get; }
+        DataPath? Path { get; }
     }
 
     internal interface ITreeItemInternal
     {
-        DataPath Path { get; set; }
+        DataPath? Path { get; set; }
     }
 }

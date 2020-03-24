@@ -25,6 +25,7 @@ namespace LibGit2Sharp
         /// <param name="target">The target.</param>
         /// <returns>The new <see cref="Reference"/>.</returns>
         internal static Reference MoveHeadTarget<T>(this ReferenceCollection references, T target)
+            where T : class
         {
             var method = _referenceCollectionMoveHeadTarget.MakeGenericMethod(typeof(T));
             return (Reference)method.Invoke(references, new object[] { target });

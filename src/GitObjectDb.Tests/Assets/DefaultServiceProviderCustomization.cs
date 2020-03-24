@@ -10,11 +10,11 @@ using System.Text;
 
 namespace GitObjectDb.Tests.Assets
 {
-    public class DefaultContainerCustomization : ICustomization, ISpecimenBuilder
+    public class DefaultServiceProviderCustomization : ICustomization, ISpecimenBuilder
     {
         readonly IServiceProvider _serviceProvider;
 
-        public DefaultContainerCustomization()
+        public DefaultServiceProviderCustomization()
         {
             _serviceProvider = new ServiceCollection()
                 .AddGitObjectDb()

@@ -5,17 +5,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace GitObjectDb.Queries
+namespace GitObjectDb.Internal.Queries
 {
     internal class QueryResources : IQuery<DataPath, Tree, IEnumerable<Resource>>
     {
-        private readonly IQuery<Tree, DataPath, ITreeItem> _loader;
-
-        public QueryResources(IQuery<Tree, DataPath, ITreeItem> loader)
-        {
-            _loader = loader ?? throw new ArgumentNullException(nameof(loader));
-        }
-
         public IEnumerable<Resource> Execute(Repository repository, DataPath path, Tree tree)
         {
             var referenceResourceTree = tree[FileSystemStorage.ResourceFolder];

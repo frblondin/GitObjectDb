@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -40,7 +41,7 @@ namespace GitObjectDb
         /// <param name="sha">The value.</param>
         public UniqueId(string sha)
         {
-            _sha = sha ?? throw new ArgumentNullException(nameof(sha));
+            _sha = sha;
 
             if (!IsShaValid(sha))
             {
@@ -48,13 +49,16 @@ namespace GitObjectDb
             }
         }
 
+        internal static ConstructorInfo Constructor { get; } = ExpressionReflector.GetConstructor(() => new UniqueId(string.Empty));
+
         /// <summary>
         /// Indicates whether the values of two specified <see cref="UniqueId" /> objects are equal.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns><see langword="true" /> if <paramref name="left" /> and <paramref name="right" /> are equal; otherwise, <see langword="false" />.</returns>
-        public static bool operator ==(UniqueId left, UniqueId right) => left.Equals(right);
+        public static bool operator ==(UniqueId left, UniqueId right) =>
+            left.Equals(right);
 
         /// <summary>
         /// Indicates whether the values of two specified <see cref="UniqueId" /> objects are not equal.
@@ -62,31 +66,36 @@ namespace GitObjectDb
         /// <param name="left">The first object to compare. </param>
         /// <param name="right">The second object to compare. </param>
         /// <returns><see langword="true" /> if <paramref name="left" /> and <paramref name="right" /> are not equal; otherwise, <see langword="false" />.</returns>
-        public static bool operator !=(UniqueId left, UniqueId right) => !(left == right);
+        public static bool operator !=(UniqueId left, UniqueId right) =>
+            !(left == right);
 
         /// <summary>Determines whether one specified <see cref="UniqueId" /> is lower than another specified <see cref="UniqueId" />.</summary>
         /// <param name="left">The first object to compare. </param>
         /// <param name="right">The second object to compare. </param>
         /// <returns><see langword="true" /> if <paramref name="left" /> is lower than <paramref name="right" />; otherwise, <see langword="false" />.</returns>
-        public static bool operator <(UniqueId left, UniqueId right) => left.CompareTo(right) < 0;
+        public static bool operator <(UniqueId left, UniqueId right) =>
+            left.CompareTo(right) < 0;
 
         /// <summary>Determines whether one specified <see cref="UniqueId" /> is the same as or lower than another specified <see cref="UniqueId" />.</summary>
         /// <param name="left">The first object to compare. </param>
         /// <param name="right">The second object to compare. </param>
         /// <returns><see langword="true" /> if <paramref name="left" /> is the same as or lower than <paramref name="right" />; otherwise, <see langword="false" />.</returns>
-        public static bool operator <=(UniqueId left, UniqueId right) => left.CompareTo(right) <= 0;
+        public static bool operator <=(UniqueId left, UniqueId right) =>
+            left.CompareTo(right) <= 0;
 
         /// <summary>Determines whether one specified <see cref="UniqueId" /> is greater than another specified <see cref="UniqueId" />.</summary>
         /// <param name="left">The first object to compare. </param>
         /// <param name="right">The second object to compare. </param>
         /// <returns><see langword="true" /> if <paramref name="left" /> is greater than <paramref name="right" />; otherwise, <see langword="false" />.</returns>
-        public static bool operator >(UniqueId left, UniqueId right) => left.CompareTo(right) > 0;
+        public static bool operator >(UniqueId left, UniqueId right) =>
+            left.CompareTo(right) > 0;
 
         /// <summary>Determines whether one specified <see cref="UniqueId" /> is the same as or greater than another specified <see cref="UniqueId" />.</summary>
         /// <param name="left">The first object to compare. </param>
         /// <param name="right">The second object to compare. </param>
         /// <returns><see langword="true" /> if <paramref name="left" /> is the same as or greater than <paramref name="right" />; otherwise, <see langword="false" />.</returns>
-        public static bool operator >=(UniqueId left, UniqueId right) => left.CompareTo(right) >= 0;
+        public static bool operator >=(UniqueId left, UniqueId right) =>
+            left.CompareTo(right) >= 0;
 
         /// <summary>
         /// Creates a new instance of <see cref="UniqueId"/>.

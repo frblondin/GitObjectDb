@@ -1,6 +1,6 @@
 using GitObjectDb.Comparison;
 using GitObjectDb.Injection;
-using GitObjectDb.Queries;
+using GitObjectDb.Internal.Queries;
 using GitObjectDb.Serialization.Json;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,18 +8,20 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using static GitObjectDb.Internal.Factories;
 
 namespace GitObjectDb.Internal
 {
+    [DebuggerDisplay("{Repository.Path,nq}")]
     internal sealed class Connection : IConnectionInternal
     {
         private readonly NodeTransformationComposerFactory _nodeTransformationComposerFactory;
         private readonly NodeRebaseFactory _rebaseFactory;
         private readonly NodeMergeFactory _mergeFactory;
+        private readonly NodeQueryFetcherFactory _fetcherFactory;
         private readonly IQuery<Tree, DataPath, ITreeItem> _loader;
-        private readonly IQuery<DataPath, Tree, IEnumerable<Node>> _queryNodes;
         private readonly IQuery<DataPath, Tree, IEnumerable<Resource>> _queryResources;
 
         [FactoryDelegateConstructor(typeof(ConnectionFactory))]
@@ -28,8 +30,8 @@ namespace GitObjectDb.Internal
             NodeTransformationComposerFactory transformationComposerFactory,
             NodeRebaseFactory rebaseFactory,
             NodeMergeFactory mergeFactory,
+            NodeQueryFetcherFactory fetcherFactory,
             IQuery<Tree, DataPath, ITreeItem> loader,
-            IQuery<DataPath, Tree, IEnumerable<Node>> queryNodes,
             IQuery<DataPath, Tree, IEnumerable<Resource>> queryResources)
         {
             if (!Repository.IsValid(path))
@@ -37,12 +39,12 @@ namespace GitObjectDb.Internal
                 Repository.Init(path);
             }
             Repository = new Repository(path);
-            _nodeTransformationComposerFactory = transformationComposerFactory ?? throw new ArgumentNullException(nameof(transformationComposerFactory));
-            _rebaseFactory = rebaseFactory ?? throw new ArgumentNullException(nameof(rebaseFactory));
-            _mergeFactory = mergeFactory ?? throw new ArgumentNullException(nameof(mergeFactory));
-            _loader = loader ?? throw new ArgumentNullException(nameof(loader));
-            _queryNodes = queryNodes ?? throw new ArgumentNullException(nameof(queryNodes));
-            _queryResources = queryResources ?? throw new ArgumentNullException(nameof(queryResources));
+            _nodeTransformationComposerFactory = transformationComposerFactory;
+            _rebaseFactory = rebaseFactory;
+            _mergeFactory = mergeFactory;
+            _loader = loader;
+            _queryResources = queryResources;
+            _fetcherFactory = fetcherFactory;
         }
 
         public Repository Repository { get; }
@@ -57,48 +59,42 @@ namespace GitObjectDb.Internal
             return transformations(empty);
         }
 
-        public TNode Get<TNode>(DataPath path, string committish = null)
-            where TNode : Node
+        public TItem Lookup<TItem>(DataPath path, string? committish = null)
+            where TItem : ITreeItem
         {
             var tree = GetTree(path, committish);
-            return (TNode)_loader.Execute(Repository, tree, path);
+            return (TItem)_loader.Execute(Repository, tree, path);
         }
 
-        public IEnumerable<Node> GetNodes(Node parent = null, string committish = null)
+        public IQueryable<Node> AsQueryable(Node? parent = null, string? committish = null, bool isRecursive = false)
         {
             var tree = GetTree(parent?.Path, committish);
-            return _queryNodes.Execute(Repository, parent?.Path, tree);
+            var fetcher = _fetcherFactory(Repository, tree, parent, isRecursive);
+            return new NodeQuery<Node>(fetcher);
         }
 
-        public IEnumerable<TNode> GetNodes<TNode>(Node parent, string committish = null)
-            where TNode : Node =>
-            GetNodes(parent, committish).OfType<TNode>();
-
-        private Tree GetTree(DataPath path = null, string committish = null)
+        private Tree GetTree(DataPath? path = null, string? committish = null)
         {
             var commit = committish != null ?
                 (Commit)Repository.Lookup(committish) :
                 Repository.Head.Tip;
-            return path == null || string.IsNullOrEmpty(path.FolderPath) ?
+            return path is null || string.IsNullOrEmpty(path.FolderPath) ?
                 commit.Tree :
                 commit.Tree[path.FolderPath].Target.Peel<Tree>();
         }
 
-        public IEnumerator<Node> GetEnumerator() =>
-            GetNodes().GetEnumerator();
-
-        public IEnumerable<Resource> GetResources(Node node, string committish = null)
+        public IEnumerable<Resource> GetResources(Node node, string? committish = null)
         {
-            if (node is null)
+            if (node.Path is null)
             {
-                throw new ArgumentNullException(nameof(node));
+                throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.");
             }
 
             var tree = GetTree(node.Path, committish);
             return _queryResources.Execute(Repository, node.Path, tree);
         }
 
-        public Branch Checkout(string branchName, bool createNewBranch = false, string committish = null)
+        public Branch Checkout(string branchName, bool createNewBranch = false, string? committish = null)
         {
             var head = Repository.Head;
             var branch = Repository.Branches[branchName];
@@ -119,10 +115,10 @@ namespace GitObjectDb.Internal
             return branch;
         }
 
-        public INodeRebase Rebase(Branch branch = null, string upstreamCommittish = null, ComparisonPolicy policy = null) =>
+        public INodeRebase Rebase(Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null) =>
             _rebaseFactory(this, branch, upstreamCommittish, policy);
 
-        public INodeMerge Merge(Branch branch = null, string upstreamCommittish = null, ComparisonPolicy policy = null) =>
+        public INodeMerge Merge(Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null) =>
             _mergeFactory(this, branch, upstreamCommittish, policy);
 
         public T Lookup<T>(string objectish)

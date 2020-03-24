@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -18,11 +19,13 @@ namespace GitObjectDb.Tests.Assets.Models.Software
 
         public string Description { get; set; }
 
-        public IEnumerable<Table> GetTables(IConnection connection) => this.GetChildren<Table>(connection);
+        public IQueryable<Table> GetTables(IConnection connection) =>
+            this.GetChildren<Table>(connection);
     }
 
     public static class IConnectionExtensions
     {
-        public static IEnumerable<Application> GetApplications(this IConnection connection) => connection.GetNodes<Application>();
+        public static IQueryable<Application> GetApplications(this IConnection connection) =>
+            connection.AsQueryable().OfType<Application>();
     }
 }
