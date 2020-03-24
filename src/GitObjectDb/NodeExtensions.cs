@@ -18,8 +18,8 @@ namespace GitObjectDb
         /// <param name="connection">The connection.</param>
         /// <param name="committish">The committish.</param>
         /// <returns>The children of the parent node.</returns>
-        public static IEnumerable<TNode> GetChildren<TNode>(this Node parent, IConnection connection, string committish = null)
+        public static IQueryable<TNode> GetChildren<TNode>(this Node parent, IConnection connection, string? committish = null)
             where TNode : Node =>
-            connection.GetNodes<TNode>(parent, committish);
+            connection.AsQueryable(parent, committish).OfType<TNode>();
     }
 }

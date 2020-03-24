@@ -22,7 +22,9 @@ namespace GitObjectDb
         /// <param name="values">The resource content.</param>
         public Resource(Node node, DataPath relativePath, byte[] values)
             : this(
-                  DataPath.FromGitBlobPath($"{node.Path.FolderPath}/{FileSystemStorage.ResourceFolder}/{relativePath.FilePath}"),
+                  DataPath.FromGitBlobPath(
+                      $"{(node.Path ?? throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.")).FolderPath}/" +
+                      $"{FileSystemStorage.ResourceFolder}/{relativePath.FilePath}"),
                   values)
         {
             FileSystemStorage.ThrowIfAnyReservedName(relativePath.FilePath);
@@ -68,11 +70,6 @@ namespace GitObjectDb
         /// <param name="stream">The content stream.</param>
         public void SetContentStream(Stream stream)
         {
-            if (stream is null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             _value = () => stream;
         }
     }

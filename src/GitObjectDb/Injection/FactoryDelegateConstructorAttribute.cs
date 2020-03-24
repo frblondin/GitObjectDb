@@ -9,7 +9,7 @@ namespace GitObjectDb.Injection
     {
         public FactoryDelegateConstructorAttribute(Type delegateType)
         {
-            DelegateType = delegateType ?? throw new ArgumentNullException(nameof(delegateType));
+            DelegateType = delegateType;
         }
 
         public Type DelegateType { get; }

@@ -13,8 +13,8 @@ namespace GitObjectDb.Tests.Assets.Loggers
 
         public ConsoleLogger(string name, IExternalScopeProvider scopeProvider)
         {
-            _name = name ?? throw new ArgumentNullException(nameof(name));
-            _scopeProvider = scopeProvider ?? throw new ArgumentNullException(nameof(scopeProvider));
+            _name = name;
+            _scopeProvider = scopeProvider;
         }
 
         public IDisposable BeginScope<TState>(TState state) => _scopeProvider.Push(state);

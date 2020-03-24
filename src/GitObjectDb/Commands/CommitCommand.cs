@@ -16,7 +16,7 @@ namespace GitObjectDb.Commands
             _treeValidation = treeValidation;
         }
 
-        internal Commit Commit(Repository repository, IEnumerable<ApplyUpdateTreeDefinition> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, Commit mergeParent = null)
+        internal Commit Commit(Repository repository, IEnumerable<ApplyUpdateTreeDefinition> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, Commit? mergeParent = null)
         {
             var tip = repository.Info.IsHeadUnborn ? null : repository.Head.Tip;
             var definition = tip != null ? TreeDefinition.From(tip) : new TreeDefinition();
@@ -28,7 +28,7 @@ namespace GitObjectDb.Commands
             return Commit(repository, definition, message, author, committer, parents, amendPreviousCommit, true);
         }
 
-        internal Commit Commit(Repository repository, Commit predecessor, IEnumerable<ApplyUpdateTreeDefinition> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, bool updateHead = true, Commit mergeParent = null)
+        internal Commit Commit(Repository repository, Commit predecessor, IEnumerable<ApplyUpdateTreeDefinition> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, bool updateHead = true, Commit? mergeParent = null)
         {
             var definition = TreeDefinition.From(predecessor);
             foreach (var transformation in transformations)
@@ -59,7 +59,7 @@ namespace GitObjectDb.Commands
             return result;
         }
 
-        private List<Commit> RetrieveParentsOfTheCommitBeingCreated(Repository repository, bool amendPreviousCommit, LibGit2Sharp.Commit mergeParent = null)
+        private static List<Commit> RetrieveParentsOfTheCommitBeingCreated(Repository repository, bool amendPreviousCommit, Commit? mergeParent = null)
         {
             if (amendPreviousCommit)
             {

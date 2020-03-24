@@ -19,10 +19,13 @@ namespace GitObjectDb.Tests
         private static readonly string _workDirectory =
             Directory.Exists(TempPath) ?
             TempPath :
-            System.IO.Path.GetDirectoryName(AssemblyHelper.GetAssemblyPath(Assembly.GetExecutingAssembly()));
+            Path.GetDirectoryName(AssemblyHelper.GetAssemblyPath(Assembly.GetExecutingAssembly()));
+
+        public static string SoftwareBenchmarkRepositoryPath { get; } =
+            Path.Combine(_workDirectory, "Repos", "Models", "Software", "Benchmark");
 
         public static string TempRepoPath { get; } =
-            System.IO.Path.Combine(_workDirectory, "TempRepos");
+            Path.Combine(_workDirectory, "TempRepos");
 
         public static string GetAvailableFolderPath()
         {
@@ -30,12 +33,21 @@ namespace GitObjectDb.Tests
             string result;
             while (true)
             {
-                result = System.IO.Path.Combine(TempRepoPath, i.ToString("D4", CultureInfo.InvariantCulture));
+                result = Path.Combine(TempRepoPath, i.ToString("D4", CultureInfo.InvariantCulture));
                 if (!Directory.Exists(result))
                 {
                     return result;
                 }
                 i++;
+            }
+        }
+
+        [OneTimeSetUp]
+        public void RestoreRepositories()
+        {
+            if (!Directory.Exists(Path.Combine(SoftwareBenchmarkRepositoryPath, ".git")))
+            {
+                ZipFile.ExtractToDirectory("Assets\\Models\\Software\\Benchmark.zip", SoftwareBenchmarkRepositoryPath);
             }
         }
 

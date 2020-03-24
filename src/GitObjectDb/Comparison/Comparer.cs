@@ -1,4 +1,4 @@
-using GitObjectDb.Queries;
+using GitObjectDb.Internal.Queries;
 using GitObjectDb.Serialization.Json;
 using KellermanSoftware.CompareNetObjects;
 using LibGit2Sharp;
@@ -18,7 +18,7 @@ namespace GitObjectDb.Comparison
 
         public Comparer(IQuery<Tree, DataPath, ITreeItem> nodeLoader)
         {
-            _nodeLoader = nodeLoader ?? throw new ArgumentNullException(nameof(nodeLoader));
+            _nodeLoader = nodeLoader;
         }
 
         internal delegate bool ConflictResolver(PropertyInfo property, object ancestorValue, object ourValue, object theirValue, out object result);
@@ -27,13 +27,8 @@ namespace GitObjectDb.Comparison
             type.GetTypeInfo().GetProperties(BindingFlags.Instance | BindingFlags.Public)
             .Where(p => p.CanRead && p.CanWrite && !policy.IgnoredProperties.Contains(p));
 
-        internal static ComparisonResult Compare(object expectedObject, object actualObject, ComparisonPolicy policy)
+        internal static ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy)
         {
-            if (policy is null)
-            {
-                throw new ArgumentNullException(nameof(policy));
-            }
-
             var logic = Cache.Get(policy);
             return logic.Compare(expectedObject, actualObject);
         }
@@ -56,24 +51,24 @@ namespace GitObjectDb.Comparison
                     var @new = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
                         repository, newTree[newPath.Value.FolderPath].Target.Peel<Tree>(), newPath.Value));
 
+                    Change? treeChange;
                     switch (change.Status)
                     {
                         case ChangeKind.Modified:
-                            var treeChange = Change.Create(change, old.Value, @new.Value, ChangeStatus.Edit, policy);
-                            var differences = Compare(old.Value, @new.Value, policy);
-                            if (treeChange != null)
-                            {
-                                result.Add(treeChange);
-                            }
+                            treeChange = Change.Create(change, old.Value, @new.Value, ChangeStatus.Edit, policy);
                             break;
                         case ChangeKind.Added:
-                            result.Add(Change.Create(change, default, @new.Value, ChangeStatus.Add, policy));
+                            treeChange = Change.Create(change, default, @new.Value, ChangeStatus.Add, policy);
                             break;
                         case ChangeKind.Deleted:
-                            result.Add(Change.Create(change, old.Value, default, ChangeStatus.Delete, policy));
+                            treeChange = Change.Create(change, old.Value, default, ChangeStatus.Delete, policy);
                             break;
                         default:
                             throw new NotImplementedException(change.Status.ToString());
+                    }
+                    if (treeChange != null)
+                    {
+                        result.Add(treeChange);
                     }
                 }
                 return result;
@@ -87,16 +82,17 @@ namespace GitObjectDb.Comparison
         {
             foreach (var their in toBeMergedIntoLocal)
             {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 switch (their.Status)
                 {
                     case ChangeStatus.Edit:
                         yield return new MergeChange(policy)
                         {
                             Ancestor = their.Old,
-                            Ours = localChanges.Modified.FirstOrDefault(c => their.Old.Path.Equals((DataPath)c.Old.Path))?.New,
+                            Ours = localChanges.Modified.FirstOrDefault(c => their.Old.Path.Equals(c.Old.Path))?.New,
                             Theirs = their.New,
                             OurRootDeletedParent = (from c in localChanges.Deleted
-                                                    where their.Old.Path.FolderPath.StartsWith(c.Old.Path.FolderPath)
+                                                    where their.Old.Path.FolderPath.StartsWith(c.Old.Path.FolderPath, StringComparison.Ordinal)
                                                     orderby c.Old.Path.FolderPath.Length ascending
                                                     select c.Old).FirstOrDefault(),
                         }.Initialize();
@@ -104,10 +100,10 @@ namespace GitObjectDb.Comparison
                     case ChangeStatus.Add:
                         yield return new MergeChange(policy)
                         {
-                            Ours = localChanges.Added.FirstOrDefault(c => c.New.Path == their.New.Path)?.New,
+                            Ours = localChanges.Added.FirstOrDefault(c => c.New.Path?.Equals(their.New.Path) ?? false)?.New,
                             Theirs = their.New,
                             OurRootDeletedParent = (from c in localChanges.Deleted
-                                                    where their.Old.Path.FolderPath.StartsWith(c.Old.Path.FolderPath)
+                                                    where their.Old.Path.FolderPath.StartsWith(c.Old.Path.FolderPath, StringComparison.Ordinal)
                                                     orderby c.Old.Path.FolderPath.Length ascending
                                                     select c.Old).FirstOrDefault(),
                         }.Initialize();
@@ -117,18 +113,19 @@ namespace GitObjectDb.Comparison
                         {
                             Ancestor = their.Old,
                             TheirRootDeletedParent = (from c in toBeMergedIntoLocal.Deleted
-                                                      where c.Old.Path.FolderPath.StartsWith(their.Old.Path.FolderPath)
+                                                      where c.Old.Path.FolderPath.StartsWith(their.Old.Path.FolderPath, StringComparison.Ordinal)
                                                       orderby their.Old.Path.FolderPath.Length ascending
                                                       select c.Old).FirstOrDefault(),
                         }.Initialize();
 
                         // Node or child node added in our changes... ?
-                        if (localChanges.Added.Any(c => c.New.Path.FilePath.StartsWith(their.Old.Path.FolderPath)))
+                        if (localChanges.Added.Any(c => c.New.Path.FilePath.StartsWith(their.Old.Path.FolderPath, StringComparison.Ordinal)))
                         {
                             throw new NotImplementedException();
                         }
                         break;
                 }
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
             }
         }
 

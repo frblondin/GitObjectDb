@@ -15,7 +15,7 @@ namespace GitObjectDb.Tests.Comparison
     public class TreeComparerTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization))]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
         public void CompareFieldEdit(IFixture fixture)
         {
             // Arrange

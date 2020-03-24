@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace GitObjectDb.Queries
+namespace GitObjectDb.Internal.Queries
 {
     internal interface IQuery<TArg, TResult>
     {

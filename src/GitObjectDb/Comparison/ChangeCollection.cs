@@ -37,7 +37,11 @@ namespace GitObjectDb.Comparison
         public int Count => _changes.Count;
 
         /// <inheritdoc/>
-        public Change this[int index] { get => _changes[index]; set => _changes[index] = value; }
+        public Change this[int index]
+        {
+            get => _changes[index];
+            set => _changes[index] = value;
+        }
 
         /// <inheritdoc/>
         public void Add(Change item) => _changes.Add(item);

@@ -17,24 +17,41 @@ namespace GitObjectDb
         /// <param name="fileName">The file name containing data.</param>
         internal DataPath(string folderPath, string fileName)
         {
-            var cleanedFolder = CleanupFolder(
-                folderPath ?? throw new ArgumentNullException(nameof(folderPath)),
-                fileName);
-            FolderPath = cleanedFolder;
+            (FolderPath, FolderName) = CleanupFolder(folderPath, fileName);
             FileName = fileName;
 
             _filePath = new Lazy<string>(() =>
-                string.IsNullOrEmpty(cleanedFolder) ? FileName : $"{FolderPath}/{FileName}");
+                string.IsNullOrEmpty(FolderPath) ? FileName : $"{FolderPath}/{FileName}");
         }
 
         /// <summary>Gets the folder path.</summary>
         public string FolderPath { get; }
+
+        /// <summary>Gets the folder name.</summary>
+        public string FolderName { get; }
 
         /// <summary>Gets the blob data path, holding the serialized representation of a node in the repository.</summary>
         public string FilePath => _filePath.Value;
 
         /// <summary>Gets the name of the file containing data.</summary>
         public string FileName { get; }
+
+        /// <summary>
+        /// Indicates whether the values of two specified <see cref="DataPath" /> objects are equal.
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns><see langword="true" /> if <paramref name="left" /> and <paramref name="right" /> are equal; otherwise, <see langword="false" />.</returns>
+        public static bool operator ==(DataPath left, DataPath right) =>
+            ReferenceEquals(left, right) || (left?.Equals(right) ?? false);
+
+        /// <summary>
+        /// Indicates whether the values of two specified <see cref="DataPath" /> objects are not equal.
+        /// </summary>
+        /// <param name="left">The first object to compare. </param>
+        /// <param name="right">The second object to compare. </param>
+        /// <returns><see langword="true" /> if <paramref name="left" /> and <paramref name="right" /> are not equal; otherwise, <see langword="false" />.</returns>
+        public static bool operator !=(DataPath left, DataPath right) => !(left == right);
 
         /// <summary>Gets the root path of the specified node.</summary>
         /// <param name="node">The node.</param>
@@ -58,13 +75,15 @@ namespace GitObjectDb
                 new DataPath(string.Empty, path);
         }
 
-        private static string CleanupFolder(string folder, string fileName)
+        private static (string Path, string Name) CleanupFolder(string folder, string fileName)
         {
-            if (folder.EndsWith(fileName))
+            if (folder.EndsWith(fileName, StringComparison.Ordinal))
             {
                 folder = folder.Substring(0, folder.Length - fileName.Length);
             }
-            return folder.Trim('/');
+            var path = folder.Trim('/');
+            var lastSlash = path.LastIndexOf('/');
+            return (path, lastSlash != -1 ? path.Substring(lastSlash + 1) : string.Empty);
         }
 
         internal DataPath AddChild(Node node)
@@ -98,12 +117,12 @@ namespace GitObjectDb
             FolderPath.GetHashCode(StringComparison.Ordinal);
 
         /// <inheritdoc/>
-        public bool Equals(DataPath other) =>
+        public bool Equals(DataPath? other) =>
             string.Equals(FilePath, other?.FilePath, StringComparison.Ordinal);
 
         internal DataPath GetResourceParentNode()
         {
-            int position = FolderPath.IndexOf($"/{FileSystemStorage.ResourceFolder}/");
+            int position = FolderPath.IndexOf($"/{FileSystemStorage.ResourceFolder}/", StringComparison.Ordinal);
             if (position == -1)
             {
                 throw new InvalidOperationException($"Path doesn't refer to a resource.");

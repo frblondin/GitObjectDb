@@ -14,7 +14,7 @@ namespace GitObjectDb.Commands
 
         public UpdateTreeCommand(INodeSerializer serializer)
         {
-            _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+            _serializer = serializer;
         }
 
         internal ApplyUpdateTreeDefinition CreateOrUpdate(ITreeItem item) =>
@@ -40,14 +40,24 @@ namespace GitObjectDb.Commands
             {
                 // For nodes, delete whole folder containing node and nested entries
                 // For resources, only deleted resource
-                definition.Remove(item is Node ? item.Path.FolderPath : item.Path.FilePath);
+                var path = item.Path;
+                if (path is null)
+                {
+                    throw new InvalidOperationException("Path should not be null.");
+                }
+                definition.Remove(item is Node ? path.FolderPath : path.FilePath);
             };
 
         private void CreateOrUpdateJsonBlob(Node node, ObjectDatabase database, TreeDefinition definition)
         {
             using var stream = _serializer.Serialize(node);
             var blob = database.CreateBlob(stream);
-            definition.Add(node.Path.FilePath, blob, Mode.NonExecutableFile);
+            var path = node.Path;
+            if (path is null)
+            {
+                throw new InvalidOperationException("Path should not be null.");
+            }
+            definition.Add(path.FilePath, blob, Mode.NonExecutableFile);
         }
 
         private static void CreateOrUpdateResourceBlob(ObjectDatabase database, TreeDefinition definition, Resource resource)

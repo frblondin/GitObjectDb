@@ -54,7 +54,7 @@ namespace GitObjectDb.Tools
         /// <typeparam name="TSource">The type of the source.</typeparam>
         /// <param name="expression">The expression.</param>
         /// <returns>The <see cref="PropertyInfo"/>.</returns>
-        internal static PropertyInfo GetProperty<TSource>(Expression<Func<TSource, object>> expression)
+        internal static PropertyInfo GetProperty<TSource>(Expression<Func<TSource, object?>> expression)
         {
             var found = Visitor<MemberExpression>.Lookup(expression);
             return (PropertyInfo)found.Member;
@@ -66,7 +66,7 @@ namespace GitObjectDb.Tools
         /// <typeparam name="TSource">The type of the source.</typeparam>
         /// <param name="expression">The expression.</param>
         /// <returns>The <see cref="FieldInfo"/>.</returns>
-        internal static FieldInfo GetField<TSource>(Expression<Func<TSource, object>> expression)
+        internal static FieldInfo GetField<TSource>(Expression<Func<TSource, object?>> expression)
         {
             var found = Visitor<MemberExpression>.Lookup(expression);
             return (FieldInfo)found.Member;
@@ -76,7 +76,7 @@ namespace GitObjectDb.Tools
         private class Visitor<TExpression> : ExpressionVisitor
             where TExpression : Expression
         {
-            public TExpression Result { get; private set; }
+            public TExpression? Result { get; private set; }
 
             internal static TExpression Lookup(Expression expression)
             {
@@ -86,7 +86,7 @@ namespace GitObjectDb.Tools
                     throw new GitObjectDbException($"Unable to find an expression of type {typeof(TExpression).Name} in expression.");
             }
 
-            public override Expression Visit(Expression node)
+            public override Expression? Visit(Expression node)
             {
                 if (node == null)
                 {

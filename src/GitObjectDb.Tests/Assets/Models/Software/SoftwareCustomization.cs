@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -18,20 +19,26 @@ namespace GitObjectDb.Tests.Assets.Models.Software
         public const int DefaultApplicationCount = 2;
         public const int DefaultTablePerApplicationCount = 3;
         public const int DefaultFieldPerTableCount = 10;
-        public const int DefaultResourcePerNodeCount = 5;
+        public const int DefaultResourcePerTableCount = 5;
 
         private Random _random = new Random();
 
         public SoftwareCustomization()
-            : this(DefaultApplicationCount, DefaultTablePerApplicationCount, DefaultFieldPerTableCount)
+            : this(DefaultApplicationCount, DefaultTablePerApplicationCount, DefaultFieldPerTableCount, DefaultResourcePerTableCount)
         {
         }
 
-        public SoftwareCustomization(int applicationCount, int tablePerApplicationCount, int fieldPerTableCount, string repositoryPath = null)
+        public SoftwareCustomization(string repositoryPath)
+            : this(DefaultApplicationCount, DefaultTablePerApplicationCount, DefaultFieldPerTableCount, DefaultResourcePerTableCount, repositoryPath)
+        {
+        }
+
+        public SoftwareCustomization(int applicationCount, int tablePerApplicationCount, int fieldPerTableCount, int resourcePerTableCount, string repositoryPath = null)
         {
             ApplicationCount = applicationCount;
             TablePerApplicationCount = tablePerApplicationCount;
             FieldPerTableCount = fieldPerTableCount;
+            ResourcePerTableCount = resourcePerTableCount;
             RepositoryPath = repositoryPath;
         }
 
@@ -42,6 +49,8 @@ namespace GitObjectDb.Tests.Assets.Models.Software
         public int TablePerApplicationCount { get; }
 
         public int FieldPerTableCount { get; }
+
+        public int ResourcePerTableCount { get; }
 
         public void Customize(IFixture fixture)
         {
@@ -58,12 +67,14 @@ namespace GitObjectDb.Tests.Assets.Models.Software
 
             IConnectionInternal CreateConnection()
             {
+                var alreadyExists = Directory.Exists(path);
                 var result = (IConnectionInternal)repositoryFactory(path);
-                var transformations = result.Update(CreateApplications);
-                transformations.Commit(
-                    fixture.Create<string>(),
-                    fixture.Create<Signature>(),
-                    fixture.Create<Signature>());
+                if (!alreadyExists)
+                {
+                    var transformations = result.Update(CreateApplications);
+                    var signature = fixture.Create<Signature>();
+                    transformations.Commit(fixture.Create<string>(), signature, signature);
+                }
                 return result;
             }
 
@@ -112,14 +123,14 @@ namespace GitObjectDb.Tests.Assets.Models.Software
                 return composer;
             }
 
-            INodeTransformationComposer CreateResource(Node node, INodeTransformationComposer composer)
+            INodeTransformationComposer CreateResource(Table table, INodeTransformationComposer composer)
             {
-                Enumerable.Range(1, DefaultResourcePerNodeCount).ForEach(position =>
+                Enumerable.Range(1, ResourcePerTableCount).ForEach(position =>
                 {
                     var path = new DataPath(
                         $"Path{_random.Next(1, 2)}",
                         $"File{_random.Next(1, 100)}.txt");
-                    var resource = new Resource(node, path, Encoding.Default.GetBytes(fixture.Create<string>()));
+                    var resource = new Resource(table, path, Encoding.Default.GetBytes(fixture.Create<string>()));
                     composer = composer.CreateOrUpdate(resource);
                 });
                 return composer;
@@ -130,10 +141,10 @@ namespace GitObjectDb.Tests.Assets.Models.Software
             fixture.Register(PickRandomField);
             fixture.Register(PickRandomResource);
 
-            Application PickFirstApplication() => fixture.Create<IConnection>().GetApplications().First();
-            Table PickRandomTable() => PickFirstApplication().GetTables(fixture.Create<IConnection>()).First();
-            Field PickRandomField() => PickRandomTable().GetFields(fixture.Create<IConnection>()).First();
-            Resource PickRandomResource() => fixture.Create<IConnection>().GetResources(PickRandomTable()).First();
+            Application PickFirstApplication() => fixture.Create<IConnection>().GetApplications().Last();
+            Table PickRandomTable() => PickFirstApplication().GetTables(fixture.Create<IConnection>()).Last();
+            Field PickRandomField() => PickRandomTable().GetFields(fixture.Create<IConnection>()).Last();
+            Resource PickRandomResource() => fixture.Create<IConnection>().GetResources(PickRandomTable()).Last();
         }
     }
 }
