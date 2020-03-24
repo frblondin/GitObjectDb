@@ -13,7 +13,7 @@ namespace GitObjectDb
         /// <param name="node">The node to be added.</param>
         /// <param name="parent">The parent to insert the node into.</param>
         /// <returns>The current <see cref="INodeTransformationComposer"/>.</returns>
-        INodeTransformationComposer CreateOrUpdate(Node node, Node parent = null);
+        INodeTransformationComposer CreateOrUpdate(Node node, Node? parent = null);
 
         /// <summary>
         /// Updates the specified resource.

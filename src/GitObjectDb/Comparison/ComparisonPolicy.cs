@@ -29,7 +29,7 @@ namespace GitObjectDb.Comparison
         /// <typeparam name="TNode">The type of the node.</typeparam>
         /// <param name="expression">The expression.</param>
         /// <returns>The current <see cref="ComparisonPolicy"/> instance.</returns>
-        public ComparisonPolicy IgnoreProperty<TNode>(Expression<Func<TNode, object>> expression)
+        public ComparisonPolicy IgnoreProperty<TNode>(Expression<Func<TNode, object?>> expression)
             where TNode : Node
         {
             var property = ExpressionReflector.GetProperty(expression);

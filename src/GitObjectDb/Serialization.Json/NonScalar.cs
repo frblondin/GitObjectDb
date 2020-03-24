@@ -11,7 +11,7 @@ namespace GitObjectDb.Serialization.Json
     {
         public NonScalar(Node node)
         {
-            Node = node ?? throw new ArgumentNullException(nameof(node));
+            Node = node;
         }
 
         public Type Type => Node.GetType();

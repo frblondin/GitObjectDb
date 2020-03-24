@@ -27,7 +27,7 @@ namespace GitObjectDb
         {
             foreach (var reserved in ReservedNames)
             {
-                if (path.Contains($"/{reserved}/"))
+                if (path.Contains($"/{reserved}/", StringComparison.OrdinalIgnoreCase))
                 {
                     throw new GitObjectDbException("The path contains reserved folder names;");
                 }

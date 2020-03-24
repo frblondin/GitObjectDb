@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -19,6 +20,7 @@ namespace GitObjectDb.Tests.Assets.Models.Software
 
         public Blob<string> Blob { get; set; }
 
-        public IEnumerable<Field> GetFields(IConnection connection) => this.GetChildren<Field>(connection);
+        public IQueryable<Field> GetFields(IConnection connection) =>
+            this.GetChildren<Field>(connection);
     }
 }

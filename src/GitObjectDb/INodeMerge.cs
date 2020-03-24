@@ -33,7 +33,7 @@ namespace GitObjectDb
         MergeStatus Status { get; }
 
         /// <summary>Gets the resulting merge commit.</summary>
-        Commit MergeCommit { get; }
+        Commit? MergeCommit { get; }
 
         /// <summary>Commits the changes contained in <see cref="CurrentChanges"/>.</summary>
         /// <param name="author">The author.</param>

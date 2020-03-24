@@ -11,5 +11,5 @@ namespace GitObjectDb
     /// <param name="dataBase">The data base.</param>
     /// <param name="definition">The definition.</param>
     /// <param name="reference">The reference.</param>
-    public delegate void ApplyUpdateTreeDefinition(ObjectDatabase dataBase, TreeDefinition definition, Tree reference);
+    public delegate void ApplyUpdateTreeDefinition(ObjectDatabase dataBase, TreeDefinition definition, Tree? reference);
 }

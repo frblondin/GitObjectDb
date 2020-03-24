@@ -12,7 +12,7 @@ namespace GitObjectDb.Tests
     public class NodeMergeTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization))]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
         public void TwoDifferentPropertyEdits(IConnection sut, Repository repository, Table table, string newDescription, string newName, Signature signature)
         {
             // master:    A---B    A---B
@@ -44,13 +44,13 @@ namespace GitObjectDb.Tests
             Assert.That(parents, Has.Count.EqualTo(2));
             Assert.That(parents[0], Is.EqualTo(c));
             Assert.That(parents[1], Is.EqualTo(b));
-            var newTable = sut.Get<Table>(table.Path);
+            var newTable = sut.Lookup<Table>(table.Path);
             Assert.That(newTable.Name, Is.EqualTo(newName));
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization))]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
         public void FastForward(IConnection sut, Repository repository, Table table, string newDescription, Signature signature)
         {
             // master:    A---B    A---B
@@ -73,12 +73,12 @@ namespace GitObjectDb.Tests
             Assert.That(merge.Commits, Has.Count.EqualTo(0));
             var mergeCommit = merge.Commit(signature, signature);
             Assert.That(mergeCommit, Is.EqualTo(b));
-            var newTable = sut.Get<Table>(table.Path);
+            var newTable = sut.Lookup<Table>(table.Path);
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization))]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
         public void SamePropertyEdits(IConnection sut, Table table, string bValue, string cValue, Signature signature)
         {
             // master:    A---B    A---B
@@ -121,12 +121,12 @@ namespace GitObjectDb.Tests
             var mergeCommit = merge.Commit(signature, signature);
 
             // Assert
-            var newTable = sut.Get<Table>(table.Path);
+            var newTable = sut.Lookup<Table>(table.Path);
             Assert.That(newTable.Description, Is.EqualTo("resolved"));
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultContainerCustomization), typeof(SoftwareCustomization))]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
         public void EditOnTheirParentDeletion(IConnection sut, Application parentApplication, Table parentTable, Field field, string newName, Signature signature)
         {
             // master:    A---B    A---B

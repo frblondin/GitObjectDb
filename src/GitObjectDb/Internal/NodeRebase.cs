@@ -21,12 +21,12 @@ namespace GitObjectDb.Internal
         private readonly IConnectionInternal _connection;
 
         [FactoryDelegateConstructor(typeof(Factories.NodeRebaseFactory))]
-        public NodeRebase(Comparer treeComparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand, IConnectionInternal connection, Branch branch = null, string upstreamCommittish = null, ComparisonPolicy policy = null)
+        public NodeRebase(Comparer treeComparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand, IConnectionInternal connection, Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null)
         {
-            _treeComparer = treeComparer ?? throw new ArgumentNullException(nameof(treeComparer));
-            _updateCommand = updateCommand ?? throw new ArgumentNullException(nameof(updateCommand));
-            _commitCommand = commitCommand ?? throw new ArgumentNullException(nameof(commitCommand));
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _treeComparer = treeComparer;
+            _updateCommand = updateCommand;
+            _commitCommand = commitCommand;
+            _connection = connection;
             Branch = branch ?? connection.Repository.Head;
             UpstreamCommit = FindUpstreamCommit(upstreamCommittish);
             Policy = policy ?? ComparisonPolicy.Default;
@@ -51,7 +51,7 @@ namespace GitObjectDb.Internal
 
         public RebaseStatus Status { get; private set; }
 
-        private Commit FindUpstreamCommit(string committish)
+        private Commit FindUpstreamCommit(string? committish)
         {
             if (committish != null)
             {
@@ -129,7 +129,9 @@ namespace GitObjectDb.Internal
                 throw new GitObjectDbException("Remaining conflicts were not resolved.");
             }
 
-            var tip = CompletedCommits.LastOrDefault() ?? UpstreamCommit;
+            var tip = CompletedCommits.Count > 0 ?
+                CompletedCommits[CompletedCommits.Count - 1] :
+                UpstreamCommit;
             var replayedCommit = ReplayedCommits[CompletedCommits.Count];
 
             // If last commit, update head so it points to the new commit
@@ -137,7 +139,7 @@ namespace GitObjectDb.Internal
                 _connection.Repository,
                 tip,
                 CurrentChanges.Select(c =>
-                    (ApplyUpdateTreeDefinition)((ObjectDatabase db, TreeDefinition t, Tree @ref) =>
+                    (ApplyUpdateTreeDefinition)((ObjectDatabase db, TreeDefinition t, Tree? @ref) =>
                     c.Transform(_updateCommand, db, t, @ref))),
                 replayedCommit.Message, replayedCommit.Author, replayedCommit.Committer,
                 updateHead: false);

@@ -18,7 +18,7 @@ namespace GitObjectDb
         /// <exception cref="ArgumentException">Folder name cannot be empty and cannot containt '/' character.</exception>
         public GitPathAttribute(string folderName)
         {
-            if (string.IsNullOrWhiteSpace(folderName) || folderName.Contains('/'))
+            if (string.IsNullOrWhiteSpace(folderName) || folderName.Contains('/', StringComparison.Ordinal))
             {
                 throw new ArgumentException("Folder name cannot be empty and cannot containt '/' character.", nameof(folderName));
             }
