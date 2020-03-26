@@ -8,7 +8,13 @@ namespace GitObjectDb.Comparison
     [DebuggerDisplay("Path = {Path,nq}, Message = {Message,nq}")]
     public abstract partial class Change
     {
-        internal Change(ITreeItem? old, ITreeItem? @new, ChangeStatus status)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Change"/> class.
+        /// </summary>
+        /// <param name="old">The old item.</param>
+        /// <param name="new">The new item.</param>
+        /// <param name="status">The change status.</param>
+        protected Change(ITreeItem? old, ITreeItem? @new, ChangeStatus status)
         {
             Old = old;
             New = @new;

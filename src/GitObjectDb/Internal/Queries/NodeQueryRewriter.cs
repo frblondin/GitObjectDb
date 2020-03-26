@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace GitObjectDb.Internal.Queries
 {
@@ -23,28 +22,28 @@ namespace GitObjectDb.Internal.Queries
         private readonly ISet<Expression> _nodeQueryFetcherExpressions = new HashSet<Expression>();
         private NodeQueryFetcher? _nodeQueryFetcher;
 
-        protected override Expression VisitMethodCall(MethodCallExpression m)
+        protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            var expression = Visit(m.Object);
-            var arguments = VisitExpressionList(m.Arguments);
-            if (expression == m.Object && arguments == m.Arguments)
+            var expression = Visit(node.Object);
+            var arguments = VisitExpressionList(node.Arguments);
+            if (expression == node.Object && arguments == node.Arguments)
             {
-                return m;
+                return node;
             }
-            var typeArgs = m.Method.IsGenericMethod ? m.Method.GetGenericArguments() : null;
-            if ((m.Method.IsStatic || m.Method.DeclaringType.IsAssignableFrom(expression.Type)) &&
-                ArgsMatch(m.Method, arguments, typeArgs))
+            var typeArgs = node.Method.IsGenericMethod ? node.Method.GetGenericArguments() : null;
+            if ((node.Method.IsStatic || node.Method.DeclaringType.IsAssignableFrom(expression.Type)) &&
+                ArgsMatch(node.Method, arguments, typeArgs))
             {
-                return Expression.Call(expression, m.Method, arguments);
+                return Expression.Call(expression, node.Method, arguments);
             }
-            if (m.Method.DeclaringType == typeof(Queryable))
+            if (node.Method.DeclaringType == typeof(Queryable))
             {
-                return VisitQueryableMethodCall(m, expression, ref arguments, typeArgs);
+                return VisitQueryableMethodCall(node, expression, ref arguments, typeArgs);
             }
             else
             {
-                var flags = BindingFlags.Static | (m.Method.IsPublic ? BindingFlags.Public : BindingFlags.NonPublic);
-                var method = FindMethod(m.Method.DeclaringType, m.Method.Name, arguments, typeArgs, flags);
+                var flags = BindingFlags.Static | (node.Method.IsPublic ? BindingFlags.Public : BindingFlags.NonPublic);
+                var method = FindMethod(node.Method.DeclaringType, node.Method.Name, arguments, typeArgs, flags);
                 arguments = FixupQuotedArgs(method, arguments);
                 return Expression.Call(expression, method, arguments);
             }
@@ -216,8 +215,8 @@ namespace GitObjectDb.Internal.Queries
             return result;
         }
 
-        protected override Expression VisitLambda<T>(Expression<T> lambda) =>
-            lambda;
+        protected override Expression VisitLambda<T>(Expression<T> node) =>
+            node;
 
         private static Type GetPublicType(Type t)
         {
@@ -242,12 +241,12 @@ namespace GitObjectDb.Internal.Queries
                 t;
         }
 
-        protected override Expression VisitConstant(ConstantExpression c)
+        protected override Expression VisitConstant(ConstantExpression node)
         {
-            var enumerableQuery = c.Value as NodeQuery;
+            var enumerableQuery = node.Value as NodeQuery;
             if (enumerableQuery == null)
             {
-                return c;
+                return node;
             }
             if (enumerableQuery.Enumerable != null)
             {
@@ -257,8 +256,8 @@ namespace GitObjectDb.Internal.Queries
             return Visit(enumerableQuery.Expression);
         }
 
-        protected override Expression VisitParameter(ParameterExpression p) =>
-            p;
+        protected override Expression VisitParameter(ParameterExpression node) =>
+            node;
 
         private static MethodInfo FindEnumerableMethod(string name, IList<Expression> args, params Type[]? typeArgs)
         {

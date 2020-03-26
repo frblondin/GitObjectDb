@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -35,7 +33,7 @@ namespace GitObjectDb.Serialization.Json.Converters
             return type;
         }
 
-        private static bool ReadNextToken(ref Utf8JsonReader reader, JsonTokenType expectedToken, string? expectedString = null)
+        private static void ReadNextToken(ref Utf8JsonReader reader, JsonTokenType expectedToken, string? expectedString = null)
         {
             if (!reader.Read() || reader.TokenType != expectedToken)
             {
@@ -45,7 +43,6 @@ namespace GitObjectDb.Serialization.Json.Converters
             {
                 throw new JsonException();
             }
-            return true;
         }
 
         public override void Write(Utf8JsonWriter writer, NonScalar value, JsonSerializerOptions options)
