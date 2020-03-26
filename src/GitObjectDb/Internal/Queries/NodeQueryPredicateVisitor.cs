@@ -21,7 +21,7 @@ namespace GitObjectDb.Internal.Queries
 
         public override Expression Visit(Expression node)
         {
-            if (!Incompatible)
+            if (Incompatible)
             {
                 return node;
             }
