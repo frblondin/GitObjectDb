@@ -1,13 +1,10 @@
 using GitObjectDb.Tools;
-using LibGit2Sharp;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 
 namespace GitObjectDb.Internal.Queries
 {
@@ -150,7 +147,7 @@ namespace GitObjectDb.Internal.Queries
         {
             var rewriter = new NodeQueryRewriter();
             var body = rewriter.Visit(_expression);
-            var expression = Expression.Lambda<Func<T>>(body, null);
+            var expression = Expression.Lambda<Func<T>>(body);
             return expression.Compile();
         }
     }

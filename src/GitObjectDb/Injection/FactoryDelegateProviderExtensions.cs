@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -44,15 +43,13 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             foreach (var delegateType in delegateTypes)
             {
-                var invokeMethod = delegateType.GetMethod("Invoke");
-                var returnType = invokeMethod.ReturnType;
                 var implementationType = Assembly.GetExecutingAssembly().GetTypes().FirstOrDefault(IsTypeCompatible) ??
                     throw new EntryPointNotFoundException($"No implementation found for factory '{delegateType}'. Make sure the constructor is decorated with the {nameof(FactoryDelegateConstructorAttribute)} attribute and that the constructor is public.");
                 var invoker = CreateInvoker(implementationType, delegateType);
                 services.AddSingleton(delegateType, (Func<IServiceProvider, object>)invoker.Compile());
 
                 bool IsTypeCompatible(Type type) =>
-                    returnType.IsAssignableFrom(type) &&
+                    delegateType.GetMethod("Invoke").ReturnType.IsAssignableFrom(type) &&
                     type.GetTypeInfo().DeclaredConstructors.Any(c => c.GetCustomAttribute<FactoryDelegateConstructorAttribute>()?.DelegateType == delegateType);
             }
             return services;

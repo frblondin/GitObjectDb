@@ -24,8 +24,6 @@ namespace GitObjectDb.Commands
                 {
                     case Node node:
                         CreateOrUpdateJsonBlob(node, database, definition);
-
-                        // CreateOrUpdateOrDeleteResourceBlobs(node, database, definition, reference);
                         break;
                     case Resource resource:
                         CreateOrUpdateResourceBlob(database, definition, resource);

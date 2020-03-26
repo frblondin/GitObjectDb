@@ -1,15 +1,10 @@
 using GitObjectDb.Commands;
 using GitObjectDb.Injection;
-using GitObjectDb.Serialization.Json;
 using LibGit2Sharp;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace GitObjectDb.Internal
 {
@@ -32,11 +27,11 @@ namespace GitObjectDb.Internal
 
         public IList<INodeTransformation> Transformations { get; }
 
-        public INodeTransformationComposer CreateOrUpdate(Node item, Node? parent = null) =>
-            CreateOrUpdate((ITreeItem)item, parent);
+        public INodeTransformationComposer CreateOrUpdate(Node node, Node? parent = null) =>
+            CreateOrUpdate((ITreeItem)node, parent);
 
-        public INodeTransformationComposer CreateOrUpdate(Resource item) =>
-            CreateOrUpdate(item, default);
+        public INodeTransformationComposer CreateOrUpdate(Resource resource) =>
+            CreateOrUpdate(resource, default);
 
         public INodeTransformationComposer Delete(ITreeItem item)
         {

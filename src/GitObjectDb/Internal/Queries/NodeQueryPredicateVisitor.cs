@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq.Expressions;
-using System.Text;
 
 namespace GitObjectDb.Internal.Queries
 {
@@ -19,36 +17,34 @@ namespace GitObjectDb.Internal.Queries
 
         private static Expression Path => Expression.Field(NewParameter, "Item1");
 
-        private static Expression Stream => Expression.Call(
-            Expression.Field(NewParameter, "Item2"), "Invoke", null);
-
         internal bool Incompatible { get; private set; }
 
-        public override Expression Visit(Expression expression)
+        public override Expression Visit(Expression node)
         {
+            if (!Incompatible)
+            {
+                return node;
+            }
+
             // We only support a subset of expression types
-            switch (expression)
+            switch (node)
             {
                 case BinaryExpression _:
                 case ParameterExpression _:
                 case MemberExpression _:
                 case ConstantExpression _:
-                    if (!Incompatible)
-                    {
-                        return base.Visit(expression);
-                    }
-                    goto default;
+                    return base.Visit(node);
                 default:
                     Incompatible = true;
-                    return expression;
+                    return node;
             }
         }
 
-        protected override Expression VisitMember(MemberExpression member)
+        protected override Expression VisitMember(MemberExpression node)
         {
-            if (member.Expression == _oldParameter)
+            if (node.Expression == _oldParameter)
             {
-                switch (member.Member.Name)
+                switch (node.Member.Name)
                 {
                     case nameof(Node.Id):
                         var folderName = Expression.Property(Path, nameof(DataPath.FolderName));
@@ -60,7 +56,7 @@ namespace GitObjectDb.Internal.Queries
                         break;
                 }
             }
-            return base.VisitMember(member);
+            return base.VisitMember(node);
         }
     }
 }
