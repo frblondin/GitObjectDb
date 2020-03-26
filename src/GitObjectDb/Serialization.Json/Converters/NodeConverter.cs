@@ -138,7 +138,7 @@ namespace GitObjectDb.Serialization.Json.Converters
             }
         }
 
-        private static bool ReadNextToken(ref Utf8JsonReader reader, JsonTokenType expectedToken, string? expectedString = null)
+        private static void ReadNextToken(ref Utf8JsonReader reader, JsonTokenType expectedToken, string? expectedString = null)
         {
             if (!reader.Read() || reader.TokenType != expectedToken)
             {
@@ -148,7 +148,6 @@ namespace GitObjectDb.Serialization.Json.Converters
             {
                 throw new JsonException();
             }
-            return true;
         }
 
         public override void Write(Utf8JsonWriter writer, TNode value, JsonSerializerOptions options)

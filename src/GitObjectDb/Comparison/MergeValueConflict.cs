@@ -40,7 +40,8 @@ namespace GitObjectDb.Comparison
         public void Resolve(object value)
         {
             IsResolved = true;
-            _resolveCallback(ResolvedValue = value);
+            ResolvedValue = value;
+            _resolveCallback(value);
         }
     }
 }

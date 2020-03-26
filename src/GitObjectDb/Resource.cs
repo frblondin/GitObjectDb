@@ -1,8 +1,6 @@
 using LibGit2Sharp;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace GitObjectDb
 {
@@ -11,7 +9,7 @@ namespace GitObjectDb
     /// </summary>
     public class Resource : ITreeItem
     {
-        private Lazy<DataPath> _nodePath;
+        private readonly Lazy<DataPath> _nodePath;
         private Func<Stream> _value;
 
         /// <summary>

@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
 
 namespace GitObjectDb
@@ -13,7 +9,7 @@ namespace GitObjectDb
     {
         /// <summary>Initializes a new instance of the <see cref="Node"/> class.</summary>
         /// <param name="id">The unique identifier.</param>
-        public Node(UniqueId id)
+        protected Node(UniqueId id)
         {
             Id = id;
         }
