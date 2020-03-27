@@ -1,5 +1,5 @@
-using GitObjectDb.Commands;
 using GitObjectDb.Injection;
+using GitObjectDb.Internal.Commands;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -40,7 +40,7 @@ namespace GitObjectDb.Internal
                 throw new InvalidOperationException("Item has no path defined.");
             }
             var transformation = new NodeTransformation(
-                _updateTreeCommand.Delete(item),
+                UpdateTreeCommand.Delete(item),
                 $"Removing {item.Path.FolderPath}.");
             Transformations.Add(transformation);
             return this;

@@ -1,10 +1,9 @@
-using GitObjectDb.Validations;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace GitObjectDb.Commands
+namespace GitObjectDb.Internal.Commands
 {
     internal class CommitCommand
     {

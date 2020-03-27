@@ -1,6 +1,6 @@
-﻿using LibGit2Sharp;
+using LibGit2Sharp;
 
-namespace GitObjectDb.Validations
+namespace GitObjectDb
 {
     internal interface ITreeValidation
     {

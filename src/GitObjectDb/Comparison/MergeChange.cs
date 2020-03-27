@@ -1,5 +1,5 @@
 using Fasterflect;
-using GitObjectDb.Commands;
+using GitObjectDb.Internal.Commands;
 using LibGit2Sharp;
 using System;
 using System.Collections.Immutable;
@@ -94,13 +94,26 @@ namespace GitObjectDb.Comparison
 
         internal void Transform(UpdateTreeCommand update, ObjectDatabase database, TreeDefinition tree, Tree? reference)
         {
-            if (Status == ItemMergeStatus.EditConflict ||
-                Status == ItemMergeStatus.TreeConflict ||
-                Merged == null)
+            switch (Status)
             {
-                throw new GitObjectDbException("Remaining conflicts.");
+                case ItemMergeStatus.Add:
+                case ItemMergeStatus.Edit:
+                    if (Merged is null)
+                    {
+                        throw new InvalidOperationException("No merge value has been set.");
+                    }
+                    update.CreateOrUpdate(Merged).Invoke(database, tree, reference);
+                    break;
+                case ItemMergeStatus.Delete:
+                    if (Ancestor is null)
+                    {
+                        throw new InvalidOperationException("The deletion change does not contain any ancestor.");
+                    }
+                    UpdateTreeCommand.Delete(Ancestor).Invoke(database, tree, reference);
+                    break;
+                default:
+                    throw new GitObjectDbException("Remaining conflicts.");
             }
-            update.CreateOrUpdate(Merged).Invoke(database, tree, reference);
         }
 
         private void UpdateStatus()
@@ -109,13 +122,13 @@ namespace GitObjectDb.Comparison
             {
                 Status = ItemMergeStatus.TreeConflict;
             }
-            else if (Ancestor == null && (Theirs != null || Ours != null))
-            {
-                Status = ItemMergeStatus.Add;
-            }
             else if (Ancestor != null && (Theirs == null || Ours == null))
             {
-                Status = ItemMergeStatus.Delete;
+                // Deletion
+                var nonNull = Theirs ?? Ours;
+                Status = nonNull != null && !Comparer.Compare(Ancestor, nonNull, Policy).AreEqual ?
+                    ItemMergeStatus.TreeConflict :
+                    ItemMergeStatus.Delete;
             }
             else
             {
@@ -129,7 +142,7 @@ namespace GitObjectDb.Comparison
                 }
                 else
                 {
-                    Status = ItemMergeStatus.Edit;
+                    Status = Ancestor == null ? ItemMergeStatus.Add : ItemMergeStatus.Edit;
                 }
             }
         }
