@@ -1,14 +1,11 @@
-using GitObjectDb.Commands;
 using GitObjectDb.Comparison;
 using GitObjectDb.Injection;
+using GitObjectDb.Internal.Commands;
 using LibGit2Sharp;
-using Microsoft.Extensions.DependencyInjection;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 
 namespace GitObjectDb.Internal
 {
@@ -138,7 +135,7 @@ namespace GitObjectDb.Internal
                     mergeParent: UpstreamCommit);
                 var logMessage = MergeCommit.BuildCommitLogMessage(false, false, isMergeCommit: true);
                 _connection.Repository.UpdateTerminalReference(Branch.Reference, MergeCommit, logMessage);
-                Status = LibGit2Sharp.MergeStatus.NonFastForward;
+                Status = MergeStatus.NonFastForward;
                 return MergeCommit;
             }
             else
@@ -146,7 +143,7 @@ namespace GitObjectDb.Internal
                 MergeCommit = UpstreamCommit;
                 var logMessage = MergeCommit.BuildCommitLogMessage(false, false, false);
                 _connection.Repository.UpdateTerminalReference(Branch.Reference, UpstreamCommit, logMessage);
-                Status = LibGit2Sharp.MergeStatus.FastForward;
+                Status = MergeStatus.FastForward;
                 return UpstreamCommit;
             }
         }

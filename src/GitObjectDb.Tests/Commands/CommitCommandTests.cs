@@ -1,12 +1,11 @@
 using AutoFixture;
 using FakeItEasy;
-using GitObjectDb.Commands;
 using GitObjectDb.Comparison;
 using GitObjectDb.Internal;
+using GitObjectDb.Internal.Commands;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Models.Software;
 using GitObjectDb.Tests.Assets.Tools;
-using GitObjectDb.Validations;
 using LibGit2Sharp;
 using NUnit.Framework;
 using System;

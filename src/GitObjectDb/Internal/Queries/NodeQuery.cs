@@ -16,24 +16,13 @@ namespace GitObjectDb.Internal.Queries
         public IEnumerable? Enumerable { get; protected set; }
 
         public abstract Expression Expression { get; }
-
-        internal static IQueryable Create(Type elementType, IEnumerable sequence) =>
-            (IQueryable)Activator.CreateInstance(
-                typeof(EnumerableQuery<>).MakeGenericType(new[] { elementType }),
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                null,
-                new object[] { sequence }, null);
-
-        internal static IQueryable Create(Type elementType, Expression expression) =>
-            (IQueryable)Activator.CreateInstance(
-                typeof(EnumerableQuery<>).MakeGenericType(new[] { elementType }),
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                null,
-                new object[] { expression }, null);
     }
 
     internal class NodeQuery<T> : NodeQuery, IQueryable<T>, IQueryProvider
     {
+        private static readonly MethodInfo _createQueryMethodDefinition = ExpressionReflector.GetMethod<NodeQuery<T>>(
+            q => q.CreateQuery<object>(Expression.Constant(null)), returnGenericDefinition: true);
+
         public NodeQuery(NodeQueryFetcher fetcher)
         {
             Fetcher = fetcher;
@@ -57,15 +46,11 @@ namespace GitObjectDb.Internal.Queries
         IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
             var type = TypeHelper.FindGenericType(typeof(IQueryable<>), expression.Type);
-            if (type == null)
-            {
-                throw new ArgumentException($"Argument {nameof(expression)} is not valid.");
-            }
-
-            return Create(type.GetGenericArguments()[0], expression);
+            return (IQueryable)_createQueryMethodDefinition.MakeGenericMethod(type)
+                .Invoke(this, new object[] { expression });
         }
 
-        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression)
+        public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
         {
             if (!typeof(IQueryable<TElement>).IsAssignableFrom(expression.Type))
             {
