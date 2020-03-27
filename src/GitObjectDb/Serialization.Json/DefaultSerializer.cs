@@ -1,8 +1,5 @@
 using GitObjectDb.Serialization.Json.Converters;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Text.Json;
 
 namespace GitObjectDb.Serialization.Json
@@ -18,14 +15,20 @@ namespace GitObjectDb.Serialization.Json
 
         public DefaultSerializer()
         {
-            _serializerOptions = new JsonSerializerOptions
+            _serializerOptions = CreateSerializerOptions();
+        }
+
+        internal static JsonSerializerOptions CreateSerializerOptions()
+        {
+            var result = new JsonSerializerOptions
             {
                 IgnoreNullValues = true,
                 PropertyNameCaseInsensitive = true,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 WriteIndented = true,
             };
-            _serializerOptions.Converters.Add(new NodeConverterFactory());
+            result.Converters.Add(new NodeConverterFactory());
+            return result;
         }
 
         public Stream Serialize(Node node)

@@ -23,6 +23,9 @@ namespace GitObjectDb
         /// <summary>Gets the commits that will be replayed during this rebase operation.</summary>
         IImmutableList<Commit> ReplayedCommits { get; }
 
+        /// <summary>Gets the current commit index being processed in <see cref="ReplayedCommits"/>.</summary>
+        int CurrentStep { get; }
+
         /// <summary>Gets the commits that were completed during the ongoing rebase operation.</summary>
         IImmutableList<Commit> CompletedCommits { get; }
 

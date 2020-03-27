@@ -77,7 +77,7 @@ namespace GitObjectDb.Serialization.Json.Converters
                         var name = reader.GetString();
                         if (name.Equals(nameof(Node.Id), StringComparison.OrdinalIgnoreCase))
                         {
-                            ReadNextToken(ref reader, JsonTokenType.String);
+                            Utf8JsonReaderHelper.ReadNextToken(ref reader, JsonTokenType.String);
                             id = new UniqueId(reader.GetString());
                         }
                         else
@@ -99,55 +99,12 @@ namespace GitObjectDb.Serialization.Json.Converters
                         }
                         else
                         {
-                            ReadIgnoredValue(ref reader);
+                            Utf8JsonReaderHelper.ReadIgnoredValue(ref reader);
                         }
                         break;
                 }
             }
             return default;
-        }
-
-        private static void ReadIgnoredValue(ref Utf8JsonReader reader)
-        {
-            var token = reader.TokenType;
-
-            // Do a balanced read
-            if (token == JsonTokenType.StartObject || token == JsonTokenType.StartArray)
-            {
-                var decrement = token == JsonTokenType.StartObject ? JsonTokenType.EndObject : JsonTokenType.EndArray;
-                var level = 1;
-                while (reader.Read())
-                {
-                    if (reader.TokenType == token)
-                    {
-                        level++;
-                    }
-                    if (reader.TokenType == decrement)
-                    {
-                        level--;
-                        if (level == 0)
-                        {
-                            break;
-                        }
-                    }
-                }
-                if (level > 0)
-                {
-                    throw new JsonException();
-                }
-            }
-        }
-
-        private static void ReadNextToken(ref Utf8JsonReader reader, JsonTokenType expectedToken, string? expectedString = null)
-        {
-            if (!reader.Read() || reader.TokenType != expectedToken)
-            {
-                throw new JsonException();
-            }
-            if (expectedString != null && reader.GetString() != expectedString)
-            {
-                throw new JsonException();
-            }
         }
 
         public override void Write(Utf8JsonWriter writer, TNode value, JsonSerializerOptions options)

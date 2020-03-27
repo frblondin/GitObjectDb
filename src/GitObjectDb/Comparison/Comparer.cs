@@ -1,14 +1,11 @@
 using GitObjectDb.Internal.Queries;
-using GitObjectDb.Serialization.Json;
 using KellermanSoftware.CompareNetObjects;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace GitObjectDb.Comparison
 {
@@ -89,7 +86,7 @@ namespace GitObjectDb.Comparison
                         yield return new MergeChange(policy)
                         {
                             Ancestor = their.Old,
-                            Ours = localChanges.Modified.FirstOrDefault(c => their.Old.Path.Equals(c.Old.Path))?.New,
+                            Ours = localChanges.Modified.FirstOrDefault(c => their.Old.Path.Equals(c.Old.Path))?.New ?? their.Old,
                             Theirs = their.New,
                             OurRootDeletedParent = (from c in localChanges.Deleted
                                                     where their.Old.Path.FolderPath.StartsWith(c.Old.Path.FolderPath, StringComparison.Ordinal)
@@ -103,25 +100,34 @@ namespace GitObjectDb.Comparison
                             Ours = localChanges.Added.FirstOrDefault(c => c.New.Path?.Equals(their.New.Path) ?? false)?.New,
                             Theirs = their.New,
                             OurRootDeletedParent = (from c in localChanges.Deleted
-                                                    where their.Old.Path.FolderPath.StartsWith(c.Old.Path.FolderPath, StringComparison.Ordinal)
+                                                    where their.New.Path.FolderPath.StartsWith(c.Old.Path.FolderPath, StringComparison.Ordinal)
                                                     orderby c.Old.Path.FolderPath.Length ascending
                                                     select c.Old).FirstOrDefault(),
                         }.Initialize();
                         break;
                     case ChangeStatus.Delete:
+                        // Just ignore deletion if deleted in our changes too
+                        if (localChanges.Deleted.Any(c => their.Old.Path.FolderPath.StartsWith(c.Old.Path.FolderPath, StringComparison.Ordinal)))
+                        {
+                            continue;
+                        }
+
                         yield return new MergeChange(policy)
                         {
                             Ancestor = their.Old,
-                            TheirRootDeletedParent = (from c in toBeMergedIntoLocal.Deleted
-                                                      where c.Old.Path.FolderPath.StartsWith(their.Old.Path.FolderPath, StringComparison.Ordinal)
-                                                      orderby their.Old.Path.FolderPath.Length ascending
-                                                      select c.Old).FirstOrDefault(),
+                            Ours = localChanges.FirstOrDefault(c => c.Path?.Equals(their.Old.Path) ?? false)?.New ?? their.Old,
                         }.Initialize();
 
-                        // Node or child node added in our changes... ?
-                        if (localChanges.Added.Any(c => c.New.Path.FilePath.StartsWith(their.Old.Path.FolderPath, StringComparison.Ordinal)))
+                        bool IsAddedChildInOurChanges(Change change) =>
+                            change.New.Path.FolderPath.StartsWith(their.Old.Path.FolderPath, StringComparison.Ordinal);
+                        foreach (var local in localChanges.Added.Where(IsAddedChildInOurChanges))
                         {
-                            throw new NotImplementedException();
+                            yield return new MergeChange(policy)
+                            {
+                                Ancestor = local.Old,
+                                Ours = local.New,
+                                TheirRootDeletedParent = their.Old,
+                            }.Initialize();
                         }
                         break;
                 }

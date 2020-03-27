@@ -1,4 +1,4 @@
-using GitObjectDb.Commands;
+using GitObjectDb.Internal.Commands;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;

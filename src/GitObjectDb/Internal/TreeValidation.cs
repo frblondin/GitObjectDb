@@ -1,7 +1,7 @@
 using LibGit2Sharp;
 using System.Linq;
 
-namespace GitObjectDb.Validations
+namespace GitObjectDb
 {
     internal class TreeValidation : ITreeValidation
     {

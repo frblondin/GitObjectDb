@@ -1,13 +1,10 @@
-using GitObjectDb.Commands;
 using GitObjectDb.Comparison;
 using GitObjectDb.Internal;
+using GitObjectDb.Internal.Commands;
 using GitObjectDb.Internal.Queries;
 using GitObjectDb.Serialization.Json;
-using GitObjectDb.Validations;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 

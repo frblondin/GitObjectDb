@@ -1,12 +1,8 @@
 using GitObjectDb.Serialization.Json;
 using LibGit2Sharp;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
 
-namespace GitObjectDb.Commands
+namespace GitObjectDb.Internal.Commands
 {
     internal class UpdateTreeCommand
     {
@@ -33,7 +29,7 @@ namespace GitObjectDb.Commands
                 }
             };
 
-        internal ApplyUpdateTreeDefinition Delete(ITreeItem item) =>
+        internal static ApplyUpdateTreeDefinition Delete(ITreeItem item) =>
             (_, definition, __) =>
             {
                 // For nodes, delete whole folder containing node and nested entries

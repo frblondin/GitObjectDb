@@ -14,35 +14,23 @@ namespace GitObjectDb.Serialization.Json.Converters
         {
             var type = ReadType(ref reader);
 
-            ReadNextToken(ref reader, JsonTokenType.PropertyName, nameof(NonScalar.Node));
+            Utf8JsonReaderHelper.ReadNextToken(ref reader, JsonTokenType.PropertyName, nameof(NonScalar.Node));
 
-            ReadNextToken(ref reader, JsonTokenType.StartObject);
+            Utf8JsonReaderHelper.ReadNextToken(ref reader, JsonTokenType.StartObject);
             var result = (Node)JsonSerializer.Deserialize(ref reader, type, options);
-            ReadNextToken(ref reader, JsonTokenType.EndObject);
+            Utf8JsonReaderHelper.ReadNextToken(ref reader, JsonTokenType.EndObject);
 
             return new NonScalar(result);
         }
 
         private Type ReadType(ref Utf8JsonReader reader)
         {
-            ReadNextToken(ref reader, JsonTokenType.PropertyName, nameof(NonScalar.Type));
-            ReadNextToken(ref reader, JsonTokenType.String);
+            Utf8JsonReaderHelper.ReadNextToken(ref reader, JsonTokenType.PropertyName, nameof(NonScalar.Type));
+            Utf8JsonReaderHelper.ReadNextToken(ref reader, JsonTokenType.String);
 
             var typeName = reader.GetString();
             var type = _typeCache.GetOrAdd(typeName, BindToType);
             return type;
-        }
-
-        private static void ReadNextToken(ref Utf8JsonReader reader, JsonTokenType expectedToken, string? expectedString = null)
-        {
-            if (!reader.Read() || reader.TokenType != expectedToken)
-            {
-                throw new JsonException();
-            }
-            if (expectedString != null && reader.GetString() != expectedString)
-            {
-                throw new JsonException();
-            }
         }
 
         public override void Write(Utf8JsonWriter writer, NonScalar value, JsonSerializerOptions options)
