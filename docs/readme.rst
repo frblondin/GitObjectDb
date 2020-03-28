@@ -7,41 +7,37 @@ The Git repository is used as a pure database as the files containing the serial
 
 Here's a simple example:
 
-1. Add a reference to `GitObjectDb`, `GitObjectDb.ModelCodeGeneration`, `GitObjectDb.ModelCodeGeneration.Attributes`, `CodeGeneration.Roslyn.BuildTime` NuGet packages
+1. Add a reference to `GitObjectDb` NuGet package
 
-2. Edit the project file (`MyProject.csproj`) and add the following:
-
-.. code-block:: xml
-
-    <ItemGroup>
-        <DotNetCliToolReference Include="dotnet-codegen" Version="0.4.88" />
-    </ItemGroup>
-
-3. Define your own repository data model:
+2. Define your own repository data model:
 
 .. code-block:: csharp
 
-    [Repository]
-    public class ObjectRepository
+    [GitPath("Applications")]
+    public class Application : Node
     {
-        public ILazyChildren<Application> Applications { get; }
+        public Application(UniqueId id) : base(id)
+        {
+        }
+
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        public IEnumerable<Table> GetTables(IConnection connection) => (this).GetChildren<Table>(connection);
     }
-
-.. note::
-
-    This object contains `Applications` of type `ILazyChildren<Application>`. That's how you can create nested objects. They must be of type `ILazyChildren<Application>`._
-
-4. Create nested object types:
-
-.. code-block:: csharp
-
-    [Model]
-    public class Application
+    [GitPath("Pages")]
+    public class Table : Node
     {
-        [Modifiable]
-        public string SomeNewProperty { get; }
+        public Table(UniqueId id) : base(id)
+        {
+        }
 
-        public ILazyChildren<Page> Pages { get; }
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        public IEnumerable<Field> GetFields(IConnection connection) => (this).GetChildren<Field>(connection);
     }
 
 See `Getting Started`_ for how to manipulate data.

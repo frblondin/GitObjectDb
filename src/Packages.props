@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <PackageReference Update="AutoFixture.Idioms"                                           Version="4.11.0" />
+    <PackageReference Update="AutoFixture.NUnit3"                                           Version="4.11.0" />
+    <PackageReference Update="CompareNETObjects"                                            Version="4.65.0" />
+    <PackageReference Update="coverlet.msbuild"                                             Version="2.7.0" />
+    <PackageReference Update="FakeItEasy"                                                   Version="6.0.0" />
+    <PackageReference Update="fasterflect.reflect"                                          Version="3.1.0" />
+    <PackageReference Update="LibGit2Sharp"                                                 Version="0.26.1" />
+    <PackageReference Update="Microsoft.CodeAnalysis.Analyzers"                             Version="2.9.8" />
+    <PackageReference Update="Microsoft.CodeAnalysis.FxCopAnalyzers"                        Version="2.9.8" />
+    <PackageReference Update="Microsoft.Extensions.DependencyInjection"                     Version="2.2.0" />
+    <PackageReference Update="Microsoft.Extensions.DependencyInjection.Abstractions"        Version="2.2.0" />
+    <PackageReference Update="Microsoft.Extensions.Logging"                                 Version="2.2.0" />
+    <PackageReference Update="Microsoft.NET.Test.Sdk"                                       Version="16.5.0" />
+    <PackageReference Update="NUnit3TestAdapter"                                            Version="3.16.1" />
+    <PackageReference Update="Nerdbank.GitVersioning"                                       Version="3.0.26" />
+    <PackageReference Update="StyleCop.Analyzers"                                           Version="1.1.118" />
+    <PackageReference Update="System.Text.Json"                                             Version="4.7.1" />
+    <PackageReference Update="PowerAssert"                                                  Version="1.0.85" />
+    <PackageReference Update="SourceLink.Copy.PdbFiles"                                     Version="2.8.3" />
+    <PackageReference Update="SourceLink.Create.CommandLine"                                Version="2.8.3" />
+    <PackageReference Update="StyleCop.Analyzers"                                           Version="1.1.118" />
+    <PackageReference Update="System.Collections.Immutable"                                 Version="1.6.0" />
+    <PackageReference Update="System.IO.Compression.ZipFile"                                Version="4.3.0" />
+  </ItemGroup>
+</Project>

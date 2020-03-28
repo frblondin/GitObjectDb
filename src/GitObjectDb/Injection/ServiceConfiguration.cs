@@ -1,20 +1,14 @@
-using GitObjectDb.Git;
-using GitObjectDb.Git.Hooks;
-using GitObjectDb.Models;
-using GitObjectDb.Models.CherryPick;
-using GitObjectDb.Models.Merge;
-using GitObjectDb.Models.Rebase;
-using GitObjectDb.Reflection;
-using GitObjectDb.Serialization;
-using GitObjectDb.Services;
-using GitObjectDb.Validations;
-using GitObjectDb.Validations.PropertyValidators;
+using GitObjectDb.Comparison;
+using GitObjectDb.Internal;
+using GitObjectDb.Internal.Commands;
+using GitObjectDb.Internal.Queries;
+using GitObjectDb.Serialization.Json;
+using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace GitObjectDb
 {
     /// <summary>
     /// A set of methods for instances of <see cref="IServiceCollection"/>.
@@ -26,78 +20,40 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="source">The source.</param>
         /// <returns>The source <see cref="IServiceCollection"/>.</returns>
-        public static IServiceCollection AddGitObjectDb(this IServiceCollection source)
-        {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
-            return ConfigureServices(source);
-        }
+        public static IServiceCollection AddGitObjectDb(this IServiceCollection source) =>
+            ConfigureServices(source);
 
         private static IServiceCollection ConfigureServices(IServiceCollection source)
         {
-            ConfigureInternalServices(source);
-            ConfigureReflectionServices(source);
-            ConfigureGitServices(source);
-            ConfigureSerializationServices(source);
-            ConfigureValidationServices(source);
-            ConfigureModelServices(source);
+            ConfigureMain(source);
+            ConfigureQueries(source);
+            ConfigureCommands(source);
 
             return source;
         }
 
-        private static void ConfigureInternalServices(IServiceCollection source)
+        private static void ConfigureMain(IServiceCollection source)
         {
-            source.AddSingleton<IObjectRepositoryLoader, ObjectRepositoryLoader>();
-            source.AddFactoryDelegate<ComputeTreeChangesFactory, ComputeTreeChanges>();
-            source.AddFactoryDelegate<MigrationScaffolderFactory, MigrationScaffolder>();
-            source.AddSingleton<IObjectRepositorySearch, ObjectRepositorySearch>();
-            source.AddFactoryDelegate<MergeProcessor>();
-            source.AddFactoryDelegate<RebaseProcessor>();
-            source.AddFactoryDelegate<CherryPickProcessor>();
+            source.AddFactoryDelegate<ConnectionFactory, Connection>();
+            var internalFactories = typeof(Factories)
+                .GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
+                .Where(t => typeof(Delegate).IsAssignableFrom(t));
+            source.AddFactoryDelegates(internalFactories);
+            source.AddSingleton<INodeSerializer, DefaultSerializer>();
+            source.AddSingleton<Comparer>();
+            source.AddSingleton<ITreeValidation, TreeValidation>();
         }
 
-        private static void ConfigureReflectionServices(IServiceCollection source)
+        private static void ConfigureQueries(IServiceCollection source)
         {
-            source.AddSingleton<IModelDataAccessorProvider, ModelDataAccessorProvider>();
-            source.AddSingleton<IConstructorSelector, MostParametersConstructorSelector>();
-            source.AddSingleton<IModelDataAccessorProvider>(s =>
-                new CachedModelDataAccessorProvider(new ModelDataAccessorProvider(s.GetRequiredService<ModelDataAccessorFactory>())));
-            source.AddFactoryDelegate<ConstructorParameterBinding>();
-            source.AddFactoryDelegate<ModelDataAccessorFactory, ModelDataAccessor>();
+            source.AddServicesImplementing(typeof(IQuery<,>), ServiceLifetime.Singleton);
+            source.AddServicesImplementing(typeof(IQuery<,,>), ServiceLifetime.Singleton);
         }
 
-        private static void ConfigureGitServices(IServiceCollection source)
+        private static void ConfigureCommands(IServiceCollection source)
         {
-            source.AddSingleton<IRepositoryFactory, RepositoryFactory>();
-            source.AddSingleton<IRepositoryProvider, RepositoryProvider>();
-            source.AddSingleton<GitHooks>();
-        }
-
-        private static void ConfigureSerializationServices(IServiceCollection source)
-        {
-            // Default serializer is Json, can be overridden
-            source.AddFactoryDelegate<ObjectRepositorySerializerFactory, GitObjectDb.Serialization.Json.JsonRepositorySerializer>();
-            source.AddSingleton<GitObjectDb.Serialization.Json.Converters.ModelObjectContractCache>();
-            source.AddSingleton<GitObjectDb.Serialization.Json.Converters.ModelObjectSpecialValueProvider>();
-        }
-
-        private static void ConfigureValidationServices(IServiceCollection source)
-        {
-            source.AddSingleton<IPropertyValidator, DependencyPropertyValidator>();
-            source.AddSingleton<IPropertyValidator, LazyLinkPropertyValidator>();
-            source.AddSingleton<IPropertyValidator, ObjectPathPropertyValidator>();
-            source.AddSingleton<IValidator, Validator>();
-        }
-
-        private static void ConfigureModelServices(IServiceCollection source)
-        {
-            source.AddSingleton<IObjectRepositoryContainerFactory, ObjectRepositoryContainerFactory>();
-            source.AddFactoryDelegate<ObjectRepositoryMergeFactory, ObjectRepositoryMerge>();
-            source.AddFactoryDelegate<ObjectRepositoryRebaseFactory, ObjectRepositoryRebase>();
-            source.AddFactoryDelegate<ObjectRepositoryCherryPickFactory, ObjectRepositoryCherryPick>();
+            source.AddSingleton<UpdateTreeCommand>();
+            source.AddSingleton<CommitCommand>();
         }
     }
 }

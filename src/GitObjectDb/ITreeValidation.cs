@@ -1,0 +1,9 @@
+using LibGit2Sharp;
+
+namespace GitObjectDb
+{
+    internal interface ITreeValidation
+    {
+        void Validate(Tree tree);
+    }
+}

@@ -1,3 +1,4 @@
+using GitObjectDb.Injection;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -20,28 +21,19 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The preferred constructor found using reflection.</returns>
         internal static ConstructorInfo FindPreferredConstructor(Type instanceType, Type[] argumentTypes, out int?[] parameterMap)
         {
-            ConstructorInfo matchingConstructor = null;
-            parameterMap = null;
-            var flag = false;
             foreach (var declaredConstructor in instanceType.GetTypeInfo().DeclaredConstructors)
             {
-                if (!declaredConstructor.IsStatic && declaredConstructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false))
+                if (!declaredConstructor.IsStatic && declaredConstructor.IsDefined(typeof(FactoryDelegateConstructorAttribute), false))
                 {
-                    if (flag)
-                    {
-                        ThrowMultipleCtorsMarkedWithAttributeException();
-                    }
                     if (!TryCreateParameterMap(declaredConstructor.GetParameters(), argumentTypes, out int?[] parameterMap2))
                     {
                         ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
                     }
-                    matchingConstructor = declaredConstructor;
                     parameterMap = parameterMap2;
-                    flag = true;
+                    return declaredConstructor;
                 }
             }
-            return matchingConstructor ??
-                throw new InvalidOperationException($"A suitable constructor for type '{instanceType.Name}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor decorated with {nameof(ActivatorUtilitiesConstructorAttribute)}.");
+            throw new InvalidOperationException($"A suitable constructor for type '{instanceType.Name}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor decorated with {nameof(FactoryDelegateConstructorAttribute)}.");
         }
 
         private static bool TryCreateParameterMap(ParameterInfo[] constructorParameters, Type[] argumentTypes, out int?[] parameterMap)
@@ -68,14 +60,9 @@ namespace Microsoft.Extensions.DependencyInjection
             return true;
         }
 
-        private static void ThrowMultipleCtorsMarkedWithAttributeException()
-        {
-            throw new InvalidOperationException($"Multiple constructors were marked with {nameof(ActivatorUtilitiesConstructorAttribute)}.");
-        }
-
         private static void ThrowMarkedCtorDoesNotTakeAllProvidedArguments()
         {
-            throw new InvalidOperationException($"Constructor marked with {nameof(ActivatorUtilitiesConstructorAttribute)} does not accept all given argument types.");
+            throw new InvalidOperationException($"Constructor marked with {nameof(FactoryDelegateConstructorAttribute)} does not accept all given argument types.");
         }
     }
 }

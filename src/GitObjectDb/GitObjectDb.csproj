@@ -1,48 +1,37 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\GitObjectDb.xml</DocumentationFile>
+    <CodeAnalysisRuleSet>$(SolutionDir)\Rules.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+	<Description>GitObjectDb is designed to simplify the configuration management versioning. It does so by removing the need for hand-coding the commands needed to interact with Git.
+
+The Git repository is used as a pure database as the files containing the serialized copy of the objects are never fetched in the filesystem. GitObjectDb only uses the blob storage provided by Git.</Description>
+	<PackageLicenseUrl>https://raw.githubusercontent.com/frblondin/GitObjectDb/master/LICENSE</PackageLicenseUrl>
+	<PackageProjectUrl>https://github.com/frblondin/GitObjectDb</PackageProjectUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/frblondin/GitObjectDb/master/GitObjectDb.png</PackageIconUrl>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\GitObjectDb.ModelCodeGeneration\Resources\IndexTemplate.cs" Link="Models\Templates\IndexTemplate.cs" />
-    <Compile Include="..\GitObjectDb.ModelCodeGeneration\Resources\ModelTemplate.cs" Link="Models\Templates\ModelTemplate.cs" />
-    <Compile Include="..\GitObjectDb.ModelCodeGeneration\Resources\RepositoryTemplate.cs" Link="Models\Templates\RepositoryTemplate.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="CodeGeneration.Roslyn.BuildTime">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="CompareNETObjects" />
+    <PackageReference Include="fasterflect.reflect" />
     <PackageReference Include="LibGit2Sharp" />
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers">
       <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
-    <PackageReference Include="Newtonsoft.Json" />
-    <PackageReference Include="SourceLink.Copy.PdbFiles" privateAssets="all" />
-    <PackageReference Include="SourceLink.Create.CommandLine" privateAssets="all" />
-    <PackageReference Include="StyleCop.Analyzers">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="System.Collections.Immutable" />
     <PackageReference Include="Nerdbank.GitVersioning">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Models\Templates\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <DotNetCliToolReference Include="dotnet-codegen" Version="0.6.1" />
+    <PackageReference Include="System.Collections.Immutable" />
+    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
 </Project>
