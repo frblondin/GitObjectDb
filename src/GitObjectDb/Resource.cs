@@ -4,26 +4,48 @@ using System.IO;
 
 namespace GitObjectDb
 {
-    /// <summary>
-    /// Resource used by a <see cref="Node"/>.
-    /// </summary>
-    public class Resource : ITreeItem
+    /// <summary>Resource used by a <see cref="Node"/>.</summary>
+    public sealed partial class Resource : ITreeItem
     {
         private readonly Lazy<DataPath> _nodePath;
         private Func<Stream> _value;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Resource"/> class.
-        /// </summary>
+        /// <summary>Initializes a new instance of the <see cref="Resource"/> class.</summary>
         /// <param name="node">The node this resources will belong to.</param>
         /// <param name="relativePath">The relative path.</param>
-        /// <param name="values">The resource content.</param>
-        public Resource(Node node, DataPath relativePath, byte[] values)
+        /// <param name="value">The resource content.</param>
+        public Resource(Node node, DataPath relativePath, string value)
             : this(
                   DataPath.FromGitBlobPath(
                       $"{(node.Path ?? throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.")).FolderPath}/" +
                       $"{FileSystemStorage.ResourceFolder}/{relativePath.FilePath}"),
-                  values)
+                  new StringReaderStream(value))
+        {
+            FileSystemStorage.ThrowIfAnyReservedName(relativePath.FilePath);
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="Resource"/> class.</summary>
+        /// <param name="parentPath">The parent path of the node this resources will belong to.</param>
+        /// <param name="relativePath">The relative path.</param>
+        /// <param name="value">The resource content.</param>
+        public Resource(DataPath parentPath, DataPath relativePath, string value)
+            : this(
+                  DataPath.FromGitBlobPath(
+                      $"{parentPath.FolderPath}/" +
+                      $"{FileSystemStorage.ResourceFolder}/{relativePath.FilePath}"),
+                  new StringReaderStream(value))
+        {
+            FileSystemStorage.ThrowIfAnyReservedName(relativePath.FilePath);
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="Resource"/> class.</summary>
+        /// <param name="node">The node this resources will belong to.</param>
+        /// <param name="relativePath">The relative path.</param>
+        /// <param name="stream">The resource content.</param>
+        public Resource(Node node, DataPath relativePath, Stream stream)
+            : this(
+                  (node.Path ?? throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.")).CreateResourcePath(relativePath),
+                  () => stream)
         {
             FileSystemStorage.ThrowIfAnyReservedName(relativePath.FilePath);
         }
@@ -31,13 +53,11 @@ namespace GitObjectDb
         internal Resource(DataPath path, Blob blob)
             : this(path, blob.GetContentStream)
         {
-            IsDetached = false;
         }
 
-        internal Resource(DataPath path, byte[] values)
-            : this(path, () => new MemoryStream(values))
+        internal Resource(DataPath path, Stream stream)
+            : this(path, () => stream)
         {
-            IsDetached = true;
         }
 
         private Resource(DataPath path, Func<Stream> value)
@@ -47,28 +67,26 @@ namespace GitObjectDb
             _value = value;
         }
 
-        /// <summary>Gets the resource path.</summary>
-        public DataPath Path { get; }
+        /// <summary>Gets or sets the resource path.</summary>
+        public DataPath Path { get; set; }
+
+        DataPath? ITreeItem.Path
+        {
+            get => Path;
+            set => Path = value ?? throw new ArgumentNullException(nameof(value));
+        }
 
         /// <summary>Gets the path of the node this resource belongs to.</summary>
         public DataPath NodePath => _nodePath.Value;
 
-        internal bool IsDetached { get; }
-
-        /// <summary>
-        /// Gets the content stream.
-        /// </summary>
+        /// <summary>Gets the content stream.</summary>
         /// <returns>The stream.</returns>
         public Stream GetContentStream() =>
             _value.Invoke();
 
-        /// <summary>
-        /// Sets the content stream of this resource.
-        /// </summary>
+        /// <summary>Sets the content stream of this resource.</summary>
         /// <param name="stream">The content stream.</param>
-        public void SetContentStream(Stream stream)
-        {
+        public void SetContentStream(Stream stream) =>
             _value = () => stream;
-        }
     }
 }

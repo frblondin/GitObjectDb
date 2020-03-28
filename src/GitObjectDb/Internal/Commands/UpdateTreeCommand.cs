@@ -1,4 +1,4 @@
-using GitObjectDb.Serialization.Json;
+using GitObjectDb.Serialization;
 using LibGit2Sharp;
 using System;
 
@@ -32,14 +32,23 @@ namespace GitObjectDb.Internal.Commands
         internal static ApplyUpdateTreeDefinition Delete(ITreeItem item) =>
             (_, definition, __) =>
             {
-                // For nodes, delete whole folder containing node and nested entries
-                // For resources, only deleted resource
                 var path = item.Path;
                 if (path is null)
                 {
                     throw new InvalidOperationException("Path should not be null.");
                 }
+
+                // For nodes, delete whole folder containing node and nested entries
+                // For resources, only deleted resource
                 definition.Remove(item is Node ? path.FolderPath : path.FilePath);
+            };
+
+        internal static ApplyUpdateTreeDefinition Delete(DataPath path) =>
+            (_, definition, __) =>
+            {
+                // For nodes, delete whole folder containing node and nested entries
+                // For resources, only deleted resource
+                definition.Remove(path.FileName == FileSystemStorage.DataFile ? path.FolderPath : path.FilePath);
             };
 
         private void CreateOrUpdateJsonBlob(Node node, ObjectDatabase database, TreeDefinition definition)

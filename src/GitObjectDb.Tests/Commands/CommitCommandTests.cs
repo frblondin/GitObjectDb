@@ -4,19 +4,17 @@ using GitObjectDb.Comparison;
 using GitObjectDb.Internal;
 using GitObjectDb.Internal.Commands;
 using GitObjectDb.Tests.Assets;
-using GitObjectDb.Tests.Assets.Models.Software;
+using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
+using Models.Software;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace GitObjectDb.Tests.Commands
 {
-    [Parallelizable(ParallelScope.All)]
+    [Parallelizable(ParallelScope.Self | ParallelScope.Children)]
     public class CommitCommandTests
     {
         [Test]
@@ -27,16 +25,15 @@ namespace GitObjectDb.Tests.Commands
             var (updateCommand, comparer, sut, connection) = Arrange(fixture);
 
             // Act
-            var transformations = new NodeTransformationComposer(updateCommand, sut, connection)
-                .CreateOrUpdate(new Field(newFieldId), table)
-                .Transformations;
+            var composer = new TransformationComposer(updateCommand, sut, connection);
+            composer.CreateOrUpdate(new Field { Id = newFieldId }, table);
             var result = sut.Commit(
                 connection.Repository,
-                transformations.Select(t => t.Transformation),
+                composer.Transformations.Select(t => t.TreeTransformation),
                 message, signature, signature);
 
             // Assert
-            var changes = comparer.Compare(connection.Repository, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
+            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
             Assert.That(changes, Has.Count.EqualTo(1));
             var expectedPath = $"{table.Path.FolderPath}/Fields/{newFieldId}/{FileSystemStorage.DataFile}";
             Assert.That(changes.Added.Single().New.Path.FilePath, Is.EqualTo(expectedPath));
@@ -49,19 +46,18 @@ namespace GitObjectDb.Tests.Commands
             // Arrange
             var (updateCommand, comparer, sut, connection) = Arrange(fixture);
             var relativePath = new DataPath("Some/Folder", "File.txt");
-            var resource = new Resource(table, relativePath, Encoding.Default.GetBytes(fileContent));
+            var resource = new Resource(table, relativePath, fileContent);
 
             // Act
-            var transformations = new NodeTransformationComposer(updateCommand, sut, connection)
-                .CreateOrUpdate(resource)
-                .Transformations;
+            var composer = new TransformationComposer(updateCommand, sut, connection);
+            composer.CreateOrUpdate(resource);
             var result = sut.Commit(
                 connection.Repository,
-                transformations.Select(t => t.Transformation),
+                composer.Transformations.Select(t => t.TreeTransformation),
                 message, signature, signature);
 
             // Assert
-            var changes = comparer.Compare(connection.Repository, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
+            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
             Assert.That(changes, Has.Count.EqualTo(1));
             var expectedPath = $"{table.Path.FolderPath}/{FileSystemStorage.ResourceFolder}/{relativePath.FilePath}";
             Assert.That(changes.Added.Single().New.Path.FilePath, Is.EqualTo(expectedPath));
@@ -78,16 +74,15 @@ namespace GitObjectDb.Tests.Commands
             var (updateCommand, comparer, sut, connection) = Arrange(fixture);
 
             // Act
-            var transformations = new NodeTransformationComposer(updateCommand, sut, connection)
-                .Delete(table)
-                .Transformations;
+            var composer = new TransformationComposer(updateCommand, sut, connection);
+            composer.Delete(table);
             var result = sut.Commit(
                 connection.Repository,
-                transformations.Select(t => t.Transformation),
+                composer.Transformations.Select(t => t.TreeTransformation),
                 message, signature, signature);
 
             // Assert
-            var changes = comparer.Compare(connection.Repository, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
+            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
             Assert.That(changes, Has.Count.GreaterThan(1));
         }
 
@@ -100,23 +95,22 @@ namespace GitObjectDb.Tests.Commands
 
             // Act
             field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
-            var transformations = new NodeTransformationComposer(updateCommand, sut, connection)
-                .CreateOrUpdate(field)
-                .Transformations;
+            var composer = new TransformationComposer(updateCommand, sut, connection);
+            composer.CreateOrUpdate(field);
             var result = sut.Commit(
                 connection.Repository,
-                transformations.Select(t => t.Transformation),
+                composer.Transformations.Select(t => t.TreeTransformation),
                 message, signature, signature);
 
             // Act
-            var changes = comparer.Compare(connection.Repository, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
+            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
             Assert.That(changes, Has.Count.EqualTo(1));
             Assert.That(changes.Modified.OfType<Change.NodeChange>().Single().Differences, Has.Count.EqualTo(1));
             Assert.That(changes.Added, Is.Empty);
             Assert.That(changes.Deleted, Is.Empty);
         }
 
-        private static (UpdateTreeCommand, Comparer, CommitCommand, IConnectionInternal) Arrange(IFixture fixture) =>
+        private static (UpdateTreeCommand UpdateTreeCommand, Comparer Comparer, CommitCommand CommitCommand, IConnectionInternal Connection) Arrange(IFixture fixture) =>
         (
             fixture.Create<UpdateTreeCommand>(),
             fixture.Create<Comparer>(),
@@ -130,6 +124,7 @@ namespace GitObjectDb.Tests.Commands
             {
                 var connection = A.Fake<IConnectionInternal>(x => x.Strict());
                 A.CallTo(() => connection.Repository).Returns(fixture.Create<Repository>());
+                A.CallTo(() => connection.Head).Returns(fixture.Create<Repository>().Head);
                 fixture.Inject(connection);
 
                 var validation = A.Fake<ITreeValidation>(x => x.Strict());

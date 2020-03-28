@@ -78,12 +78,13 @@ namespace GitObjectDb.Comparison
             var path = nonNull.Path ?? throw new NullReferenceException();
             if (nonNull is Node node)
             {
-                Merged = (ITreeItem)Reflect.Constructor(type, typeof(UniqueId)).Invoke(node.Id);
-                ((ITreeItemInternal)Merged).Path = path;
+                Merged = (ITreeItem)Reflect.Constructor(type).Invoke();
+                ((Node)Merged).Id = node.Id;
+                Merged.Path = path;
             }
             else if (nonNull is Resource resource)
             {
-                Merged = new Resource(resource.Path, Array.Empty<byte>());
+                Merged = new Resource(resource.Path, System.IO.Stream.Null);
             }
             else
             {
@@ -126,7 +127,7 @@ namespace GitObjectDb.Comparison
             {
                 // Deletion
                 var nonNull = Theirs ?? Ours;
-                Status = nonNull != null && !Comparer.Compare(Ancestor, nonNull, Policy).AreEqual ?
+                Status = nonNull != null && !Comparer.CompareInternal(Ancestor, nonNull, Policy).AreEqual ?
                     ItemMergeStatus.TreeConflict :
                     ItemMergeStatus.Delete;
             }
@@ -136,7 +137,7 @@ namespace GitObjectDb.Comparison
                 {
                     Status = ItemMergeStatus.EditConflict;
                 }
-                else if (Comparer.Compare(Ours, Merged, Policy).AreEqual)
+                else if (Comparer.CompareInternal(Ours, Merged, Policy).AreEqual)
                 {
                     Status = ItemMergeStatus.NoChange;
                 }
@@ -158,21 +159,21 @@ namespace GitObjectDb.Comparison
             if (Ours != null && Theirs != null)
             {
                 // Both values are equal -> no conflict
-                if (Comparer.Compare(ourValue, theirValue, Policy).AreEqual)
+                if (Comparer.CompareInternal(ourValue, theirValue, Policy).AreEqual)
                 {
                     setter(Merged, ourValue);
                     return true;
                 }
 
                 // Only changed in their changes -> no conflict
-                if (Ancestor != null && Comparer.Compare(ancestorValue, ourValue, Policy).AreEqual)
+                if (Ancestor != null && Comparer.CompareInternal(ancestorValue, ourValue, Policy).AreEqual)
                 {
                     setter(Merged, theirValue);
                     return true;
                 }
 
                 // Only changed in our changes -> no conflict
-                if (Ancestor != null && Comparer.Compare(ancestorValue, theirValue, Policy).AreEqual)
+                if (Ancestor != null && Comparer.CompareInternal(ancestorValue, theirValue, Policy).AreEqual)
                 {
                     setter(Merged, ourValue);
                     return true;

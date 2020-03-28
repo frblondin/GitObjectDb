@@ -4,6 +4,7 @@
   <!-- StyleCop Analyzers configuration -->
   <PropertyGroup>
     <CodeAnalysisRuleSet>$(SolutionDir)StyleCop.ruleset</CodeAnalysisRuleSet>
+    <LangVersion>10.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="StyleCop.Analyzers">

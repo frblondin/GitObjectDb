@@ -9,12 +9,12 @@ using System.Threading;
 
 namespace GitObjectDb.Tests.Assets.Tools
 {
+#if NET6_0_OR_GREATER
     internal class DeferredTestMethod : TestMethod
     {
-        // should be readonly, but LazyInitializer doesn't have 'in' modifier for the lock.
+        // Should be readonly, but LazyInitializer doesn't have 'in' modifier for the lock.
         private static object _staticLock = new object();
-
-        private bool _argsInitialized = false;
+        private bool _argsInitialized;
         private object[] _lockedArguments;
 
         public DeferredTestMethod(IMethodInfo method, Test parentSuite)
@@ -32,4 +32,5 @@ namespace GitObjectDb.Tests.Assets.Tools
             }
         }
     }
+#endif
 }

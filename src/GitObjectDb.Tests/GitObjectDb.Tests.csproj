@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -17,10 +17,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GitObjectDb\GitObjectDb.csproj" />
+    <ProjectReference Include="..\samples\Models.Software\Models.Software.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Assets\Models\Software\Benchmark.zip">
+    <None Update="Assets\Data\Software\Benchmark.zip">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

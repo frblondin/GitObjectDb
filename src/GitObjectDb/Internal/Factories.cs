@@ -9,12 +9,12 @@ namespace GitObjectDb.Internal
 {
     internal class Factories
     {
-        internal delegate INodeTransformationComposer NodeTransformationComposerFactory(IConnectionInternal connection);
+        internal delegate ITransformationComposer TransformationComposerFactory(IConnectionInternal connection);
 
-        internal delegate INodeRebase NodeRebaseFactory(IConnectionInternal connection, Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null);
+        internal delegate IRebase RebaseFactory(IConnectionInternal connection, Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null);
 
-        internal delegate INodeMerge NodeMergeFactory(IConnectionInternal connection, Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null);
+        internal delegate IMerge MergeFactory(IConnectionInternal connection, Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null);
 
-        internal delegate NodeQueryFetcher NodeQueryFetcherFactory(Repository repository, Tree tree, Node? parent, bool isRecursive);
+        internal delegate ICherryPick CherryPickFactory(IConnectionInternal connection, string committish, Signature? committer, Branch? branch = null, CherryPickPolicy? policy = null);
     }
 }

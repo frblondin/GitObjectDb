@@ -14,26 +14,41 @@ namespace GitObjectDb.Comparison
         {
         }
 
-        private ComparisonPolicy(IImmutableList<PropertyInfo> ignoredProperties)
+        internal ComparisonPolicy(IImmutableList<PropertyInfo> ignoredProperties)
         {
             IgnoredProperties = ignoredProperties;
         }
 
         /// <summary>Gets the default policy.</summary>
         public static ComparisonPolicy Default { get; } = new ComparisonPolicy()
-            .IgnoreProperty<Node>(n => n.Path);
+            .UpdateWithDefaultExclusion();
 
         internal IImmutableList<PropertyInfo> IgnoredProperties { get; }
+    }
 
+#pragma warning disable SA1402 // File may only contain a single type
+    /// <summary>Adds ability to add ignored properties.</summary>
+    public static class ComparisonPolicyExtensions
+    {
         /// <summary>Ignores a node property to the policy.</summary>
+        /// <typeparam name="TPolicy">The type of the policy.</typeparam>
         /// <typeparam name="TNode">The type of the node.</typeparam>
+        /// <param name="source">The policy to be updated.</param>
         /// <param name="expression">The expression.</param>
         /// <returns>The current <see cref="ComparisonPolicy"/> instance.</returns>
-        public ComparisonPolicy IgnoreProperty<TNode>(Expression<Func<TNode, object?>> expression)
+        public static TPolicy IgnoreProperty<TPolicy, TNode>(this TPolicy source, Expression<Func<TNode, object?>> expression)
             where TNode : Node
+            where TPolicy : ComparisonPolicy
         {
             var property = ExpressionReflector.GetProperty(expression);
-            return new ComparisonPolicy(IgnoredProperties.Add(property));
+            return (TPolicy)Fasterflect.Reflect.Constructor(typeof(TPolicy), typeof(IImmutableList<PropertyInfo>))
+                .Invoke(source.IgnoredProperties.Add(property));
+        }
+
+        internal static TPolicy UpdateWithDefaultExclusion<TPolicy>(this TPolicy source)
+            where TPolicy : ComparisonPolicy
+        {
+            return source.IgnoreProperty((Node n) => n.Path);
         }
     }
 }
