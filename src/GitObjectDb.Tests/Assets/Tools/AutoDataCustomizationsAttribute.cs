@@ -10,7 +10,9 @@ namespace GitObjectDb.Tests.Assets.Tools
         public AutoDataCustomizationsAttribute(params Type[] customizationTypes)
             : base(() => CreateFixture(customizationTypes))
         {
+#if NET6_0_OR_GREATER
             TestMethodBuilder = new DeferredArgumentTestMethodBuilder();
+#endif
         }
 
         public Type[] CustomizationTypes { get; }

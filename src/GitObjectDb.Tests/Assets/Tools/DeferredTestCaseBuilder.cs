@@ -1,4 +1,4 @@
-﻿using AutoFixture.NUnit3;
+using AutoFixture.NUnit3;
 using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 using NUnit.Framework.Internal.Builders;
@@ -9,6 +9,7 @@ using System.Threading;
 
 namespace GitObjectDb.Tests.Assets.Tools
 {
+#if NET6_0_OR_GREATER
     internal class DeferredTestCaseBuilder
     {
         public DeferredTestMethod BuildTestMethod(IMethodInfo method, Test parentSuite, object[] displayParameters, IEnumerable<object> parameters)
@@ -33,4 +34,5 @@ namespace GitObjectDb.Tests.Assets.Tools
             return testMethod;
         }
     }
+#endif
 }

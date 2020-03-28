@@ -23,7 +23,7 @@ namespace GitObjectDb
         /// <summary>
         /// The sha length used by <see cref="UniqueId"/>.
         /// </summary>
-        public const int ShaLength = 12;
+        public const int ShaDefaultLength = 12;
 
 #pragma warning disable IDE1006 // Naming Styles
 
@@ -45,7 +45,7 @@ namespace GitObjectDb
 
             if (!IsShaValid(sha))
             {
-                throw new ArgumentException($"The sha should not be null, its length should be exactly {ShaLength}, and it should only contain letters and digits.");
+                throw new ArgumentException($"The sha should not be null and it should only contain letters and digits.");
             }
         }
 
@@ -109,11 +109,11 @@ namespace GitObjectDb
 
         private static char[] CreateNewCharArray()
         {
-            var buffer = new byte[ShaLength];
+            var buffer = new byte[ShaDefaultLength];
             _rngCryptoServiceProvider.GetBytes(buffer);
 
-            var result = new char[ShaLength];
-            for (var pos = 0; pos < ShaLength; pos++)
+            var result = new char[ShaDefaultLength];
+            for (var pos = 0; pos < ShaDefaultLength; pos++)
             {
                 result[pos] = ConvertToChar(buffer[pos]);
             }
@@ -136,7 +136,6 @@ namespace GitObjectDb
         /// <param name="s">A string containing a sha to convert.</param>
         /// <param name="result">When this method returns, contains the <see cref="UniqueId" /> value equivalent to the sha contained in <paramref name="s" />, if the conversion succeeded, or default if the conversion failed. The conversion fails if the <paramref name="s" /> parameter is <see langword="null" />, is an empty string (""), or does not contain a valid string representation of a sha. This parameter is passed uninitialized.</param>
         /// <returns><see langword="true" /> if the <paramref name="s" /> parameter was converted successfully; otherwise, <see langword="false" />.</returns>
-        [ExcludeFromGuardForNull]
         public static bool TryParse(string s, out UniqueId result)
         {
             if (IsShaValid(s))
@@ -152,12 +151,14 @@ namespace GitObjectDb
         }
 
         private static bool IsShaValid(string sha) =>
-            sha?.Length == ShaLength &&
-            sha.All(c => IsShaValidChat(c));
+            !string.IsNullOrWhiteSpace(sha) &&
+            sha.All(IsShaValidChat);
 
         private static bool IsShaValidChat(char c) =>
-            (c >= 'a' && c <= 'a' + 26) ||
-            (c >= '0' && c <= '9');
+            (c >= 'a' && c <= 'z') ||
+            (c >= 'A' && c <= 'Z') ||
+            (c >= '0' && c <= '9') ||
+            c == '_';
 
         /// <inheritdoc/>
         public bool Equals(string other) => StringComparer.Ordinal.Equals(_sha, other);

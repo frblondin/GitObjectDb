@@ -1,7 +1,5 @@
+using GitObjectDb.Model;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace GitObjectDb
 {
@@ -15,9 +13,9 @@ namespace GitObjectDb
         /// </summary>
         /// <param name="folderPath">The folder path.</param>
         /// <param name="fileName">The file name containing data.</param>
-        internal DataPath(string folderPath, string fileName)
+        public DataPath(string folderPath, string fileName)
         {
-            (FolderPath, FolderName) = CleanupFolder(folderPath, fileName);
+            (FolderParts, FolderPath, FolderName) = CleanupFolder(folderPath, fileName);
             FileName = fileName;
 
             _filePath = new Lazy<string>(() =>
@@ -35,6 +33,9 @@ namespace GitObjectDb
 
         /// <summary>Gets the name of the file containing data.</summary>
         public string FileName { get; }
+
+        /// <summary>Gets the parts of the path.</summary>
+        public string[] FolderParts { get; }
 
         /// <summary>
         /// Indicates whether the values of two specified <see cref="DataPath" /> objects are equal.
@@ -64,26 +65,42 @@ namespace GitObjectDb
 
         internal static DataPath FromGitBlobPath(string path)
         {
-            if (string.IsNullOrWhiteSpace(path))
+            if (!TryParse(path, out var result))
             {
                 throw new ArgumentException("message", nameof(path));
             }
-
-            var separator = path.LastIndexOf('/');
-            return separator != -1 ?
-                new DataPath(path.Substring(0, separator), path.Substring(separator + 1)) :
-                new DataPath(string.Empty, path);
+            return result!;
         }
 
-        private static (string Path, string Name) CleanupFolder(string folder, string fileName)
+        /// <summary>Converts the specified string representation to its <see cref="DataPath" /> equivalent and returns a value that indicates whether the conversion succeeded.</summary>
+        /// <param name="path">A string containing a sha to convert.</param>
+        /// <param name="result">When this method returns, contains the <see cref="DataPath" /> value equivalent to the path contained in <paramref name="path" />, if the conversion succeeded, or default if the conversion failed. The conversion fails if the <paramref name="path" /> parameter is <see langword="null" />, is an empty string (""), or does not contain a valid string representation of a sha. This parameter is passed uninitialized.</param>
+        /// <returns><see langword="true" /> if the <paramref name="path" /> parameter was converted successfully; otherwise, <see langword="false" />.</returns>
+        public static bool TryParse(string path, out DataPath? result)
         {
+            if (string.IsNullOrWhiteSpace(path) || !path[0].Equals('/'))
+            {
+                result = default;
+            }
+
+            var separator = path.LastIndexOf('/');
+            result = separator != -1 ?
+                new DataPath(path.Substring(0, separator), path.Substring(separator + 1)) :
+                new DataPath(string.Empty, path);
+
+            return true;
+        }
+
+        private static (string[] FolderParts, string Path, string Name) CleanupFolder(string folder, string fileName)
+        {
+            var folderParts = folder.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
             if (folder.EndsWith(fileName, StringComparison.Ordinal))
             {
                 folder = folder.Substring(0, folder.Length - fileName.Length);
             }
             var path = folder.Trim('/');
             var lastSlash = path.LastIndexOf('/');
-            return (path, lastSlash != -1 ? path.Substring(lastSlash + 1) : string.Empty);
+            return (folderParts, path, lastSlash != -1 ? path.Substring(lastSlash + 1) : string.Empty);
         }
 
         internal DataPath AddChild(Node node)
@@ -100,9 +117,14 @@ namespace GitObjectDb
         private static string GetSuffix(Node node)
         {
             var type = node.GetType();
-            var attribute = GitPathAttribute.Get(type);
-            var folder = attribute?.FolderName ?? type.Name;
+            var folder = GetFolderName(type);
             return string.IsNullOrEmpty(folder) ? node.Id.ToString() : $"{folder}/{node.Id}";
+        }
+
+        internal static string GetFolderName(Type type)
+        {
+            var attribute = GitPathAttribute.Get(type);
+            return attribute?.FolderName ?? $"{type.Name}s";
         }
 
         /// <inheritdoc/>
@@ -114,7 +136,7 @@ namespace GitObjectDb
 
         /// <inheritdoc/>
         public override int GetHashCode() =>
-            FolderPath.GetHashCode(StringComparison.Ordinal);
+            StringComparer.Ordinal.GetHashCode(FilePath);
 
         /// <inheritdoc/>
         public bool Equals(DataPath? other) =>
@@ -127,7 +149,12 @@ namespace GitObjectDb
             {
                 throw new InvalidOperationException($"Path doesn't refer to a resource.");
             }
-            return new DataPath(FolderPath.Substring(0, position - 1), FileSystemStorage.DataFile);
+            return new DataPath(FolderPath.Substring(0, position), FileSystemStorage.DataFile);
+        }
+
+        internal DataPath CreateResourcePath(DataPath resourcePath)
+        {
+            return FromGitBlobPath($"{FolderPath}/{FileSystemStorage.ResourceFolder}/{resourcePath.FilePath}");
         }
     }
 }

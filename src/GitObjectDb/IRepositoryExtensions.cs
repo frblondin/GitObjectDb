@@ -7,14 +7,10 @@ using System.Text;
 
 namespace GitObjectDb
 {
-    /// <summary>
-    /// A set of methods for instances of <see cref="IRepository"/>.
-    /// </summary>
+    /// <summary>A set of methods for instances of <see cref="IRepository"/>.</summary>
     internal static partial class IRepositoryExtensions
     {
-        /// <summary>
-        /// Builds the commit log message.
-        /// </summary>
+        /// <summary>Builds the commit log message.</summary>
         /// <param name="commit">The commit.</param>
         /// <param name="amendPreviousCommit">if set to <c>true</c> [amend previous commit].</param>
         /// <param name="isHeadOrphaned">if set to <c>true</c> [is head orphaned].</param>
@@ -46,9 +42,7 @@ namespace GitObjectDb
             repository.UpdateTerminalReference(repository.Refs.Head, commit, reflogMessage);
         }
 
-        /// <summary>
-        /// Updates the reference.
-        /// </summary>
+        /// <summary>Updates the reference.</summary>
         internal static void UpdateTerminalReference(this IRepository repository, Reference reference, Commit commit, string reflogMessage)
         {
             while (true)

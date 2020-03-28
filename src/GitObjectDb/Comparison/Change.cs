@@ -46,7 +46,7 @@ namespace GitObjectDb.Comparison
             var newNode = @new as Node;
             if (oldNode != null || newNode != null)
             {
-                var differences = Comparer.Compare(oldNode, newNode, policy);
+                var differences = Comparer.CompareInternal(oldNode, newNode, policy);
                 return differences.AreEqual ?
                     null :
                     new NodeChange(oldNode, newNode, status, differences);

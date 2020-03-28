@@ -1,14 +1,12 @@
 using AutoFixture;
 using GitObjectDb.Comparison;
 using GitObjectDb.Tests.Assets;
-using GitObjectDb.Tests.Assets.Models.Software;
+using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
+using Models.Software;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace GitObjectDb.Tests.Comparison
 {
@@ -27,7 +25,7 @@ namespace GitObjectDb.Tests.Comparison
 
             // Act
             var comparison = comparer.Compare(
-                repository,
+                sut,
                 repository.Lookup<Commit>("HEAD~1").Tree,
                 repository.Head.Tip.Tree,
                 ComparisonPolicy.Default);
@@ -39,9 +37,9 @@ namespace GitObjectDb.Tests.Comparison
             Assert.That(comparison.Deleted, Is.Empty);
         }
 
-        private static (IConnection, Repository, Comparer, Field, string, Signature) Arrange(IFixture fixture) =>
+        private static (IConnectionInternal Connection, Repository Repository, Comparer Comparer, Field Field, string StringValue, Signature Signature) Arrange(IFixture fixture) =>
         (
-            fixture.Create<IConnection>(),
+            fixture.Create<IConnectionInternal>(),
             fixture.Create<Repository>(),
             fixture.Create<Comparer>(),
             fixture.Create<Field>(),

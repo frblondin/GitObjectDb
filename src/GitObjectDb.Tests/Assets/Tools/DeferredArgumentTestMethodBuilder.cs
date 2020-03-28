@@ -9,6 +9,7 @@ using System.Threading;
 
 namespace GitObjectDb.Tests.Assets.Tools
 {
+#if NET6_0_OR_GREATER
     internal class DeferredArgumentTestMethodBuilder : ITestMethodBuilder
     {
         /// <summary>
@@ -52,4 +53,5 @@ namespace GitObjectDb.Tests.Assets.Tools
             public override string ToString() => "auto<" + _argType.Name + ">";
         }
     }
+#endif
 }

@@ -1,0 +1,23 @@
+using GitObjectDb.Serialization.Json.Converters;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Text.Json.Serialization;
+
+namespace GitObjectDb.Serialization
+{
+    [JsonConverter(typeof(NonScalarConverter))]
+    internal class NonScalar
+    {
+        public NonScalar(Node node)
+        {
+            Node = node;
+        }
+
+        public Type Type => Node.GetType();
+
+        public Node Node { get; set; }
+
+        public override string ToString() => $"{Type}, {Node}";
+    }
+}

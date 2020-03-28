@@ -22,7 +22,7 @@ namespace GitObjectDb.Tests
             Path.GetDirectoryName(AssemblyHelper.GetAssemblyPath(Assembly.GetExecutingAssembly()));
 
         public static string SoftwareBenchmarkRepositoryPath { get; } =
-            Path.Combine(_workDirectory, "Repos", "Models", "Software", "Benchmark");
+            Path.Combine(_workDirectory, "Repos", "Data", "Software", "Benchmark");
 
         public static string TempRepoPath { get; } =
             Path.Combine(_workDirectory, "TempRepos");
@@ -47,7 +47,11 @@ namespace GitObjectDb.Tests
         {
             if (!Directory.Exists(Path.Combine(SoftwareBenchmarkRepositoryPath, ".git")))
             {
-                ZipFile.ExtractToDirectory("Assets\\Models\\Software\\Benchmark.zip", SoftwareBenchmarkRepositoryPath);
+                ZipFile.ExtractToDirectory(
+                    Path.Combine(
+                        TestContext.CurrentContext.TestDirectory,
+                        "Assets\\Data\\Software\\Benchmark.zip"),
+                    SoftwareBenchmarkRepositoryPath);
             }
         }
 

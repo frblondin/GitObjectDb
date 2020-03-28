@@ -1,30 +1,23 @@
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace GitObjectDb
 {
     /// <summary>Represents a single object stored in the repository.</summary>
-    [DebuggerDisplay("Path = {Path}")]
-    public abstract class Node : ITreeItem, ITreeItemInternal
+    [DebuggerDisplay("Id = {Id}, Path = {Path}")]
+    public record Node : ITreeItem
     {
-        /// <summary>Initializes a new instance of the <see cref="Node"/> class.</summary>
-        /// <param name="id">The unique identifier.</param>
-        protected Node(UniqueId id)
-        {
-            Id = id;
-        }
+        /// <summary>Gets or sets the unique node identifier.</summary>
+        public UniqueId Id { get; set; } = UniqueId.CreateNew();
 
-        /// <summary>Gets the unique node identifier.</summary>
-        public UniqueId Id { get; }
-
-        /// <summary>Gets the node path.</summary>
+        /// <summary>Gets or sets the node path.</summary>
         [JsonIgnore]
-        public DataPath? Path { get; internal set; }
+        public DataPath? Path { get; set; }
 
-        DataPath? ITreeItemInternal.Path
-        {
-            get => Path;
-            set => Path = value;
-        }
+        /// <inheritdoc/>
+        public override string ToString() => Id.ToString();
     }
 }

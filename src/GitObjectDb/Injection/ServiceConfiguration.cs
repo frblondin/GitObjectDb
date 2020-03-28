@@ -2,6 +2,7 @@ using GitObjectDb.Comparison;
 using GitObjectDb.Internal;
 using GitObjectDb.Internal.Commands;
 using GitObjectDb.Internal.Queries;
+using GitObjectDb.Serialization;
 using GitObjectDb.Serialization.Json;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -10,14 +11,10 @@ using System.Reflection;
 
 namespace GitObjectDb
 {
-    /// <summary>
-    /// A set of methods for instances of <see cref="IServiceCollection"/>.
-    /// </summary>
+    /// <summary>A set of methods for instances of <see cref="IServiceCollection"/>.</summary>
     public static class ServiceConfiguration
     {
-        /// <summary>
-        /// Adds access to GitObjectDb repositories.
-        /// </summary>
+        /// <summary>Adds access to GitObjectDb repositories.</summary>
         /// <param name="source">The source.</param>
         /// <returns>The source <see cref="IServiceCollection"/>.</returns>
         public static IServiceCollection AddGitObjectDb(this IServiceCollection source) =>
@@ -40,14 +37,16 @@ namespace GitObjectDb
                 .Where(t => typeof(Delegate).IsAssignableFrom(t));
             source.AddFactoryDelegates(internalFactories);
             source.AddSingleton<INodeSerializer, DefaultSerializer>();
+            source.AddSingleton<NodeSerializerCache>();
             source.AddSingleton<Comparer>();
+            source.AddSingleton<IComparer>(s => s.GetRequiredService<Comparer>());
+            source.AddSingleton<IComparerInternal>(s => s.GetRequiredService<Comparer>());
             source.AddSingleton<ITreeValidation, TreeValidation>();
         }
 
         private static void ConfigureQueries(IServiceCollection source)
         {
             source.AddServicesImplementing(typeof(IQuery<,>), ServiceLifetime.Singleton);
-            source.AddServicesImplementing(typeof(IQuery<,,>), ServiceLifetime.Singleton);
         }
 
         private static void ConfigureCommands(IServiceCollection source)

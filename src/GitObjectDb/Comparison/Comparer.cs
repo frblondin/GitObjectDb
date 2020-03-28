@@ -9,44 +9,51 @@ using System.Runtime.CompilerServices;
 
 namespace GitObjectDb.Comparison
 {
-    internal class Comparer
+    internal class Comparer : IComparer, IComparerInternal
     {
-        private readonly IQuery<Tree, DataPath, ITreeItem> _nodeLoader;
+        private readonly IQuery<LoadItem.Parameters, ITreeItem> _nodeLoader;
 
-        public Comparer(IQuery<Tree, DataPath, ITreeItem> nodeLoader)
+        public Comparer(IQuery<LoadItem.Parameters, ITreeItem> nodeLoader)
         {
             _nodeLoader = nodeLoader;
         }
 
         internal delegate bool ConflictResolver(PropertyInfo property, object ancestorValue, object ourValue, object theirValue, out object result);
 
+        public ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy)
+        {
+            return CompareInternal(expectedObject, actualObject, policy);
+        }
+
         internal static IEnumerable<PropertyInfo> GetProperties(Type type, ComparisonPolicy policy) =>
             type.GetTypeInfo().GetProperties(BindingFlags.Instance | BindingFlags.Public)
             .Where(p => p.CanRead && p.CanWrite && !policy.IgnoredProperties.Contains(p));
 
-        internal static ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy)
+        internal static ComparisonResult CompareInternal(object? expectedObject, object? actualObject, ComparisonPolicy policy)
         {
             var logic = Cache.Get(policy);
             return logic.Compare(expectedObject, actualObject);
         }
 
-        internal ChangeCollection Compare(Repository repository, Tree oldTree, Tree newTree, ComparisonPolicy policy)
+        public ChangeCollection Compare(IConnectionInternal connection, Tree oldTree, Tree newTree, ComparisonPolicy policy)
         {
             if (newTree == null)
             {
-                newTree = repository.Head.Tip.Tree;
+                newTree = connection.Repository.Head.Tip.Tree;
             }
-            using (var changes = repository.Diff.Compare<Patch>(oldTree, newTree))
+            using (var changes = connection.Repository.Diff.Compare<Patch>(oldTree, newTree))
             {
                 var result = new ChangeCollection();
                 foreach (var change in changes)
                 {
                     var oldPath = new Lazy<DataPath>(() => DataPath.FromGitBlobPath(change.OldPath));
                     var old = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
-                        repository, oldTree[oldPath.Value.FolderPath].Target.Peel<Tree>(), oldPath.Value));
+                        connection,
+                        new LoadItem.Parameters(oldTree, oldPath.Value, null)));
                     var newPath = new Lazy<DataPath>(() => DataPath.FromGitBlobPath(change.Path));
                     var @new = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
-                        repository, newTree[newPath.Value.FolderPath].Target.Peel<Tree>(), newPath.Value));
+                        connection,
+                        new LoadItem.Parameters(newTree, newPath.Value, null)));
 
                     Change? treeChange;
                     switch (change.Status)

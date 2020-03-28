@@ -11,10 +11,10 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// Extension methods for adding services to an <see cref="IServiceCollection" />.
     /// </summary>
-    [ExcludeFromGuardForNull]
     internal static class FactoryDelegateProviderExtensions
     {
-        private static readonly MethodInfo _getRequiredServiceDefinition = ExpressionReflector.GetMethod(() => ServiceProviderServiceExtensions.GetRequiredService<object>(null), true);
+        private static readonly MethodInfo _getRequiredServiceDefinition = ExpressionReflector.GetMethod(
+            (IServiceProvider provider) => ServiceProviderServiceExtensions.GetRequiredService<object>(provider), true);
 
         internal static IServiceCollection AddServicesImplementing(this IServiceCollection services, Type interfaceType, ServiceLifetime lifetime)
         {
@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return Expression.Lambda(delegateType, invokeConstructor, parameters);
         }
 
-        private static (IList<ParameterExpression> parameters, Type[] argumentTypes, Type ReturnType) GetDelegateData(Type delegateType)
+        private static (IList<ParameterExpression> Parameters, Type[] ArgumentTypes, Type ReturnType) GetDelegateData(Type delegateType)
         {
             var invokeMethod = delegateType.GetMethod("Invoke");
             return ((from p in invokeMethod.GetParameters()

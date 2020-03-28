@@ -14,11 +14,11 @@ namespace GitObjectDb.Tools
         /// <summary>
         /// Extracts the <see cref="MethodInfo"/> out of the expression.
         /// </summary>
-        /// <typeparam name="TSource">The type of the source.</typeparam>
+        /// <typeparam name="T">The type of the source or parameter.</typeparam>
         /// <param name="expression">The expression.</param>
         /// <param name="returnGenericDefinition">if set to <c>true</c> returns the generic method definition.</param>
         /// <returns>The <see cref="MethodInfo"/>.</returns>
-        internal static MethodInfo GetMethod<TSource>(Expression<Action<TSource>> expression, bool returnGenericDefinition = false)
+        internal static MethodInfo GetMethod<T>(Expression<Action<T>> expression, bool returnGenericDefinition = false)
         {
             var found = Visitor<MethodCallExpression>.Lookup(expression);
             return returnGenericDefinition ? found.Method.GetGenericMethodDefinition() : found.Method;
@@ -72,7 +72,6 @@ namespace GitObjectDb.Tools
             return (FieldInfo)found.Member;
         }
 
-        [ExcludeFromGuardForNull]
         private class Visitor<TExpression> : ExpressionVisitor
             where TExpression : Expression
         {
