@@ -13,20 +13,20 @@ namespace GitObjectDb.Tests
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void TwoDifferentPropertyEdits(IConnection sut, Repository repository, Table table, string newDescription, string newName, Signature signature)
+        public void TwoDifferentPropertyEdits(IConnection sut, Table table, string newDescription, string newName, Signature signature)
         {
             // master:    A---B    A---B
             //             \    ->  \   \
             // newBranch:   C        C---x
 
             // Arrange
-            var a = repository.Head.Tip;
+            var a = sut.Head.Tip;
             var oldDescription = table.Description;
             table.Description = newDescription;
             var b = sut
                 .Update(c => c.CreateOrUpdate(table))
                 .Commit("B", signature, signature);
-            var branch = sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
+            var branch = sut.Checkout("newBranch", "HEAD~1");
             table.Description = oldDescription;
             table.Name = newName;
             var c = sut
@@ -51,19 +51,19 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void FastForward(IConnection sut, Repository repository, Table table, string newDescription, Signature signature)
+        public void FastForward(IConnection sut, Table table, string newDescription, Signature signature)
         {
             // master:    A---B    A---B
             //             \    ->  \   \
             // newBranch:            ----x
 
             // Arrange
-            var a = repository.Head.Tip;
+            var a = sut.Head.Tip;
             table.Description = newDescription;
             var b = sut
                 .Update(c => c.CreateOrUpdate(table))
                 .Commit("B", signature, signature);
-            var branch = sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
+            var branch = sut.Checkout("newBranch", "HEAD~1");
 
             // Act
             var merge = sut.Merge(upstreamCommittish: "master");
@@ -91,7 +91,7 @@ namespace GitObjectDb.Tests
             sut
                 .Update(c => c.CreateOrUpdate(table))
                 .Commit("B", signature, signature);
-            var branch = sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
+            var branch = sut.Checkout("newBranch", "HEAD~1");
             table.Description = cValue;
             sut
                 .Update(c => c.CreateOrUpdate(table))
@@ -138,7 +138,7 @@ namespace GitObjectDb.Tests
             sut
                 .Update(c => c.CreateOrUpdate(field).CreateOrUpdate(parentApplication))
                 .Commit("C", signature, signature);
-            var branch = sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
+            var branch = sut.Checkout("newBranch", "HEAD~1");
             parentApplication.Name = newName;
             sut
                 .Update(c => c.Delete(parentTable))

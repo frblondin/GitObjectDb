@@ -25,7 +25,7 @@ namespace GitObjectDb.Internal
             _updateCommand = updateCommand;
             _commitCommand = commitCommand;
             _connection = connection;
-            Branch = branch ?? connection.Repository.Head;
+            Branch = branch ?? connection.Head;
             _upstreamCommittish = upstreamCommittish;
             UpstreamCommit = FindUpstreamCommit(upstreamCommittish);
             Policy = policy ?? ComparisonPolicy.Default;
@@ -65,7 +65,7 @@ namespace GitObjectDb.Internal
             }
             else
             {
-                return _connection.Repository.Branches[Branch.UpstreamBranchCanonicalName].Tip;
+                return _connection.Branches[Branch.UpstreamBranchCanonicalName].Tip;
             }
         }
 

@@ -3,7 +3,6 @@ using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace GitObjectDb
 {
@@ -21,6 +20,12 @@ namespace GitObjectDb
 
         /// <summary>Gets the branch pointed to by HEAD.</summary>
         Branch Head { get; }
+
+        /// <summary>Lookup and enumerate commits in the repository. Iterating this collection directly
+        /// starts walking from the HEAD.</summary>
+#pragma warning disable SA1623 // Property summary documentation should match accessors
+        IQueryableCommitLog Commits { get; }
+#pragma warning restore SA1623 // Property summary documentation should match accessors
 
         /// <summary>Initiates a series of node transformations.</summary>
         /// <param name="transformations">The transformations to be applied.</param>
@@ -52,17 +57,9 @@ namespace GitObjectDb
 
         /// <summary>Checkouts the specified branch name.</summary>
         /// <param name="branchName">Name of the branch.</param>
-        /// <param name="createNewBranch">If set to <c>true</c>, create new branch.</param>
         /// <param name="committish">The committish.</param>
         /// <returns>The branch being checked out.</returns>
-        Branch Checkout(string branchName, bool createNewBranch = false, string? committish = null);
-
-        /// <summary>Try to lookup an object by its sha or a reference name.</summary>
-        /// <typeparam name="T">The kind of <see cref="GitObject"/> to lookup.</typeparam>
-        /// <param name="objectish">The revparse spec for the object to lookup.</param>
-        /// <returns>The retrieved <see cref="GitObject"/>, or null if none was found.</returns>
-        T Lookup<T>(string objectish)
-            where T : GitObject;
+        Branch Checkout(string branchName, string? committish = null);
 
         /// <summary>Rebases changes from upstream into the branch.</summary>
         /// <param name="branch">The branch to merge changes into.</param>

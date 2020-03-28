@@ -1,7 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace GitObjectDb
 {
@@ -127,7 +124,7 @@ namespace GitObjectDb
             {
                 throw new InvalidOperationException($"Path doesn't refer to a resource.");
             }
-            return new DataPath(FolderPath.Substring(0, position - 1), FileSystemStorage.DataFile);
+            return new DataPath(FolderPath.Substring(0, position), FileSystemStorage.DataFile);
         }
     }
 }

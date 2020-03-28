@@ -13,20 +13,20 @@ namespace GitObjectDb.Tests
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void EditTwoDifferentProperties(IConnection sut, Repository repository, Table table, string newDescription, string newName, Signature signature)
+        public void EditTwoDifferentProperties(IConnection sut, Table table, string newDescription, string newName, Signature signature)
         {
             // master:    A---B
             //             \
             // newBranch:   C   ->   A---B---C
 
             // Arrange
-            var a = repository.Head.Tip;
+            var a = sut.Head.Tip;
             var oldDescription = table.Description;
             table.Description = newDescription;
             var b = sut
                 .Update(c => c.CreateOrUpdate(table))
                 .Commit("B", signature, signature);
-            sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
+            sut.Checkout("newBranch", "HEAD~1");
             table.Description = oldDescription;
             table.Name = newName;
             sut
@@ -41,14 +41,14 @@ namespace GitObjectDb.Tests
             Assert.That(rebase.ReplayedCommits, Has.Count.EqualTo(1));
             var commitFilter = new CommitFilter
             {
-                IncludeReachableFrom = repository.Head.Tip,
+                IncludeReachableFrom = sut.Head.Tip,
                 SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
             };
-            var commits = repository.Commits.QueryBy(commitFilter).ToList();
+            var commits = sut.Commits.QueryBy(commitFilter).ToList();
             Assert.That(commits[0], Is.EqualTo(a));
             Assert.That(commits[1], Is.EqualTo(b));
             Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
-            Assert.That(commits[2], Is.EqualTo(repository.Head.Tip));
+            Assert.That(commits[2], Is.EqualTo(sut.Head.Tip));
             var newTable = sut.Lookup<Table>(table.Path);
             Assert.That(newTable.Name, Is.EqualTo(newName));
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
@@ -68,7 +68,7 @@ namespace GitObjectDb.Tests
             sut
                 .Update(c => c.CreateOrUpdate(table))
                 .Commit("B", signature, signature);
-            var branch = sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
+            var branch = sut.Checkout("newBranch", "HEAD~1");
             table.Description = cValue;
             sut
                 .Update(c => c.CreateOrUpdate(table))
@@ -114,7 +114,7 @@ namespace GitObjectDb.Tests
             sut
                 .Update(c => c.Delete(parentTable))
                 .Commit("B", signature, signature);
-            var branch = sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
+            var branch = sut.Checkout("newBranch", "HEAD~1");
             field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
             parentApplication.Name = newName;
             sut
@@ -144,19 +144,19 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void AddChildNoConflict(IFixture fixture, IConnection sut, Repository repository, Table table, string newDescription, Signature signature)
+        public void AddChildNoConflict(IFixture fixture, IConnection sut, Table table, string newDescription, Signature signature)
         {
             // master:    A---B
             //             \
             // newBranch:   C   ->   A---B---C
 
             // Arrange
-            var a = repository.Head.Tip;
+            var a = sut.Head.Tip;
             table.Description = newDescription;
             var b = sut
                 .Update(c => c.CreateOrUpdate(table))
                 .Commit("B", signature, signature);
-            sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
+            sut.Checkout("newBranch", "HEAD~1");
             var newFieldId = UniqueId.CreateNew();
             sut
                 .Update(c => c.CreateOrUpdate(new Field(newFieldId)
@@ -174,14 +174,14 @@ namespace GitObjectDb.Tests
             Assert.That(rebase.ReplayedCommits, Has.Count.EqualTo(1));
             var commitFilter = new CommitFilter
             {
-                IncludeReachableFrom = repository.Head.Tip,
+                IncludeReachableFrom = sut.Head.Tip,
                 SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
             };
-            var commits = repository.Commits.QueryBy(commitFilter).ToList();
+            var commits = sut.Commits.QueryBy(commitFilter).ToList();
             Assert.That(commits[0], Is.EqualTo(a));
             Assert.That(commits[1], Is.EqualTo(b));
             Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
-            Assert.That(commits[2], Is.EqualTo(repository.Head.Tip));
+            Assert.That(commits[2], Is.EqualTo(sut.Head.Tip));
             var newTable = sut.Lookup<Table>(table.Path);
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
             var newField = sut.AsQueryable(newTable).FirstOrDefault(f => f.Id == newFieldId);
@@ -190,18 +190,18 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void AddChildConflict(IFixture fixture, IConnection sut, Repository repository, Table table, Signature signature)
+        public void AddChildConflict(IFixture fixture, IConnection sut, Table table, Signature signature)
         {
             // master:    A---B
             //             \
             // newBranch:   C   ->   A---B---C
 
             // Arrange
-            var a = repository.Head.Tip;
+            var a = sut.Head.Tip;
             var b = sut
                 .Update(c => c.Delete(table))
                 .Commit("B", signature, signature);
-            sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
+            sut.Checkout("newBranch", "HEAD~1");
             var newFieldId = UniqueId.CreateNew();
             sut
                 .Update(c => c.CreateOrUpdate(new Field(newFieldId)
@@ -231,19 +231,19 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void DeleteChildNoConflict(IFixture fixture, IConnection sut, Repository repository, Table table, string newDescription, Field field, Signature signature)
+        public void DeleteChildNoConflict(IConnection sut, Table table, string newDescription, Field field, Signature signature)
         {
             // master:    A---B
             //             \
             // newBranch:   C   ->   A---B---C
 
             // Arrange
-            var a = repository.Head.Tip;
+            var a = sut.Head.Tip;
             table.Description = newDescription;
             var b = sut
                 .Update(c => c.CreateOrUpdate(table))
                 .Commit("B", signature, signature);
-            sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
+            sut.Checkout("newBranch", "HEAD~1");
             sut
                 .Update(c => c.Delete(field))
                 .Commit("C", signature, signature);
@@ -256,14 +256,14 @@ namespace GitObjectDb.Tests
             Assert.That(rebase.ReplayedCommits, Has.Count.EqualTo(1));
             var commitFilter = new CommitFilter
             {
-                IncludeReachableFrom = repository.Head.Tip,
+                IncludeReachableFrom = sut.Head.Tip,
                 SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
             };
-            var commits = repository.Commits.QueryBy(commitFilter).ToList();
+            var commits = sut.Commits.QueryBy(commitFilter).ToList();
             Assert.That(commits[0], Is.EqualTo(a));
             Assert.That(commits[1], Is.EqualTo(b));
             Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
-            Assert.That(commits[2], Is.EqualTo(repository.Head.Tip));
+            Assert.That(commits[2], Is.EqualTo(sut.Head.Tip));
             var newTable = sut.Lookup<Table>(table.Path);
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
             var missingField = sut.AsQueryable(newTable).FirstOrDefault(f => f.Id == field.Id);
@@ -272,19 +272,19 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void DeleteChildConflict(IFixture fixture, IConnection sut, Repository repository, Table table, Field field, string newDescription, Signature signature)
+        public void DeleteChildConflict(IConnection sut, Table table, Field field, string newDescription, Signature signature)
         {
             // master:    A---B
             //             \
             // newBranch:   C   ->   A---B---C
 
             // Arrange
-            var a = repository.Head.Tip;
+            var a = sut.Head.Tip;
             field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
             var b = sut
                 .Update(c => c.CreateOrUpdate(field))
                 .Commit("B", signature, signature);
-            sut.Checkout("newBranch", createNewBranch: true, "HEAD~1");
+            sut.Checkout("newBranch", "HEAD~1");
             sut
                 .Update(c => c.Delete(table))
                 .Commit("C", signature, signature);

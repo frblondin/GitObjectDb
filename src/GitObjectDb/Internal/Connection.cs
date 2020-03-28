@@ -1,13 +1,9 @@
 using GitObjectDb.Comparison;
 using GitObjectDb.Injection;
 using GitObjectDb.Internal.Queries;
-using GitObjectDb.Serialization.Json;
 using LibGit2Sharp;
-using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using static GitObjectDb.Internal.Factories;
@@ -53,6 +49,8 @@ namespace GitObjectDb.Internal
 
         public Branch Head => Repository.Head;
 
+        public IQueryableCommitLog Commits => Repository.Commits;
+
         public INodeTransformationComposer Update(Func<INodeTransformationComposer, INodeTransformationComposer> transformations)
         {
             var empty = _nodeTransformationComposerFactory(this);
@@ -77,7 +75,7 @@ namespace GitObjectDb.Internal
         {
             var commit = committish != null ?
                 (Commit)Repository.Lookup(committish) :
-                Repository.Head.Tip;
+                Head.Tip;
             return path is null || string.IsNullOrEmpty(path.FolderPath) ?
                 commit.Tree :
                 commit.Tree[path.FolderPath].Target.Peel<Tree>();
@@ -94,22 +92,14 @@ namespace GitObjectDb.Internal
             return _queryResources.Execute(Repository, node.Path, tree);
         }
 
-        public Branch Checkout(string branchName, bool createNewBranch = false, string? committish = null)
+        public Branch Checkout(string branchName, string? committish = null)
         {
-            var head = Repository.Head;
-            var branch = Repository.Branches[branchName];
-            if (createNewBranch)
+            var head = Head;
+            var branch = Branches[branchName];
+            if (branch == null)
             {
-                if (branch != null)
-                {
-                    throw new GitObjectDbException($"The branch '{branchName}' already exists.");
-                }
                 var reflogName = committish ?? (Repository.Refs.Head is SymbolicReference ? head.FriendlyName : head.Tip.Sha);
                 branch = Repository.CreateBranch(branchName, reflogName);
-            }
-            else if (branch == null)
-            {
-                throw new GitObjectDbException($"The branch '{branchName}' does not exist.");
             }
             Repository.Refs.MoveHeadTarget(branch.CanonicalName);
             return branch;
@@ -120,10 +110,6 @@ namespace GitObjectDb.Internal
 
         public INodeMerge Merge(Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null) =>
             _mergeFactory(this, branch, upstreamCommittish, policy);
-
-        public T Lookup<T>(string objectish)
-            where T : GitObject =>
-            Repository.Lookup<T>(objectish);
 
         public void Dispose()
         {

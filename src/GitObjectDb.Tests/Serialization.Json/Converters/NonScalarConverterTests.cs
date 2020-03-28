@@ -1,13 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using GitObjectDb.Serialization.Json;
 using GitObjectDb.Serialization.Json.Converters;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
+using System;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace GitObjectDb.Tests.Serialization.Json.Converters
 {

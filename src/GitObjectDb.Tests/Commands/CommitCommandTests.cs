@@ -130,6 +130,7 @@ namespace GitObjectDb.Tests.Commands
             {
                 var connection = A.Fake<IConnectionInternal>(x => x.Strict());
                 A.CallTo(() => connection.Repository).Returns(fixture.Create<Repository>());
+                A.CallTo(() => connection.Head).Returns(fixture.Create<Repository>().Head);
                 fixture.Inject(connection);
 
                 var validation = A.Fake<ITreeValidation>(x => x.Strict());
