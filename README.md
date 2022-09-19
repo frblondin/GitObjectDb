@@ -9,7 +9,7 @@
 
 **GitObjectDb simplifies the configuration management versioning by backing it in Git.**
 
-## Overview
+# Overview
 
 GitObjectDb is designed to simplify the configuration management versioning. It does so by removing the need for hand-coding the commands needed to interact with Git.
 
@@ -42,40 +42,179 @@ Here's a simple example:
 		.Commit("Added new table.", author, committer);
     ```
 
-### Features
+# Features
 
-* Support of structured (nodes) and raw/plain storage (resources for plain text or binary data)
-* Branching
-* History
-* Compare commits
-* Node references
-* Merge
-* Rebase
-* Cherry-pick
+## Structured & unstructured data storage
 
-### Documentation
+```csharp
+var node = new SomeNode
+{
+    SomeProperty = "Value stored as json",
+    EmbeddedResource = "Value stored as raw text in same Git blob",
+}:
+```
+... gets stored in Git as follows:
+```json
+{
+  "Type": "Sample.SomeNode, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+  "Node": {
+    "$id": "SomeNodes/zerzrzrz.json",
+    "id": "zerzrzrz",
+    "someProperty": "Value stored as json"
+  }
+}
+/*
+Value stored as raw text in same Git blob
+*/
+```
+You can also store resources as separate files:
+```csharp
+new Resource(node, "Some/Folder", "File.txt", new Resource.Data("Value stored in a separate file in <node path>/Resources/Some/Folder/File.txt"));
+```
+
+
+## Branching
+
+```csharp
+connection
+    .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
+    .Commit("Some message", signature, signature);
+connection.Checkout("newBranch", "HEAD~1");
+connection
+    .Update(c => c.CreateOrUpdate(table with { Name = newName }))
+    .Commit("Another message", signature, signature);
+```
+
+## History
+
+```csharp
+var commits = sut.Commits
+    .QueryBy(new CommitFilter
+    {
+        IncludeReachableFrom = sut.Head.Tip,
+        SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
+    })
+    .Take(5)
+```
+
+## Compare commits
+
+```csharp
+var comparison = connection.Compare("HEAD~1", repository.Head.Tip.Sha);
+var nodeChanges = comparison.Modified.OfType<Change.NodeChange>();
+```
+
+## Node references
+
+Node references allows linking existing nodes in a repository:
+
+```csharp
+public record Order : Node
+{
+    public Client Client { get; set; }
+    // ...
+}
+public record Client : Node
+{
+    // ...
+}
+// Nodes get loaded with their references (using a shared )
+var cache = new Dictionary<DataPath, ITreeItem>();
+var order = connection.GetNodes<Order>(referenceCache: cache).First();
+Console.WriteLine(order.Client.Id);
+```
+
+## Merge, Rebase, Cherry-pick
+
+```csharp
+// main:      A---B    A---B
+//             \    ->  \   \
+// newBranch:   C        C---x
+
+connection
+    .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
+    .Commit("B", signature, signature);
+connection.Checkout("newBranch", "HEAD~1");
+connection
+    .Update(c => c.CreateOrUpdate(table with { Name = newName }))
+    .Commit("C", signature, signature);
+
+sut.Merge(upstreamCommittish: "main");
+```
+
+## Node versioning management
+
+Imagine a scenario where you define in your code a first type:
+```csharp
+[GitFolder(FolderName = "Items", UseNodeFolders = false)]
+[IsDeprecatedNodeType(typeof(SomeNodeV2))]
+private record SomeNodeV1 : Node
+{
+    public int Flags { get; set; }
+}
+
+[GitFolder(FolderName = "Items", UseNodeFolders = false)]
+private record SomeNodeV2 : Node
+{
+    public BindingFlags TypedFlags { get; set; }
+}
+```
+You then want to introduce a new change so that the `Flags` property contains more meaningful information, relying on enums:
+```csharp
+[GitFolder(FolderName = "Items", UseNodeFolders = false)]
+private record SomeNodeV2 : Node
+{
+    public BindingFlags TypedFlags { get; set; }
+}
+```
+All you need to do is to #1 add the `[IsDeprecatedNodeType(typeof(SomeNodeV2))]` attribute. This will instruct the deserializer to convert nodes to new version, using a converter. #2 converter needs to be provided in the model. You can use AutoMapper or other tools at your convenience.
+```csharp
+[GitFolder(FolderName = "Items", UseNodeFolders = false)]
+[IsDeprecatedNodeType(typeof(SomeNodeV2))]
+private record SomeNodeV1 : Node
+{
+    // ...
+}
+var model = new ConventionBaseModelBuilder()
+    .RegisterType<SomeNodeV1>()
+    .RegisterType<SomeNodeV2>()
+    .AddDeprecatedNodeUpdater(UpdateDeprecatedNode)
+    .Build();
+Node UpdateDeprecatedNode(Node old, Type targetType)
+{
+    var nodeV1 = (SomeNodeV1)old;
+    return new SomeNodeV2
+    {
+        Id = old.Id,
+        TypedFlags = (BindingFlags)nodeV1.Flags,
+    };
+}
+```
+
+
+# Documentation
 
 See [Documentation][Documentation].
 
  [Documentation]: https://gitobjectdb.readthedocs.io
 
-## Prerequisites
+# Prerequisites
 
  - .NET Standard 2.0 or 2.1
 
-## Online resources
+# Online resources
 
  - [LibGit2Sharp][LibGit2Sharp] (Requires NuGet 2.7+)
 
  [LibGit2Sharp]: https://github.com/libgit2/libgit2sharp
 
-## Quick contributing guide
+# Quick contributing guide
 
  - Fork and clone locally
  - Create a topic specific branch. Add some nice feature. Do not forget the tests ;-)
  - Send a Pull Request to spread the fun!
 
-## License
+# License
 
 The MIT license (Refer to the [LICENSE][license] file).
 
