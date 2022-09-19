@@ -85,10 +85,10 @@ namespace Models.Software
             {
                 Enumerable.Range(1, ResourcePerTableCount).ForEach(position =>
                 {
-                    var path = new DataPath(
-                        $"Path{_random.Next(1, 2)}",
-                        $"File{_random.Next(1, 100)}.txt");
-                    var resource = new Resource(table, path, new MemoryStream(Encoding.Default.GetBytes(fixture.Create<string>())));
+                    var resource = new Resource(table,
+                                                $"Path{_random.Next(1, 2)}",
+                                                $"File{_random.Next(1, 100)}.txt",
+                                                new MemoryStream(Encoding.Default.GetBytes(fixture.Create<string>())));
                     composer.CreateOrUpdate(resource);
                 });
             }

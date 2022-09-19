@@ -12,15 +12,10 @@ namespace GitObjectDb
         /// <summary>
         /// The data file name used to store information in Git.
         /// </summary>
-        public const string DataFile = "data.json";
-
-        /// <summary>
-        /// The data file name used to store information in Git.
-        /// </summary>
         public const string ResourceFolder = "Resources";
 
         internal static ISet<string> ReservedNames { get; } = new HashSet<string>(
-            new[] { DataFile, ResourceFolder },
+            new[] { ResourceFolder },
             StringComparer.OrdinalIgnoreCase);
 
         internal static void ThrowIfAnyReservedName(string path)

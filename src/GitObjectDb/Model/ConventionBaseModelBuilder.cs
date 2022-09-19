@@ -26,7 +26,7 @@ namespace GitObjectDb.Model
         }
 
         private static string GetTypeName(Type type) =>
-            type.GetCustomAttribute<GitFolderAttribute>()?.FolderName ?? type.Name;
+            GitFolderAttribute.Get(type)?.FolderName ?? type.Name;
 
         /// <inheritdoc/>
         public override IDataModel Build()

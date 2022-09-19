@@ -11,14 +11,9 @@ namespace GitObjectDb
             {
                 switch (child.TargetType)
                 {
-                    case TreeEntryTargetType.Tree when child.Name == FileSystemStorage.ResourceFolder:
-                    case TreeEntryTargetType.Blob when child.Name == FileSystemStorage.DataFile:
-                        continue;
-                    case TreeEntryTargetType.Tree:
+                    case TreeEntryTargetType.Tree when child.Name != FileSystemStorage.ResourceFolder:
                         ValidateTree(child);
                         break;
-                    default:
-                        throw new GitObjectDbException("Unexpected node type in tree hierarchy.");
                 }
             }
         }
@@ -32,8 +27,6 @@ namespace GitObjectDb
                     case TreeEntryTargetType.Tree:
                         ValidateTreeNode(nested);
                         break;
-                    default:
-                        throw new GitObjectDbException("Unexpected node type in tree hierarchy.");
                 }
             }
         }
@@ -45,10 +38,10 @@ namespace GitObjectDb
                 throw new GitObjectDbException($"Folder name '{nested.Name}' could not be parsed as a valid {nameof(UniqueId)}.");
             }
             var nestedTree = nested.Target.Peel<Tree>();
-            var blob = nestedTree[FileSystemStorage.DataFile];
+            var blob = nestedTree[$"{nested.Name}.json"];
             if (blob == null)
             {
-                throw new GitObjectDbException($"Missing data file for folder '{nested.Name}'.");
+                throw new GitObjectDbException($"Missing data file for node '{nested.Name}'.");
             }
             Validate(nestedTree);
         }

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Models.Software
 {
-    [GitFolder("Pages")]
+    [GitFolder(FolderName = "Pages")]
     public record Table : Node
     {
         public string? Name { get; set; }
