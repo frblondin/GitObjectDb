@@ -4,11 +4,19 @@ using System.Reflection;
 
 namespace Models.Software;
 
-/// <summary>
-/// A set of methods for instances of <see cref="IServiceCollection"/>.
-/// </summary>
+/// <summary>A set of methods for instances of <see cref="IServiceCollection"/>.</summary>
 public static class ServiceConfiguration
 {
+    public static IServiceCollection AddSoftwareModel(this IServiceCollection source, out IDataModel model)
+    {
+        var captured = model = CreateModel();
+        return source.AddSingleton(_ => captured);
+    }
+
     public static IServiceCollection AddSoftwareModel(this IServiceCollection source) =>
-        source.AddSingleton(_ => new ConventionBaseModelBuilder().RegisterAssemblyTypes(Assembly.GetExecutingAssembly()).Build());
+        source.AddSingleton(_ => CreateModel());
+
+    private static IDataModel CreateModel() => new ConventionBaseModelBuilder()
+        .RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
+        .Build();
 }

@@ -15,10 +15,10 @@ internal static class NodeReferenceQuery
 
         object Execute(IResolveFieldContext<object?> context)
         {
-            var parentNode = context.Source as NodeDto ??
+            var parentNode = (context.Source as NodeDto)?.Node ??
                 throw new NotSupportedException("Could not get parent node.");
-            var getter = Reflect.PropertyGetter(parentNode.Node.GetType(), property.Name);
-            var reference = (Node)getter.Invoke(parentNode.Node);
+            var getter = Reflect.PropertyGetter(parentNode.GetType(), property.Name);
+            var reference = (Node)getter.Invoke(parentNode);
             var mapper = context.RequestServices?.GetRequiredService<IMapper>() ??
                 throw new NotSupportedException("No mapper context set.");
             return mapper.Map(reference, nodeType, property.PropertyType);
@@ -33,10 +33,10 @@ internal static class NodeReferenceQuery
 
         object Execute(IResolveFieldContext<object?> context)
         {
-            var parentNode = context.Source as NodeDto ??
+            var parentNode = (context.Source as NodeDto)?.Node ??
                 throw new NotSupportedException("Could not get parent node.");
-            var getter = Reflect.PropertyGetter(parentNode.Node.GetType(), member.Name);
-            var references = (Node)getter.Invoke(parentNode.Node);
+            var getter = Reflect.PropertyGetter(parentNode.GetType(), member.Name);
+            var references = (Node)getter.Invoke(parentNode);
             var mapper = context.RequestServices?.GetRequiredService<IMapper>() ??
                 throw new NotSupportedException("No mapper context set.");
             return mapper.Map(references,

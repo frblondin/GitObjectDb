@@ -1,6 +1,7 @@
 using GitObjectDb.Injection;
 using GitObjectDb.Internal;
 using GitObjectDb.Model;
+using GitObjectDb.Serialization.Json.Converters;
 using LibGit2Sharp;
 using Microsoft.IO;
 using System;

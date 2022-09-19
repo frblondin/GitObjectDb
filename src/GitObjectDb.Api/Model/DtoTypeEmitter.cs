@@ -7,30 +7,16 @@ namespace GitObjectDb.Api.Model;
 
 /// <summary>Emits data transfer types from a <see cref="IDataModel"/>.</summary>
 #pragma warning disable SA1402 // File may only contain a single type
-public sealed class DtoTypeEmitter : DtoTypeEmitter<DataTransferTypeDescription>
+public sealed class DtoTypeEmitter
 {
     /// <summary>Initializes a new instance of the <see cref="DtoTypeEmitter"/> class.</summary>
     /// <param name="model">The model for which data transfer types must be emitted.</param>
     public DtoTypeEmitter(IDataModel model)
-        : base(model)
-    {
-    }
-}
-
-/// <summary>Emits data transfer types from a <see cref="IDataModel"/>.</summary>
-/// <typeparam name="TDtoTypeDescription">The type of <see cref="DataTransferTypeDescription"/> to be created.</typeparam>
-public class DtoTypeEmitter<TDtoTypeDescription>
-    where TDtoTypeDescription : DataTransferTypeDescription
-{
-    /// <summary>Initializes a new instance of the <see cref="DtoTypeEmitter{TTypeDescription}"/> class.</summary>
-    /// <param name="model">The model for which data transfer types must be emitted.</param>
-    protected DtoTypeEmitter(IDataModel model)
     {
         Model = model;
-
-        var assemblyName = new AssemblyName($"{nameof(DtoTypeEmitter<TDtoTypeDescription>)}{Guid.NewGuid()}");
+        var assemblyName = new AssemblyName($"{nameof(DtoTypeEmitter)}{Guid.NewGuid()}");
         AssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-        ModuleBuilder = AssemblyBuilder.DefineDynamicModule(nameof(Api.Model.DtoTypeEmitter<TDtoTypeDescription>));
+        ModuleBuilder = AssemblyBuilder.DefineDynamicModule(nameof(DtoTypeEmitter));
         TypeDescriptions = EmitTypes();
     }
 
@@ -38,17 +24,17 @@ public class DtoTypeEmitter<TDtoTypeDescription>
     public IDataModel Model { get; }
 
     /// <summary>Gets the list of produced descriptions..</summary>
-    public IList<TDtoTypeDescription> TypeDescriptions { get; }
+    public IList<DataTransferTypeDescription> TypeDescriptions { get; }
 
     /// <summary>Gets the assembly builder used to emit types.</summary>
     public AssemblyBuilder AssemblyBuilder { get; }
 
     /// <summary>Gets the module builder used to emit types.</summary>
-    protected ModuleBuilder ModuleBuilder { get; }
+    private ModuleBuilder ModuleBuilder { get; }
 
-    private IList<TDtoTypeDescription> EmitTypes()
+    private IList<DataTransferTypeDescription> EmitTypes()
     {
-        var result = new List<TDtoTypeDescription>();
+        var result = new List<DataTransferTypeDescription>();
         var dtoTypes = Model.NodeTypes
             .Where(IsBrowsable)
             .Select(EmitDto)
@@ -56,12 +42,13 @@ public class DtoTypeEmitter<TDtoTypeDescription>
         foreach (var (type, dto) in dtoTypes)
         {
             AddDtoDescription(type, dto);
-            EmitDtoConstructor(dto);
+            EmitDtoFromNodeConstructor(dto);
             EmitDtoProperties(type, dto,
                 t => dtoTypes.FirstOrDefault(i => i.Type.Type == t).Dto ??
                 throw new NotSupportedException($"Could not find dto type for type {t}."));
 
-            result.Add((TDtoTypeDescription)ProcessType(type, dto.CreateTypeInfo()!));
+            var dtoDescription = new DataTransferTypeDescription(type, dto.CreateTypeInfo()!);
+            result.Add(dtoDescription);
         }
         return result.AsReadOnly();
     }
@@ -71,15 +58,6 @@ public class DtoTypeEmitter<TDtoTypeDescription>
     /// <returns><c>true</c> if the node is browsable, <c>false</c> otherwise.</returns>
     public static bool IsBrowsable(NodeTypeDescription description) =>
         description.Type.GetCustomAttribute<ApiBrowsableAttribute>()?.Browsable ?? true;
-
-    /// <summary>Creates a <typeparamref name="TDtoTypeDescription"/> instance.</summary>
-    /// <param name="type">The type description.</param>
-    /// <param name="dto">The emitted data transfer type.</param>
-    /// <returns>The <typeparamref name="TDtoTypeDescription"/> instance.</returns>
-    protected virtual DataTransferTypeDescription ProcessType(NodeTypeDescription type, TypeInfo dto)
-    {
-        return new DataTransferTypeDescription(type, dto);
-    }
 
     private (NodeTypeDescription Type, TypeBuilder Dto) EmitDto(NodeTypeDescription type)
     {
@@ -98,7 +76,7 @@ public class DtoTypeEmitter<TDtoTypeDescription>
     /// <summary>Converts the <see cref="Type"/> to its corresponding string representation.</summary>
     /// <param name="type">The type to be converted.</param>
     /// <returns>The string representation.</returns>
-    protected static string GetTypeName(Type type) =>
+    public static string GetTypeName(Type type) =>
         type.IsGenericType ?
         $"{type.Name}`{string.Join(",", type.GetGenericArguments().Select(GetTypeName))}" :
         type.Name;
@@ -111,15 +89,16 @@ public class DtoTypeEmitter<TDtoTypeDescription>
                 new object[] { type.Type, type.Name }));
     }
 
-    private static void EmitDtoConstructor(TypeBuilder result)
+    private static void EmitDtoFromNodeConstructor(TypeBuilder result)
     {
+        var parameters = new[] { typeof(Node), typeof(ObjectId) };
         var baseConstructor = typeof(NodeDto).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance,
                                                              null,
-                                                             new[] { typeof(Node), typeof(ObjectId) },
+                                                             parameters,
                                                              null)!;
         var constructor = result.DefineConstructor(MethodAttributes.Public,
                                                    CallingConventions.Standard | CallingConventions.HasThis,
-                                                   new[] { typeof(Node), typeof(ObjectId) });
+                                                   parameters);
         var ilGenerator = constructor.GetILGenerator();
         ilGenerator.Emit(OpCodes.Ldarg_0);
         ilGenerator.Emit(OpCodes.Ldarg_1);

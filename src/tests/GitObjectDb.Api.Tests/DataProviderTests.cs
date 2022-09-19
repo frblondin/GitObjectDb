@@ -74,7 +74,7 @@ public class DataProviderTests
         var simpleNodeDto =
             typeEmitter.TypeDescriptions.Single(d => d.NodeType.Type == typeof(SimpleNode));
         var accessor = sut.QueryAccessor;
-        A.CallTo(() => accessor.GetNodes<Node>(node, default, default))
+        A.CallTo(() => accessor.GetNodes<Node>(node, ObjectId.Zero.Sha.ToString(), false))
             .Returns(children.ToCommitEnumerable(ObjectId.Zero));
 
         // Act

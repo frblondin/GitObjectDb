@@ -1,5 +1,4 @@
 using GitObjectDb.Api.Model;
-using GitObjectDb.Model;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -8,77 +7,67 @@ namespace GitObjectDb.Api.OData.Model;
 
 internal class GeneratedTypesApplicationPart : ApplicationPart, IApplicationPartTypeProvider
 {
-    public GeneratedTypesApplicationPart(IDataModel model)
+    private readonly DtoTypeEmitter _emitter;
+
+    public GeneratedTypesApplicationPart(DtoTypeEmitter emitter)
     {
-        var emitter = new ODataDtoTypeEmitter(model);
-        TypeDescriptions = emitter.TypeDescriptions;
+        var assemblyName = new AssemblyName($"{nameof(GeneratedTypesApplicationPart)}{Guid.NewGuid()}");
+        var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+        ModuleBuilder = assemblyBuilder.DefineDynamicModule(nameof(DtoTypeEmitter));
+        _emitter = emitter;
+        Types = EmitControllers().ToList();
     }
 
     public override string Name => nameof(GeneratedTypesApplicationPart);
 
-    public IEnumerable<TypeInfo> Types => TypeDescriptions.Select(d => d.ControllerType.GetTypeInfo());
+    public IList<TypeInfo> Types { get; } = new List<TypeInfo>();
 
-    public IList<ODataTypeDescription> TypeDescriptions { get; }
+    IEnumerable<TypeInfo> IApplicationPartTypeProvider.Types => Types;
 
-    private class ODataDtoTypeEmitter : DtoTypeEmitter<ODataTypeDescription>
+    public ModuleBuilder ModuleBuilder { get; }
+
+    public IEnumerable<TypeInfo> EmitControllers()
     {
-        public ODataDtoTypeEmitter(IDataModel model)
-            : base(model)
+        foreach (var description in _emitter.TypeDescriptions)
         {
-        }
-
-        protected override DataTransferTypeDescription ProcessType(NodeTypeDescription type, TypeInfo dto)
-        {
-            var baseDescription = base.ProcessType(type, dto);
-            var controllerType = EmitController(type, baseDescription.DtoType, ModuleBuilder).CreateTypeInfo()!;
-            return new ODataTypeDescription(baseDescription, controllerType);
-        }
-
-        private static TypeBuilder EmitController(NodeTypeDescription type, Type dtoType, ModuleBuilder moduleBuilder)
-        {
-            var genericType = typeof(NodeController<,>).MakeGenericType(type.Type, dtoType);
-            var result = moduleBuilder.DefineType($"{GetTypeName(type.Type)}Controller",
-                TypeAttributes.Public |
-                TypeAttributes.Class |
-                TypeAttributes.AutoClass |
-                TypeAttributes.AnsiClass |
-                TypeAttributes.BeforeFieldInit |
-                TypeAttributes.AutoLayout,
-                genericType);
-
-            EmitConstructor(genericType, result);
-            return result;
-        }
-
-        private static void EmitConstructor(Type genericType, TypeBuilder controllerType)
-        {
-            var baseConstructor = genericType.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).Single();
-            var parameterTypes = baseConstructor.GetParameters().Select(p => p.ParameterType).ToArray();
-            var constructor = controllerType.DefineConstructor(
-                MethodAttributes.Public, CallingConventions.Standard | CallingConventions.HasThis,
-                parameterTypes);
-            var ilGenerator = constructor.GetILGenerator();
-
-            ilGenerator.Emit(OpCodes.Ldarg_0); // push "this"
-            for (var i = 0; i < parameterTypes.Length; i++)
-            {
-                ilGenerator.Emit(OpCodes.Ldarg, i + 1);
-            }
-            ilGenerator.Emit(OpCodes.Call, baseConstructor);
-            ilGenerator.Emit(OpCodes.Nop);
-            ilGenerator.Emit(OpCodes.Nop);
-            ilGenerator.Emit(OpCodes.Ret);
+            var controllerTypeBuilder = EmitController(description);
+            yield return controllerTypeBuilder.CreateTypeInfo()!;
         }
     }
 
-    public class ODataTypeDescription : DataTransferTypeDescription
+    private TypeBuilder EmitController(DataTransferTypeDescription description)
     {
-        public ODataTypeDescription(DataTransferTypeDescription description, Type controllerType)
-            : base(description.NodeType, description.DtoType)
-        {
-            ControllerType = controllerType;
-        }
+        var genericType = typeof(NodeController<,>).MakeGenericType(description.NodeType.Type, description.DtoType);
+        var result = ModuleBuilder.DefineType($"{DtoTypeEmitter.GetTypeName(description.NodeType.Type)}Controller",
+            TypeAttributes.Public |
+            TypeAttributes.Class |
+            TypeAttributes.AutoClass |
+            TypeAttributes.AnsiClass |
+            TypeAttributes.BeforeFieldInit |
+            TypeAttributes.AutoLayout,
+            genericType);
 
-        public Type ControllerType { get; }
+        EmitConstructor(genericType, result);
+        return result;
+    }
+
+    private static void EmitConstructor(Type genericType, TypeBuilder controllerType)
+    {
+        var baseConstructor = genericType.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).Single();
+        var parameterTypes = baseConstructor.GetParameters().Select(p => p.ParameterType).ToArray();
+        var constructor = controllerType.DefineConstructor(
+            MethodAttributes.Public, CallingConventions.Standard | CallingConventions.HasThis,
+            parameterTypes);
+        var ilGenerator = constructor.GetILGenerator();
+
+        ilGenerator.Emit(OpCodes.Ldarg_0); // push "this"
+        for (var i = 0; i < parameterTypes.Length; i++)
+        {
+            ilGenerator.Emit(OpCodes.Ldarg, i + 1);
+        }
+        ilGenerator.Emit(OpCodes.Call, baseConstructor);
+        ilGenerator.Emit(OpCodes.Nop);
+        ilGenerator.Emit(OpCodes.Nop);
+        ilGenerator.Emit(OpCodes.Ret);
     }
 }

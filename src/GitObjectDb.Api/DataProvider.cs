@@ -76,7 +76,15 @@ public sealed class DataProvider
                select new DeltaDto<TNodeDto>(old, @new, changes.End.Id, change.New is null);
     }
 
-    private TDestination? Map<TSource, TDestination>(TSource? source, ObjectId commitId)
+    /// <summary>
+    /// Executes a mapping from the source to a new destination object.
+    /// </summary>
+    /// <typeparam name="TSource">Source type to use.</typeparam>
+    /// <typeparam name="TDestination">Destination type to create.</typeparam>
+    /// <param name="source">Source object to map from.</param>
+    /// <param name="commitId">Commit containing the object.</param>
+    /// <returns>Mapped destination object.</returns>
+    public TDestination? Map<TSource, TDestination>(TSource? source, ObjectId commitId)
     {
         if (source is null)
         {

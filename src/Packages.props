@@ -12,9 +12,9 @@
     <PackageReference Update="Dapper"                                                       Version="2.0.123" />
     <PackageReference Update="FakeItEasy"                                                   Version="7.3.1" />
     <PackageReference Update="fasterflect.reflect"                                          Version="3.1.0" />
-    <PackageReference Update="GraphQL.MicrosoftDI"                                          Version="5.3.0" />
-    <PackageReference Update="GraphQL.Server.Ui.Altair"                                     Version="6.1.0" />
-    <PackageReference Update="GraphQL.SystemTextJson"                                       Version="5.3.0" />
+    <PackageReference Update="GraphQL.MicrosoftDI"                                          Version="7.0.2" />
+    <PackageReference Update="GraphQL.Server.Ui.Altair"                                     Version="7.1.0" />
+    <PackageReference Update="GraphQL.SystemTextJson"                                       Version="7.0.2" />
     <PackageReference Update="IsExternalInit"                                               Version="1.0.3" />
     <PackageReference Update="LibGit2Sharp"                                                 Version="0.27.0-preview-0175" />
     <PackageReference Update="Microsoft.AspNetCore.OData"                                   Version="8.0.10" />

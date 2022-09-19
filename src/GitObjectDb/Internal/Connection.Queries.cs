@@ -186,7 +186,8 @@ internal sealed partial class Connection
                 {
                     return tree;
                 }
-                if (item.TargetType == TreeEntryTargetType.Tree)
+                if (item.TargetType == TreeEntryTargetType.Tree &&
+                    !FileSystemStorage.IsResourceName(item.Name))
                 {
                     var found = Search(item.Target.Peel<Tree>(), blobName, path);
                     if (found is not null)

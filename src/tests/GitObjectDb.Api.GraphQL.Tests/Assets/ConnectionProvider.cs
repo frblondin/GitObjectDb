@@ -1,7 +1,11 @@
 using GitObjectDb.Model;
-using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.TestPlatform.TestHost;
+using NUnit.Framework;
+using System;
+using System.IO;
 
-namespace GitObjectDb.Web;
+namespace GitObjectDb.Api.GraphQL.Tests.Assets;
 
 internal static class ConnectionProvider
 {
@@ -11,9 +15,7 @@ internal static class ConnectionProvider
 
     internal static IConnection GetOrCreateConnection(IServiceProvider provider, IDataModel model, string folder, Action<IConnection>? populateData = null)
     {
-        var assemblyDirectory = Path.GetDirectoryName(typeof(Program).Assembly.Location) ??
-            throw new NotSupportedException("Assembly location could not be found.");
-        var path = Path.Combine(assemblyDirectory, folder);
+        var path = Path.Combine(TestContext.CurrentContext.WorkDirectory, folder);
         var alreadyExists = Directory.Exists(path);
         var repositoryFactory = provider.GetRequiredService<ConnectionFactory>();
         var result = repositoryFactory(path, model);

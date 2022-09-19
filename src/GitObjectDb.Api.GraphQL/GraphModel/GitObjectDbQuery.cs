@@ -21,12 +21,11 @@ public partial class GitObjectDbQuery : ObjectGraphType
     private readonly Dictionary<DataTransferTypeDescription, INodeType> _typeToGraphType = new();
     private readonly Dictionary<DataTransferTypeDescription, INodeDeltaType> _typeToDeltaGraphType = new();
 
-    public GitObjectDbQuery(IDataModel model)
+    public GitObjectDbQuery(DtoTypeEmitter emitter)
     {
-        Model = model;
         Name = "Query";
         Description = "Provides queries to access GitObjectDb items.";
-        DtoEmitter = new DtoTypeEmitter(Model);
+        DtoEmitter = emitter;
 
         foreach (var description in DtoEmitter.TypeDescriptions)
         {
@@ -36,8 +35,6 @@ public partial class GitObjectDbQuery : ObjectGraphType
     }
 
     public DtoTypeEmitter DtoEmitter { get; }
-
-    public IDataModel Model { get; }
 
     internal IGraphType GetOrCreateGraphType(Type dtoType, out Type nodeType)
     {
