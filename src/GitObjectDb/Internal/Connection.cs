@@ -9,12 +9,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using static GitObjectDb.Internal.Factories;
 
 namespace GitObjectDb.Internal;
 
 [DebuggerDisplay("{Repository}")]
-internal sealed partial class Connection : IConnectionInternal
+internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvider
 {
     private readonly TransformationComposerFactory _transformationComposerFactory;
     private readonly RebaseFactory _rebaseFactory;
@@ -133,6 +134,16 @@ internal sealed partial class Connection : IConnectionInternal
 
     public void Dispose()
     {
+        DisposeRepositories();
         Repository.Dispose();
+    }
+
+    private void DisposeRepositories()
+    {
+        foreach (var repository in _repositories.Values.ToList())
+        {
+            repository.Value.Dispose();
+        }
+        _repositories.Clear();
     }
 }

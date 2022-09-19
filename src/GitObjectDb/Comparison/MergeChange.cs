@@ -75,7 +75,11 @@ public sealed class MergeChange
                     setter(Merged, value);
                     UpdateStatus();
                 }
-                var conflict = new MergeValueConflict(property, ancestorValue, ourValue, theirValue, ResolveCallback);
+                var conflict = new MergeValueConflict(property,
+                                                      ancestorValue,
+                                                      ourValue,
+                                                      theirValue,
+                                                      ResolveCallback);
                 conflicts.Add(conflict);
             }
         }
@@ -104,7 +108,11 @@ public sealed class MergeChange
         return type;
     }
 
-    internal void Transform(UpdateTreeCommand update, ObjectDatabase database, TreeDefinition tree, Tree? reference)
+    internal void Transform(UpdateTreeCommand update,
+                            ObjectDatabase database,
+                            TreeDefinition tree,
+                            Tree? reference,
+                            ModuleCommands modules)
     {
         switch (Status)
         {
@@ -114,14 +122,14 @@ public sealed class MergeChange
                 {
                     throw new InvalidOperationException("No merge value has been set.");
                 }
-                update.CreateOrUpdate(Merged).Invoke(database, tree, reference);
+                update.CreateOrUpdate(Merged).Invoke(reference, modules, database, tree);
                 break;
             case ItemMergeStatus.Delete:
                 if (Ancestor is null)
                 {
                     throw new InvalidOperationException("The deletion change does not contain any ancestor.");
                 }
-                UpdateTreeCommand.Delete(Ancestor).Invoke(database, tree, reference);
+                UpdateTreeCommand.Delete(Ancestor).Invoke(reference, modules, database, tree);
                 break;
             default:
                 throw new GitObjectDbException("Remaining conflicts.");

@@ -24,6 +24,12 @@ public record Node : ITreeItem
     [JsonIgnore]
     public string? EmbeddedResource { get; init; }
 
+    /// <summary>
+    /// Gets the remote repository containing node resources, as a
+    /// replacement of resources stored in current repository.
+    /// </summary>
+    public ResourceLink? RemoteResource { get; init; }
+
     /// <inheritdoc/>
     public override string ToString() => Id.ToString();
 }

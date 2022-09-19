@@ -118,11 +118,20 @@ internal class TransformationComposer : ITransformationComposer
                                                  Action<ITransformation>? beforeProcessing = null)
     {
         var result = commit is not null ? TreeDefinition.From(commit) : new TreeDefinition();
-        foreach (var transformation in Transformations)
+        var modules = new ModuleCommands(commit?.Tree);
+        foreach (var transformation in Transformations.OfType<ITransformationInternal>())
         {
             beforeProcessing?.Invoke(transformation);
-            transformation.TreeTransformation(dataBase, result, commit?.Tree);
+            transformation.TreeTransformation(commit?.Tree, modules, dataBase, result);
         }
+
+        if (modules.HasAnyChange)
+        {
+            using var stream = modules.CreateStream();
+            var blob = dataBase.CreateBlob(stream);
+            result.Add(ModuleCommands.ModuleFile, blob, Mode.NonExecutableFile);
+        }
+
         return result;
     }
 
@@ -131,10 +140,17 @@ internal class TransformationComposer : ITransformationComposer
                                        IList<string> commitIndex,
                                        Action<ITransformation>? beforeProcessing = null)
     {
-        foreach (var transformation in Transformations)
+        var modules = new ModuleCommands(commit?.Tree);
+        foreach (var transformation in Transformations.OfType<ITransformationInternal>())
         {
             beforeProcessing?.Invoke(transformation);
-            transformation.FastInsertTransformation(commit?.Tree, writer, commitIndex);
+            transformation.FastInsertTransformation(commit?.Tree, modules, writer, commitIndex);
+        }
+
+        if (modules.HasAnyChange)
+        {
+            using var stream = modules.CreateStream();
+            UpdateFastInsertFile.AddBlob(ModuleCommands.ModuleFile, stream, writer, commitIndex);
         }
     }
 

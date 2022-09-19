@@ -26,9 +26,10 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
         var includeResources = IncludeResources(parms);
 
         // Fetch direct resources
-        if (parms.ParentPath is not null && includeResources)
+        if (IncludeResources(parms))
         {
-            var resources = GetResources(queryAccessor, parms);
+            var node = (Node)LoadItem(queryAccessor, parms).Value;
+            var resources = GetResources(queryAccessor, node, parms);
             foreach (var resource in resources)
             {
                 yield return (resource.Path, new Lazy<ITreeItem>(() => resource.Resource.Value));
@@ -40,14 +41,15 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
         while (entries.Count > 0)
         {
             var entryParams = entries.Pop();
+            var lazyItem = LoadItem(queryAccessor, entryParams);
             if (IsOfType(queryAccessor, entryParams.ParentPath!, parms.Type))
             {
-                yield return (entryParams.ParentPath!, LoadItem(queryAccessor, entryParams));
+                yield return (entryParams.ParentPath!, lazyItem);
             }
 
-            if (entryParams.ParentPath!.IsNode && parms.IsRecursive && includeResources)
+            if (IncludeResources(entryParams) && entryParams.IsRecursive)
             {
-                var resources = GetResources(queryAccessor, entryParams);
+                var resources = GetResources(queryAccessor, (Node)lazyItem.Value, entryParams);
                 foreach (var resource in resources)
                 {
                     yield return (resource.Path, new Lazy<ITreeItem>(() => resource.Resource.Value));
@@ -67,15 +69,18 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
                                                           parms.ParentPath!,
                                                           parms.ReferenceCache)));
 
-    private IEnumerable<(DataPath Path, Lazy<Resource> Resource)> GetResources(IQueryAccessor queryAccessor, Parameters parms) =>
+    private IEnumerable<(DataPath Path, Lazy<Resource> Resource)> GetResources(IQueryAccessor queryAccessor,
+                                                                               Node node,
+                                                                               Parameters parms) =>
         _queryResources.Execute(queryAccessor,
                                 new QueryResources.Parameters(parms.Tree,
                                                               parms.RelativeTree,
-                                                              parms.ParentPath!,
+                                                              node,
                                                               parms.ReferenceCache));
 
     private static bool IncludeResources(Parameters parms) =>
-        parms.Type == null || parms.Type == typeof(Resource) || parms.Type == typeof(ITreeItem);
+        (parms.Type == null || parms.Type == typeof(Resource) || parms.Type == typeof(ITreeItem)) &&
+        parms.ParentPath is not null && parms.ParentPath.IsNode;
 
     private static bool IsOfType(IQueryAccessor queryAccessor, DataPath path, Type? type)
     {

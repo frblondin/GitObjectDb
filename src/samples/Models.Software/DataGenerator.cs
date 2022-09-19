@@ -105,7 +105,7 @@ public class DataGenerator
         {
             Enumerable.Range(1, ResourcePerTableCount).ForEach(position =>
             {
-                var stream = new MemoryStream(Encoding.Default.GetBytes(fixture.Create<string>()));
+                var stream = new MemoryStream(Encoding.UTF8.GetBytes(fixture.Create<string>()));
                 var resource = new Resource(table,
                                             $"Path{UniqueId.CreateNew()}",
                                             $"File{UniqueId.CreateNew()}.txt",

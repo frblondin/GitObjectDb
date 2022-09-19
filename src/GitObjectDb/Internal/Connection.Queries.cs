@@ -4,13 +4,18 @@ using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace GitObjectDb.Internal;
 
 internal sealed partial class Connection
 {
+    // Use lazy for concurrent dictionary thread safety
+    private readonly ConcurrentDictionary<DataPath, Lazy<Repository>> _repositories = new();
+
     public TItem Lookup<TItem>(DataPath path,
                                string? committish = null,
                                IMemoryCache? referenceCache = null)
@@ -88,7 +93,7 @@ internal sealed partial class Connection
         return _queryResources
             .Execute(this, new QueryResources.Parameters(tree,
                                                          relativeTree,
-                                                         node.Path,
+                                                         node,
                                                          referenceCache ?? CreateEphemeralCache()))
             .AsParallel()
                 .Select(i => i.Resource.Value)
@@ -125,6 +130,32 @@ internal sealed partial class Connection
         {
             var tree = commit.Tree[path.FolderPath] ?? throw new GitObjectDbException("Requested path could not be found.");
             return (commit.Tree, tree.Target.Peel<Tree>());
+        }
+    }
+
+    Repository ISubmoduleProvider.GetOrCreateSubmoduleRepository(DataPath path,
+                                                                 string url)
+    {
+        var folderPath = Path.Combine(Repository.Info.Path,
+                                      "modules",
+                                      path.FolderPath,
+                                      FileSystemStorage.ResourceFolder);
+        return _repositories.GetOrAdd(path,
+                                      new Lazy<Repository>(CreateOrLoad)).Value;
+        Repository CreateOrLoad() =>
+            LibGit2Sharp.Repository.IsValid(folderPath) ? Load() : Create();
+
+        Repository Load() =>
+            new(folderPath);
+
+        Repository Create()
+        {
+            Directory.CreateDirectory(folderPath);
+            LibGit2Sharp.Repository.Clone(url, folderPath, new()
+            {
+                IsBare = true,
+            });
+            return Load();
         }
     }
 }

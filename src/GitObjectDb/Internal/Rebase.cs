@@ -136,8 +136,8 @@ internal sealed class Rebase : IRebase
             _connection,
             tip,
             CurrentChanges.Select(c =>
-                (ApplyUpdateTreeDefinition)((database, treeDefinition, refTree) =>
-                c.Transform(_updateCommand, database, treeDefinition, refTree))),
+                (ApplyUpdateTreeDefinition)((refTree, modules, database, treeDefinition) =>
+                c.Transform(_updateCommand, database, treeDefinition, refTree, modules))),
             new CommitDescription(replayedCommit.Message, replayedCommit.Author, replayedCommit.Committer),
             updateHead: false);
 
