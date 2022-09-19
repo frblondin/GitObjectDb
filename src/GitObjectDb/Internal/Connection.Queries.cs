@@ -1,5 +1,6 @@
 using GitObjectDb.Comparison;
 using GitObjectDb.Internal.Queries;
+using GitObjectDb.Tools;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -8,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace GitObjectDb.Internal;
 
@@ -23,9 +25,9 @@ internal sealed partial class Connection
     {
         var (tree, _) = GetTree(path, committish);
         return (TItem)_loader.Execute(this,
-                                      new LoadItem.Parameters(tree,
-                                                              path,
-                                                              referenceCache ?? CreateEphemeralCache()));
+                                      new(tree,
+                                          path,
+                                          referenceCache ?? CreateEphemeralCache()));
     }
 
     public IEnumerable<TItem> GetItems<TItem>(Node? parent = null,
@@ -36,12 +38,12 @@ internal sealed partial class Connection
     {
         var (tree, relativeTree) = GetTree(parent?.Path, committish);
         return _queryItems
-            .Execute(this, new QueryItems.Parameters(tree,
-                                                     relativeTree,
-                                                     typeof(TItem),
-                                                     parent?.Path,
-                                                     isRecursive,
-                                                     referenceCache ?? CreateEphemeralCache()))
+            .Execute(this, new(tree,
+                               relativeTree,
+                               typeof(TItem),
+                               parent?.Path,
+                               isRecursive,
+                               referenceCache ?? CreateEphemeralCache()))
             .AsParallel()
                 .Select(i => i.Item.Value)
                 .OfType<TItem>()
@@ -72,12 +74,32 @@ internal sealed partial class Connection
     {
         var (tree, relativeTree) = GetTree(parentPath, committish);
         return _queryItems.Execute(this,
-                                   new QueryItems.Parameters(tree,
-                                                             relativeTree,
-                                                             typeof(TItem),
-                                                             parentPath,
-                                                             isRecursive,
-                                                             CreateEphemeralCache())).Select(i => i.Path);
+                                   new(tree,
+                                       relativeTree,
+                                       typeof(TItem),
+                                       parentPath,
+                                       isRecursive,
+                                       CreateEphemeralCache())).Select(i => i.Path);
+    }
+
+    public IEnumerable<ITreeItem> Search(string pattern,
+                                        DataPath? parentPath = null,
+                                        string? committish = null,
+                                        bool ignoreCase = false,
+                                        bool recurseSubModules = false,
+                                        IMemoryCache? referenceCache = null)
+    {
+        var (tree, _) = GetTree(parentPath, committish);
+        return _searchItems
+            .Execute(this, new(this,
+                               tree,
+                               pattern,
+                               parentPath,
+                               committish,
+                               ignoreCase,
+                               recurseSubModules,
+                               referenceCache ?? CreateEphemeralCache()))
+            .Select(i => i.Item);
     }
 
     public IEnumerable<Resource> GetResources(Node node,
