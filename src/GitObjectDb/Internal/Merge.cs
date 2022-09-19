@@ -13,15 +13,19 @@ namespace GitObjectDb.Internal
     internal sealed class Merge : IMerge
     {
         private readonly IComparerInternal _comparer;
+        private readonly IMergeComparer _mergeComparer;
         private readonly UpdateTreeCommand _updateCommand;
         private readonly CommitCommand _commitCommand;
         private readonly IConnectionInternal _connection;
         private readonly string? _upstreamCommittish;
 
         [FactoryDelegateConstructor(typeof(Factories.MergeFactory))]
-        public Merge(IComparerInternal comparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand, IConnectionInternal connection, Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null)
+        public Merge(
+            IComparerInternal comparer, IMergeComparer mergeComparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand,
+            IConnectionInternal connection, Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null)
         {
             _comparer = comparer;
+            _mergeComparer = mergeComparer;
             _updateCommand = updateCommand;
             _commitCommand = commitCommand;
             _connection = connection;
@@ -77,7 +81,7 @@ namespace GitObjectDb.Internal
                 UpstreamCommit.Tree,
                 Policy);
 
-            CurrentChanges = Comparer.Compare(branchChanges, upstreamChanges, Policy).ToList();
+            CurrentChanges = _mergeComparer.Compare(branchChanges, upstreamChanges, Policy).ToList();
             if (!CurrentChanges.Any())
             {
                 Status = MergeStatus.UpToDate;

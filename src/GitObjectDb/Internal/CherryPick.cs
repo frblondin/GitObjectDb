@@ -13,15 +13,19 @@ namespace GitObjectDb.Internal
     internal sealed class CherryPick : ICherryPick
     {
         private readonly IComparerInternal _comparer;
+        private readonly IMergeComparer _mergeComparer;
         private readonly UpdateTreeCommand _updateCommand;
         private readonly CommitCommand _commitCommand;
         private readonly IConnectionInternal _connection;
         private readonly Signature? _committer;
 
         [FactoryDelegateConstructor(typeof(Factories.CherryPickFactory))]
-        public CherryPick(IComparerInternal comparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand, IConnectionInternal connection, string committish, Signature? committer, Branch? branch = null, CherryPickPolicy? policy = null)
+        public CherryPick(
+            IComparerInternal comparer, IMergeComparer mergeComparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand,
+            IConnectionInternal connection, string committish, Signature? committer, Branch? branch = null, CherryPickPolicy? policy = null)
         {
             _comparer = comparer;
+            _mergeComparer = mergeComparer;
             _updateCommand = updateCommand;
             _commitCommand = commitCommand;
             _connection = connection;
@@ -59,7 +63,7 @@ namespace GitObjectDb.Internal
                 UpstreamCommit.Tree,
                 Policy.ComparisonPolicy);
 
-            CurrentChanges = Comparer.Compare(localChanges, changes, Policy.ComparisonPolicy).ToList();
+            CurrentChanges = _mergeComparer.Compare(localChanges, changes, Policy.ComparisonPolicy).ToList();
             if (!CurrentChanges.Any(c => c.Status == ItemMergeStatus.EditConflict || c.Status == ItemMergeStatus.TreeConflict))
             {
                 CommitChanges();

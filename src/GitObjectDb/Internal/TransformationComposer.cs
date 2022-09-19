@@ -4,6 +4,7 @@ using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace GitObjectDb.Internal
@@ -37,13 +38,11 @@ namespace GitObjectDb.Internal
         public TItem Delete<TItem>(TItem item)
             where TItem : ITreeItem
         {
-            if (item.Path is null)
-            {
-                throw new InvalidOperationException("Item has no path defined.");
-            }
+            item.ThrowIfNoPath();
+
             var transformation = new Transformation(
                 UpdateTreeCommand.Delete(item),
-                $"Removing {item.Path.FolderPath}.");
+                $"Removing {item.Path!.FolderPath}.");
             Transformations.Add(transformation);
             return item;
         }
@@ -64,14 +63,14 @@ namespace GitObjectDb.Internal
             {
                 path = UpdateNodePathIfNeeded(node, parent);
             }
-            else if (path is null)
+            else
             {
-                throw new InvalidOperationException("Item has no path defined.");
+                item.ThrowIfNoPath();
             }
 
             var transformation = new Transformation(
                 _updateTreeCommand.CreateOrUpdate(item),
-                $"Adding or updating {path.FolderPath}.");
+                $"Adding or updating {path!.FolderPath}.");
             Transformations.Add(transformation);
             return item;
         }
@@ -80,15 +79,10 @@ namespace GitObjectDb.Internal
         {
             if (parent is not null)
             {
-                if (parent.Path is null)
-                {
-                    throw new GitObjectDbException("Parent path has not been set.");
-                }
-                var newPath = parent.Path.AddChild(node);
-                if (node.Path is not null && !node.Path.Equals(newPath))
-                {
-                    throw new GitObjectDbException("Node path has already been set. This generally means that a node has been created multiple times.");
-                }
+                ThrowIfNoParentPath(parent);
+
+                var newPath = parent.Path!.AddChild(node);
+                ThrowIfWrongExistingPath(node, newPath);
                 node.Path = newPath;
             }
             if (node.Path is null)
@@ -114,6 +108,24 @@ namespace GitObjectDb.Internal
                 transformation.TreeTransformation(dataBase, result, commit?.Tree);
             }
             return result;
+        }
+
+        [ExcludeFromCodeCoverage]
+        private static void ThrowIfNoParentPath(Node parent)
+        {
+            if (parent.Path is null)
+            {
+                throw new GitObjectDbException("Parent path has not been set.");
+            }
+        }
+
+        [ExcludeFromCodeCoverage]
+        private static void ThrowIfWrongExistingPath(Node node, DataPath newPath)
+        {
+            if (node.Path is not null && !node.Path.Equals(newPath))
+            {
+                throw new GitObjectDbException("Node path has already been set. This generally means that a node has been created multiple times. Make sure to reset cloned path value.");
+            }
         }
     }
 }

@@ -33,11 +33,7 @@ namespace GitObjectDb.Internal.Commands
         internal static ApplyUpdateTreeDefinition Delete(ITreeItem item) =>
             (_, definition, __) =>
             {
-                var path = item.Path;
-                if (path is null)
-                {
-                    throw new InvalidOperationException("Path should not be null.");
-                }
+                var path = item.ThrowIfNoPath();
 
                 // For nodes, delete whole folder containing node and nested entries
                 // For resources, only deleted resource
@@ -56,11 +52,7 @@ namespace GitObjectDb.Internal.Commands
         {
             using var stream = _serializer.Serialize(node);
             var blob = database.CreateBlob(stream);
-            var path = node.Path;
-            if (path is null)
-            {
-                throw new InvalidOperationException("Path should not be null.");
-            }
+            var path = node.ThrowIfNoPath();
             definition.Add(path.FilePath, blob, Mode.NonExecutableFile);
         }
 

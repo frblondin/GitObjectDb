@@ -135,7 +135,7 @@ namespace GitObjectDb.Tests
                 .Commit("C", signature, signature);
             sut.Checkout("newBranch", "HEAD~1");
             sut
-                .Update(c => c.Delete(parentTable))
+                .Update(c => c.Delete(parentTable.Path))
                 .Commit("B", signature, signature);
 
             // Act
@@ -157,6 +157,51 @@ namespace GitObjectDb.Tests
 
             // Assert
             Assert.That(merge.Status, Is.EqualTo(MergeStatus.FastForward));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+        public void AddOnTheirParentDeletion(IConnection sut, Application parentApplication, Table parentTable, Field field, Signature signature)
+        {
+            // main:      A---B    A---B
+            //             \    ->  \   \
+            // newBranch:   C        C---x
+
+            // Arrange
+            sut
+                .Update(c => c.Delete(parentApplication.Path))
+                .Commit("C", signature, signature);
+            sut.Checkout("newBranch", "HEAD~1");
+            sut
+                .Update(c => c.CreateOrUpdate(new Field { }, parentTable))
+                .Commit("B", signature, signature);
+
+            // Act
+            var merge = sut.Merge(upstreamCommittish: "main");
+
+            // Assert
+            Assert.That(merge.Status, Is.EqualTo(MergeStatus.Conflicts));
+            int expectedchangeCount =
+
+                // Deleted applications
+                1 +
+
+                // Deleted tables, field, resources, and constants
+                (DataGenerator.DefaultTablePerApplicationCount * (1 + DataGenerator.DefaultFieldPerTableCount + DataGenerator.DefaultResourcePerTableCount + DataGenerator.DefaultConstantPerTableCount)) +
+
+                // Added field (in conflict)
+                1;
+            Assert.That(merge.CurrentChanges, Has.Exactly(expectedchangeCount).Items);
+            Assert.That(merge.CurrentChanges, Has.Exactly(1).Matches<MergeChange>(c => c.Status == ItemMergeStatus.TreeConflict));
+            Assert.Throws<GitObjectDbException>(() => merge.Commit(signature, signature));
+            var conflict = merge.CurrentChanges.Single(c => c.Status == ItemMergeStatus.TreeConflict);
+            merge.CurrentChanges.Remove(conflict);
+
+            // Act
+            var mergeCommit = merge.Commit(signature, signature);
+
+            // Assert
+            Assert.That(merge.Status, Is.EqualTo(MergeStatus.NonFastForward));
         }
     }
 }

@@ -1,5 +1,6 @@
 using GitObjectDb.Model;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -186,7 +187,8 @@ namespace GitObjectDb
             return Parse($"{FolderPath}/{FileSystemStorage.ResourceFolder}{folder}/{file}");
         }
 
-        internal void ThrowIfNotUsingNodeFolders()
+        [ExcludeFromCodeCoverage]
+        private void ThrowIfNotUsingNodeFolders()
         {
             if (!UseNodeFolders)
             {

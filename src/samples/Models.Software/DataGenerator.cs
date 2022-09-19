@@ -16,8 +16,6 @@ namespace Models.Software
         public const int DefaultConstantPerTableCount = 2;
         public const int DefaultResourcePerTableCount = 5;
 
-        private Random _random = new Random();
-
         public DataGenerator(IConnection connection, int applicationCount = DefaultApplicationCount, int tablePerApplicationCount = DefaultTablePerApplicationCount, int fieldPerTableCount = DefaultFieldPerTableCount, int constantPerTableCount = DefaultConstantPerTableCount, int resourcePerTableCount = DefaultResourcePerTableCount)
         {
             Connection = connection;
@@ -103,8 +101,8 @@ namespace Models.Software
                 {
                     var stream = new MemoryStream(Encoding.Default.GetBytes(fixture.Create<string>()));
                     var resource = new Resource(table,
-                                                $"Path{_random.Next(1, 2)}",
-                                                $"File{_random.Next(1, 100)}.txt",
+                                                $"Path{UniqueId.CreateNew()}",
+                                                $"File{UniqueId.CreateNew()}.txt",
                                                 new Resource.Data(stream));
                     composer.CreateOrUpdate(resource);
                 });
