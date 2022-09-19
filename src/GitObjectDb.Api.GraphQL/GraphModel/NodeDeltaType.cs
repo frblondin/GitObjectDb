@@ -1,8 +1,7 @@
-using AutoMapper;
+using GitObjectDb.Api.GraphQL.Tools;
 using GitObjectDb.Api.Model;
-using GraphQL.Resolvers;
 using GraphQL.Types;
-using Microsoft.Extensions.DependencyInjection;
+using Namotion.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
 
@@ -10,27 +9,35 @@ internal class NodeDeltaType<TNode, TNodeDto> : ObjectGraphType<DeltaDto<TNodeDt
 {
     public NodeDeltaType()
     {
-        Name = typeof(TNode).Name.Replace("`", string.Empty) + "Delta";
+        var typeName = typeof(TNode).Name.Replace("`", string.Empty);
+        Name = $"{typeName}Delta";
+        Description = $"Represents changes for {typeName}.";
 
-        Field<StringGraphType>(nameof(DeltaDto<TNodeDto>.UpdatedAt));
-        Field<BooleanGraphType>(nameof(DeltaDto<TNodeDto>.Deleted));
+        var updatedAtProperty = ExpressionReflector.GetProperty<DeltaDto<TNodeDto>>(d => d.UpdatedAt);
+        Field<StringGraphType>(updatedAtProperty.Name, updatedAtProperty.GetXmlDocsSummary(false));
+
+        var deletedProperty = ExpressionReflector.GetProperty<DeltaDto<TNodeDto>>(d => d.Deleted);
+        Field<BooleanGraphType>(deletedProperty.Name, deletedProperty.GetXmlDocsSummary(false));
     }
 
     void INodeDeltaType.AddNodeReference(GitObjectDbQuery query)
     {
         var type = query.GetOrCreateGraphType(typeof(TNodeDto), out var _);
 
+        var oldProperty = ExpressionReflector.GetProperty<DeltaDto<TNodeDto>>(d => d.Old);
         AddField(new()
         {
-            Name = nameof(DeltaDto<TNodeDto>.Old),
-            Description = "Gets the old node state.",
+            Name = oldProperty.Name,
+            Description = oldProperty.GetXmlDocsSummary(false),
             Type = type.GetType(),
             ResolvedType = type,
         });
+
+        var newProperty = ExpressionReflector.GetProperty<DeltaDto<TNodeDto>>(d => d.New);
         AddField(new()
         {
-            Name = nameof(DeltaDto<TNodeDto>.New),
-            Description = "Gets the new node state.",
+            Name = newProperty.Name,
+            Description = newProperty.GetXmlDocsSummary(false),
             Type = type.GetType(),
             ResolvedType = type,
         });

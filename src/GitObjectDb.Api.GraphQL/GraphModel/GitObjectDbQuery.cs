@@ -24,6 +24,7 @@ public partial class GitObjectDbQuery : ObjectGraphType
     {
         Model = model;
         Name = "Query";
+        Description = "Provides queries to access GitObjectDb items.";
         DtoEmitter = new DtoTypeEmitter(Model);
 
         foreach (var description in DtoEmitter.TypeDescriptions)
@@ -86,14 +87,14 @@ public partial class GitObjectDbQuery : ObjectGraphType
         return graphType.AddField(new()
         {
             Name = description.NodeType.Name,
-            Description = "Gets the direct children of the node.",
+            Description = description.NodeType.Type.GetXmlDocsSummary(false),
             Type = typeof(ListGraphType<>).MakeGenericType(childGraphType.GetType()),
             ResolvedType = new ListGraphType(childGraphType),
             Arguments = new(
                 new QueryArgument<StringGraphType> { Name = IdArgument, Description = "Id of requested node." },
                 new QueryArgument<StringGraphType> { Name = ParentPathArgument, Description = "Parent of the nodes." },
-                new QueryArgument<StringGraphType> { Name = CommittishArgument },
-                new QueryArgument<BooleanGraphType> { Name = IsRecursiveArgument }),
+                new QueryArgument<StringGraphType> { Name = CommittishArgument, Description = "Optional committish (head tip is used otherwise)." },
+                new QueryArgument<BooleanGraphType> { Name = IsRecursiveArgument, Description = "Whether all nested nodes should be flattened." }),
             Resolver = NodeQuery.CreateResolver(description),
         });
     }
@@ -108,8 +109,8 @@ public partial class GitObjectDbQuery : ObjectGraphType
             Type = typeof(ListGraphType<>).MakeGenericType(deltaGraphType.GetType()),
             ResolvedType = new ListGraphType(deltaGraphType),
             Arguments = new(
-                new QueryArgument<NonNullGraphType<StringGraphType>> { Name = DeltaStartCommit },
-                new QueryArgument<StringGraphType> { Name = DeltaEndCommit }),
+                new QueryArgument<NonNullGraphType<StringGraphType>> { Name = DeltaStartCommit, Description = "Start committish of comparison." },
+                new QueryArgument<StringGraphType> { Name = DeltaEndCommit, Description = "Optional end committish (head tip is used otherwise)." }),
             Resolver = NodeDeltaQuery.CreateResolver(description),
         });
     }

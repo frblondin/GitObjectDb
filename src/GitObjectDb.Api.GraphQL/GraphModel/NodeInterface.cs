@@ -12,7 +12,7 @@ internal sealed class NodeInterface : InterfaceGraphType<NodeDto>
     {
         Name = nameof(Node);
 
-        Field(n => n.Children);
+        Field(n => n.Children).Description("Gets the node children.");
 
         foreach (var property in typeof(NodeDto).GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {

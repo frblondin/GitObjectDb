@@ -18,6 +18,17 @@ internal static class ExpressionReflector
         return returnGenericDefinition ? found.Method.GetGenericMethodDefinition() : found.Method;
     }
 
+    /// <summary>Extracts the <see cref="PropertyInfo"/> out of the expression.</summary>
+    /// <typeparam name="TSource">The type of the source.</typeparam>
+    /// <param name="expression">The expression.</param>
+    /// <returns>The <see cref="PropertyInfo"/>.</returns>
+    [ExcludeFromCodeCoverage]
+    internal static PropertyInfo GetProperty<TSource>(Expression<Func<TSource, object?>> expression)
+    {
+        var found = Visitor<MemberExpression>.Lookup(expression);
+        return (PropertyInfo)found.Member;
+    }
+
     private class Visitor<TExpression> : ExpressionVisitor
         where TExpression : Expression
     {

@@ -7,6 +7,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/frblondin/GitObjectDb</PackageProjectUrl>
     <PackageIcon>GitObjectDb.png</PackageIcon>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
