@@ -113,14 +113,9 @@ internal sealed class Merge : IMerge
         }
 
         // If last commit, update head so it points to the new commit
-        if (RequiresMergeCommit && CurrentChanges.Any())
-        {
-            return CommitMerge(author, committer);
-        }
-        else
-        {
-            return CommitFastForward();
-        }
+        return RequiresMergeCommit && CurrentChanges.Any() ?
+               CommitMerge(author, committer) :
+               CommitFastForward();
     }
 
     private Commit CommitMerge(Signature author, Signature committer)
