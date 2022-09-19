@@ -1,3 +1,4 @@
+using GitObjectDb.Model;
 using GitObjectDb.Serialization.Json.Converters;
 using GitObjectDb.Tools;
 using Microsoft.IO;
@@ -19,7 +20,7 @@ namespace GitObjectDb.Serialization.Json
 
         private static readonly RecyclableMemoryStreamManager _streamManager = new();
 
-        private readonly JsonWriterOptions _writerOptions = new JsonWriterOptions
+        private readonly JsonWriterOptions _writerOptions = new()
         {
             Indented = true,
         };
@@ -45,7 +46,9 @@ namespace GitObjectDb.Serialization.Json
                 ReferenceHandler = new NodeReferenceHandler(),
                 ReadCommentHandling = JsonCommentHandling.Skip,
             };
+
             result.Converters.Add(new NonScalarConverter(this));
+            result.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 
             return result;
         }
@@ -62,7 +65,7 @@ namespace GitObjectDb.Serialization.Json
             return result;
         }
 
-        public Node Deserialize(Stream stream, DataPath? path, Func<DataPath, ITreeItem> referenceResolver)
+        public Node Deserialize(Stream stream, DataPath? path, IDataModel model, Func<DataPath, ITreeItem> referenceResolver)
         {
             NodeReferenceHandler.NodeAccessor.Value = referenceResolver;
             try
@@ -74,8 +77,14 @@ namespace GitObjectDb.Serialization.Json
                     stream.Read(bytes, 0, length);
                     var span = new ReadOnlySpan<byte>(bytes, 0, length);
                     var result = JsonSerializer.Deserialize<NonScalar>(span, Options)!.Node;
-                    result.Path = path;
-                    result.EmbeddedResource = ReadEmbeddedResource(new ReadOnlySequence<byte>(bytes, 0, length));
+                    var embeddedResource = ReadEmbeddedResource(new ReadOnlySequence<byte>(bytes, 0, length));
+                    UpdateBaseProperties(result, path, embeddedResource);
+
+                    var newType = model.GetNewTypeIfDeprecated(result.GetType());
+                    if (newType is not null)
+                    {
+                        return UpdateDeprecatedNode(result, newType, model);
+                    }
 
                     return result;
                 }
@@ -88,6 +97,32 @@ namespace GitObjectDb.Serialization.Json
             {
                 NodeReferenceHandler.NodeAccessor.Value = null;
             }
+        }
+
+        private static Node UpdateDeprecatedNode(Node deprecated, Type newType, IDataModel model)
+        {
+            if (model.DeprecatedNodeUpdater is null)
+            {
+                throw new GitObjectDbException("No deprecated node updater defined in model.");
+            }
+            var updated = model.DeprecatedNodeUpdater(deprecated, newType) ??
+                throw new GitObjectDbException("Deprecated node updater did not return any value.");
+            if (!newType.IsAssignableFrom(updated.GetType()))
+            {
+                throw new GitObjectDbException($"Deprecated node updater did not return a value of type '{newType}'.");
+            }
+            if (updated.Id != deprecated.Id)
+            {
+                throw new GitObjectDbException($"Updated node does not have the same id.");
+            }
+            UpdateBaseProperties(updated, deprecated.Path, deprecated.EmbeddedResource);
+            return updated;
+        }
+
+        private static void UpdateBaseProperties(Node result, DataPath? path, string? embeddedResource)
+        {
+            result.Path = path;
+            result.EmbeddedResource = embeddedResource;
         }
 
         public string BindToName(Type type) => $"{type.FullName}, {type.Assembly.FullName}";

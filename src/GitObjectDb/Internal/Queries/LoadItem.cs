@@ -18,7 +18,7 @@ namespace GitObjectDb.Internal.Queries
             if (parms.ReferenceCache == null || !parms.ReferenceCache.TryGetValue(parms.Path, out var result))
             {
                 result = parms.Path.IsNode ?
-                    LoadNode(parms) :
+                    LoadNode(connection, parms) :
                     LoadResource(parms);
                 if (parms.ReferenceCache != null)
                 {
@@ -28,12 +28,13 @@ namespace GitObjectDb.Internal.Queries
             return result;
         }
 
-        private ITreeItem LoadNode(Parameters parms)
+        private ITreeItem LoadNode(IConnectionInternal connection, Parameters parms)
         {
             var blob = parms.Tree[parms.Path.FilePath].Target.Peel<Blob>();
             return _serializer.Deserialize(blob.GetContentStream(),
                                            parms.Path,
-                                           p => LoadNode(parms with { Path = p }));
+                                           connection.Model,
+                                           p => LoadNode(connection, parms with { Path = p }));
         }
 
         private static ITreeItem LoadResource(Parameters parms)

@@ -8,9 +8,7 @@ using System.Reflection;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    /// <summary>
-    /// Extension methods for adding services to an <see cref="IServiceCollection" />.
-    /// </summary>
+    /// <summary>Extension methods for adding services to an <see cref="IServiceCollection" />.</summary>
     public static class FactoryDelegateProviderExtensions
     {
         private static readonly MethodInfo _getRequiredServiceDefinition = ExpressionReflector.GetMethod(

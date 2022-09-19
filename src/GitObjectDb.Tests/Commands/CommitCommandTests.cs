@@ -27,10 +27,7 @@ namespace GitObjectDb.Tests.Commands
             // Act
             var composer = new TransformationComposer(updateCommand, sut, connection);
             composer.CreateOrUpdate(new Table { Id = newTableId }, application);
-            var result = sut.Commit(
-                connection.Repository,
-                composer.Transformations,
-                message, signature, signature);
+            sut.Commit(connection, composer, message, signature, signature);
 
             // Assert
             var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
@@ -49,10 +46,7 @@ namespace GitObjectDb.Tests.Commands
             // Act
             var composer = new TransformationComposer(updateCommand, sut, connection);
             composer.CreateOrUpdate(new Field { Id = newFieldId }, table);
-            var result = sut.Commit(
-                connection.Repository,
-                composer.Transformations,
-                message, signature, signature);
+            sut.Commit(connection, composer, message, signature, signature);
 
             // Assert
             var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
@@ -72,10 +66,7 @@ namespace GitObjectDb.Tests.Commands
             // Act
             var composer = new TransformationComposer(updateCommand, sut, connection);
             composer.CreateOrUpdate(resource);
-            sut.Commit(
-                connection.Repository,
-                composer.Transformations,
-                message, signature, signature);
+            sut.Commit(connection, composer, message, signature, signature);
 
             // Assert
             var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
@@ -96,73 +87,11 @@ namespace GitObjectDb.Tests.Commands
             // Act
             var composer = new TransformationComposer(updateCommand, sut, connection);
             composer.Delete(table);
-            sut.Commit(
-                connection.Repository,
-                composer.Transformations,
-                message, signature, signature);
+            sut.Commit(connection, composer, message, signature, signature);
 
             // Assert
             var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
             Assert.That(changes, Has.Count.GreaterThan(1));
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
-        public void CannotCommitChildAdditionAndParentDeletion(IFixture fixture, Application application, Table table, Field field, string message, Signature signature)
-        {
-            // Arrange
-            var (updateCommand, comparer, sut, connection) = Arrange(fixture);
-
-            // Act, Assert
-            Assert.Throws<GitObjectDbException>(() =>
-            {
-                var composer = new TransformationComposer(updateCommand, sut, connection);
-                composer.CreateOrUpdate(new Field { }, table);
-                composer.Delete(application);
-                sut.Commit(
-                    connection.Repository,
-                    composer.Transformations,
-                    message, signature, signature);
-            });
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
-        public void CannotCommitParentDeletionAndChildAddition(IFixture fixture, Application application, Table table, Field field, string message, Signature signature)
-        {
-            // Arrange
-            var (updateCommand, comparer, sut, connection) = Arrange(fixture);
-
-            // Act, Assert
-            Assert.Throws<GitObjectDbException>(() =>
-            {
-                var composer = new TransformationComposer(updateCommand, sut, connection);
-                composer.Delete(application);
-                composer.CreateOrUpdate(new Field { }, table);
-                sut.Commit(
-                    connection.Repository,
-                    composer.Transformations,
-                    message, signature, signature);
-            });
-        }
-
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
-        public void CannotCommitChildWithNoParent(IFixture fixture, Table table, string message, Signature signature)
-        {
-            // Arrange
-            var (updateCommand, comparer, sut, connection) = Arrange(fixture);
-
-            // Act, Assert
-            Assert.Throws<GitObjectDbException>(() =>
-            {
-                var composer = new TransformationComposer(updateCommand, sut, connection);
-                composer.CreateOrUpdate(new Field { Path = new DataPath("InvalidFolder", "" });
-                sut.Commit(
-                    connection.Repository,
-                    composer.Transformations,
-                    message, signature, signature);
-            });
         }
 
         [Test]
@@ -176,10 +105,7 @@ namespace GitObjectDb.Tests.Commands
             field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
             var composer = new TransformationComposer(updateCommand, sut, connection);
             composer.CreateOrUpdate(field);
-            sut.Commit(
-                connection.Repository,
-                composer.Transformations,
-                message, signature, signature);
+            sut.Commit(connection, composer, message, signature, signature);
 
             // Act
             var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
@@ -204,6 +130,8 @@ namespace GitObjectDb.Tests.Commands
                 var connection = A.Fake<IConnectionInternal>(x => x.Strict());
                 A.CallTo(() => connection.Repository).Returns(fixture.Create<Repository>());
                 A.CallTo(() => connection.Head).Returns(fixture.Create<Repository>().Head);
+                A.CallTo(() => connection.Info).Returns(fixture.Create<Repository>().Info);
+                A.CallTo(() => connection.Branches).Returns(fixture.Create<Repository>().Branches);
                 A.CallTo(() => connection.Model).Returns(fixture.Create<IDataModel>());
                 fixture.Inject(connection);
 

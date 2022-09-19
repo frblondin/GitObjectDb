@@ -98,11 +98,22 @@ namespace GitObjectDb.Internal
             return node.Path;
         }
 
-        public Commit Commit(string message, Signature author, Signature committer, bool amendPreviousCommit = false, Action<ITransformation>? beforeProcessing = null) =>
+        Commit ITransformationComposer.Commit(string message, Signature author, Signature committer, bool amendPreviousCommit, Action<ITransformation>? beforeProcessing) =>
             _commitCommand.Commit(
-                Connection.Repository,
-                Transformations,
+                Connection,
+                this,
                 message, author, committer, amendPreviousCommit,
                 beforeProcessing: beforeProcessing);
+
+        internal TreeDefinition ApplyTransformations(ObjectDatabase dataBase, Commit? commit, Action<ITransformation>? beforeProcessing = null)
+        {
+            var result = commit is not null ? TreeDefinition.From(commit) : new TreeDefinition();
+            foreach (var transformation in Transformations)
+            {
+                beforeProcessing?.Invoke(transformation);
+                transformation.TreeTransformation(dataBase, result, commit?.Tree);
+            }
+            return result;
+        }
     }
 }

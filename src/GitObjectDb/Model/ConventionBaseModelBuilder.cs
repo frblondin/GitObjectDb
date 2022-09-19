@@ -52,7 +52,7 @@ namespace GitObjectDb.Model
                     type.AddChild(childDescription);
                 }
             }
-            return new DataModel(_types.Values);
+            return new DataModel(_types.Values, DeprecatedNodeUpdater);
         }
     }
 }

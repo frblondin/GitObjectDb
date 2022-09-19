@@ -1,9 +1,5 @@
 using GitObjectDb.Comparison;
-using GitObjectDb.Internal.Queries;
 using LibGit2Sharp;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace GitObjectDb.Internal
 {
