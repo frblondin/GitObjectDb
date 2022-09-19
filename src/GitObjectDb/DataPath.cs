@@ -72,10 +72,11 @@ namespace GitObjectDb
 
         /// <summary>Gets the root path of the specified node.</summary>
         /// <param name="node">The node.</param>
+        /// <param name="model">The model.</param>
         /// <returns>The root path.</returns>
-        public static DataPath Root(Node node)
+        public static DataPath Root(Node node, IDataModel model)
         {
-            var useNodeFolders = GetSuffix(node, out var suffix);
+            var useNodeFolders = GetSuffix(node, model, out var suffix);
             return new DataPath(suffix, $"{node.Id}.json", useNodeFolders);
         }
 
@@ -101,11 +102,6 @@ namespace GitObjectDb
         /// <returns><see langword="true" /> if the <paramref name="path" /> parameter was converted successfully; otherwise, <see langword="false" />.</returns>
         public static bool TryParse(string path, out DataPath? result)
         {
-            if (string.IsNullOrWhiteSpace(path) || !path[0].Equals('/'))
-            {
-                result = default;
-            }
-
             var separator = path.LastIndexOf('/');
             var folder = path.Substring(0, separator);
             var file = path.Substring(separator + 1);
@@ -133,10 +129,11 @@ namespace GitObjectDb
         /// Adds a node to the current instance.
         /// </summary>
         /// <param name="node">The node to be added.</param>
+        /// <param name="model">The model.</param>
         /// <returns>The new <see cref="DataPath"/> representing the child node path.</returns>
-        public DataPath AddChild(Node node)
+        public DataPath AddChild(Node node, IDataModel model)
         {
-            var useNodeFolders = GetSuffix(node, out var suffix);
+            var useNodeFolders = GetSuffix(node, model, out var suffix);
             var path = string.IsNullOrEmpty(FolderPath) ? suffix : $"{FolderPath}/{suffix}";
             return new DataPath(path, $"{node.Id}.json", useNodeFolders);
         }
@@ -147,14 +144,13 @@ namespace GitObjectDb
             return new DataPath(folder, $"{id}.json", useNodeFolders);
         }
 
-        private static bool GetSuffix(Node node, out string suffix)
+        private static bool GetSuffix(Node node, IDataModel model, out string suffix)
         {
             var type = node.GetType();
-            var attribute = GitFolderAttribute.Get(type);
-            var folder = attribute?.FolderName ?? $"{type.Name}s";
-            var result = attribute?.UseNodeFolders ?? GitFolderAttribute.DefaultUseNodeFoldersValue;
-            suffix = result ? $"{folder}/{node.Id}" : folder;
-            return result;
+            var description = model.NodeTypes.FirstOrDefault(t => t.Type == type) ??
+                throw new GitObjectDbException($"Type {type} could not be found in model.");
+            suffix = description.UseNodeFolders ? $"{description.Name}/{node.Id}" : description.Name;
+            return description.UseNodeFolders;
         }
 
         /// <inheritdoc/>
@@ -181,7 +177,7 @@ namespace GitObjectDb
         public DataPath GetParentNode()
         {
             int position = IsNode ?
-                           FolderParts.Length - 1 :
+                           FolderParts.Length - 2 :
                            Array.FindIndex(FolderParts, p => StringComparer.Ordinal.Equals(p, FileSystemStorage.ResourceFolder));
             if (position == -1)
             {
