@@ -41,8 +41,8 @@ public class CommitCommandTests
 
         // Assert
         var changes = comparer.Compare(connection,
-                                       connection.Repository.Lookup<Commit>("HEAD~1").Tree,
-                                       connection.Repository.Head.Tip.Tree,
+                                       connection.Repository.Lookup<Commit>("HEAD~1"),
+                                       connection.Repository.Head.Tip,
                                        connection.Model.DefaultComparisonPolicy);
         Assert.That(changes, Has.Count.EqualTo(1));
         var expectedPath = $"{application.Path.FolderPath}/Pages/{newTableId}/{newTableId}.json";
@@ -71,8 +71,8 @@ public class CommitCommandTests
 
         // Assert
         var changes = comparer.Compare(connection,
-                                       connection.Repository.Lookup<Commit>("HEAD~1").Tree,
-                                       connection.Repository.Head.Tip.Tree,
+                                       connection.Repository.Lookup<Commit>("HEAD~1"),
+                                       connection.Repository.Head.Tip,
                                        connection.Model.DefaultComparisonPolicy);
         Assert.That(changes, Has.Count.EqualTo(1));
         var expectedPath = $"{table.Path.FolderPath}/Fields/{newFieldId}.json";
@@ -102,8 +102,8 @@ public class CommitCommandTests
 
         // Assert
         var changes = comparer.Compare(connection,
-                                       connection.Repository.Lookup<Commit>("HEAD~1").Tree,
-                                       connection.Repository.Head.Tip.Tree,
+                                       connection.Repository.Lookup<Commit>("HEAD~1"),
+                                       connection.Repository.Head.Tip,
                                        connection.Model.DefaultComparisonPolicy);
         Assert.That(changes, Has.Count.EqualTo(1));
         var expectedPath = $"{table.Path.FolderPath}/{FileSystemStorage.ResourceFolder}/Some/Folder/File.txt";
@@ -134,8 +134,8 @@ public class CommitCommandTests
 
         // Assert
         var changes = comparer.Compare(connection,
-                                       connection.Repository.Lookup<Commit>("HEAD~1").Tree,
-                                       connection.Repository.Head.Tip.Tree,
+                                       connection.Repository.Lookup<Commit>("HEAD~1"),
+                                       connection.Repository.Head.Tip,
                                        connection.Model.DefaultComparisonPolicy);
         Assert.That(changes, Has.Count.GreaterThan(1));
     }
@@ -163,8 +163,8 @@ public class CommitCommandTests
 
         // Act
         var changes = comparer.Compare(connection,
-                                       connection.Repository.Lookup<Commit>("HEAD~1").Tree,
-                                       connection.Repository.Head.Tip.Tree,
+                                       connection.Repository.Lookup<Commit>("HEAD~1"),
+                                       connection.Repository.Head.Tip,
                                        connection.Model.DefaultComparisonPolicy);
         Assert.That(changes, Has.Count.EqualTo(1));
         Assert.Multiple(() =>

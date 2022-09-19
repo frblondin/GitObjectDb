@@ -1,3 +1,4 @@
+using LibGit2Sharp;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -10,10 +11,18 @@ public sealed class ChangeCollection : IList<Change>
 {
     private readonly IList<Change> _changes;
 
-    internal ChangeCollection()
+    internal ChangeCollection(Commit start, Commit end)
     {
         _changes = new List<Change>();
+        Start = start;
+        End = end;
     }
+
+    /// <summary>Gets the first commit of changes.</summary>
+    public Commit Start { get; }
+
+    /// <summary>Gets the last commit of changes.</summary>
+    public Commit End { get; }
 
     /// <summary>Gets the modified.</summary>
     /// <value>The modified.</value>

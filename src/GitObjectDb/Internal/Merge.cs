@@ -74,13 +74,13 @@ internal sealed class Merge : IMerge
     {
         var branchChanges = _comparer.Compare(
             _connection,
-            MergeBaseCommit.Tree,
-            Branch.Tip.Tree,
+            MergeBaseCommit,
+            Branch.Tip,
             Policy);
         var upstreamChanges = _comparer.Compare(
             _connection,
-            MergeBaseCommit.Tree,
-            UpstreamCommit.Tree,
+            MergeBaseCommit,
+            UpstreamCommit,
             Policy);
 
         CurrentChanges = _mergeComparer.Compare(branchChanges, upstreamChanges, Policy).ToList();

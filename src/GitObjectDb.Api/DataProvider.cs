@@ -31,9 +31,15 @@ public sealed class DataProvider
                 _cache) :
             null;
         var result = QueryAccessor.GetNodes<TNode>(parent, committish, isRecursive, _cache);
+
+        return Map<IEnumerable<TNode>, IEnumerable<TNodeDto>>(result, committish);
+    }
+
+    public TDestination Map<TSource, TDestination>(TSource source, string? committish)
+    {
 #pragma warning disable CS8974 // Converting method group to non-delegate type
-        return _mapper.Map<IEnumerable<TNode>, IEnumerable<TNodeDto>>(
-            result,
+        return _mapper.Map<TSource, TDestination>(
+            source,
             opt => opt.Items[AutoMapperProfile.ChildResolverName] = ResolveChildren);
 
         IEnumerable<Node> ResolveChildren(Node p) =>

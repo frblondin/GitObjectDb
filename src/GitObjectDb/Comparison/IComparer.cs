@@ -18,12 +18,12 @@ internal interface IComparerInternal
 {
     /// <summary>Compares two trees recursively.</summary>
     /// <param name="connection">The current connection.</param>
-    /// <param name="oldTree">The starting point of comparison.</param>
-    /// <param name="newTree">The end start of comparison.</param>
+    /// <param name="old">The starting point of comparison.</param>
+    /// <param name="new">The end start of comparison.</param>
     /// <param name="policy">The merge policy to use.</param>
     /// <returns>Details about the comparison.</returns>
-    ChangeCollection Compare(IConnection connection,
-                             Tree oldTree,
-                             Tree newTree,
+    ChangeCollection Compare(IConnectionInternal connection,
+                             Commit old,
+                             Commit @new,
                              ComparisonPolicy? policy = null);
 }

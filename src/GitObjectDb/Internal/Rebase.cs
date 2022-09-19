@@ -72,13 +72,13 @@ internal sealed class Rebase : IRebase
     {
         var branchChanges = _comparer.Compare(
             _connection,
-            (CurrentStep > 0 ? ReplayedCommits[CurrentStep] : MergeBaseCommit).Tree,
-            ReplayedCommits[CurrentStep].Tree,
+            CurrentStep > 0 ? ReplayedCommits[CurrentStep] : MergeBaseCommit,
+            ReplayedCommits[CurrentStep],
             Policy);
         var upstreamChanges = _comparer.Compare(
             _connection,
-            MergeBaseCommit.Tree,
-            UpstreamCommit.Tree,
+            MergeBaseCommit,
+            UpstreamCommit,
             Policy);
 
         CurrentChanges = _mergeComparer.Compare(upstreamChanges, branchChanges, Policy).ToList();

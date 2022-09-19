@@ -67,10 +67,7 @@ public class DataGenerator
                     Description = fixture.Create<string>(),
                     Name = fixture.Create<string>(),
                 }, parent: application);
-                if (firstTable is null)
-                {
-                    firstTable = table;
-                }
+                firstTable ??= table;
                 CreateFields(table, composer);
                 CreateConstants(table, composer);
                 CreateResource(table, composer);

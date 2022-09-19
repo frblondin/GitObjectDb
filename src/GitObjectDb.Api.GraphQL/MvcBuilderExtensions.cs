@@ -1,4 +1,4 @@
-using GitObjectDb.Api.GraphQL.Model;
+using GitObjectDb.Api.GraphQL.GraphModel;
 using GitObjectDb.Api.Model;
 using GitObjectDb.Model;
 using GraphQL;
@@ -26,7 +26,7 @@ public static class MvcBuilderExtensions
             .AddAutoMapper(c => c.AddProfile(new AutoMapperProfile(query.DtoEmitter.TypeDescriptions)))
             .AddSingleton<ISchema>(new GitObjectDbSchema(query))
             .AddGraphQL(builder => builder
-                .AddMetrics(true)
+                .AddApolloTracing(true)
                 .AddSystemTextJson()
                 .AddGraphTypes(query.DtoEmitter.AssemblyBuilder));
         var part = new AssemblyPart(typeof(NodeController).Assembly);
