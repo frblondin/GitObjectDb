@@ -10,9 +10,9 @@ namespace GitObjectDb.Internal.Commands;
 
 internal class FastImportCommitCommand : ICommitCommand
 {
-    private readonly ITreeValidation _treeValidation;
+    private readonly Func<ITreeValidation> _treeValidation;
 
-    public FastImportCommitCommand(ITreeValidation treeValidation)
+    public FastImportCommitCommand(Func<ITreeValidation> treeValidation)
     {
         _treeValidation = treeValidation;
 
@@ -25,6 +25,7 @@ internal class FastImportCommitCommand : ICommitCommand
                          Action<ITransformation>? beforeProcessing = null)
     {
         var importFile = Path.GetTempFileName();
+        var tempBranch = $"refs/fastimport/{UniqueId.CreateNew()}";
         try
         {
             var parents = CommitCommand.RetrieveParentsOfTheCommitBeingCreated(connection.Repository,
@@ -40,14 +41,15 @@ internal class FastImportCommitCommand : ICommitCommand
                                                          writer,
                                                          index,
                                                          description,
+                                                         tempBranch,
                                                          beforeProcessing);
             }
-            var commit = SendCommandThroughCli(connection, importFile, commitMarkId);
-            _treeValidation.Validate(commit.Tree, connection.Model);
-            return commit;
+            return ValidateAndUpdateHead(connection, description, importFile, parents, commitMarkId);
         }
         finally
         {
+            connection.Repository.Branches.Remove(tempBranch);
+            connection.Repository.Refs.Remove(tempBranch);
             TryDelete(importFile);
         }
     }
@@ -58,30 +60,31 @@ internal class FastImportCommitCommand : ICommitCommand
                                                  StreamWriter writer,
                                                  List<string> index,
                                                  CommitDescription description,
+                                                 string tempBranch,
                                                  Action<ITransformation>? beforeProcessing)
     {
         var tip = connection.Repository.Info.IsHeadUnborn ? null : connection.Repository.Head.Tip;
         transformationComposer.ApplyTransformations(tip, writer, index, beforeProcessing);
 
         var commitMarkId = index.Count + 1;
-        WriteFastInsertCommit(connection, parents, writer, description, commitMarkId);
+        WriteFastInsertCommit(connection, tempBranch, parents, writer, description, commitMarkId);
         WriteFastInsertCommitIndex(writer, index);
 
         return commitMarkId;
     }
 
     private static void WriteFastInsertCommit(IConnection connection,
+                                              string tempBranch,
                                               List<Commit> parents,
                                               TextWriter writer,
                                               CommitDescription description,
                                               int commitMarkId)
     {
-        var branch = connection.Repository.Refs.Head.TargetIdentifier;
         if (parents.Count == 0)
         {
-            writer.WriteLine($"reset {branch}");
+            writer.WriteLine($"reset {tempBranch}");
         }
-        writer.WriteLine($"commit {branch}");
+        writer.WriteLine($"commit {tempBranch}");
         writer.WriteLine($"mark :{commitMarkId}");
         WriteSignature(writer, "author", description.Author);
         WriteSignature(writer, "committer", description.Committer);
@@ -147,5 +150,25 @@ internal class FastImportCommitCommand : ICommitCommand
         catch
         {
         }
+    }
+
+    private Commit ValidateAndUpdateHead(IConnection connection, CommitDescription description, string importFile, List<Commit> parents, int commitMarkId)
+    {
+        var commit = SendCommandThroughCli(connection, importFile, commitMarkId);
+        if (parents.Count == 1 && commit.Tree == parents[0].Tree)
+        {
+            // If no change, do not create an empty commit
+            return parents[0];
+        }
+
+        var validation = _treeValidation.Invoke();
+        validation.Validate(commit.Tree, connection.Model);
+
+        var logMessage = commit.BuildCommitLogMessage(description.AmendPreviousCommit,
+                                                      connection.Repository.Info.IsHeadUnborn,
+                                                      parents.Count > 1);
+        connection.Repository.UpdateHeadAndTerminalReference(commit, logMessage);
+
+        return commit;
     }
 }

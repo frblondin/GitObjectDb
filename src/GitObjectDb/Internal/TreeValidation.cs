@@ -11,6 +11,8 @@ namespace GitObjectDb;
 
 internal class TreeValidation : ITreeValidation
 {
+    private readonly ISet<UniqueId> _identifiers = new HashSet<UniqueId>();
+
     public void Validate(Tree tree, IDataModel model)
     {
         var modules = new ModuleCommands(tree);
@@ -51,7 +53,7 @@ internal class TreeValidation : ITreeValidation
         }
     }
 
-    private static void ValidateNodeCollectionChildrenNotUsingNodeFolder(TreeEntry entry,
+    private void ValidateNodeCollectionChildrenNotUsingNodeFolder(TreeEntry entry,
                                                                          Stack<string> path)
     {
         foreach (var item in entry.Target.Peel<Tree>())
@@ -115,12 +117,17 @@ internal class TreeValidation : ITreeValidation
         }
     }
 
-    private static void ValidateNodeId(string nodeId)
+    private void ValidateNodeId(string nodeId)
     {
-        if (!UniqueId.TryParse(nodeId, out _))
+        if (!UniqueId.TryParse(nodeId, out var id))
         {
             throw new GitObjectDbException($"Folder name '{nodeId}' could not be parsed as a valid {nameof(UniqueId)}.");
         }
+        if (_identifiers.Contains(id))
+        {
+            throw new GitObjectDbException($"Node id '{nodeId}' exists for multiple nodes.");
+        }
+        _identifiers.Add(id);
     }
 
     private bool ValidateNodeFolderItems(string id,

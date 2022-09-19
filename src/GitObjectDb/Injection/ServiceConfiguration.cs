@@ -45,7 +45,7 @@ public static class ServiceConfiguration
         source.AddSingleton<IComparer>(s => s.GetRequiredService<Comparer>());
         source.AddSingleton<IComparerInternal>(s => s.GetRequiredService<Comparer>());
         source.AddSingleton<IMergeComparer, MergeComparer>();
-        source.AddSingleton<ITreeValidation, TreeValidation>();
+        source.AddSingleton<Func<ITreeValidation>>(() => new TreeValidation());
         source.AddSingleton<Microsoft.IO.RecyclableMemoryStreamManager>();
     }
 

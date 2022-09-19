@@ -7,9 +7,9 @@ namespace GitObjectDb.Internal.Commands;
 
 internal class CommitCommand : ICommitCommand
 {
-    private readonly ITreeValidation _treeValidation;
+    private readonly Func<ITreeValidation> _treeValidation;
 
-    public CommitCommand(ITreeValidation treeValidation)
+    public CommitCommand(Func<ITreeValidation> treeValidation)
     {
         _treeValidation = treeValidation;
     }
@@ -69,7 +69,8 @@ internal class CommitCommand : ICommitCommand
                           bool updateHead)
     {
         var tree = connection.Repository.ObjectDatabase.CreateTree(definition);
-        _treeValidation.Validate(tree, connection.Model);
+        var validation = _treeValidation.Invoke();
+        validation.Validate(tree, connection.Model);
         var result = connection.Repository.ObjectDatabase.CreateCommit(
             description.Author, description.Committer, description.Message,
             tree,
