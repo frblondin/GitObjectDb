@@ -50,7 +50,7 @@ public class QueryTestBase<TDocumentBuilder>
     [SetUp]
     public void Setup()
     {
-        Executer = new DocumentExecuter(new TDocumentBuilder(), new DocumentValidator());
+        Executer = CreateExecuter();
         ServiceProvider = new ServiceCollection()
             .AddOrganizationModel(out var model)
             .AddGitObjectDbGraphQL(model,
@@ -61,6 +61,9 @@ public class QueryTestBase<TDocumentBuilder>
         Schema = (GitObjectDbSchema)ServiceProvider.GetRequiredService<ISchema>();
         Connection = ServiceProvider.GetRequiredService<IConnection>();
     }
+
+    protected static IDocumentExecuter CreateExecuter() =>
+        new DocumentExecuter(new TDocumentBuilder(), new DocumentValidator());
 
     [OneTimeSetUp]
     public void CleanUpPastExecutions()
@@ -97,45 +100,6 @@ public class QueryTestBase<TDocumentBuilder>
                                       rules,
                                       null,
                                       nameConverter);
-    }
-
-    protected async Task<ExecutionResult> AssertQueryIgnoreErrorsAsync(
-        string query,
-        ExecutionResult expectedExecutionResult,
-        Inputs? variables = null,
-        object? root = null,
-        IDictionary<string, object?>? userContext = null,
-        CancellationToken? cancellationToken = default,
-        IEnumerable<IValidationRule>? rules = null,
-        int expectedErrorCount = 0,
-        bool renderErrors = false,
-        Func<UnhandledExceptionContext, Task>? unhandledExceptionDelegate = null)
-    {
-        var runResult = await Executer.ExecuteAsync(options =>
-        {
-            options.Schema = Schema;
-            options.Query = query;
-            options.Root = root;
-            options.Variables = variables;
-            options.UserContext = userContext ?? new Dictionary<string, object?>();
-            options.CancellationToken = cancellationToken ?? CancellationToken.None;
-            options.ValidationRules = rules;
-            options.UnhandledExceptionDelegate = unhandledExceptionDelegate ?? (_ => Task.CompletedTask);
-        }).ConfigureAwait(false);
-
-        var renderResult = renderErrors ?
-            runResult :
-            new() { Data = runResult.Data, Executed = runResult.Executed };
-
-        var writtenResult = Serializer.Serialize(renderResult);
-        var expectedResult = Serializer.Serialize(expectedExecutionResult);
-
-        Assert.That(writtenResult, Is.EqualTo(expectedResult));
-
-        var errors = runResult.Errors ?? new ExecutionErrors();
-        Assert.That(errors, Has.Count.EqualTo(expectedErrorCount));
-
-        return runResult;
     }
 
     protected async Task<ExecutionResult> AssertQueryAsync(
