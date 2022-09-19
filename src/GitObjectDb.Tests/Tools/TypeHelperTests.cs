@@ -1,3 +1,4 @@
+using GitObjectDb.Tests.Assets.Tools;
 using GitObjectDb.Tools;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ namespace GitObjectDb.Tests.Tools
     public class TypeHelperTests
     {
         [Test]
+        [AutoDataCustomizations]
         public void FindAssemblyDelimiterIndex()
         {
             // Act
@@ -20,6 +22,7 @@ namespace GitObjectDb.Tests.Tools
         }
 
         [Test]
+        [AutoDataCustomizations]
         public void BindFromNestedType()
         {
             // Act
@@ -30,6 +33,7 @@ namespace GitObjectDb.Tests.Tools
         }
 
         [Test]
+        [AutoDataCustomizations]
         public void BindToNestedType()
         {
             // Act

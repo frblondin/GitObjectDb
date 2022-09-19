@@ -1,5 +1,5 @@
-using AutoFixture.NUnit3;
 using FakeItEasy;
+using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
 
 namespace GitObjectDb.Tests
@@ -7,7 +7,7 @@ namespace GitObjectDb.Tests
     public class NodeTests : DisposeArguments
     {
         [Test]
-        [AutoData]
+        [AutoDataCustomizations]
         public void ToStringReturnsIdSha()
         {
             // Arrange
