@@ -1,7 +1,7 @@
-using System;
-using System.IO;
 using AutoFixture.NUnit3;
 using NUnit.Framework;
+using System;
+using System.IO;
 
 namespace GitObjectDb.Tests
 {
@@ -9,10 +9,10 @@ namespace GitObjectDb.Tests
     {
         [Test]
         [AutoData]
-        public void StreamResourceValue(DataPath parentPath, string folder, string file, string value)
+        public void StreamResourceValue(string value)
         {
             // Arrange
-            var sut = new Resource(parentPath, folder, file, value);
+            var sut = new Resource.Data(value);
 
             // Act
             using var stream = sut.GetContentStream();
@@ -24,10 +24,10 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoData]
-        public void StreamResourceValueSupportsRepositioning(DataPath parentPath, string folder, string file, string value)
+        public void StreamResourceValueSupportsRepositioning(string value)
         {
             // Arrange
-            var sut = new Resource(parentPath, folder, file, value);
+            var sut = new Resource.Data(value);
 
             // Act
             using var stream = sut.GetContentStream();
@@ -41,10 +41,10 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoData]
-        public void StreamResourceValueSupportsAbsoluteSeek(DataPath parentPath, string folder, string file, string value)
+        public void StreamResourceValueSupportsAbsoluteSeek(string value)
         {
             // Arrange
-            var sut = new Resource(parentPath, folder, file, value);
+            var sut = new Resource.Data(value);
 
             // Act
             using var stream = sut.GetContentStream();
@@ -58,10 +58,10 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoData]
-        public void StreamResourceValueThrowsExceptionForNonZeroSeek(DataPath parentPath, string folder, string file, string value)
+        public void StreamResourceValueThrowsExceptionForNonZeroSeek(string value)
         {
             // Arrange
-            var sut = new Resource(parentPath, folder, file, value);
+            var sut = new Resource.Data(value);
 
             // Act
             using var stream = sut.GetContentStream();

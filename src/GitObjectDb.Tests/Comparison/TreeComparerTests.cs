@@ -24,11 +24,7 @@ namespace GitObjectDb.Tests.Comparison
                 .Commit(message, signature, signature);
 
             // Act
-            var comparison = comparer.Compare(
-                sut,
-                repository.Lookup<Commit>("HEAD~1").Tree,
-                repository.Head.Tip.Tree,
-                ComparisonPolicy.Default);
+            var comparison = sut.Compare("HEAD~1", repository.Head.Tip.Sha);
 
             // Assert
             Assert.That(comparison, Has.Count.EqualTo(1));

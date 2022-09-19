@@ -6,13 +6,19 @@ namespace GitObjectDb.Comparison
     /// <summary>Provides a description of a cherry-pick policy.</summary>
     public record CherryPickPolicy
     {
-        /// <summary>Gets the default policy.</summary>
-        public static CherryPickPolicy Default { get; } = new CherryPickPolicy();
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CherryPickPolicy"/> class.
+        /// </summary>
+        /// <param name="policy">The comparison policy.</param>
+        public CherryPickPolicy(ComparisonPolicy policy)
+        {
+            ComparisonPolicy = policy;
+        }
 
         /// <summary>
         /// Gets the comparison policy.
         /// </summary>
-        public ComparisonPolicy ComparisonPolicy { get; init; } = ComparisonPolicy.Default;
+        public ComparisonPolicy ComparisonPolicy { get; init; }
 
         /// <summary>
         /// Gets or sets the parent number to consider as mainline, starting from offset 1.

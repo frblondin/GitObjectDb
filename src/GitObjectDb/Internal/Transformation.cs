@@ -1,9 +1,4 @@
-using GitObjectDb.Internal.Commands;
-using LibGit2Sharp;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 
 namespace GitObjectDb.Internal
 {
@@ -19,5 +14,7 @@ namespace GitObjectDb.Internal
         public ApplyUpdateTreeDefinition TreeTransformation { get; }
 
         public string Message { get; }
+
+        public override string ToString() => Message;
     }
 }

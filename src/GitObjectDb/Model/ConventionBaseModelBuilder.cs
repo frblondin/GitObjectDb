@@ -25,8 +25,18 @@ namespace GitObjectDb.Model
             return this;
         }
 
+        /// <summary>Register a type inheriting from <see cref="Node"/>.</summary>
+        /// <typeparam name="TNode">The type of node to be added to the model.</typeparam>
+        /// <returns>The current <see cref="ConventionBaseModelBuilder"/> instance.</returns>
+        public ConventionBaseModelBuilder RegisterType<TNode>()
+            where TNode : Node
+        {
+            _types[typeof(TNode)] = new NodeTypeDescription(typeof(TNode), GetTypeName(typeof(TNode)));
+            return this;
+        }
+
         private static string GetTypeName(Type type) =>
-            GitFolderAttribute.Get(type)?.FolderName ?? type.Name;
+            GitFolderAttribute.Get(type)?.FolderName ?? $"{type.Name}s";
 
         /// <inheritdoc/>
         public override IDataModel Build()

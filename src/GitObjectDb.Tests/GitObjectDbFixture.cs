@@ -2,12 +2,11 @@ using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace GitObjectDb.Tests
 {

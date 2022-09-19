@@ -1,7 +1,4 @@
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace GitObjectDb
@@ -16,6 +13,10 @@ namespace GitObjectDb
         /// <summary>Gets or sets the node path.</summary>
         [JsonIgnore]
         public DataPath? Path { get; set; }
+
+        /// <summary>Gets or sets the embedded resource.</summary>
+        [JsonIgnore]
+        public string? EmbeddedResource { get; set; }
 
         /// <inheritdoc/>
         public override string ToString() => Id.ToString();

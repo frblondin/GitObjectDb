@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
 namespace GitObjectDb.Model
 {
     /// <summary>Provides a description of a node type.</summary>
+    [DebuggerDisplay("Name = {Name}, Type = {Type}")]
     public class NodeTypeDescription
     {
         private List<NodeTypeDescription> _children = new List<NodeTypeDescription>();

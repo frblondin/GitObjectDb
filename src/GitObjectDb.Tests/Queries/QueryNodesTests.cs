@@ -8,7 +8,7 @@ using System.Linq;
 namespace GitObjectDb.Tests.Queries
 {
     [Parallelizable(ParallelScope.Self | ParallelScope.Children)]
-    public class QueryNodesTests
+    public class QueryNodesTests : DisposeArguments
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
@@ -51,6 +51,14 @@ namespace GitObjectDb.Tests.Queries
                 SoftwareBenchmarkCustomization.DefaultTablePerApplicationCount *
                 SoftwareBenchmarkCustomization.DefaultFieldPerTableCount;
             Assert.That(result, Has.Count.EqualTo(expected));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
+        public void EmbeddedResourceGetsLoaded(Constant constant)
+        {
+            // Assert
+            Assert.That(constant.EmbeddedResource, Is.Not.Null);
         }
     }
 }

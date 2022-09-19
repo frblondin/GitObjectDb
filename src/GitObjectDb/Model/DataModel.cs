@@ -1,4 +1,4 @@
-using System;
+using GitObjectDb.Comparison;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,10 +12,13 @@ namespace GitObjectDb.Model
         internal DataModel(IEnumerable<NodeTypeDescription> nodeTypes)
         {
             NodeTypes = nodeTypes;
+            DefaultComparisonPolicy = ComparisonPolicy.CreateDefault(this);
             _folderNames = NodeTypes.ToLookup(n => n.Name);
         }
 
         public IEnumerable<NodeTypeDescription> NodeTypes { get; }
+
+        public ComparisonPolicy DefaultComparisonPolicy { get; }
 
         public IEnumerable<NodeTypeDescription> GetTypesMatchingFolderName(string folderName) =>
             _folderNames[folderName];

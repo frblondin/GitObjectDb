@@ -13,20 +13,21 @@ namespace GitObjectDb.Tests.Assets.Data.Software
     public class SoftwareCustomization : ICustomization
     {
         public SoftwareCustomization()
-            : this(DataGenerator.DefaultApplicationCount, DataGenerator.DefaultTablePerApplicationCount, DataGenerator.DefaultFieldPerTableCount, DataGenerator.DefaultResourcePerTableCount)
+            : this(DataGenerator.DefaultApplicationCount, DataGenerator.DefaultTablePerApplicationCount, DataGenerator.DefaultFieldPerTableCount, DataGenerator.DefaultConstantPerTableCount, DataGenerator.DefaultResourcePerTableCount)
         {
         }
 
         public SoftwareCustomization(string repositoryPath)
-            : this(DataGenerator.DefaultApplicationCount, DataGenerator.DefaultTablePerApplicationCount, DataGenerator.DefaultFieldPerTableCount, DataGenerator.DefaultResourcePerTableCount, repositoryPath)
+            : this(DataGenerator.DefaultApplicationCount, DataGenerator.DefaultTablePerApplicationCount, DataGenerator.DefaultFieldPerTableCount, DataGenerator.DefaultConstantPerTableCount, DataGenerator.DefaultResourcePerTableCount, repositoryPath)
         {
         }
 
-        public SoftwareCustomization(int applicationCount, int tablePerApplicationCount, int fieldPerTableCount, int resourcePerTableCount, string repositoryPath = null)
+        public SoftwareCustomization(int applicationCount, int tablePerApplicationCount, int fieldPerTableCount, int constantPerTableCount, int resourcePerTableCount, string repositoryPath = null)
         {
             ApplicationCount = applicationCount;
             TablePerApplicationCount = tablePerApplicationCount;
             FieldPerTableCount = fieldPerTableCount;
+            ConstantPerTableCount = constantPerTableCount;
             ResourcePerTableCount = resourcePerTableCount;
             RepositoryPath = repositoryPath;
         }
@@ -39,17 +40,19 @@ namespace GitObjectDb.Tests.Assets.Data.Software
 
         public int FieldPerTableCount { get; }
 
+        public int ConstantPerTableCount { get; }
+
         public int ResourcePerTableCount { get; }
 
         public void Customize(IFixture fixture)
         {
-            fixture.Register(UniqueId.CreateNew);
-
             var serviceProvider = fixture.Create<IServiceProvider>();
 
             var path = RepositoryPath ?? GitObjectDbFixture.GetAvailableFolderPath();
             var repositoryFactory = serviceProvider.GetRequiredService<ConnectionFactory>();
+            var model = serviceProvider.GetRequiredService<IDataModel>();
             var connection = new Lazy<IConnectionInternal>(CreateConnection);
+            fixture.Inject(model);
             fixture.Register(() => connection.Value);
             fixture.Register<IConnection>(() => connection.Value);
             fixture.Register(() => connection.Value.Repository);
@@ -57,11 +60,10 @@ namespace GitObjectDb.Tests.Assets.Data.Software
             IConnectionInternal CreateConnection()
             {
                 var alreadyExists = Directory.Exists(path);
-                var model = serviceProvider.GetRequiredService<IDataModel>();
                 var result = (IConnectionInternal)repositoryFactory(path, model);
                 if (!alreadyExists)
                 {
-                    var software = new DataGenerator(result, ApplicationCount, TablePerApplicationCount, FieldPerTableCount, ResourcePerTableCount);
+                    var software = new DataGenerator(result, ApplicationCount, TablePerApplicationCount, FieldPerTableCount, ConstantPerTableCount, ResourcePerTableCount);
                     software.CreateData(fixture.Create<string>(), fixture.Create<Signature>());
                 }
                 return result;
@@ -70,11 +72,13 @@ namespace GitObjectDb.Tests.Assets.Data.Software
             fixture.Register(PickFirstApplication);
             fixture.Register(PickRandomTable);
             fixture.Register(PickRandomField);
+            fixture.Register(PickRandomConstant);
             fixture.Register(PickRandomResource);
 
             Application PickFirstApplication() => fixture.Create<IConnection>().GetApplications().Last();
             Table PickRandomTable() => fixture.Create<IConnection>().GetTables(PickFirstApplication()).Last();
             Field PickRandomField() => fixture.Create<IConnection>().GetFields(PickRandomTable()).Last();
+            Constant PickRandomConstant() => fixture.Create<IConnection>().GetConstants(PickRandomTable()).Last();
             Resource PickRandomResource() => fixture.Create<IConnection>().GetResources(PickRandomTable()).Last();
         }
     }

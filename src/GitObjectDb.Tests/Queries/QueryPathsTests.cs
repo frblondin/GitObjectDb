@@ -8,7 +8,7 @@ using System.Linq;
 namespace GitObjectDb.Tests.Queries
 {
     [Parallelizable(ParallelScope.Self | ParallelScope.Children)]
-    public class QueryPathsTests
+    public class QueryPathsTests : DisposeArguments
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]

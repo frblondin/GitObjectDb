@@ -5,7 +5,7 @@ namespace GitObjectDb.Serialization
 {
     internal interface INodeSerializer
     {
-        NonScalar Deserialize(Stream stream, DataPath path, string sha, Func<DataPath, ITreeItem> referenceResolver);
+        Node Deserialize(Stream stream, DataPath? path, Func<DataPath, ITreeItem> referenceResolver);
 
         Stream Serialize(Node node);
 

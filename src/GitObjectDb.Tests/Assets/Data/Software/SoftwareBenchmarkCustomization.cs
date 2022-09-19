@@ -5,6 +5,7 @@ namespace GitObjectDb.Tests.Assets.Data.Software
         public const int DefaultApplicationCount = 2;
         public const int DefaultTablePerApplicationCount = 200;
         public const int DefaultFieldPerTableCount = 30;
+        public const int DefaultConstantPerTableCount = 2;
         public const int DefaultResourcePerTableCount = 5;
 
         public SoftwareBenchmarkCustomization()
@@ -12,6 +13,7 @@ namespace GitObjectDb.Tests.Assets.Data.Software
                   DefaultApplicationCount,
                   DefaultTablePerApplicationCount,
                   DefaultFieldPerTableCount,
+                  DefaultConstantPerTableCount,
                   DefaultResourcePerTableCount,
                   GitObjectDbFixture.SoftwareBenchmarkRepositoryPath)
         {

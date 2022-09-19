@@ -43,9 +43,9 @@ namespace GitObjectDb.Serialization.Json.Converters
         {
             writer.WriteStartObject();
 
-            writer.WriteString(nameof(NonScalar.Type), _nodeSerializer.BindToName(value.Node.GetType()));
+            writer.WriteString(nameof(NonScalar.Type), _nodeSerializer.BindToName(value.Type));
             writer.WritePropertyName(nameof(NonScalar.Node));
-            JsonSerializer.Serialize(writer, value.Node, value.Node.GetType(), options);
+            JsonSerializer.Serialize(writer, value.Node, value.Type, options);
 
             writer.WriteEndObject();
         }

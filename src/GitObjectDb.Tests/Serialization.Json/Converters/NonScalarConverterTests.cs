@@ -18,7 +18,7 @@ namespace GitObjectDb.Tests.Serialization.Json.Converters
         public void ReadNode(string pPropertyValue, string camelCasePropertyValue)
         {
             // Arrange
-            var serializer = new DefaultSerializer();
+            var serializer = new NodeSerializer();
             var value = $@"
             {{
                 ""{nameof(NonScalar.Type)}"": ""{serializer.BindToName(typeof(TestNode))}"",

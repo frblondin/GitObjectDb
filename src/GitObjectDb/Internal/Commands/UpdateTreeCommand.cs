@@ -1,6 +1,7 @@
 using GitObjectDb.Serialization;
 using LibGit2Sharp;
 using System;
+using System.IO;
 
 namespace GitObjectDb.Internal.Commands
 {
@@ -19,10 +20,10 @@ namespace GitObjectDb.Internal.Commands
                 switch (item)
                 {
                     case Node node:
-                        CreateOrUpdateJsonBlob(node, database, definition);
+                        CreateOrUpdateNode(node, database, definition);
                         break;
                     case Resource resource:
-                        CreateOrUpdateResourceBlob(database, definition, resource);
+                        CreateOrUpdateResource(database, definition, resource);
                         break;
                     default:
                         throw new NotImplementedException();
@@ -48,10 +49,10 @@ namespace GitObjectDb.Internal.Commands
             {
                 // For nodes, delete whole folder containing node and nested entries
                 // For resources, only deleted resource
-                definition.Remove(path.IsNode ? path.FolderPath : path.FilePath);
+                definition.Remove(path.IsNode && path.UseNodeFolders ? path.FolderPath : path.FilePath);
             };
 
-        private void CreateOrUpdateJsonBlob(Node node, ObjectDatabase database, TreeDefinition definition)
+        private void CreateOrUpdateNode(Node node, ObjectDatabase database, TreeDefinition definition)
         {
             using var stream = _serializer.Serialize(node);
             var blob = database.CreateBlob(stream);
@@ -63,9 +64,9 @@ namespace GitObjectDb.Internal.Commands
             definition.Add(path.FilePath, blob, Mode.NonExecutableFile);
         }
 
-        private static void CreateOrUpdateResourceBlob(ObjectDatabase database, TreeDefinition definition, Resource resource)
+        private static void CreateOrUpdateResource(ObjectDatabase database, TreeDefinition definition, Resource resource)
         {
-            var stream = resource.GetContentStream();
+            var stream = resource.Embedded.GetContentStream();
             var blob = database.CreateBlob(stream);
             definition.Add(resource.Path.FilePath, blob, Mode.NonExecutableFile);
         }

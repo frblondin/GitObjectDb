@@ -25,6 +25,7 @@ namespace GitObjectDb.Tests.Assets
 
         public void Customize(IFixture fixture)
         {
+            fixture.Register(UniqueId.CreateNew);
             fixture.Customizations.Add(this);
         }
 

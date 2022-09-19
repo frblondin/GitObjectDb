@@ -6,9 +6,9 @@ namespace GitObjectDb.Internal.Queries
 {
     internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
     {
-        private readonly NodeSerializerCache _serializer;
+        private readonly INodeSerializer _serializer;
 
-        public LoadItem(NodeSerializerCache serializer)
+        public LoadItem(INodeSerializer serializer)
         {
             _serializer = serializer;
         }
@@ -33,14 +33,13 @@ namespace GitObjectDb.Internal.Queries
             var blob = parms.Tree[parms.Path.FilePath].Target.Peel<Blob>();
             return _serializer.Deserialize(blob.GetContentStream(),
                                            parms.Path,
-                                           blob.Id.Sha,
-                                           p => LoadNode(parms with { Path = p })).Node;
+                                           p => LoadNode(parms with { Path = p }));
         }
 
         private static ITreeItem LoadResource(Parameters parms)
         {
-            var blob = parms.Tree[parms.Path.FilePath].Target.Peel<Blob>();
-            return new Resource(parms.Path, blob);
+            return new Resource(parms.Path,
+                                new Resource.Data(() => parms.Tree[parms.Path.FilePath].Target.Peel<Blob>().GetContentStream()));
         }
 
         internal record Parameters

@@ -58,26 +58,10 @@ namespace GitObjectDb
         /// <param name="committish">The committish.</param>
         /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
         /// <param name="referenceCache">Cache that can be used to reuse same shared node references between queries.</param>
-        /// <returns>The <see cref="IQueryable{Node}"/> that represents the input sequence.</returns>
-        IEnumerable<ITreeItem> GetItems(Node? parent = null, string? committish = null, bool isRecursive = false, IDictionary<DataPath, ITreeItem>? referenceCache = null);
-
-        /// <summary>Gets all items from repository.</summary>
-        /// <param name="parent">The parent node.</param>
-        /// <param name="committish">The committish.</param>
-        /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
-        /// <param name="referenceCache">Cache that can be used to reuse same shared node references between queries.</param>
         /// <typeparam name="TItem">The type of requested items.</typeparam>
         /// <returns>The <see cref="IQueryable{Node}"/> that represents the input sequence.</returns>
         IEnumerable<TItem> GetItems<TItem>(Node? parent = null, string? committish = null, bool isRecursive = false, IDictionary<DataPath, ITreeItem>? referenceCache = null)
             where TItem : ITreeItem;
-
-        /// <summary>Gets nodes from repository.</summary>
-        /// <param name="parent">The parent node.</param>
-        /// <param name="committish">The committish.</param>
-        /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
-        /// <param name="referenceCache">Cache that can be used to reuse same shared node references between queries.</param>
-        /// <returns>The <see cref="IEnumerable{ITreeItem}"/> that represents the input sequence.</returns>
-        IEnumerable<Node> GetNodes(Node? parent = null, string? committish = null, bool isRecursive = false, IDictionary<DataPath, ITreeItem>? referenceCache = null);
 
         /// <summary>Gets nodes from repository.</summary>
         /// <param name="parent">The parent node.</param>
@@ -117,8 +101,9 @@ namespace GitObjectDb
         /// </summary>
         /// <param name="node">The parent node.</param>
         /// <param name="committish">The committish.</param>
+        /// <param name="referenceCache">Cache that can be used to reuse same shared node references between queries.</param>
         /// <returns>All nested resources.</returns>
-        public IEnumerable<Resource> GetResources(Node node, string? committish = null);
+        public IEnumerable<Resource> GetResources(Node node, string? committish = null, IDictionary<DataPath, ITreeItem>? referenceCache = null);
 
         /// <summary>Checkouts the specified branch name.</summary>
         /// <param name="branchName">Name of the branch.</param>

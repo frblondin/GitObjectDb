@@ -3,13 +3,13 @@ using FakeItEasy;
 using GitObjectDb.Comparison;
 using GitObjectDb.Internal;
 using GitObjectDb.Internal.Commands;
+using GitObjectDb.Model;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
 using Models.Software;
 using NUnit.Framework;
-using System.IO;
 using System.Linq;
 
 namespace GitObjectDb.Tests.Commands
@@ -33,7 +33,7 @@ namespace GitObjectDb.Tests.Commands
                 message, signature, signature);
 
             // Assert
-            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
+            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
             Assert.That(changes, Has.Count.EqualTo(1));
             var expectedPath = $"{application.Path.FolderPath}/Pages/{newTableId}/{newTableId}.json";
             Assert.That(changes.Added.Single().New.Path.FilePath, Is.EqualTo(expectedPath));
@@ -55,7 +55,7 @@ namespace GitObjectDb.Tests.Commands
                 message, signature, signature);
 
             // Assert
-            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
+            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
             Assert.That(changes, Has.Count.EqualTo(1));
             var expectedPath = $"{table.Path.FolderPath}/Fields/{newFieldId}.json";
             Assert.That(changes.Added.Single().New.Path.FilePath, Is.EqualTo(expectedPath));
@@ -67,7 +67,7 @@ namespace GitObjectDb.Tests.Commands
         {
             // Arrange
             var (updateCommand, comparer, sut, connection) = Arrange(fixture);
-            var resource = new Resource(table, "Some/Folder", "File.txt", fileContent);
+            var resource = new Resource(table, "Some/Folder", "File.txt", new Resource.Data(fileContent));
 
             // Act
             var composer = new TransformationComposer(updateCommand, sut, connection);
@@ -78,13 +78,12 @@ namespace GitObjectDb.Tests.Commands
                 message, signature, signature);
 
             // Assert
-            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
+            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
             Assert.That(changes, Has.Count.EqualTo(1));
             var expectedPath = $"{table.Path.FolderPath}/{FileSystemStorage.ResourceFolder}/Some/Folder/File.txt";
             Assert.That(changes.Added.Single().New.Path.FilePath, Is.EqualTo(expectedPath));
             var loaded = (Resource)changes.Added.Single().New;
-            var content = new StreamReader(loaded.GetContentStream()).ReadToEnd();
-            Assert.That(content, Is.EqualTo(fileContent));
+            Assert.That(loaded.Embedded.ReadAsString(), Is.EqualTo(fileContent));
         }
 
         [Test]
@@ -103,7 +102,7 @@ namespace GitObjectDb.Tests.Commands
                 message, signature, signature);
 
             // Assert
-            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
+            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
             Assert.That(changes, Has.Count.GreaterThan(1));
         }
 
@@ -124,7 +123,7 @@ namespace GitObjectDb.Tests.Commands
                 message, signature, signature);
 
             // Act
-            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
+            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
             Assert.That(changes, Has.Count.EqualTo(1));
             Assert.That(changes.Modified.OfType<Change.NodeChange>().Single().Differences, Has.Count.EqualTo(1));
             Assert.That(changes.Added, Is.Empty);
@@ -146,6 +145,7 @@ namespace GitObjectDb.Tests.Commands
                 var connection = A.Fake<IConnectionInternal>(x => x.Strict());
                 A.CallTo(() => connection.Repository).Returns(fixture.Create<Repository>());
                 A.CallTo(() => connection.Head).Returns(fixture.Create<Repository>().Head);
+                A.CallTo(() => connection.Model).Returns(fixture.Create<IDataModel>());
                 fixture.Inject(connection);
 
                 var validation = A.Fake<ITreeValidation>(x => x.Strict());

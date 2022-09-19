@@ -37,8 +37,7 @@ namespace GitObjectDb
                 .Where(t => typeof(Delegate).IsAssignableFrom(t))
                 .ToArray();
             source.AddFactoryDelegates(Assembly.GetExecutingAssembly(), internalFactories);
-            source.AddSingleton<INodeSerializer, DefaultSerializer>();
-            source.AddSingleton<NodeSerializerCache>();
+            source.AddSingleton<INodeSerializer, NodeSerializer>();
             source.AddSingleton<Comparer>();
             source.AddSingleton<IComparer>(s => s.GetRequiredService<Comparer>());
             source.AddSingleton<IComparerInternal>(s => s.GetRequiredService<Comparer>());

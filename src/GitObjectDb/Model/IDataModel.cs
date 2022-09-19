@@ -1,4 +1,4 @@
-using System;
+using GitObjectDb.Comparison;
 using System.Collections.Generic;
 
 namespace GitObjectDb.Model
@@ -8,6 +8,9 @@ namespace GitObjectDb.Model
     {
         /// <summary>Gets the collection of node types that are contained in this model.</summary>
         IEnumerable<NodeTypeDescription> NodeTypes { get; }
+
+        /// <summary>Gets the default comparison policy that should apply for the model.</summary>
+        ComparisonPolicy DefaultComparisonPolicy { get; }
 
         /// <summary>Gets the types that a given <paramref name="folderName"/> should contain.</summary>
         /// <param name="folderName">The name of the folder.</param>

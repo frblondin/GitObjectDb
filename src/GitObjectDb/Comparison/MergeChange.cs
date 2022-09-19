@@ -15,7 +15,7 @@ namespace GitObjectDb.Comparison
     {
         internal MergeChange(ComparisonPolicy policy)
         {
-            Policy = policy ?? ComparisonPolicy.Default;
+            Policy = policy;
         }
 
         /// <summary>Gets the ancestor.</summary>
@@ -76,19 +76,18 @@ namespace GitObjectDb.Comparison
             var nonNull = Ours ?? Theirs ?? Ancestor ?? throw new NullReferenceException();
             var type = nonNull.GetType();
             var path = nonNull.Path ?? throw new NullReferenceException();
-            if (nonNull is Node node)
+            switch (nonNull)
             {
-                Merged = (ITreeItem)Reflect.Constructor(type).Invoke();
-                ((Node)Merged).Id = node.Id;
-                Merged.Path = path;
-            }
-            else if (nonNull is Resource resource)
-            {
-                Merged = new Resource(resource.Path, System.IO.Stream.Null);
-            }
-            else
-            {
-                throw new NotImplementedException();
+                case Node node:
+                    Merged = (ITreeItem)Reflect.Constructor(type).Invoke();
+                    ((Node)Merged).Id = node.Id;
+                    Merged.Path = path;
+                    break;
+                case Resource resource:
+                    Merged = new Resource(resource.Path, new Resource.Data(System.IO.Stream.Null));
+                    break;
+                default:
+                    throw new NotImplementedException();
             }
             return type;
         }
@@ -131,20 +130,17 @@ namespace GitObjectDb.Comparison
                     ItemMergeStatus.TreeConflict :
                     ItemMergeStatus.Delete;
             }
+            else if (Conflicts.Any(c => !c.IsResolved))
+            {
+                Status = ItemMergeStatus.EditConflict;
+            }
+            else if (Comparer.CompareInternal(Ours, Merged, Policy).AreEqual)
+            {
+                Status = ItemMergeStatus.NoChange;
+            }
             else
             {
-                if (Conflicts.Any(c => !c.IsResolved))
-                {
-                    Status = ItemMergeStatus.EditConflict;
-                }
-                else if (Comparer.CompareInternal(Ours, Merged, Policy).AreEqual)
-                {
-                    Status = ItemMergeStatus.NoChange;
-                }
-                else
-                {
-                    Status = Ancestor == null ? ItemMergeStatus.Add : ItemMergeStatus.Edit;
-                }
+                Status = Ancestor == null ? ItemMergeStatus.Add : ItemMergeStatus.Edit;
             }
         }
 
