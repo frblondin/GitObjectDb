@@ -7,67 +7,66 @@ using LibGit2Sharp;
 using Models.Software;
 using NUnit.Framework;
 
-namespace GitObjectDb.Tests
+namespace GitObjectDb.Tests;
+
+public class TreeValidationTests
 {
-    public class TreeValidationTests
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void CannotCommitParentDeletionAndChildAddition(IFixture fixture, IConnection connection, Application application, Table table)
     {
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void CannotCommitParentDeletionAndChildAddition(IFixture fixture, IConnection connection, Application application, Table table)
-        {
-            // Act
-            var composer = (TransformationComposer)connection
-                .Update(c =>
-                {
-                    c.Delete(application);
-                    c.CreateOrUpdate(new Field { }, table);
-                });
-            var tree = UpdateTree(connection, composer);
+        // Act
+        var composer = (TransformationComposer)connection
+            .Update(c =>
+            {
+                c.Delete(application);
+                c.CreateOrUpdate(new Field { }, table);
+            });
+        var tree = UpdateTree(connection, composer);
 
-            // Assert
-            var sut = fixture.Create<TreeValidation>();
-            Assert.Throws<GitObjectDbException>(() => sut.Validate(tree, connection.Model));
-        }
+        // Assert
+        var sut = fixture.Create<TreeValidation>();
+        Assert.Throws<GitObjectDbException>(() => sut.Validate(tree, connection.Model));
+    }
 
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void CannotCommitChildWithInvalidPath(IFixture fixture, IConnection connection)
-        {
-            // Act
-            var composer = (TransformationComposer)connection
-                .Update(c => c.CreateOrUpdate(new Field { Path = new DataPath("InvalidFolder", "invalidfile.json", true) }));
-            var tree = UpdateTree(connection, composer);
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void CannotCommitChildWithInvalidPath(IFixture fixture, IConnection connection)
+    {
+        // Act
+        var composer = (TransformationComposer)connection
+            .Update(c => c.CreateOrUpdate(new Field { Path = new DataPath("InvalidFolder", "invalidfile.json", true) }));
+        var tree = UpdateTree(connection, composer);
 
-            // Assert
-            var sut = fixture.Create<TreeValidation>();
-            Assert.Throws<GitObjectDbException>(() => sut.Validate(tree, connection.Model));
-        }
+        // Assert
+        var sut = fixture.Create<TreeValidation>();
+        Assert.Throws<GitObjectDbException>(() => sut.Validate(tree, connection.Model));
+    }
 
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void CannotCommitChildWithNoParent(IFixture fixture, IConnection connection, Application application, Field field, string message, Signature signature)
-        {
-            // Arrange, delete parent
-            connection
-                .Update(c => c.Delete(application))
-                .Commit(message, signature, signature);
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void CannotCommitChildWithNoParent(IFixture fixture, IConnection connection, Application application, Field field, string message, Signature signature)
+    {
+        // Arrange, delete parent
+        connection
+            .Update(c => c.Delete(application))
+            .Commit(message, signature, signature);
 
-            // Act, edit child
-            var composer = (TransformationComposer)connection
-                .Update(c => c.CreateOrUpdate(field));
-            var tree = UpdateTree(connection, composer);
+        // Act, edit child
+        var composer = (TransformationComposer)connection
+            .Update(c => c.CreateOrUpdate(field));
+        var tree = UpdateTree(connection, composer);
 
-            // Assert
-            var sut = fixture.Create<TreeValidation>();
-            Assert.Throws<GitObjectDbException>(() => sut.Validate(tree, connection.Model));
-        }
+        // Assert
+        var sut = fixture.Create<TreeValidation>();
+        Assert.Throws<GitObjectDbException>(() => sut.Validate(tree, connection.Model));
+    }
 
-        private static Tree UpdateTree(IConnection connection, TransformationComposer composer)
-        {
-            var repository = ((IConnectionInternal)connection).Repository;
-            var definition = composer.ApplyTransformations(repository.ObjectDatabase, connection.Repository.Head.Tip);
-            var tree = repository.ObjectDatabase.CreateTree(definition);
-            return tree;
-        }
+    private static Tree UpdateTree(IConnection connection, TransformationComposer composer)
+    {
+        var repository = ((IConnectionInternal)connection).Repository;
+        var definition = composer.ApplyTransformations(repository.ObjectDatabase, connection.Repository.Head.Tip);
+        var tree = repository.ObjectDatabase.CreateTree(definition);
+        return tree;
     }
 }

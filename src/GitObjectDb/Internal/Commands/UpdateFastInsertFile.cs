@@ -4,101 +4,100 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace GitObjectDb.Internal.Commands
+namespace GitObjectDb.Internal.Commands;
+
+internal class UpdateFastInsertFile
 {
-    internal class UpdateFastInsertFile
+    private readonly INodeSerializer _serializer;
+
+    public UpdateFastInsertFile(INodeSerializer serializer)
     {
-        private readonly INodeSerializer _serializer;
+        _serializer = serializer;
+    }
 
-        public UpdateFastInsertFile(INodeSerializer serializer)
+    internal ApplyUpdateFastInsert CreateOrUpdate(ITreeItem item) => (_, writer, commitIndex) =>
+    {
+        switch (item)
         {
-            _serializer = serializer;
+            case Node node:
+                CreateOrUpdateNode(node, writer, commitIndex);
+                break;
+            case Resource resource:
+                CreateOrUpdateResource(resource, writer, commitIndex);
+                break;
+            default:
+                throw new NotImplementedException();
         }
+    };
 
-        internal ApplyUpdateFastInsert CreateOrUpdate(ITreeItem item) => (_, writer, commitIndex) =>
+    internal static ApplyUpdateFastInsert Delete(ITreeItem item) => (reference, writer, commitIndex) =>
+    {
+        var path = item.ThrowIfNoPath();
+
+        // For nodes, delete whole folder containing node and nested entries
+        // For resources, only deleted resource
+        if (item is Node && item.Path!.UseNodeFolders)
         {
-            switch (item)
-            {
-                case Node node:
-                    CreateOrUpdateNode(node, writer, commitIndex);
-                    break;
-                case Resource resource:
-                    CreateOrUpdateResource(resource, writer, commitIndex);
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-        };
-
-        internal static ApplyUpdateFastInsert Delete(ITreeItem item) => (reference, writer, commitIndex) =>
+            DeleteNodeFolder(reference, commitIndex, path);
+        }
+        else
         {
-            var path = item.ThrowIfNoPath();
+            commitIndex.Add($"D {path.FilePath}");
+        }
+    };
 
-            // For nodes, delete whole folder containing node and nested entries
-            // For resources, only deleted resource
-            if (item is Node && item.Path!.UseNodeFolders)
-            {
-                DeleteNodeFolder(reference, commitIndex, path);
-            }
-            else
-            {
-                commitIndex.Add($"D {path.FilePath}");
-            }
-        };
-
-        internal static ApplyUpdateFastInsert Delete(DataPath path) => (reference, writer, commitIndex) =>
+    internal static ApplyUpdateFastInsert Delete(DataPath path) => (reference, writer, commitIndex) =>
+    {
+        // For nodes, delete whole folder containing node and nested entries
+        // For resources, only deleted resource
+        if (path.IsNode && path.UseNodeFolders)
         {
-            // For nodes, delete whole folder containing node and nested entries
-            // For resources, only deleted resource
-            if (path.IsNode && path.UseNodeFolders)
-            {
-                DeleteNodeFolder(reference, commitIndex, path);
-            }
-            else
-            {
-                commitIndex.Add($"D {path.FilePath}");
-            }
-        };
-
-        private static void DeleteNodeFolder(Tree? reference, IList<string> commitIndex, DataPath path)
+            DeleteNodeFolder(reference, commitIndex, path);
+        }
+        else
         {
-            var nested = reference?[path.FolderPath]?.Traverse(path.FolderPath);
-            if (nested is not null)
+            commitIndex.Add($"D {path.FilePath}");
+        }
+    };
+
+    private static void DeleteNodeFolder(Tree? reference, IList<string> commitIndex, DataPath path)
+    {
+        var nested = reference?[path.FolderPath]?.Traverse(path.FolderPath);
+        if (nested is not null)
+        {
+            foreach (var item in nested)
             {
-                foreach (var item in nested)
+                if (item.Entry.TargetType == TreeEntryTargetType.Blob)
                 {
-                    if (item.Entry.TargetType == TreeEntryTargetType.Blob)
-                    {
-                        commitIndex.Add($"D {item.Path}");
-                    }
+                    commitIndex.Add($"D {item.Path}");
                 }
             }
-            else
-            {
-                commitIndex.Add($"D {path.FilePath}");
-            }
         }
-
-        private void CreateOrUpdateNode(Node node, StreamWriter writer, IList<string> commitIndex)
+        else
         {
-            using var stream = _serializer.Serialize(node);
-            AddBlob(node.Path!, stream, writer, commitIndex);
+            commitIndex.Add($"D {path.FilePath}");
         }
+    }
 
-        private static void CreateOrUpdateResource(Resource resource, StreamWriter writer, IList<string> commitIndex)
-        {
-            var stream = resource.Embedded.GetContentStream();
-            AddBlob(resource.Path!, stream, writer, commitIndex);
-        }
+    private void CreateOrUpdateNode(Node node, StreamWriter writer, IList<string> commitIndex)
+    {
+        using var stream = _serializer.Serialize(node);
+        AddBlob(node.Path!, stream, writer, commitIndex);
+    }
 
-        private static void AddBlob(DataPath path, Stream stream, StreamWriter writer, IList<string> commitIndex)
-        {
-            var mark = commitIndex.Count + 1;
-            writer.Write($"blob\nmark :{mark}\ndata {stream.Length}\n");
-            writer.Flush();
-            stream.CopyTo(writer.BaseStream);
-            writer.Write("\n");
-            commitIndex.Add($"M 100644 :{mark} {path.FilePath}");
-        }
+    private static void CreateOrUpdateResource(Resource resource, StreamWriter writer, IList<string> commitIndex)
+    {
+        var stream = resource.Embedded.GetContentStream();
+        AddBlob(resource.Path!, stream, writer, commitIndex);
+    }
+
+    private static void AddBlob(DataPath path, Stream stream, StreamWriter writer, IList<string> commitIndex)
+    {
+        var mark = commitIndex.Count + 1;
+        writer.Write($"blob\nmark :{mark}\ndata {stream.Length}\n");
+        writer.Flush();
+        stream.CopyTo(writer.BaseStream);
+        writer.Write("\n");
+        commitIndex.Add($"M 100644 :{mark} {path.FilePath}");
     }
 }

@@ -36,7 +36,7 @@ class Build : NukeBuild
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode
 
-    public static int Main () => Execute<Build>(x => x.Pack);
+    public static int Main() => Execute<Build>(x => x.Pack);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server).")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
@@ -45,10 +45,10 @@ class Build : NukeBuild
     readonly int CoverageThreshold = 80;
 
     [Solution] readonly Solution Solution;
-    [GitRepository] readonly GitRepository GitRepository;
 
-    AbsolutePath SourceDirectory => RootDirectory / "src";
-    AbsolutePath OutputDirectory => RootDirectory / "output";
+    static AbsolutePath SourceDirectory => RootDirectory / "src";
+
+    static AbsolutePath OutputDirectory => RootDirectory / "output";
     AbsolutePath TestDirectory => OutputDirectory / "tests";
     AbsolutePath CoverageResult => OutputDirectory / "coverage";
     AbsolutePath NugetDirectory => OutputDirectory / "nuget";

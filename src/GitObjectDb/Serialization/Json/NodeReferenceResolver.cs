@@ -3,67 +3,66 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
-namespace GitObjectDb.Serialization.Json
+namespace GitObjectDb.Serialization.Json;
+
+internal class NodeReferenceResolver : ReferenceResolver
 {
-    internal class NodeReferenceResolver : ReferenceResolver
+    private readonly IDictionary<DataPath, ITreeItem> _items = new Dictionary<DataPath, ITreeItem>();
+    private readonly Func<DataPath, ITreeItem>? _nodeAccessor;
+
+    public NodeReferenceResolver(Func<DataPath, ITreeItem>? nodeAccessor)
     {
-        private readonly IDictionary<DataPath, ITreeItem> _items = new Dictionary<DataPath, ITreeItem>();
-        private readonly Func<DataPath, ITreeItem>? _nodeAccessor;
+        _nodeAccessor = nodeAccessor;
+    }
 
-        public NodeReferenceResolver(Func<DataPath, ITreeItem>? nodeAccessor)
+    public override void AddReference(string referenceId, object value)
+    {
+        if (value is ITreeItem item && DataPath.TryParse(referenceId, out var path))
         {
-            _nodeAccessor = nodeAccessor;
+            _items[path!] = item;
         }
+    }
 
-        public override void AddReference(string referenceId, object value)
+    public override string GetReference(object value, out bool alreadyExists)
+    {
+        if (value is ITreeItem item)
         {
-            if (value is ITreeItem item && DataPath.TryParse(referenceId, out var path))
+            if (item.Path is null)
             {
-                _items[path!] = item;
+                throw new GitObjectDbException("The path has not been set for current item.");
             }
+
+            alreadyExists = _items.Count != 0; // Only first node should be stored, others should be pointed to through a ref
+            if (!_items.ContainsKey(item.Path))
+            {
+                _items[item.Path] = item;
+            }
+            return item.Path.FilePath;
         }
-
-        public override string GetReference(object value, out bool alreadyExists)
+        else
         {
-            if (value is ITreeItem item)
-            {
-                if (item.Path is null)
-                {
-                    throw new GitObjectDbException("The path has not been set for current item.");
-                }
-
-                alreadyExists = _items.Count != 0; // Only first node should be stored, others should be pointed to through a ref
-                if (!_items.ContainsKey(item.Path))
-                {
-                    _items[item.Path] = item;
-                }
-                return item.Path.FilePath;
-            }
-            else
-            {
-                alreadyExists = false;
-                return RuntimeHelpers.GetHashCode(value).ToString();
-            }
+            alreadyExists = false;
+            return RuntimeHelpers.GetHashCode(value).ToString();
         }
+    }
 
-        public override object ResolveReference(string referenceId)
+    public override object ResolveReference(string referenceId)
+    {
+        if (DataPath.TryParse(referenceId, out var path))
         {
-            if (DataPath.TryParse(referenceId, out var path))
+            if (!_items.TryGetValue(path!, out var item))
             {
-                if (!_items.TryGetValue(path!, out var item))
+                if (_nodeAccessor == null)
                 {
-                    if (_nodeAccessor == null)
-                    {
-                        throw new NotSupportedException("The node accessor could not be found.");
-                    }
-                    _items[path!] = item = _nodeAccessor(path!);
+                    throw new NotSupportedException("The node accessor could not be found.");
                 }
-                return item;
+                _items[path!] = item = _nodeAccessor(path!);
             }
-            else
-            {
-                throw new NotSupportedException("Only data path reference is supported.");
-            }
+            return item;
+        }
+        else
+        {
+            throw new NotSupportedException("Only data path reference is supported.");
         }
     }
 }

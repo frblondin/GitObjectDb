@@ -2,17 +2,16 @@ using NUnit.Framework;
 using System;
 using System.Linq;
 
-namespace GitObjectDb.Tests
+namespace GitObjectDb.Tests;
+
+public abstract class DisposeArguments
 {
-    public abstract class DisposeArguments
+    [TearDown]
+    public void DisposeTestArguments()
     {
-        [TearDown]
-        public void DisposeTestArguments()
+        foreach (var disposable in TestContext.CurrentContext.Test?.Arguments.OfType<IDisposable>())
         {
-            foreach (var disposable in TestContext.CurrentContext.Test?.Arguments.OfType<IDisposable>())
-            {
-                disposable.Dispose();
-            }
+            disposable.Dispose();
         }
     }
 }

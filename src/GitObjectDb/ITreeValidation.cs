@@ -1,10 +1,9 @@
 using GitObjectDb.Model;
 using LibGit2Sharp;
 
-namespace GitObjectDb
+namespace GitObjectDb;
+
+internal interface ITreeValidation
 {
-    internal interface ITreeValidation
-    {
-        void Validate(Tree tree, IDataModel model);
-    }
+    void Validate(Tree tree, IDataModel model);
 }

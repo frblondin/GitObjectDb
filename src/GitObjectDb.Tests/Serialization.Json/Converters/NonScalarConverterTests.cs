@@ -10,17 +10,17 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace GitObjectDb.Tests.Serialization.Json.Converters
+namespace GitObjectDb.Tests.Serialization.Json.Converters;
+
+public class NonScalarConverterTests
 {
-    public class NonScalarConverterTests
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
+    public void ReadNode(string pPropertyValue, string camelCasePropertyValue)
     {
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
-        public void ReadNode(string pPropertyValue, string camelCasePropertyValue)
-        {
-            // Arrange
-            var serializer = new NodeSerializer(new Microsoft.IO.RecyclableMemoryStreamManager());
-            var value = $@"
+        // Arrange
+        var serializer = new NodeSerializer(new Microsoft.IO.RecyclableMemoryStreamManager());
+        var value = $@"
             {{
                 ""{nameof(NonScalar.Type)}"": ""{TypeHelper.BindToName(typeof(TestNode))}"",
                 ""{nameof(NonScalar.Node)}"":
@@ -39,23 +39,22 @@ namespace GitObjectDb.Tests.Serialization.Json.Converters
                 }}
             }}";
 
-            // Act
-            var reader = new Utf8JsonReader(Encoding.Default.GetBytes(value).AsSpan());
-            reader.Read();
-            var deserialized = new NonScalarConverter(serializer).Read(ref reader, typeof(NonScalar), serializer.Options)?.Node as TestNode;
+        // Act
+        var reader = new Utf8JsonReader(Encoding.Default.GetBytes(value).AsSpan());
+        reader.Read();
+        var deserialized = new NonScalarConverter(serializer).Read(ref reader, typeof(NonScalar), serializer.Options)?.Node as TestNode;
 
-            // Assert
-            Assert.That(deserialized, Is.Not.Null);
-            Assert.That(deserialized.Property, Is.EqualTo(pPropertyValue));
-            Assert.That(deserialized.CamelCased, Is.EqualTo(camelCasePropertyValue));
-        }
+        // Assert
+        Assert.That(deserialized, Is.Not.Null);
+        Assert.That(deserialized.Property, Is.EqualTo(pPropertyValue));
+        Assert.That(deserialized.CamelCased, Is.EqualTo(camelCasePropertyValue));
+    }
 
-        public record TestNode : Node
-        {
-            [JsonPropertyName("P")]
-            public string Property { get; set; }
+    public record TestNode : Node
+    {
+        [JsonPropertyName("P")]
+        public string Property { get; set; }
 
-            public string CamelCased { get; set; }
-        }
+        public string CamelCased { get; set; }
     }
 }

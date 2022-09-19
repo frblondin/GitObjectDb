@@ -1,9 +1,8 @@
 using LibGit2Sharp;
 
-namespace GitObjectDb.Internal.Queries
+namespace GitObjectDb.Internal.Queries;
+
+internal interface IQuery<in TArg, out TResult>
 {
-    internal interface IQuery<in TArg, out TResult>
-    {
-        TResult Execute(IConnectionInternal connection, TArg arg);
-    }
+    TResult Execute(IConnectionInternal connection, TArg arg);
 }

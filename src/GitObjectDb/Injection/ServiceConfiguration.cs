@@ -11,67 +11,66 @@ using System;
 using System.Linq;
 using System.Reflection;
 
-namespace GitObjectDb
+namespace GitObjectDb;
+
+/// <summary>A set of methods for instances of <see cref="IServiceCollection"/>.</summary>
+public static class ServiceConfiguration
 {
-    /// <summary>A set of methods for instances of <see cref="IServiceCollection"/>.</summary>
-    public static class ServiceConfiguration
+    /// <summary>Adds access to GitObjectDb repositories.</summary>
+    /// <param name="source">The source.</param>
+    /// <returns>The source <see cref="IServiceCollection"/>.</returns>
+    public static IServiceCollection AddGitObjectDb(this IServiceCollection source) =>
+        ConfigureServices(source);
+
+    private static IServiceCollection ConfigureServices(IServiceCollection source)
     {
-        /// <summary>Adds access to GitObjectDb repositories.</summary>
-        /// <param name="source">The source.</param>
-        /// <returns>The source <see cref="IServiceCollection"/>.</returns>
-        public static IServiceCollection AddGitObjectDb(this IServiceCollection source) =>
-            ConfigureServices(source);
+        ConfigureMain(source);
+        ConfigureQueries(source);
+        ConfigureCommands(source);
 
-        private static IServiceCollection ConfigureServices(IServiceCollection source)
+        return source;
+    }
+
+    private static void ConfigureMain(IServiceCollection source)
+    {
+        source.AddFactoryDelegate<ConnectionFactory, Connection>();
+        var internalFactories = typeof(Factories)
+            .GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
+            .Where(t => typeof(Delegate).IsAssignableFrom(t))
+            .ToArray();
+        source.AddFactoryDelegates(Assembly.GetExecutingAssembly(), internalFactories);
+        source.AddSingleton<INodeSerializer, NodeSerializer>();
+        source.AddSingleton<Comparer>();
+        source.AddSingleton<IComparer>(s => s.GetRequiredService<Comparer>());
+        source.AddSingleton<IComparerInternal>(s => s.GetRequiredService<Comparer>());
+        source.AddSingleton<IMergeComparer, MergeComparer>();
+        source.AddSingleton<ITreeValidation, TreeValidation>();
+        source.AddSingleton<Microsoft.IO.RecyclableMemoryStreamManager>();
+    }
+
+    private static void ConfigureQueries(IServiceCollection source)
+    {
+        source.AddServicesImplementing(typeof(IQuery<,>), ServiceLifetime.Singleton);
+    }
+
+    private static void ConfigureCommands(IServiceCollection source)
+    {
+        source.AddSingleton<UpdateTreeCommand>();
+        source.AddSingleton<UpdateFastInsertFile>();
+        source.AddSingleton<CommitCommand>();
+        source.AddSingleton<FastImportCommitCommand>();
+        source.AddSingleton<ServiceResolver<CommitCommandType, ICommitCommand>>(serviceProvider => type =>
         {
-            ConfigureMain(source);
-            ConfigureQueries(source);
-            ConfigureCommands(source);
-
-            return source;
-        }
-
-        private static void ConfigureMain(IServiceCollection source)
-        {
-            source.AddFactoryDelegate<ConnectionFactory, Connection>();
-            var internalFactories = typeof(Factories)
-                .GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
-                .Where(t => typeof(Delegate).IsAssignableFrom(t))
-                .ToArray();
-            source.AddFactoryDelegates(Assembly.GetExecutingAssembly(), internalFactories);
-            source.AddSingleton<INodeSerializer, NodeSerializer>();
-            source.AddSingleton<Comparer>();
-            source.AddSingleton<IComparer>(s => s.GetRequiredService<Comparer>());
-            source.AddSingleton<IComparerInternal>(s => s.GetRequiredService<Comparer>());
-            source.AddSingleton<IMergeComparer, MergeComparer>();
-            source.AddSingleton<ITreeValidation, TreeValidation>();
-            source.AddSingleton<Microsoft.IO.RecyclableMemoryStreamManager>();
-        }
-
-        private static void ConfigureQueries(IServiceCollection source)
-        {
-            source.AddServicesImplementing(typeof(IQuery<,>), ServiceLifetime.Singleton);
-        }
-
-        private static void ConfigureCommands(IServiceCollection source)
-        {
-            source.AddSingleton<UpdateTreeCommand>();
-            source.AddSingleton<UpdateFastInsertFile>();
-            source.AddSingleton<CommitCommand>();
-            source.AddSingleton<FastImportCommitCommand>();
-            source.AddSingleton<ServiceResolver<CommitCommandType, ICommitCommand>>(serviceProvider => type =>
+            if (type == CommitCommandType.Auto)
             {
-                if (type == CommitCommandType.Auto)
-                {
-                    type = GitCliCommand.IsGitInstalled ? CommitCommandType.FastImport : CommitCommandType.Normal;
-                }
-                return type switch
-                {
-                    CommitCommandType.Normal => serviceProvider.GetRequiredService<CommitCommand>(),
-                    CommitCommandType.FastImport => serviceProvider.GetRequiredService<FastImportCommitCommand>(),
-                    _ => throw new NotImplementedException(),
-                };
-            });
-        }
+                type = GitCliCommand.IsGitInstalled ? CommitCommandType.FastImport : CommitCommandType.Normal;
+            }
+            return type switch
+            {
+                CommitCommandType.Normal => serviceProvider.GetRequiredService<CommitCommand>(),
+                CommitCommandType.FastImport => serviceProvider.GetRequiredService<FastImportCommitCommand>(),
+                _ => throw new NotImplementedException(),
+            };
+        });
     }
 }
