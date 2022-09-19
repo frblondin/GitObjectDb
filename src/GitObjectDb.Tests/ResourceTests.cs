@@ -1,4 +1,5 @@
 using AutoFixture.NUnit3;
+using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
 using System;
 using System.IO;
@@ -8,7 +9,7 @@ namespace GitObjectDb.Tests
     public class ResourceTests
     {
         [Test]
-        [AutoData]
+        [AutoDataCustomizations]
         public void StreamResourceValue(string value)
         {
             // Arrange
@@ -23,7 +24,7 @@ namespace GitObjectDb.Tests
         }
 
         [Test]
-        [AutoData]
+        [AutoDataCustomizations]
         public void StreamResourceValueSupportsRepositioning(string value)
         {
             // Arrange
@@ -40,7 +41,7 @@ namespace GitObjectDb.Tests
         }
 
         [Test]
-        [AutoData]
+        [AutoDataCustomizations]
         public void StreamResourceValueSupportsAbsoluteSeek(string value)
         {
             // Arrange
@@ -57,7 +58,7 @@ namespace GitObjectDb.Tests
         }
 
         [Test]
-        [AutoData]
+        [AutoDataCustomizations]
         public void StreamResourceValueThrowsExceptionForNonZeroSeek(string value)
         {
             // Arrange
