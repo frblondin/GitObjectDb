@@ -4,13 +4,15 @@ using System.Collections.Generic;
 
 namespace Models.Software;
 
+/// <summary>Represents an application.</summary>
 [GitFolder(FolderName = "Applications")]
 [HasChild(typeof(Table))]
 public record Application : Node
 {
-    /// <summary>Gets or sets the name of the application.</summary>
+    /// <summary>Gets the name of the application.</summary>
     public string? Name { get; init; }
 
+    /// <summary>Gets the description of the application.</summary>
     public string? Description { get; init; }
 }
 

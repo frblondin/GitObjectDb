@@ -1,11 +1,17 @@
-using GitObjectDb.Api.Model;
-using System.Linq;
 using System.Reflection;
 
 namespace GitObjectDb.Api;
 
+/// <summary>Provides extension methods for <see cref="Type"/> type.</summary>
 public static class TypeExtensions
 {
+    /// <summary>
+    /// Gets whether the property is an enumerable whose type matches given <paramref name="predicate"/>.
+    /// </summary>
+    /// <param name="property">The property to be analyzed.</param>
+    /// <param name="predicate">The predicate to be applied on generic arguments.</param>
+    /// <param name="type">The generic argument type marching the <paramref name="predicate"/>.</param>
+    /// <returns><c>true</c> if a matching enumerable could be found, <c>false</c> otherwise.</returns>
     public static bool IsEnumerable(this PropertyInfo property, Predicate<Type> predicate, out Type? type)
     {
         var arg = FindInterfaceDefinitionArgument(property.PropertyType, typeof(IEnumerable<>));

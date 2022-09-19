@@ -4,18 +4,41 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace GitObjectDb.Api;
 
+/// <summary>
+/// Returns data transfer objects from collection of items returned by <see cref="IQueryAccessor"/>.
+/// </summary>
 public sealed class DataProvider
 {
     private readonly IMapper _mapper;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DataProvider"/> class.
+    /// </summary>
+    /// <param name="queryAccessor">The query accessor.</param>
+    /// <param name="mapper">
+    /// The <see cref="IMapper"/> used to project items to their data transfer type equivalent.
+    /// </param>
     public DataProvider(IQueryAccessor queryAccessor, IMapper mapper)
     {
         QueryAccessor = queryAccessor;
         _mapper = mapper;
     }
 
+    /// <summary>
+    /// Gets the query accessor used to access GitObjectDb items.
+    /// </summary>
     public IQueryAccessor QueryAccessor { get; }
 
+    /// <summary>
+    /// Retrieves nodes of type <typeparamref name="TNode"/> and projects the result to
+    /// the <typeparamref name="TNodeDto"/> type.
+    /// </summary>
+    /// <typeparam name="TNode">The type of node to be queried.</typeparam>
+    /// <typeparam name="TNodeDto">The type of the data transfer object of the result collection.</typeparam>
+    /// <param name="parentPath">The optional node parent path when retriving node children.</param>
+    /// <param name="committish">The optional committish (head tip is used otherwise).</param>
+    /// <param name="isRecursive">Gets whether all nested nodes should be returned.</param>
+    /// <returns>The item being found, if any.</returns>
     public IEnumerable<TNodeDto> GetNodes<TNode, TNodeDto>(string? parentPath = null,
                                                            string? committish = null,
                                                            bool isRecursive = false)
@@ -30,6 +53,15 @@ public sealed class DataProvider
         return Map<IEnumerable<TNode>, IEnumerable<TNodeDto>>(result, committish);
     }
 
+    /// <summary>
+    /// Returns all changes that occurred between <paramref name="startCommittish"/> and
+    /// <paramref name="endCommittish"/>.
+    /// </summary>
+    /// <typeparam name="TNode">The type of node to be queried.</typeparam>
+    /// <typeparam name="TNodeDto">The type of the data transfer object of the result collection.</typeparam>
+    /// <param name="startCommittish">The start commit of comparison.</param>
+    /// <param name="endCommittish">The optional end commit of comparison.</param>
+    /// <returns>The item being found, if any.</returns>
     public IEnumerable<DeltaDto<TNodeDto>> GetNodeDeltas<TNode, TNodeDto>(string startCommittish, string? endCommittish)
         where TNode : Node
         where TNodeDto : NodeDto

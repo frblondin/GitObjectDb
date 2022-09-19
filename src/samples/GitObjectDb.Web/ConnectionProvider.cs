@@ -11,8 +11,8 @@ internal static class ConnectionProvider
         .Build();
 
     internal static IServiceCollection AddGitObjectDbConnection(this IServiceCollection services) => services
-        .AddScoped(GetOrCreateConnection)
-        .AddScoped<IQueryAccessor>(s => s.GetRequiredService<IConnection>());
+        .AddSingleton(GetOrCreateConnection)
+        .AddSingleton<IQueryAccessor>(s => s.GetRequiredService<IConnection>());
 
     internal static IConnection GetOrCreateConnection(IServiceProvider provider)
     {
