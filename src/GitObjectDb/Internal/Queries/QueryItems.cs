@@ -1,7 +1,8 @@
-using GitObjectDb.Serialization;
 using LibGit2Sharp;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace GitObjectDb.Internal.Queries
@@ -11,47 +12,45 @@ namespace GitObjectDb.Internal.Queries
         private readonly IQuery<LoadItem.Parameters, ITreeItem> _loader;
         private readonly IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> _queryResources;
 
-        public QueryItems(IQuery<LoadItem.Parameters, ITreeItem> loader, IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> queryResources)
+        public QueryItems(
+            IQuery<LoadItem.Parameters, ITreeItem> loaderFromLibGit2,
+            IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> queryResources)
         {
-            _loader = loader;
+            _loader = loaderFromLibGit2;
             _queryResources = queryResources;
         }
 
         public IEnumerable<(DataPath Path, Lazy<ITreeItem> Item)> Execute(IConnectionInternal connection, Parameters parms)
         {
-            var entries = new Stack<(Tree RelativeTree, DataPath Path)>();
+            var entries = new Stack<Parameters>();
             var includeResources = IncludeResources(parms);
 
             // Fetch direct resources
             if (parms.ParentPath is not null && includeResources)
             {
-                var resources = _queryResources.Execute(connection, new QueryResources.Parameters(parms.Tree, parms.RelativeTree, parms.ParentPath!, parms.ReferenceCache));
+                var resources = GetResources(connection, parms);
                 foreach (var resource in resources)
                 {
                     yield return (resource.Path, new Lazy<ITreeItem>(() => resource.Resource.Value));
                 }
             }
 
-            FetchDirectChildren(parms.RelativeTree, parms.ParentPath, entries);
+            FetchDirectChildren(parms, entries);
 
             while (entries.Count > 0)
             {
-                var current = entries.Pop();
-                if (IsOfType(connection, current.Path, parms.Type))
+                var entryParams = entries.Pop();
+                if (IsOfType(connection, entryParams.ParentPath!, parms.Type))
                 {
-                    var blob = current.RelativeTree[current.Path.FileName].Target.Peel<Blob>();
-                    using var stream = blob.GetContentStream();
                     yield return
                     (
-                        current.Path,
-                        new Lazy<ITreeItem>(() => _loader.Execute(connection, new LoadItem.Parameters(parms.Tree, current.Path, parms.ReferenceCache)))
+                        entryParams.ParentPath!, LoadItem(connection, entryParams)
                     );
                 }
 
-                if (current.Path.IsNode && parms.IsRecursive && includeResources)
+                if (entryParams.ParentPath!.IsNode && parms.IsRecursive && includeResources)
                 {
-                    var resources = _queryResources.Execute(connection,
-                                                            new QueryResources.Parameters(parms.Tree, current.RelativeTree, current.Path, parms.ReferenceCache));
+                    var resources = GetResources(connection, entryParams);
                     foreach (var resource in resources)
                     {
                         yield return (resource.Path, new Lazy<ITreeItem>(() => resource.Resource.Value));
@@ -60,10 +59,16 @@ namespace GitObjectDb.Internal.Queries
 
                 if (parms.IsRecursive)
                 {
-                    FetchDirectChildren(current.RelativeTree, current.Path, entries);
+                    FetchDirectChildren(entryParams, entries);
                 }
             }
         }
+
+        private Lazy<ITreeItem> LoadItem(IConnectionInternal connection, Parameters parms) =>
+            new(() => _loader.Execute(connection, new LoadItem.Parameters(parms.Tree, parms.ParentPath!, parms.ReferenceCache)));
+
+        private IEnumerable<(DataPath Path, Lazy<Resource> Resource)> GetResources(IConnectionInternal connection, Parameters parms) =>
+            _queryResources.Execute(connection, new QueryResources.Parameters(parms.Tree, parms.RelativeTree, parms.ParentPath!, parms.ReferenceCache));
 
         private static bool IncludeResources(Parameters parms) =>
             parms.Type == null || parms.Type == typeof(Resource) || parms.Type == typeof(ITreeItem);
@@ -82,71 +87,70 @@ namespace GitObjectDb.Internal.Queries
             }
         }
 
-        private static void FetchDirectChildren(Tree tree, DataPath? parentPath, Stack<(Tree NestedTree, DataPath ChildPath)> entries)
+        private static void FetchDirectChildren(Parameters parameters, Stack<Parameters> entries)
         {
-            FetchDirectChildrenStoredInNestedFolder(tree, parentPath, entries);
-            FetchDirectChildrenStoredWithoutNestedFolder(tree, parentPath, entries);
+            FetchDirectChildrenStoredInNestedFolder(parameters, entries);
+            FetchDirectChildrenStoredWithoutNestedFolder(parameters, entries);
         }
 
-        private static void FetchDirectChildrenStoredWithoutNestedFolder(Tree tree, DataPath? parentPath, Stack<(Tree NestedTree, DataPath ChildPath)> entries)
+        private static void FetchDirectChildrenStoredWithoutNestedFolder(Parameters parameters, Stack<Parameters> entries)
         {
             UniqueId id = default;
-            foreach (var info in from folderChildTree in tree.Where(e => e.TargetType == TreeEntryTargetType.Tree)
+            foreach (var info in from folderChildTree in parameters.RelativeTree.Where(e => e.TargetType == TreeEntryTargetType.Tree)
+                                 where folderChildTree.Name != FileSystemStorage.ResourceFolder
                                  let nestedTree = folderChildTree.Target.Peel<Tree>()
                                  from childFile in nestedTree.Where(e => e.TargetType == TreeEntryTargetType.Blob)
-                                 where UniqueId.TryParse(System.IO.Path.GetFileNameWithoutExtension(childFile.Name), out id)
+                                 where UniqueId.TryParse(Path.GetFileNameWithoutExtension(childFile.Name), out id)
                                  let childPath =
-                                     parentPath?.AddChild(folderChildTree.Name, id, false) ??
+                                     parameters.ParentPath?.AddChild(folderChildTree.Name, id, false) ??
                                      DataPath.Root(folderChildTree.Name, id, false)
-                                 select (nestedTree, childPath))
+                                 select parameters with { RelativeTree = nestedTree, ParentPath = childPath })
             {
                 entries.Push(info);
             }
         }
 
-        private static void FetchDirectChildrenStoredInNestedFolder(Tree tree, DataPath? parentPath, Stack<(Tree NestedTree, DataPath ChildPath)> entries)
+        private static void FetchDirectChildrenStoredInNestedFolder(Parameters parameters, Stack<Parameters> entries)
         {
             UniqueId id = default;
-            foreach (var info in from folderChildTree in tree.Where(e => e.TargetType == TreeEntryTargetType.Tree)
+            foreach (var info in from folderChildTree in parameters.RelativeTree.Where(e => e.TargetType == TreeEntryTargetType.Tree)
+                                 where folderChildTree.Name != FileSystemStorage.ResourceFolder
                                  from childFolder in folderChildTree.Target.Peel<Tree>().Where(e => e.TargetType == TreeEntryTargetType.Tree)
                                  where UniqueId.TryParse(childFolder.Name, out id)
                                  let nestedTree = childFolder.Target.Peel<Tree>()
                                  where nestedTree.Any(e => e.Name == $"{id}.json")
                                  let childPath =
-                                     parentPath?.AddChild(folderChildTree.Name, id, true) ??
+                                     parameters.ParentPath?.AddChild(folderChildTree.Name, id, true) ??
                                      DataPath.Root(folderChildTree.Name, id, true)
-                                 select (nestedTree, childPath))
+                                 select parameters with { RelativeTree = nestedTree, ParentPath = childPath })
             {
                 entries.Push(info);
             }
         }
 
-        internal class Parameters
+        internal record Parameters
         {
-            public Parameters(Type? type, DataPath? parentPath, Tree tree, Tree relativeTree, bool isRecursive, IDictionary<DataPath, ITreeItem>? referenceCache)
+            public Parameters(Tree tree, Tree relativeTree, Type? type, DataPath? parentPath, bool isRecursive, ConcurrentDictionary<DataPath, ITreeItem>? referenceCache)
             {
-                Type = type;
-                ParentPath = parentPath;
                 Tree = tree;
                 RelativeTree = relativeTree;
+                Type = type;
+                ParentPath = parentPath;
                 IsRecursive = isRecursive;
                 ReferenceCache = referenceCache;
             }
 
-            public Type? Type { get; }
-
-            public DataPath? ParentPath { get; }
-
             public Tree Tree { get; }
 
-            public Tree RelativeTree { get; }
+            public Tree RelativeTree { get; init; }
+
+            public Type? Type { get; }
+
+            public DataPath? ParentPath { get; init; }
 
             public bool IsRecursive { get; }
 
-            public IDictionary<DataPath, ITreeItem>? ReferenceCache { get; }
-
-            public LoadItem.Parameters ToLoadItemParameter(DataPath path) =>
-                new LoadItem.Parameters(Tree, path, ReferenceCache);
+            public ConcurrentDictionary<DataPath, ITreeItem>? ReferenceCache { get; }
         }
     }
 }
