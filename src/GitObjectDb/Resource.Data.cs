@@ -42,7 +42,7 @@ public sealed partial class Resource
         /// <returns>The string content of the stream.</returns>
         public string ReadAsString(Encoding? encoding = null)
         {
-            var reader = new StreamReader(GetContentStream(), encoding ?? Encoding.UTF8);
+            using var reader = new StreamReader(GetContentStream(), encoding ?? Encoding.UTF8);
             return reader.ReadToEnd();
         }
     }
