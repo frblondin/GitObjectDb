@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace GitObjectDb.Api.GraphQL.Queries;
 internal static class NodeQuery
 {
-    internal static FuncFieldResolver<object?, object?> CreateResolver(TypeDescription description)
+    internal static FuncFieldResolver<object?, object?> CreateResolver(DataTransferTypeDescription description)
     {
         var method = ExpressionReflector.GetMethod(() => Execute<Node, NodeDto>(default!), returnGenericDefinition: true);
         return new(

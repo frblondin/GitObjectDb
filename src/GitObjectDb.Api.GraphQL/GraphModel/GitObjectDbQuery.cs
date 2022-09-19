@@ -3,6 +3,7 @@ using GitObjectDb.Api.GraphQL.Queries;
 using GitObjectDb.Api.Model;
 using GitObjectDb.Model;
 using GraphQL.Types;
+using Namotion.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
 
@@ -17,8 +18,8 @@ public partial class GitObjectDbQuery : ObjectGraphType
     internal const string DeltaStartCommit = "start";
     internal const string DeltaEndCommit = "end";
 
-    private readonly Dictionary<TypeDescription, INodeType> _typeToGraphType = new();
-    private readonly Dictionary<TypeDescription, INodeDeltaType> _typeToDeltaGraphType = new();
+    private readonly Dictionary<DataTransferTypeDescription, INodeType> _typeToGraphType = new();
+    private readonly Dictionary<DataTransferTypeDescription, INodeDeltaType> _typeToDeltaGraphType = new();
 
     public GitObjectDbQuery(IDataModel model)
     {
@@ -53,7 +54,7 @@ public partial class GitObjectDbQuery : ObjectGraphType
         }
     }
 
-    internal INodeType GetOrCreateNodeGraphType(TypeDescription description)
+    internal INodeType GetOrCreateNodeGraphType(DataTransferTypeDescription description)
     {
         if (!_typeToGraphType.TryGetValue(description, out var result))
         {
@@ -67,7 +68,7 @@ public partial class GitObjectDbQuery : ObjectGraphType
         return result;
     }
 
-    internal IGraphType GetOrCreateNodeDeltaGraphType(TypeDescription description)
+    internal IGraphType GetOrCreateNodeDeltaGraphType(DataTransferTypeDescription description)
     {
         if (!_typeToDeltaGraphType.TryGetValue(description, out var result))
         {
@@ -80,7 +81,7 @@ public partial class GitObjectDbQuery : ObjectGraphType
         return result;
     }
 
-    internal FieldType AddCollectionField(IComplexGraphType graphType, TypeDescription description)
+    internal FieldType AddCollectionField(IComplexGraphType graphType, DataTransferTypeDescription description)
     {
         var childGraphType = GetOrCreateNodeGraphType(description);
 
@@ -99,13 +100,14 @@ public partial class GitObjectDbQuery : ObjectGraphType
         });
     }
 
-    internal FieldType AddCollectionDeltaField(IComplexGraphType graphType, TypeDescription description)
+    internal FieldType AddCollectionDeltaField(IComplexGraphType graphType, DataTransferTypeDescription description)
     {
         var deltaGraphType = GetOrCreateNodeDeltaGraphType(description);
 
         return graphType.AddField(new()
         {
             Name = $"{description.NodeType.Name}Delta",
+            Description = $"Performs delta requests for {description.NodeType.Name}.",
             Type = typeof(ListGraphType<>).MakeGenericType(deltaGraphType.GetType()),
             ResolvedType = new ListGraphType(deltaGraphType),
             Arguments = new(

@@ -27,7 +27,7 @@ internal class GeneratedTypesApplicationPart : ApplicationPart, IApplicationPart
         {
         }
 
-        protected override TypeDescription ProcessType(NodeTypeDescription type, TypeInfo dto)
+        protected override DataTransferTypeDescription ProcessType(NodeTypeDescription type, TypeInfo dto)
         {
             var baseDescription = base.ProcessType(type, dto);
             var controllerType = EmitController(type, baseDescription.DtoType, ModuleBuilder).CreateTypeInfo()!;
@@ -71,9 +71,9 @@ internal class GeneratedTypesApplicationPart : ApplicationPart, IApplicationPart
         }
     }
 
-    public class ODataTypeDescription : TypeDescription
+    public class ODataTypeDescription : DataTransferTypeDescription
     {
-        public ODataTypeDescription(TypeDescription description, Type controllerType)
+        public ODataTypeDescription(DataTransferTypeDescription description, Type controllerType)
             : base(description.NodeType, description.DtoType)
         {
             ControllerType = controllerType;

@@ -1,15 +1,22 @@
 using AutoMapper;
 using Fasterflect;
+using LibGit2Sharp;
 using System.Reflection;
 
 namespace GitObjectDb.Api.Model;
 
+/// <summary>
+/// Gets the automapper profile for converting <see cref="Node"/> types to
+/// their corresponding <see cref="NodeDto"/> types.
+/// </summary>
 public class AutoMapperProfile : Profile
 {
     internal const string ChildResolver = nameof(ChildResolver);
     internal const string CommitId = nameof(CommitId);
 
-    public AutoMapperProfile(IEnumerable<TypeDescription> types)
+    /// <summary>Initializes a new instance of the <see cref="AutoMapperProfile"/> class.</summary>
+    /// <param name="types">The types for which mappings need to be defined.</param>
+    public AutoMapperProfile(IEnumerable<DataTransferTypeDescription> types)
     {
         var baseMapping = CreateMap<Node, NodeDto>()
             .ForMember(
@@ -30,7 +37,7 @@ public class AutoMapperProfile : Profile
                                                     };
     }
 
-    private void AddTypes(IEnumerable<TypeDescription> types, IMappingExpression<Node, NodeDto> baseMapping)
+    private void AddTypes(IEnumerable<DataTransferTypeDescription> types, IMappingExpression<Node, NodeDto> baseMapping)
     {
         foreach (var description in types)
         {
@@ -49,7 +56,7 @@ public class AutoMapperProfile : Profile
     }
 
     /// <summary>Maps to other nodes must also be mapped to dto types.</summary>
-    private static void MapReferenceProperties(TypeDescription description, IMappingExpression mapping)
+    private static void MapReferenceProperties(DataTransferTypeDescription description, IMappingExpression mapping)
     {
         foreach (var property in description.DtoType.GetProperties())
         {
@@ -68,7 +75,7 @@ public class AutoMapperProfile : Profile
         }
     }
 
-    private static void MapSingleReference(TypeDescription description,
+    private static void MapSingleReference(DataTransferTypeDescription description,
                                            IMappingExpression mapping,
                                            PropertyInfo property)
     {
@@ -80,7 +87,7 @@ public class AutoMapperProfile : Profile
                                property.PropertyType)));
     }
 
-    private static void MapMultiReference(TypeDescription description,
+    private static void MapMultiReference(DataTransferTypeDescription description,
                                           IMappingExpression mapping,
                                           PropertyInfo property,
                                           Type dtoType)
