@@ -64,8 +64,18 @@ public static class GitCliCommand
 
     private static void CopyStreamToInput(Process process, Stream stream)
     {
-        stream.CopyTo(process.StandardInput.BaseStream);
-        process.StandardInput.Close();
+        try
+        {
+            stream.CopyTo(process.StandardInput.BaseStream);
+        }
+        catch
+        {
+            // Error message will be exposed by standard error
+        }
+        finally
+        {
+            process.StandardInput.Close();
+        }
     }
 
     private static void ThrowIfError(Process process)
