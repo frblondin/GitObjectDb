@@ -8,13 +8,11 @@ namespace GitObjectDb.Internal.Queries
 {
     internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath Path, Lazy<ITreeItem> Item)>>
     {
-        private readonly INodeSerializer _serializer;
         private readonly IQuery<LoadItem.Parameters, ITreeItem> _loader;
         private readonly IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> _queryResources;
 
-        public QueryItems(INodeSerializer serializer, IQuery<LoadItem.Parameters, ITreeItem> loader, IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> queryResources)
+        public QueryItems(IQuery<LoadItem.Parameters, ITreeItem> loader, IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> queryResources)
         {
-            _serializer = serializer;
             _loader = loader;
             _queryResources = queryResources;
         }
@@ -27,7 +25,7 @@ namespace GitObjectDb.Internal.Queries
             // Fetch direct resources
             if (parms.ParentPath is not null && includeResources)
             {
-                var resources = _queryResources.Execute(connection, new QueryResources.Parameters(parms.RelativeTree, parms.ParentPath!));
+                var resources = _queryResources.Execute(connection, new QueryResources.Parameters(parms.Tree, parms.RelativeTree, parms.ParentPath!, parms.ReferenceCache));
                 foreach (var resource in resources)
                 {
                     yield return (resource.Path, new Lazy<ITreeItem>(() => resource.Resource.Value));
@@ -46,18 +44,14 @@ namespace GitObjectDb.Internal.Queries
                     yield return
                     (
                         current.Path,
-                        new Lazy<ITreeItem>(
-                            () => _serializer.Deserialize(stream,
-                                                          current.Path,
-                                                          blob.Id.Sha,
-                                                          ResolveReference).Node)
+                        new Lazy<ITreeItem>(() => _loader.Execute(connection, new LoadItem.Parameters(parms.Tree, current.Path, parms.ReferenceCache)))
                     );
                 }
 
                 if (current.Path.IsNode && parms.IsRecursive && includeResources)
                 {
                     var resources = _queryResources.Execute(connection,
-                                                            new QueryResources.Parameters(current.RelativeTree, current.Path));
+                                                            new QueryResources.Parameters(parms.Tree, current.RelativeTree, current.Path, parms.ReferenceCache));
                     foreach (var resource in resources)
                     {
                         yield return (resource.Path, new Lazy<ITreeItem>(() => resource.Resource.Value));
@@ -69,9 +63,6 @@ namespace GitObjectDb.Internal.Queries
                     FetchDirectChildren(current.RelativeTree, current.Path, entries);
                 }
             }
-
-            ITreeItem ResolveReference(DataPath path) =>
-                _loader.Execute(connection, parms.ToLoadItemParameter(path));
         }
 
         private static bool IncludeResources(Parameters parms) =>

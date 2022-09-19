@@ -1,29 +1,58 @@
-using GitObjectDb.Comparison;
+using GitObjectDb.Model;
 using GitObjectDb.Tests.Assets;
-using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System.Linq;
+using System;
 
-namespace GitObjectDb.Tests
+namespace GitObjectDb.Tests.Serialization.Json
 {
-    public partial class ConnectionTests
+    public partial class ConnectionTests : DisposeArguments
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void SameHeadAsUnderlyingRepository(IConnection sut, Repository repository)
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
+        public void ReferencesAreSupported(IServiceProvider serviceProvider, string name, Signature signature)
         {
-            // Assert
-            Assert.That(sut.Head.Tip, Is.EqualTo(repository.Head.Tip));
+            // Arrange
+            var sut = CreateRepository(serviceProvider);
+            DataPath path = default;
+            sut.Update(c =>
+            {
+                var node1 = c.CreateOrUpdate(new NodeWithReference
+                {
+                    Name = name,
+                });
+                var node2 = c.CreateOrUpdate(new NodeWithReference
+                {
+                    Reference = node1,
+                });
+                path = node2.Path;
+            }).Commit("foo", signature, signature);
+
+            // Act
+            var result = sut.Lookup<NodeWithReference>(path);
+
+            // Act, Assert
+            Assert.That(result.Reference, Is.InstanceOf<NodeWithReference>());
+            Assert.That(((NodeWithReference)result.Reference).Name, Is.EqualTo(name));
         }
 
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void SameBranchCountAsUnderlyingRepository(IConnection sut, Repository repository)
+        private IConnection CreateRepository(IServiceProvider serviceProvider)
         {
-            // Assert
-            Assert.That(sut.Branches.Count(), Is.EqualTo(repository.Branches.Count()));
+            var path = GitObjectDbFixture.GetAvailableFolderPath();
+            var repositoryFactory = serviceProvider.GetRequiredService<ConnectionFactory>();
+            var model = serviceProvider.GetRequiredService<IDataModel>();
+            var result = (IConnectionInternal)repositoryFactory(path, model);
+            return result;
+        }
+
+        [GitFolder(FolderName = "Applications")]
+        public record NodeWithReference : Node
+        {
+            public string Name { get; set; }
+
+            public Node Reference { get; set; }
         }
     }
 }

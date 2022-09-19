@@ -1,5 +1,6 @@
 using GitObjectDb.Internal.Queries;
 using KellermanSoftware.CompareNetObjects;
+using KellermanSoftware.CompareNetObjects.TypeComparers;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -20,7 +21,7 @@ namespace GitObjectDb.Comparison
 
         internal delegate bool ConflictResolver(PropertyInfo property, object ancestorValue, object ourValue, object theirValue, out object result);
 
-        public ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy? policy = null)
+        public ComparisonResult Compare(ITreeItem? expectedObject, ITreeItem? actualObject, ComparisonPolicy policy)
         {
             return CompareInternal(expectedObject, actualObject, policy);
         }
@@ -29,13 +30,13 @@ namespace GitObjectDb.Comparison
             type.GetTypeInfo().GetProperties(BindingFlags.Instance | BindingFlags.Public)
             .Where(p => p.CanRead && p.CanWrite && !policy.IgnoredProperties.Contains(p));
 
-        internal static ComparisonResult CompareInternal(object? expectedObject, object? actualObject, ComparisonPolicy? policy = null)
+        internal static ComparisonResult CompareInternal(object? expectedObject, object? actualObject, ComparisonPolicy policy)
         {
-            var logic = Cache.Get(policy ?? ComparisonPolicy.Default);
+            var logic = Cache.Get(policy);
             return logic.Compare(expectedObject, actualObject);
         }
 
-        public ChangeCollection Compare(IConnectionInternal connection, Tree oldTree, Tree newTree, ComparisonPolicy policy)
+        public ChangeCollection Compare(IConnectionInternal connection, Tree oldTree, Tree newTree, ComparisonPolicy? policy = null)
         {
             if (newTree == null)
             {
@@ -46,11 +47,11 @@ namespace GitObjectDb.Comparison
                 var result = new ChangeCollection();
                 foreach (var change in changes)
                 {
-                    var oldPath = new Lazy<DataPath>(() => DataPath.FromGitBlobPath(change.OldPath));
+                    var oldPath = new Lazy<DataPath>(() => DataPath.Parse(change.OldPath));
                     var old = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
                         connection,
                         new LoadItem.Parameters(oldTree, oldPath.Value, null)));
-                    var newPath = new Lazy<DataPath>(() => DataPath.FromGitBlobPath(change.Path));
+                    var newPath = new Lazy<DataPath>(() => DataPath.Parse(change.Path));
                     var @new = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
                         connection,
                         new LoadItem.Parameters(newTree, newPath.Value, null)));
@@ -59,13 +60,13 @@ namespace GitObjectDb.Comparison
                     switch (change.Status)
                     {
                         case ChangeKind.Modified:
-                            treeChange = Change.Create(change, old.Value, @new.Value, ChangeStatus.Edit, policy);
+                            treeChange = Change.Create(change, old.Value, @new.Value, ChangeStatus.Edit, policy ?? connection.Model.DefaultComparisonPolicy);
                             break;
                         case ChangeKind.Added:
-                            treeChange = Change.Create(change, default, @new.Value, ChangeStatus.Add, policy);
+                            treeChange = Change.Create(change, default, @new.Value, ChangeStatus.Add, policy ?? connection.Model.DefaultComparisonPolicy);
                             break;
                         case ChangeKind.Deleted:
-                            treeChange = Change.Create(change, old.Value, default, ChangeStatus.Delete, policy);
+                            treeChange = Change.Create(change, old.Value, default, ChangeStatus.Delete, policy ?? connection.Model.DefaultComparisonPolicy);
                             break;
                         default:
                             throw new NotImplementedException(change.Status.ToString());
@@ -86,17 +87,16 @@ namespace GitObjectDb.Comparison
         {
             foreach (var their in toBeMergedIntoLocal)
             {
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 switch (their.Status)
                 {
                     case ChangeStatus.Edit:
                         yield return new MergeChange(policy)
                         {
                             Ancestor = their.Old,
-                            Ours = localChanges.Modified.FirstOrDefault(c => their.Old.Path.Equals(c.Old.Path))?.New ?? their.Old,
+                            Ours = localChanges.Modified.FirstOrDefault(c => their.Old!.Path!.Equals(c.Old.Path))?.New ?? their.Old,
                             Theirs = their.New,
                             OurRootDeletedParent = (from c in localChanges.Deleted
-                                                    where their.Old.Path.FolderPath.StartsWith(c.Old.Path.FolderPath, StringComparison.Ordinal)
+                                                    where their.Old!.Path!.FolderPath.StartsWith(c.Old.Path.FolderPath, StringComparison.Ordinal)
                                                     orderby c.Old.Path.FolderPath.Length ascending
                                                     select c.Old).FirstOrDefault(),
                         }.Initialize();
@@ -104,17 +104,17 @@ namespace GitObjectDb.Comparison
                     case ChangeStatus.Add:
                         yield return new MergeChange(policy)
                         {
-                            Ours = localChanges.Added.FirstOrDefault(c => c.New.Path?.Equals(their.New.Path) ?? false)?.New,
+                            Ours = localChanges.Added.FirstOrDefault(c => c.New.Path?.Equals(their.New!.Path!) ?? false)?.New,
                             Theirs = their.New,
                             OurRootDeletedParent = (from c in localChanges.Deleted
-                                                    where their.New.Path.FolderPath.StartsWith(c.Old.Path.FolderPath, StringComparison.Ordinal)
+                                                    where their.New!.Path!.FolderPath.StartsWith(c.Old.Path.FolderPath, StringComparison.Ordinal)
                                                     orderby c.Old.Path.FolderPath.Length ascending
                                                     select c.Old).FirstOrDefault(),
                         }.Initialize();
                         break;
                     case ChangeStatus.Delete:
                         // Just ignore deletion if deleted in our changes too
-                        if (localChanges.Deleted.Any(c => their.Old.Path.FolderPath.StartsWith(c.Old.Path.FolderPath, StringComparison.Ordinal)))
+                        if (localChanges.Deleted.Any(c => their.Old!.Path!.FolderPath.StartsWith(c.Old.Path.FolderPath, StringComparison.Ordinal)))
                         {
                             continue;
                         }
@@ -122,11 +122,11 @@ namespace GitObjectDb.Comparison
                         yield return new MergeChange(policy)
                         {
                             Ancestor = their.Old,
-                            Ours = localChanges.FirstOrDefault(c => c.Path?.Equals(their.Old.Path) ?? false)?.New ?? their.Old,
+                            Ours = localChanges.FirstOrDefault(c => c.Path?.Equals(their.Old!.Path) ?? false)?.New ?? their.Old,
                         }.Initialize();
 
                         bool IsAddedChildInOurChanges(Change change) =>
-                            change.New.Path.FolderPath.StartsWith(their.Old.Path.FolderPath, StringComparison.Ordinal);
+                            change.New.Path.FolderPath.StartsWith(their.Old!.Path!.FolderPath, StringComparison.Ordinal);
                         foreach (var local in localChanges.Added.Where(IsAddedChildInOurChanges))
                         {
                             yield return new MergeChange(policy)
@@ -138,7 +138,6 @@ namespace GitObjectDb.Comparison
                         }
                         break;
                 }
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
             }
         }
 

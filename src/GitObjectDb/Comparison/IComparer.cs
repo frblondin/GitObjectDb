@@ -11,7 +11,7 @@ namespace GitObjectDb.Comparison
         /// <param name="actualObject">The actual object value to compare.</param>
         /// <param name="policy">The merge policy to use.</param>
         /// <returns>Details about the comparison.</returns>
-        ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy? policy = null);
+        ComparisonResult Compare(ITreeItem? expectedObject, ITreeItem? actualObject, ComparisonPolicy policy);
     }
 
     internal interface IComparerInternal
@@ -22,6 +22,6 @@ namespace GitObjectDb.Comparison
         /// <param name="newTree">The end start of comparison.</param>
         /// <param name="policy">The merge policy to use.</param>
         /// <returns>Details about the comparison.</returns>
-        ChangeCollection Compare(IConnectionInternal connection, Tree oldTree, Tree newTree, ComparisonPolicy policy);
+        ChangeCollection Compare(IConnectionInternal connection, Tree oldTree, Tree newTree, ComparisonPolicy? policy = null);
     }
 }

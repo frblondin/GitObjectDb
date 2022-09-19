@@ -13,16 +13,18 @@ namespace Models.Software
         public const int DefaultApplicationCount = 2;
         public const int DefaultTablePerApplicationCount = 3;
         public const int DefaultFieldPerTableCount = 10;
+        public const int DefaultConstantPerTableCount = 2;
         public const int DefaultResourcePerTableCount = 5;
 
         private Random _random = new Random();
 
-        public DataGenerator(IConnection connection, int applicationCount = DefaultApplicationCount, int tablePerApplicationCount = DefaultTablePerApplicationCount, int fieldPerTableCount = DefaultFieldPerTableCount, int resourcePerTableCount = DefaultResourcePerTableCount)
+        public DataGenerator(IConnection connection, int applicationCount = DefaultApplicationCount, int tablePerApplicationCount = DefaultTablePerApplicationCount, int fieldPerTableCount = DefaultFieldPerTableCount, int constantPerTableCount = DefaultConstantPerTableCount, int resourcePerTableCount = DefaultResourcePerTableCount)
         {
             Connection = connection;
             ApplicationCount = applicationCount;
             TablePerApplicationCount = tablePerApplicationCount;
             FieldPerTableCount = fieldPerTableCount;
+            ConstantPerTableCount = constantPerTableCount;
             ResourcePerTableCount = resourcePerTableCount;
         }
 
@@ -33,6 +35,8 @@ namespace Models.Software
         public int TablePerApplicationCount { get; }
 
         public int FieldPerTableCount { get; }
+
+        public int ConstantPerTableCount { get; }
 
         public int ResourcePerTableCount { get; }
 
@@ -65,6 +69,7 @@ namespace Models.Software
                         Name = fixture.Create<string>(),
                     }, parent: application);
                     CreateFields(table, composer);
+                    CreateConstants(table, composer);
                     CreateResource(table, composer);
                 });
             }
@@ -81,14 +86,26 @@ namespace Models.Software
                 });
             }
 
+            void CreateConstants(Table table, ITransformationComposer composer)
+            {
+                Enumerable.Range(1, ConstantPerTableCount).ForEach(position =>
+                {
+                    composer.CreateOrUpdate(new Constant
+                    {
+                        EmbeddedResource = fixture.Create<string>(),
+                    }, parent: table);
+                });
+            }
+
             void CreateResource(Table table, ITransformationComposer composer)
             {
                 Enumerable.Range(1, ResourcePerTableCount).ForEach(position =>
                 {
+                    var stream = new MemoryStream(Encoding.Default.GetBytes(fixture.Create<string>()));
                     var resource = new Resource(table,
                                                 $"Path{_random.Next(1, 2)}",
                                                 $"File{_random.Next(1, 100)}.txt",
-                                                new MemoryStream(Encoding.Default.GetBytes(fixture.Create<string>())));
+                                                new Resource.Data(stream));
                     composer.CreateOrUpdate(resource);
                 });
             }

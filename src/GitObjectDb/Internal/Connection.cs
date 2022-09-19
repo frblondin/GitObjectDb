@@ -6,6 +6,7 @@ using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using static GitObjectDb.Internal.Factories;
@@ -61,14 +62,19 @@ namespace GitObjectDb.Internal
 
         public Repository Repository { get; }
 
+        [ExcludeFromCodeCoverage]
         public Configuration Config => Repository.Config;
 
+        [ExcludeFromCodeCoverage]
         public RepositoryInformation Info => Repository.Info;
 
+        [ExcludeFromCodeCoverage]
         public BranchCollection Branches => Repository.Branches;
 
+        [ExcludeFromCodeCoverage]
         public Branch Head => Repository.Head;
 
+        [ExcludeFromCodeCoverage]
         public IQueryableCommitLog Commits => Repository.Commits;
 
         public IDataModel Model { get; }
@@ -97,21 +103,11 @@ namespace GitObjectDb.Internal
             return (TItem)_loader.Execute(this, new LoadItem.Parameters(tree, path, referenceCache));
         }
 
-        public IEnumerable<ITreeItem> GetItems(Node? parent = null, string? committish = null, bool isRecursive = false, IDictionary<DataPath, ITreeItem>? referenceCache = null)
-        {
-            return GetItems<ITreeItem>(parent, committish, isRecursive, referenceCache);
-        }
-
         public IEnumerable<TItem> GetItems<TItem>(Node? parent = null, string? committish = null, bool isRecursive = false, IDictionary<DataPath, ITreeItem>? referenceCache = null)
             where TItem : ITreeItem
         {
             var (tree, relativeTree) = GetTree(parent?.Path, committish);
             return _queryItems.Execute(this, new QueryItems.Parameters(typeof(TItem), parent?.Path, tree, relativeTree, isRecursive, referenceCache)).Select(i => (TItem)i.Item.Value);
-        }
-
-        public IEnumerable<Node> GetNodes(Node? parent = null, string? committish = null, bool isRecursive = false, IDictionary<DataPath, ITreeItem>? referenceCache = null)
-        {
-            return GetItems<Node>(parent, committish, isRecursive, referenceCache);
         }
 
         public IEnumerable<TNode> GetNodes<TNode>(Node? parent = null, string? committish = null, bool isRecursive = false, IDictionary<DataPath, ITreeItem>? referenceCache = null)
@@ -152,22 +148,22 @@ namespace GitObjectDb.Internal
             }
         }
 
-        public IEnumerable<Resource> GetResources(Node node, string? committish = null)
+        public IEnumerable<Resource> GetResources(Node node, string? committish = null, IDictionary<DataPath, ITreeItem>? referenceCache = null)
         {
             if (node.Path is null)
             {
                 throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.");
             }
 
-            var (_, relativeTree) = GetTree(node.Path, committish);
-            return _queryResources.Execute(this, new QueryResources.Parameters(relativeTree, node.Path)).Select(i => i.Resource.Value);
+            var (tree, relativeTree) = GetTree(node.Path, committish);
+            return _queryResources.Execute(this, new QueryResources.Parameters(tree, relativeTree, node.Path, referenceCache)).Select(i => i.Resource.Value);
         }
 
         public ChangeCollection Compare(string startCommittish, string? committish = null, ComparisonPolicy? policy = null)
         {
             var (old, _) = GetTree(committish: startCommittish);
             var (@new, _) = GetTree(committish: committish);
-            return _comparer.Compare(this, old, @new, policy ?? ComparisonPolicy.Default);
+            return _comparer.Compare(this, old, @new, policy ?? Model.DefaultComparisonPolicy);
         }
 
         public Branch Checkout(string branchName, string? committish = null)

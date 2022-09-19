@@ -28,7 +28,7 @@ namespace GitObjectDb.Internal
             Branch = branch ?? connection.Head;
             _upstreamCommittish = upstreamCommittish;
             UpstreamCommit = connection.FindUpstreamCommit(upstreamCommittish, Branch);
-            Policy = policy ?? ComparisonPolicy.Default;
+            Policy = policy ?? connection.Model.DefaultComparisonPolicy;
             (MergeBaseCommit, Commits, RequiresMergeCommit) = Initialize();
 
             Start();

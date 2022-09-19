@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace GitObjectDb.Tests
 {
-    public class MergeTests
+    public class MergeTests : DisposeArguments
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
@@ -147,6 +147,7 @@ namespace GitObjectDb.Tests
             Assert.That(merge.CurrentChanges, Has.Count.EqualTo(1));
             Assert.That(merge.CurrentChanges, Has.Exactly(1).Matches<MergeChange>(c => c.Status == ItemMergeStatus.TreeConflict));
             var conflict = merge.CurrentChanges.Single(c => c.Status == ItemMergeStatus.TreeConflict);
+            Assert.That(conflict.Path, Is.EqualTo(field.Path));
             Assert.That(((Node)conflict.Theirs).Id, Is.EqualTo(field.Id));
             Assert.That(((Node)conflict.OurRootDeletedParent).Id, Is.EqualTo(parentTable.Id));
             merge.CurrentChanges.Remove(conflict);

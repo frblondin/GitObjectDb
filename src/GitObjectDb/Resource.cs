@@ -1,6 +1,4 @@
-using LibGit2Sharp;
 using System;
-using System.IO;
 
 namespace GitObjectDb
 {
@@ -8,66 +6,32 @@ namespace GitObjectDb
     public sealed partial class Resource : ITreeItem
     {
         private readonly Lazy<DataPath> _nodePath;
-        private Func<Stream> _value;
 
         /// <summary>Initializes a new instance of the <see cref="Resource"/> class.</summary>
         /// <param name="node">The node this resources will belong to.</param>
         /// <param name="folderPath">The path within the resource folder.</param>
         /// <param name="file">The file name.</param>
-        /// <param name="value">The resource content.</param>
-        public Resource(Node node, string folderPath, string file, string value)
+        /// <param name="embedded">The resource content.</param>
+        public Resource(Node node, string folderPath, string file, Data embedded)
             : this(
                   (node.Path ?? throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.")).CreateResourcePath(folderPath, file),
-                  new StringReaderStream(value))
+                  embedded)
         {
             FileSystemStorage.ThrowIfAnyReservedName(folderPath);
         }
 
-        /// <summary>Initializes a new instance of the <see cref="Resource"/> class.</summary>
-        /// <param name="parentPath">The parent path of the node this resources will belong to.</param>
-        /// <param name="folderPath">The path within the resource folder.</param>
-        /// <param name="file">The file name.</param>
-        /// <param name="value">The resource content.</param>
-        public Resource(DataPath parentPath, string folderPath, string file, string value)
-            : this(
-                  parentPath.CreateResourcePath(folderPath, file),
-                  new StringReaderStream(value))
-        {
-            FileSystemStorage.ThrowIfAnyReservedName(folderPath);
-        }
-
-        /// <summary>Initializes a new instance of the <see cref="Resource"/> class.</summary>
-        /// <param name="node">The node this resources will belong to.</param>
-        /// <param name="folderPath">The path within the resource folder.</param>
-        /// <param name="file">The file name.</param>
-        /// <param name="stream">The resource content.</param>
-        public Resource(Node node, string folderPath, string file, Stream stream)
-            : this(
-                  (node.Path ?? throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.")).CreateResourcePath(folderPath, file),
-                  () => stream)
-        {
-            FileSystemStorage.ThrowIfAnyReservedName(folderPath);
-        }
-
-        internal Resource(DataPath path, Blob blob)
-            : this(path, blob.GetContentStream)
-        {
-        }
-
-        internal Resource(DataPath path, Stream stream)
-            : this(path, () => stream)
-        {
-        }
-
-        private Resource(DataPath path, Func<Stream> value)
+        internal Resource(DataPath path, Data embedded)
         {
             Path = path;
             _nodePath = new Lazy<DataPath>(Path.GetResourceParentNode);
-            _value = value;
+            Embedded = embedded;
         }
 
         /// <summary>Gets or sets the resource path.</summary>
         public DataPath Path { get; set; }
+
+        /// <summary>Gets the embedded resource.</summary>
+        public Data Embedded { get; }
 
         DataPath? ITreeItem.Path
         {
@@ -77,10 +41,5 @@ namespace GitObjectDb
 
         /// <summary>Gets the path of the node this resource belongs to.</summary>
         public DataPath NodePath => _nodePath.Value;
-
-        /// <summary>Gets the content stream.</summary>
-        /// <returns>The stream.</returns>
-        public Stream GetContentStream() =>
-            _value.Invoke();
     }
 }

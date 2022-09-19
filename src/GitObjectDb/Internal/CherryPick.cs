@@ -28,7 +28,7 @@ namespace GitObjectDb.Internal
             _committer = committer;
             Branch = branch ?? connection.Head;
             UpstreamCommit = connection.FindUpstreamCommit(committish, Branch);
-            Policy = policy ?? CherryPickPolicy.Default;
+            Policy = policy ?? new CherryPickPolicy(connection.Model.DefaultComparisonPolicy);
 
             Initialize();
         }

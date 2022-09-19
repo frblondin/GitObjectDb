@@ -1,13 +1,9 @@
 using GitObjectDb.Serialization.Json.Converters;
 using GitObjectDb.Tools;
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json.Serialization;
 
 namespace GitObjectDb
@@ -16,7 +12,7 @@ namespace GitObjectDb
     /// Represents a unique identifier.
     /// </summary>
     [JsonConverter(typeof(UniqueIdConverter))]
-    public struct UniqueId : IComparable<UniqueId>, IEquatable<UniqueId>, IEquatable<string>
+    public struct UniqueId : IComparable<UniqueId>, IEquatable<UniqueId>
     {
         private static readonly RNGCryptoServiceProvider _rngCryptoServiceProvider = new RNGCryptoServiceProvider();
 
@@ -159,9 +155,6 @@ namespace GitObjectDb
             (c >= 'A' && c <= 'Z') ||
             (c >= '0' && c <= '9') ||
             c == '_';
-
-        /// <inheritdoc/>
-        public bool Equals(string other) => StringComparer.Ordinal.Equals(_sha, other);
 
         /// <inheritdoc/>
         public bool Equals(UniqueId other) => StringComparer.Ordinal.Equals(_sha, other._sha);

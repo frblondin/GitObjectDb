@@ -1,7 +1,6 @@
 using GitObjectDb.Serialization.Json.Converters;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace GitObjectDb.Serialization
@@ -18,6 +17,7 @@ namespace GitObjectDb.Serialization
 
         public Node Node { get; set; }
 
+        [ExcludeFromCodeCoverage]
         public override string ToString() => $"{Type}, {Node}";
     }
 }

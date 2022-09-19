@@ -78,11 +78,15 @@ namespace GitObjectDb
         internal static DataPath Root(string folderName, UniqueId id, bool useNodeFolders) =>
             new DataPath(useNodeFolders ? $"{folderName}/{id}" : folderName, $"{id}.json", useNodeFolders);
 
-        internal static DataPath FromGitBlobPath(string path)
+        /// <summary>Converts the specified string representation to its <see cref="DataPath" /> equivalent.</summary>
+        /// <param name="path">A string containing a sha to convert.</param>
+        /// <returns>The <see cref="DataPath" /> value equivalent to the path contained in <paramref name="path" />.</returns>
+        /// <exception cref="ArgumentException">Wrong path provided.</exception>
+        public static DataPath Parse(string path)
         {
             if (!TryParse(path, out var result))
             {
-                throw new ArgumentException("message", nameof(path));
+                throw new ArgumentException("Wrong path provided.", nameof(path));
             }
             return result!;
         }
@@ -179,7 +183,7 @@ namespace GitObjectDb
             ThrowIfNotUsingNodeFolders();
 
             var folder = string.IsNullOrEmpty(folderPath) ? string.Empty : $"/{folderPath}";
-            return FromGitBlobPath($"{FolderPath}/{FileSystemStorage.ResourceFolder}{folder}/{file}");
+            return Parse($"{FolderPath}/{FileSystemStorage.ResourceFolder}{folder}/{file}");
         }
 
         internal void ThrowIfNotUsingNodeFolders()

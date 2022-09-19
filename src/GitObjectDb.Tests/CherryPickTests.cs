@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace GitObjectDb.Tests
 {
-    public class CherryPickTests
+    public class CherryPickTests : DisposeArguments
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
@@ -180,7 +180,7 @@ namespace GitObjectDb.Tests
             Assert.That(commits[2], Is.EqualTo(sut.Head.Tip));
             var newTable = sut.Lookup<Table>(table.Path);
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
-            var newField = sut.GetNodes(newTable).FirstOrDefault(f => f.Id == newFieldId);
+            var newField = sut.GetNodes<Field>(newTable).FirstOrDefault(f => f.Id == newFieldId);
             Assert.That(newField, Is.Not.Null);
         }
 
@@ -260,7 +260,7 @@ namespace GitObjectDb.Tests
             Assert.That(commits[2], Is.EqualTo(sut.Head.Tip));
             var newTable = sut.Lookup<Table>(table.Path);
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
-            var missingField = sut.GetNodes(newTable).FirstOrDefault(f => f.Id == field.Id);
+            var missingField = sut.GetNodes<Field>(newTable).FirstOrDefault(f => f.Id == field.Id);
             Assert.That(missingField, Is.Null);
         }
 

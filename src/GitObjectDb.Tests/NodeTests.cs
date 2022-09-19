@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace GitObjectDb.Tests
 {
-    public class NodeTests
+    public class NodeTests : DisposeArguments
     {
         [Test]
         [AutoData]

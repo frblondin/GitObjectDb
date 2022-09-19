@@ -9,7 +9,7 @@ using System.Linq;
 namespace GitObjectDb.Tests.Queries
 {
     [Parallelizable(ParallelScope.Self | ParallelScope.Children)]
-    public class QueryResourcesTests
+    public class QueryResourcesTests : DisposeArguments
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
