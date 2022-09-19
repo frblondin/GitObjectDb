@@ -24,10 +24,6 @@
           "type": "boolean",
           "description": "Indicates to continue a previously failed build attempt"
         },
-        "CoverageThreshold": {
-          "type": "integer",
-          "description": "Coverage threshold. Default is 90%"
-        },
         "Help": {
           "type": "boolean",
           "description": "Shows the help text for this build assembly"
