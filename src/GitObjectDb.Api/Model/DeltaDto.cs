@@ -2,23 +2,32 @@ using LibGit2Sharp;
 
 namespace GitObjectDb.Api.Model;
 
+/// <summary>Represents changes that occurred to a <see cref="Node"/>.</summary>
+/// <typeparam name="TNodeDto">The type of the data transfer object.</typeparam>
 public class DeltaDto<TNodeDto>
 {
-    private readonly Commit _commit;
-
-    public DeltaDto(TNodeDto old, TNodeDto @new, Commit commit, bool deleted)
+    /// <summary>Initializes a new instance of the <see cref="DeltaDto{TNodeDto}"/> class.</summary>
+    /// <param name="old">The old state of the node.</param>
+    /// <param name="new">The new state of the node.</param>
+    /// <param name="commitId">The latest commit id.</param>
+    /// <param name="deleted">Whether the node has been deleted.</param>
+    public DeltaDto(TNodeDto? old, TNodeDto? @new, ObjectId commitId, bool deleted)
     {
         Old = old;
         New = @new;
-        _commit = commit;
+        UpdatedAt = commitId.Sha;
         Deleted = deleted;
     }
 
-    public TNodeDto Old { get; set; }
+    /// <summary>Gets the old state of the node.</summary>
+    public TNodeDto? Old { get; }
 
-    public TNodeDto New { get; set; }
+    /// <summary>Gets the new state of the node.</summary>
+    public TNodeDto? New { get; }
 
-    public string UpdatedAt => _commit.Id.Sha;
+    /// <summary>Gets the latest commit id.</summary>
+    public string UpdatedAt { get; }
 
-    public bool Deleted { get; set; }
+    /// <summary>Gets a value indicating whether the node has been deleted.</summary>
+    public bool Deleted { get; }
 }

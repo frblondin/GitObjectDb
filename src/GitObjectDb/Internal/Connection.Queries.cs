@@ -27,9 +27,9 @@ internal sealed partial class Connection
                                       new(commit.Tree, path));
     }
 
-    public IEnumerable<TItem> GetItems<TItem>(Node? parent = null,
-                                              string? committish = null,
-                                              bool isRecursive = false)
+    public ICommitEnumerable<TItem> GetItems<TItem>(Node? parent = null,
+                                                    string? committish = null,
+                                                    bool isRecursive = false)
         where TItem : ITreeItem
     {
         var (commit, relativeTree) = GetTree(parent?.Path, committish);
@@ -43,12 +43,13 @@ internal sealed partial class Connection
                 .Select(i => i.Item.Value)
                 .OfType<TItem>()
                 .OrderBy(i => i.Path)
-            .AsSequential();
+            .AsSequential()
+            .ToCommitEnumerable(commit.Id);
     }
 
-    public IEnumerable<TNode> GetNodes<TNode>(Node? parent = null,
-                                              string? committish = null,
-                                              bool isRecursive = false)
+    public ICommitEnumerable<TNode> GetNodes<TNode>(Node? parent = null,
+                                                    string? committish = null,
+                                                    bool isRecursive = false)
         where TNode : Node
     {
         return GetItems<TNode>(parent, committish, isRecursive);
@@ -93,7 +94,7 @@ internal sealed partial class Connection
             .Select(i => i.Item);
     }
 
-    public IEnumerable<Resource> GetResources(Node node, string? committish = null)
+    public ICommitEnumerable<Resource> GetResources(Node node, string? committish = null)
     {
         if (node.Path is null)
         {
@@ -106,7 +107,8 @@ internal sealed partial class Connection
             .AsParallel()
                 .Select(i => i.Resource.Value)
                 .OrderBy(i => i.Path)
-            .AsSequential();
+            .AsSequential()
+            .ToCommitEnumerable(commit.Id);
     }
 
     public ChangeCollection Compare(string startCommittish,
