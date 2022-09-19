@@ -44,7 +44,11 @@ internal class CommitCommand : ICommitCommand
         var definition = TreeDefinition.From(predecessor);
         foreach (var transformation in transformations)
         {
-            transformation(predecessor.Tree, modules, connection.Repository.ObjectDatabase, definition);
+            transformation(predecessor.Tree,
+                           modules,
+                           connection.Serializer,
+                           connection.Repository.ObjectDatabase,
+                           definition);
         }
         var parents = new List<Commit> { predecessor };
         if (mergeParent != null)

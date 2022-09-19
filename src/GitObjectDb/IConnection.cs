@@ -1,5 +1,6 @@
 using GitObjectDb.Comparison;
 using GitObjectDb.Model;
+using GitObjectDb.Serialization;
 using LibGit2Sharp;
 using System;
 using System.Text.Json;
@@ -19,9 +20,6 @@ public interface IConnection : IQueryAccessor, IDisposable
 {
     /// <summary>Gets the underlying Git repository.</summary>
     IRepository Repository { get; }
-
-    /// <summary>Gets or sets options to be used with <see cref="JsonSerializer"/>.</summary>
-    JsonSerializerOptions SerializerOptions { get; set; }
 
     /// <summary>Initiates a series of node transformations.</summary>
     /// <param name="transformations">The transformations to be applied.</param>

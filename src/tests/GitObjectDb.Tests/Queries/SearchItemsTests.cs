@@ -97,6 +97,5 @@ public class SearchItemsTests : DisposeArguments
 
         [IsSearchable(false)]
         public string NonSearchable { get; init; }
-
     }
 }

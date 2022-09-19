@@ -14,14 +14,12 @@ internal sealed class Rebase : IRebase
 {
     private readonly IComparerInternal _comparer;
     private readonly IMergeComparer _mergeComparer;
-    private readonly UpdateTreeCommand _updateCommand;
     private readonly CommitCommand _commitCommand;
     private readonly IConnectionInternal _connection;
 
     [FactoryDelegateConstructor(typeof(Factories.RebaseFactory))]
     public Rebase(IComparerInternal comparer,
                   IMergeComparer mergeComparer,
-                  UpdateTreeCommand updateCommand,
                   CommitCommand commitCommand,
                   IConnectionInternal connection,
                   Branch? branch = null,
@@ -30,7 +28,6 @@ internal sealed class Rebase : IRebase
     {
         _comparer = comparer;
         _mergeComparer = mergeComparer;
-        _updateCommand = updateCommand;
         _commitCommand = commitCommand;
         _connection = connection;
         Branch = branch ?? connection.Repository.Head;
@@ -136,8 +133,8 @@ internal sealed class Rebase : IRebase
             _connection,
             tip,
             CurrentChanges.Select(c =>
-                (ApplyUpdateTreeDefinition)((refTree, modules, database, treeDefinition) =>
-                c.Transform(_updateCommand, database, treeDefinition, refTree, modules))),
+                (ApplyUpdateTreeDefinition)((refTree, modules, serializer, database, treeDefinition) =>
+                c.Transform(database, treeDefinition, refTree, modules, serializer))),
             new CommitDescription(replayedCommit.Message, replayedCommit.Author, replayedCommit.Committer),
             updateHead: false);
 

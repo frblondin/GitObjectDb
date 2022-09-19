@@ -7,13 +7,6 @@ namespace GitObjectDb.Internal.Queries;
 
 internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
 {
-    private readonly INodeSerializer _serializer;
-
-    public LoadItem(INodeSerializer serializer)
-    {
-        _serializer = serializer;
-    }
-
     public ITreeItem Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
         var loadParameters = new DataLoadParameters(parms.Path, parms.Tree.Id);
@@ -29,10 +22,9 @@ internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
     private ITreeItem LoadNode(IQueryAccessor queryAccessor, Parameters parms)
     {
         using var stream = GetStream(parms);
-        return _serializer.Deserialize(stream,
+        return queryAccessor.Serializer.Deserialize(stream,
                                        parms.Tree.Id,
                                        parms.Path,
-                                       queryAccessor.Model,
                                        p => LoadNode(queryAccessor, parms with { Path = p }));
     }
 

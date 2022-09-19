@@ -20,30 +20,26 @@ public class UniqueIdTests
     [Test]
     [AutoDataCustomizations(typeof(Customization))]
     public void OperatorLowerThan(string sha1, string sha2) =>
-        Assert.AreEqual(
-            new UniqueId(sha1) < new UniqueId(sha2),
-            string.CompareOrdinal(sha1, sha2) < 0);
+        Assert.That(
+            string.CompareOrdinal(sha1, sha2) < 0, Is.EqualTo(new UniqueId(sha1) < new UniqueId(sha2)));
 
     [Test]
     [AutoDataCustomizations(typeof(Customization))]
     public void OperatorLowerThanOrEqual(string sha1, string sha2) =>
-        Assert.AreEqual(
-            new UniqueId(sha1) <= new UniqueId(sha2),
-            string.CompareOrdinal(sha1, sha2) <= 0);
+        Assert.That(
+            string.CompareOrdinal(sha1, sha2) <= 0, Is.EqualTo(new UniqueId(sha1) <= new UniqueId(sha2)));
 
     [Test]
     [AutoDataCustomizations(typeof(Customization))]
     public void OperatorGreaterThan(string sha1, string sha2) =>
-        Assert.AreEqual(
-            new UniqueId(sha1) > new UniqueId(sha2),
-            string.CompareOrdinal(sha1, sha2) > 0);
+        Assert.That(
+            string.CompareOrdinal(sha1, sha2) > 0, Is.EqualTo(new UniqueId(sha1) > new UniqueId(sha2)));
 
     [Test]
     [AutoDataCustomizations(typeof(Customization))]
     public void OperatorGreaterThanOrEqual(string sha1, string sha2) =>
-        Assert.AreEqual(
-            new UniqueId(sha1) >= new UniqueId(sha2),
-            string.CompareOrdinal(sha1, sha2) >= 0);
+        Assert.That(
+            string.CompareOrdinal(sha1, sha2) >= 0, Is.EqualTo(new UniqueId(sha1) >= new UniqueId(sha2)));
 
     [Test]
     [AutoDataCustomizations(typeof(Customization))]
@@ -54,8 +50,11 @@ public class UniqueIdTests
 
     [Test]
     [AutoDataCustomizations(typeof(Customization))]
-    public void EqualsBoxed(string sha) =>
-        Assert.That(new UniqueId(sha).Equals((object)new UniqueId(sha)), Is.True);
+    public void EqualsBoxed(string sha)
+    {
+        var boxed = (object)new UniqueId(sha);
+        Assert.That(new UniqueId(sha), Is.EqualTo(boxed));
+    }
 
     private class Customization : ICustomization
     {

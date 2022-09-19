@@ -39,7 +39,7 @@ public static class ServiceConfiguration
             .Where(t => typeof(Delegate).IsAssignableFrom(t))
             .ToArray();
         source.AddFactoryDelegates(typeof(Connection).Assembly, internalFactories);
-        source.AddSingleton<INodeSerializer, NodeSerializer>();
+        source.AddFactoryDelegate<NodeSerializerFactory, NodeSerializer>();
         source.AddSingleton<Comparer>();
         source.AddSingleton<IComparer>(s => s.GetRequiredService<Comparer>());
         source.AddSingleton<IComparerInternal>(s => s.GetRequiredService<Comparer>());
@@ -55,7 +55,6 @@ public static class ServiceConfiguration
 
     private static void ConfigureCommands(IServiceCollection source)
     {
-        source.AddSingleton<UpdateTreeCommand>();
         source.AddSingleton<UpdateFastInsertFile>();
         source.AddSingleton<CommitCommand>();
         source.AddSingleton<FastImportCommitCommand>();

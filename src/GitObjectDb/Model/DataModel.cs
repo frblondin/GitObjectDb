@@ -37,9 +37,6 @@ internal class DataModel : IDataModel
     public IEnumerable<NodeTypeDescription> GetTypesMatchingFolderName(string folderName) =>
         _folderNames[folderName];
 
-    public Type? GetNewTypeIfDeprecated(Type nodeType) =>
-        _deprecatedTypes.TryGetValue(nodeType, out var newType) ? newType : null;
-
     private void ValidateFolderNames()
     {
         foreach (var folderGroup in _folderNames)
@@ -76,4 +73,32 @@ internal class DataModel : IDataModel
     public NodeTypeDescription GetDescription(Type type) =>
         NodeTypes.FirstOrDefault(t => t.Type == type) ??
         throw new GitObjectDbException($"Type {type} could not be found in model.");
+
+    public Type? GetNewTypeIfDeprecated(Type nodeType) =>
+        _deprecatedTypes.TryGetValue(nodeType, out var newType) ? newType : null;
+
+    public Node UpdateDeprecatedNode(Node deprecated, Type newType)
+    {
+        if (DeprecatedNodeUpdater is null)
+        {
+            throw new GitObjectDbException("No deprecated node updater defined in model.");
+        }
+        var updated = DeprecatedNodeUpdater(deprecated, newType) ??
+            throw new GitObjectDbException("Deprecated node updater did not return any value.");
+        if (!newType.IsInstanceOfType(updated))
+        {
+            throw new GitObjectDbException($"Deprecated node updater did not return a value of type '{newType}'.");
+        }
+        if (updated.Id != deprecated.Id)
+        {
+            throw new GitObjectDbException($"Updated node does not have the same id.");
+        }
+        return UpdateBaseProperties(updated, deprecated.Path, deprecated.EmbeddedResource);
+    }
+
+    public Node UpdateBaseProperties(Node node, DataPath? path, string? embeddedResource) => node with
+    {
+        Path = path,
+        EmbeddedResource = embeddedResource,
+    };
 }

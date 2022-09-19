@@ -1,5 +1,6 @@
+using GitObjectDb.Injection;
+using GitObjectDb.Internal;
 using GitObjectDb.Model;
-using GitObjectDb.Serialization.Json.Converters;
 using LibGit2Sharp;
 using Microsoft.IO;
 using System;
@@ -7,6 +8,7 @@ using System.Buffers;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 namespace GitObjectDb.Serialization.Json;
 
@@ -21,15 +23,20 @@ internal partial class NodeSerializer : INodeSerializer
         Indented = true,
     };
 
-    public NodeSerializer(RecyclableMemoryStreamManager streamManager)
+    [FactoryDelegateConstructor(typeof(ConnectionFactory))]
+    public NodeSerializer(IDataModel model, RecyclableMemoryStreamManager streamManager)
     {
-        Options = NodeSerializer.CreateSerializerOptions();
+        Model = model;
         _streamManager = streamManager;
+
+        Options = CreateSerializerOptions(model);
     }
+
+    public IDataModel Model { get; }
 
     public JsonSerializerOptions Options { get; set; }
 
-    internal static JsonSerializerOptions CreateSerializerOptions()
+    private static JsonSerializerOptions CreateSerializerOptions(IDataModel model)
     {
         var result = new JsonSerializerOptions
         {
@@ -39,9 +46,9 @@ internal partial class NodeSerializer : INodeSerializer
             WriteIndented = true,
             ReferenceHandler = new NodeReferenceHandler(),
             ReadCommentHandling = JsonCommentHandling.Skip,
+            TypeInfoResolver = new NodeTypeInfoResolver(model),
         };
 
-        result.Converters.Add(new NonScalarConverter());
         result.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 
         return result;
@@ -52,7 +59,7 @@ internal partial class NodeSerializer : INodeSerializer
         var result = _streamManager.GetStream();
         using (var writer = new Utf8JsonWriter(result, _writerOptions))
         {
-            JsonSerializer.Serialize(writer, new NonScalar(node), Options);
+            JsonSerializer.Serialize(writer, node, Options);
             WriteEmbeddedResource(node, writer);
         }
         result.Seek(0L, SeekOrigin.Begin);
@@ -62,10 +69,10 @@ internal partial class NodeSerializer : INodeSerializer
     public Node Deserialize(Stream stream,
                             ObjectId treeId,
                             DataPath? path,
-                            IDataModel model,
                             ItemLoader referenceResolver)
     {
-        NodeReferenceHandler.CurrentContext.Value = new NodeReferenceHandler.DataContext(referenceResolver, treeId);
+        var isRootContext = NodeReferenceHandler.CurrentContext.Value == null;
+        NodeReferenceHandler.CurrentContext.Value ??= new NodeReferenceHandler.DataContext(referenceResolver, treeId);
         try
         {
             var length = (int)stream.Length;
@@ -73,15 +80,18 @@ internal partial class NodeSerializer : INodeSerializer
             try
             {
                 stream.Read(bytes, 0, length);
-                var span = new ReadOnlySpan<byte>(bytes, 0, length);
-                var result = JsonSerializer.Deserialize<NonScalar>(span, Options)!.Node;
+                var reader = new Utf8JsonReader(bytes, new()
+                {
+                    CommentHandling = JsonCommentHandling.Skip,
+                });
+                var result = JsonSerializer.Deserialize<Node>(ref reader, Options)!;
                 var embeddedResource = ReadEmbeddedResource(new ReadOnlySequence<byte>(bytes, 0, length));
-                result = UpdateBaseProperties(result, path, embeddedResource);
+                result = Model.UpdateBaseProperties(result, path, embeddedResource);
 
-                var newType = model.GetNewTypeIfDeprecated(result.GetType());
+                var newType = Model.GetNewTypeIfDeprecated(result.GetType());
                 if (newType is not null)
                 {
-                    return UpdateDeprecatedNode(result, newType, model);
+                    return Model.UpdateDeprecatedNode(result, newType);
                 }
 
                 return result;
@@ -93,32 +103,39 @@ internal partial class NodeSerializer : INodeSerializer
         }
         finally
         {
-            NodeReferenceHandler.CurrentContext.Value = null;
+            if (isRootContext)
+            {
+                NodeReferenceHandler.CurrentContext.Value = null;
+            }
         }
     }
 
-    private static Node UpdateDeprecatedNode(Node deprecated, Type newType, IDataModel model)
+    public string EscapeRegExPattern(string pattern)
     {
-        if (model.DeprecatedNodeUpdater is null)
-        {
-            throw new GitObjectDbException("No deprecated node updater defined in model.");
-        }
-        var updated = model.DeprecatedNodeUpdater(deprecated, newType) ??
-            throw new GitObjectDbException("Deprecated node updater did not return any value.");
-        if (!newType.IsInstanceOfType(updated))
-        {
-            throw new GitObjectDbException($"Deprecated node updater did not return a value of type '{newType}'.");
-        }
-        if (updated.Id != deprecated.Id)
-        {
-            throw new GitObjectDbException($"Updated node does not have the same id.");
-        }
-        return UpdateBaseProperties(updated, deprecated.Path, deprecated.EmbeddedResource);
+        var jsonPattern = ConvertToJsonValue(pattern);
+        return pattern.Equals(jsonPattern, StringComparison.Ordinal) ?
+               pattern :
+               $"{Regex.Escape(pattern)}|{Regex.Escape(jsonPattern)}";
     }
 
-    private static Node UpdateBaseProperties(Node result, DataPath? path, string? embeddedResource) => result with
+    private string ConvertToJsonValue(string pattern)
     {
-        Path = path,
-        EmbeddedResource = embeddedResource,
-    };
+        var stream = _streamManager.GetStream();
+        WriteJsonValue(pattern, stream);
+        stream.Position = 0L;
+        using var reader = new StreamReader(stream);
+        var jsonValue = reader.ReadToEnd();
+        return jsonValue.Substring(1, jsonValue.Length - 2); // Remove double quotes
+    }
+
+    private void WriteJsonValue(string pattern, Stream stream)
+    {
+        var options = new JsonWriterOptions
+        {
+            Encoder = Options.Encoder,
+            SkipValidation = true,
+        };
+        using var writer = new Utf8JsonWriter(stream, options);
+        writer.WriteStringValue(pattern);
+    }
 }

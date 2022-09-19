@@ -1,4 +1,5 @@
 using GitObjectDb.Model;
+using GitObjectDb.Serialization;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Generic;
@@ -11,6 +12,9 @@ public interface IQueryAccessor
 {
     /// <summary>Gets the model that this connection should manage.</summary>
     IDataModel Model { get; }
+
+    /// <summary>Gets the node serializer.</summary>
+    INodeSerializer Serializer { get; }
 
     /// <summary>Lookups for the item defined in the specified path.</summary>
     /// <typeparam name="TItem">The type of the node.</typeparam>

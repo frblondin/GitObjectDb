@@ -36,4 +36,17 @@ public interface IDataModel
     /// <param name="folderName">The name of the folder.</param>
     /// <returns>The matching types.</returns>
     IEnumerable<NodeTypeDescription> GetTypesMatchingFolderName(string folderName);
+
+    /// <summary>Updates the <paramref name="deprecated"/> node to type <paramref name="newType"/>.</summary>
+    /// <param name="deprecated">The node to update.</param>
+    /// <param name="newType">The type to convert the node to.</param>
+    /// <returns>The updated node.</returns>
+    Node UpdateDeprecatedNode(Node deprecated, Type newType);
+
+    /// <summary>Updates the base node properties.</summary>
+    /// <param name="node">The node to update.</param>
+    /// <param name="path">The new path value.</param>
+    /// <param name="embeddedResource">The embedded resource value.</param>
+    /// <returns>The updated node containing new property values.</returns>
+    Node UpdateBaseProperties(Node node, DataPath? path, string? embeddedResource);
 }

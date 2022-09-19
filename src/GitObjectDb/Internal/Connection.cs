@@ -19,7 +19,6 @@ namespace GitObjectDb.Internal;
 [DebuggerDisplay("{Repository}")]
 internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvider
 {
-    private readonly INodeSerializer _nodeSerializer;
     private readonly TransformationComposerFactory _transformationComposerFactory;
     private readonly RebaseFactory _rebaseFactory;
     private readonly MergeFactory _mergeFactory;
@@ -38,7 +37,7 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
     {
         Repository = GetOrCreateRepository(path, initialBranch);
         Model = model;
-        _nodeSerializer = serviceProvider.GetRequiredService<INodeSerializer>();
+        Serializer = serviceProvider.GetRequiredService<NodeSerializerFactory>().Invoke(model);
         _transformationComposerFactory = serviceProvider.GetRequiredService<TransformationComposerFactory>();
         _rebaseFactory = serviceProvider.GetRequiredService<RebaseFactory>();
         _mergeFactory = serviceProvider.GetRequiredService<MergeFactory>();
@@ -52,11 +51,7 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
 
     public IRepository Repository { get; }
 
-    public JsonSerializerOptions SerializerOptions
-    {
-        get => _nodeSerializer.Options;
-        set => _nodeSerializer.Options = value;
-    }
+    public INodeSerializer Serializer { get; }
 
     public IDataModel Model { get; }
 

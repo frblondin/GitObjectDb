@@ -4,7 +4,6 @@ using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using Models.Software;
 using System;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -66,7 +65,7 @@ public class SoftwareCustomization : ICustomization
     private IConnectionInternal CreateConnection(IFixture fixture, IServiceProvider serviceProvider, IDataModel model)
     {
         var path = RepositoryPath ?? GitObjectDbFixture.GetAvailableFolderPath();
-        var alreadyExists = Directory.Exists(path);
+        var alreadyExists = Repository.IsValid(path);
         var repositoryFactory = serviceProvider.GetRequiredService<ConnectionFactory>();
         var result = (IConnectionInternal)repositoryFactory(path, model);
         if (!alreadyExists)
