@@ -53,7 +53,7 @@ namespace GitObjectDb.Internal.Commands
             return result;
         }
 
-        internal static List<Commit> RetrieveParentsOfTheCommitBeingCreated(Repository repository, bool amendPreviousCommit, Commit? mergeParent = null)
+        internal static List<Commit> RetrieveParentsOfTheCommitBeingCreated(IRepository repository, bool amendPreviousCommit, Commit? mergeParent = null)
         {
             if (amendPreviousCommit)
             {

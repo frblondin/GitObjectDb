@@ -108,14 +108,13 @@ namespace GitObjectDb.Serialization.Json
             {
                 throw new GitObjectDbException($"Updated node does not have the same id.");
             }
-            UpdateBaseProperties(updated, deprecated.Path, deprecated.EmbeddedResource);
-            return updated;
+            return UpdateBaseProperties(updated, deprecated.Path, deprecated.EmbeddedResource);
         }
 
-        private static void UpdateBaseProperties(Node result, DataPath? path, string? embeddedResource)
+        private static Node UpdateBaseProperties(Node result, DataPath? path, string? embeddedResource) => result with
         {
-            result.Path = path;
-            result.EmbeddedResource = embeddedResource;
-        }
+            Path = path,
+            EmbeddedResource = embeddedResource,
+        };
     }
 }

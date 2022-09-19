@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 
@@ -14,9 +15,9 @@ namespace GitObjectDb
         [JsonIgnore]
         public DataPath? Path { get; set; }
 
-        /// <summary>Gets or sets the embedded resource.</summary>
+        /// <summary>Gets the embedded resource.</summary>
         [JsonIgnore]
-        public string? EmbeddedResource { get; set; }
+        public string? EmbeddedResource { get; init; }
 
         /// <inheritdoc/>
         public override string ToString() => Id.ToString();
