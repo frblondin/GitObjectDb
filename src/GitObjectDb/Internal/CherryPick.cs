@@ -85,7 +85,7 @@ namespace GitObjectDb.Internal
             {
                 // If last commit, update head so it points to the new commit
                 CompletedCommit = _commitCommand.Commit(
-                    _connection.Repository,
+                    _connection,
                     Branch.Tip,
                     CurrentChanges.Select(c =>
                         (ApplyUpdateTreeDefinition)((ObjectDatabase db, TreeDefinition t, Tree? @ref) =>

@@ -14,46 +14,41 @@ namespace GitObjectDb.Internal.Commands
             _treeValidation = treeValidation;
         }
 
-        internal Commit Commit(Repository repository, IEnumerable<ITransformation> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, Commit? mergeParent = null, Action<ITransformation>? beforeProcessing = null)
+        internal Commit Commit(IConnectionInternal connection, TransformationComposer transformationComposer, string message, Signature author, Signature committer, bool amendPreviousCommit = false, Commit? mergeParent = null, Action<ITransformation>? beforeProcessing = null)
         {
-            var tip = repository.Info.IsHeadUnborn ? null : repository.Head.Tip;
-            var definition = tip != null ? TreeDefinition.From(tip) : new TreeDefinition();
-            foreach (var transformation in transformations)
-            {
-                beforeProcessing?.Invoke(transformation);
-                transformation.TreeTransformation(repository.ObjectDatabase, definition, tip?.Tree);
-            }
-            var parents = RetrieveParentsOfTheCommitBeingCreated(repository, amendPreviousCommit, mergeParent).ToList();
-            return Commit(repository, definition, message, author, committer, parents, amendPreviousCommit, true);
+            var tip = connection.Info.IsHeadUnborn ? null : connection.Head.Tip;
+            var definition = transformationComposer.ApplyTransformations(connection.Repository.ObjectDatabase, tip, beforeProcessing);
+            var parents = RetrieveParentsOfTheCommitBeingCreated(connection.Repository, amendPreviousCommit, mergeParent).ToList();
+            return Commit(connection, definition, message, author, committer, parents, amendPreviousCommit, true);
         }
 
-        internal Commit Commit(Repository repository, Commit predecessor, IEnumerable<ApplyUpdateTreeDefinition> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, bool updateHead = true, Commit? mergeParent = null)
+        internal Commit Commit(IConnectionInternal connection, Commit predecessor, IEnumerable<ApplyUpdateTreeDefinition> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, bool updateHead = true, Commit? mergeParent = null)
         {
             var definition = TreeDefinition.From(predecessor);
             foreach (var transformation in transformations)
             {
-                transformation(repository.ObjectDatabase, definition, predecessor.Tree);
+                transformation(connection.Repository.ObjectDatabase, definition, predecessor.Tree);
             }
             var parents = new List<Commit> { predecessor };
             if (mergeParent != null)
             {
                 parents.Add(mergeParent);
             }
-            return Commit(repository, definition, message, author, committer, parents, amendPreviousCommit, updateHead);
+            return Commit(connection, definition, message, author, committer, parents, amendPreviousCommit, updateHead);
         }
 
-        private Commit Commit(Repository repository, TreeDefinition definition, string message, Signature author, Signature committer, List<Commit> parents, bool amendPreviousCommit, bool updateHead)
+        private Commit Commit(IConnectionInternal connection, TreeDefinition definition, string message, Signature author, Signature committer, List<Commit> parents, bool amendPreviousCommit, bool updateHead)
         {
-            var tree = repository.ObjectDatabase.CreateTree(definition);
-            _treeValidation.Validate(tree);
-            var result = repository.ObjectDatabase.CreateCommit(
+            var tree = connection.Repository.ObjectDatabase.CreateTree(definition);
+            _treeValidation.Validate(tree, connection.Model);
+            var result = connection.Repository.ObjectDatabase.CreateCommit(
                 author, committer, message,
                 tree,
                 parents, false);
             if (updateHead)
             {
-                var logMessage = result.BuildCommitLogMessage(amendPreviousCommit, repository.Info.IsHeadUnborn, parents.Count > 1);
-                repository.UpdateHeadAndTerminalReference(result, logMessage);
+                var logMessage = result.BuildCommitLogMessage(amendPreviousCommit, connection.Info.IsHeadUnborn, parents.Count > 1);
+                connection.Repository.UpdateHeadAndTerminalReference(result, logMessage);
             }
             return result;
         }

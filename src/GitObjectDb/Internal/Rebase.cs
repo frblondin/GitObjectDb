@@ -116,7 +116,7 @@ namespace GitObjectDb.Internal
 
                 // If last commit, update head so it points to the new commit
                 var commit = _commitCommand.Commit(
-                    _connection.Repository,
+                    _connection,
                     tip,
                     CurrentChanges.Select(c =>
                         (ApplyUpdateTreeDefinition)((ObjectDatabase db, TreeDefinition t, Tree? @ref) =>

@@ -16,6 +16,8 @@ namespace GitObjectDb.Model
         {
             Type = type;
             Name = name;
+
+            UseNodeFolders = GitFolderAttribute.Get(type)?.UseNodeFolders ?? GitFolderAttribute.DefaultUseNodeFoldersValue;
         }
 
         /// <summary>Gets the CLR <see cref="Type"/> of the node.</summary>
@@ -26,6 +28,9 @@ namespace GitObjectDb.Model
 
         /// <summary>Gets the children that this node can contain.</summary>
         public IEnumerable<NodeTypeDescription> Children => _children.AsReadOnly();
+
+        /// <summary>Gets a value indicating whether node should be stored in a nested folder (FolderName/NodeId/data.json) or not (FolderName/NodeId.json).</summary>
+        public bool UseNodeFolders { get; }
 
         internal void AddChild(NodeTypeDescription nodeType)
         {

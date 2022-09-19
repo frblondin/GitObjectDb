@@ -108,7 +108,7 @@ namespace GitObjectDb.Internal
             {
                 var message = $"Merge {_upstreamCommittish ?? UpstreamCommit.Sha} into {Branch.FriendlyName}";
                 MergeCommit = _commitCommand.Commit(
-                    _connection.Repository,
+                    _connection,
                     Branch.Tip,
                     CurrentChanges.Select(c =>
                         (ApplyUpdateTreeDefinition)((ObjectDatabase db, TreeDefinition t, Tree? @ref) =>
