@@ -18,7 +18,7 @@ using static Nuke.Common.Tools.ReportGenerator.ReportGeneratorTasks;
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
 [AzurePipelines(
-    AzurePipelinesImage.UbuntuLatest,
+    AzurePipelinesImage.Windows2022,
     InvokedTargets = new[] { nameof(Coverage), nameof(Pack) })]
 class Build : NukeBuild
 {
