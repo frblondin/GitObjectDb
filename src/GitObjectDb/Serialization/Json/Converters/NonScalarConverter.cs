@@ -1,6 +1,5 @@
+using GitObjectDb.Tools;
 using System;
-using System.Collections.Concurrent;
-using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -36,14 +35,14 @@ namespace GitObjectDb.Serialization.Json.Converters
 
             var typeName = reader.GetString() ??
                 throw new JsonException("Reader did not return any string value.");
-            return _nodeSerializer.BindToType(typeName);
+            return TypeHelper.BindToType(typeName);
         }
 
         public override void Write(Utf8JsonWriter writer, NonScalar value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
 
-            writer.WriteString(nameof(NonScalar.Type), _nodeSerializer.BindToName(value.Type));
+            writer.WriteString(nameof(NonScalar.Type), TypeHelper.BindToName(value.Type));
             writer.WritePropertyName(nameof(NonScalar.Node));
             JsonSerializer.Serialize(writer, value.Node, value.Type, options);
 

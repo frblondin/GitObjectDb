@@ -7,8 +7,8 @@ namespace GitObjectDb
     [DebuggerDisplay("Id = {Id}, Path = {Path}")]
     public abstract record Node : ITreeItem
     {
-        /// <summary>Gets or sets the unique node identifier.</summary>
-        public UniqueId Id { get; set; } = UniqueId.CreateNew();
+        /// <summary>Gets the unique node identifier.</summary>
+        public UniqueId Id { get; init; } = UniqueId.CreateNew();
 
         /// <summary>Gets or sets the node path.</summary>
         [JsonIgnore]

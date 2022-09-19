@@ -1,5 +1,6 @@
 using Fasterflect;
 using GitObjectDb.Internal.Commands;
+using GitObjectDb.Tools;
 using LibGit2Sharp;
 using System;
 using System.Collections.Immutable;
@@ -79,8 +80,7 @@ namespace GitObjectDb.Comparison
             switch (nonNull)
             {
                 case Node node:
-                    Merged = (ITreeItem)Reflect.Constructor(type).Invoke();
-                    ((Node)Merged).Id = node.Id;
+                    Merged = NodeFactory.Create(type, node.Id);
                     Merged.Path = path;
                     break;
                 case Resource resource:

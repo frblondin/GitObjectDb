@@ -15,9 +15,7 @@ namespace GitObjectDb.Tests.Assets.Tools
 #endif
         }
 
-        public Type[] CustomizationTypes { get; }
-
-        static IFixture CreateFixture(params Type[] customizationTypes)
+        internal static IFixture CreateFixture(params Type[] customizationTypes)
         {
             var result = new Fixture();
             foreach (var type in customizationTypes)

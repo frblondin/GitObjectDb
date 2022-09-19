@@ -9,9 +9,5 @@ namespace GitObjectDb.Serialization
         Node Deserialize(Stream stream, DataPath? path, IDataModel model, Func<DataPath, ITreeItem> referenceResolver);
 
         Stream Serialize(Node node);
-
-        string BindToName(Type type);
-
-        Type BindToType(string fullTypeName);
     }
 }

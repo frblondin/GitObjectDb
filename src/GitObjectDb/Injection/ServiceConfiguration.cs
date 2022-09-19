@@ -1,4 +1,5 @@
 using GitObjectDb.Comparison;
+using GitObjectDb.Injection;
 using GitObjectDb.Internal;
 using GitObjectDb.Internal.Commands;
 using GitObjectDb.Internal.Queries;
@@ -43,6 +44,7 @@ namespace GitObjectDb
             source.AddSingleton<IComparerInternal>(s => s.GetRequiredService<Comparer>());
             source.AddSingleton<IMergeComparer, MergeComparer>();
             source.AddSingleton<ITreeValidation, TreeValidation>();
+            source.AddSingleton<Microsoft.IO.RecyclableMemoryStreamManager>();
         }
 
         private static void ConfigureQueries(IServiceCollection source)
@@ -53,7 +55,22 @@ namespace GitObjectDb
         private static void ConfigureCommands(IServiceCollection source)
         {
             source.AddSingleton<UpdateTreeCommand>();
+            source.AddSingleton<UpdateFastInsertFile>();
             source.AddSingleton<CommitCommand>();
+            source.AddSingleton<FastImportCommitCommand>();
+            source.AddSingleton<ServiceResolver<CommitCommandType, ICommitCommand>>(serviceProvider => type =>
+            {
+                if (type == CommitCommandType.Auto)
+                {
+                    type = GitCliCommand.IsGitInstalled ? CommitCommandType.FastImport : CommitCommandType.Normal;
+                }
+                return type switch
+                {
+                    CommitCommandType.Normal => serviceProvider.GetRequiredService<CommitCommand>(),
+                    CommitCommandType.FastImport => serviceProvider.GetRequiredService<FastImportCommitCommand>(),
+                    _ => throw new NotImplementedException(),
+                };
+            });
         }
     }
 }

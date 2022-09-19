@@ -10,14 +10,24 @@ namespace GitObjectDb.Model
     [DebuggerDisplay("Name = {Name}, Type = {Type}")]
     public class NodeTypeDescription
     {
-        private List<NodeTypeDescription> _children = new List<NodeTypeDescription>();
+        private List<NodeTypeDescription> _children = new();
 
-        internal NodeTypeDescription(Type type, string name)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NodeTypeDescription"/> class.
+        /// </summary>
+        /// <param name="type">The CLR <see cref="Type"/> of the node.</param>
+        /// <param name="name">The name of the node type.</param>
+        /// <param name="useNodeFolders">Whether node should be stored in a nested folder (FolderName/NodeId/data.json) or not (FolderName/NodeId.json).</param>
+        public NodeTypeDescription(Type type, string name, bool? useNodeFolders = null)
         {
+            ValidateType(type);
+
             Type = type;
             Name = name;
 
-            UseNodeFolders = GitFolderAttribute.Get(type)?.UseNodeFolders ?? GitFolderAttribute.DefaultUseNodeFoldersValue;
+            UseNodeFolders = useNodeFolders ??
+                             GitFolderAttribute.Get(type)?.UseNodeFolders ??
+                             GitFolderAttribute.DefaultUseNodeFoldersValue;
         }
 
         /// <summary>Gets the CLR <see cref="Type"/> of the node.</summary>
@@ -31,6 +41,26 @@ namespace GitObjectDb.Model
 
         /// <summary>Gets a value indicating whether node should be stored in a nested folder (FolderName/NodeId/data.json) or not (FolderName/NodeId.json).</summary>
         public bool UseNodeFolders { get; }
+
+        private static void ValidateType(Type type)
+        {
+            if (type.IsAbstract)
+            {
+                throw new ArgumentException($"Type {type} is abstract.");
+            }
+            if (type.IsGenericTypeDefinition)
+            {
+                throw new ArgumentException($"Type {type} is a generic type definition.");
+            }
+            if (type.GetConstructor(Type.EmptyTypes) is null)
+            {
+                throw new ArgumentException($"No parameterless constructor found for type {type}.");
+            }
+            if (!typeof(Node).IsAssignableFrom(type))
+            {
+                throw new ArgumentException($"{nameof(type)} should inherit from {nameof(Node)}.");
+            }
+        }
 
         internal void AddChild(NodeTypeDescription nodeType)
         {
