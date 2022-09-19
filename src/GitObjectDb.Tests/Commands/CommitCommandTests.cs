@@ -108,6 +108,65 @@ namespace GitObjectDb.Tests.Commands
 
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+        public void CannotCommitChildAdditionAndParentDeletion(IFixture fixture, Application application, Table table, Field field, string message, Signature signature)
+        {
+            // Arrange
+            var (updateCommand, comparer, sut, connection) = Arrange(fixture);
+
+            // Act, Assert
+            Assert.Throws<GitObjectDbException>(() =>
+            {
+                var composer = new TransformationComposer(updateCommand, sut, connection);
+                composer.CreateOrUpdate(new Field { }, table);
+                composer.Delete(application);
+                sut.Commit(
+                    connection.Repository,
+                    composer.Transformations,
+                    message, signature, signature);
+            });
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+        public void CannotCommitParentDeletionAndChildAddition(IFixture fixture, Application application, Table table, Field field, string message, Signature signature)
+        {
+            // Arrange
+            var (updateCommand, comparer, sut, connection) = Arrange(fixture);
+
+            // Act, Assert
+            Assert.Throws<GitObjectDbException>(() =>
+            {
+                var composer = new TransformationComposer(updateCommand, sut, connection);
+                composer.Delete(application);
+                composer.CreateOrUpdate(new Field { }, table);
+                sut.Commit(
+                    connection.Repository,
+                    composer.Transformations,
+                    message, signature, signature);
+            });
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+        public void CannotCommitChildWithNoParent(IFixture fixture, Table table, string message, Signature signature)
+        {
+            // Arrange
+            var (updateCommand, comparer, sut, connection) = Arrange(fixture);
+
+            // Act, Assert
+            Assert.Throws<GitObjectDbException>(() =>
+            {
+                var composer = new TransformationComposer(updateCommand, sut, connection);
+                composer.CreateOrUpdate(new Field { Path = new DataPath("InvalidFolder", "" });
+                sut.Commit(
+                    connection.Repository,
+                    composer.Transformations,
+                    message, signature, signature);
+            });
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
         public void EditNestedProperty(IFixture fixture, Field field, string message, Signature signature)
         {
             // Arrange
