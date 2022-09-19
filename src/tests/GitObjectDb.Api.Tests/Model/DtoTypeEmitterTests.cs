@@ -1,4 +1,5 @@
-﻿using GitObjectDb.Api.Model;
+using GitObjectDb.Api.Model;
+using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Reflection;
@@ -9,6 +10,7 @@ namespace GitObjectDb.Api.Tests.Model;
 public class DtoTypeEmitterTests
 {
     [Test]
+    [AutoDataCustomizations]
     public void SimpleNodeDtoGetsEmitted()
     {
         // Arrange
@@ -26,6 +28,7 @@ public class DtoTypeEmitterTests
     }
 
     [Test]
+    [AutoDataCustomizations]
     public void SingleReferenceDtoGetsEmitted()
     {
         // Arrange
@@ -44,6 +47,7 @@ public class DtoTypeEmitterTests
     }
 
     [Test]
+    [AutoDataCustomizations]
     public void MultiReferenceDtoGetsEmitted()
     {
         // Arrange
@@ -62,6 +66,7 @@ public class DtoTypeEmitterTests
     }
 
     [Test]
+    [AutoDataCustomizations]
     public void NonApiBrowsableNodesGetSkipped()
     {
         // Arrange
