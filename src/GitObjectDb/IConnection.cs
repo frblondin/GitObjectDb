@@ -19,8 +19,8 @@ namespace GitObjectDb
     /// <seealso cref="IDisposable" />
     public interface IConnection : IDisposable
     {
-        /// <summary>Gets the configuration settings for this repository.</summary>
-        Configuration Config { get; }
+        /// <summary>Gets the underlying Git repository.</summary>
+        IRepository Repository { get; }
 
         /// <summary>Gets high level information about this repository.</summary>
         RepositoryInformation Info { get; }
@@ -139,8 +139,6 @@ namespace GitObjectDb
 
     internal interface IConnectionInternal : IConnection
     {
-        Repository Repository { get; }
-
         Commit FindUpstreamCommit(string? committish, Branch branch);
     }
 }

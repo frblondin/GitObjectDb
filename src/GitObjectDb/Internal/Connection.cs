@@ -52,7 +52,7 @@ namespace GitObjectDb.Internal
             _queryItems = queryItems;
         }
 
-        public Repository Repository { get; }
+        public IRepository Repository { get; }
 
         [ExcludeFromCodeCoverage]
         public Configuration Config => Repository.Config;
@@ -74,7 +74,7 @@ namespace GitObjectDb.Internal
         private static Repository GetOrCreateRepository(string path, string initialBranch)
         {
             var absolute = Path.GetFullPath(path);
-            if (!Repository.IsValid(absolute))
+            if (!LibGit2Sharp.Repository.IsValid(absolute))
             {
                 InitializeRepository(absolute, initialBranch);
             }
@@ -83,7 +83,7 @@ namespace GitObjectDb.Internal
 
         private static void InitializeRepository(string path, string initialBranch)
         {
-            Repository.Init(path);
+            LibGit2Sharp.Repository.Init(path);
 
             var head = Path.Combine(path, ".git", "HEAD");
             var content = File.ReadAllText(head);
