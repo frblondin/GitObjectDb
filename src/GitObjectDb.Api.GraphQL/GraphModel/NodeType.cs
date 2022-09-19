@@ -39,7 +39,8 @@ public class NodeType<TNode, TNodeDto> : ObjectGraphType<TNodeDto>, INodeType
                 continue;
             }
             var type = property.PropertyType.GetGraphTypeFromType(isNullable: true, TypeMappingMode.OutputType);
-            Field(type, property.Name);
+            var summary = typeof(TNode).GetProperty(property.Name)?.GetXmlDocsSummary(false);
+            Field(type, property.Name, summary);
         }
     }
 
@@ -70,6 +71,7 @@ public class NodeType<TNode, TNodeDto> : ObjectGraphType<TNodeDto>, INodeType
         AddField(new()
         {
             Name = property.Name,
+            Description = typeof(TNode).GetProperty(property.Name)?.GetXmlDocsSummary(false),
             Type = type.GetType(),
             ResolvedType = type,
             Resolver = NodeReferenceQuery.CreateSingleReferenceResolver(nodeType, property),
@@ -83,6 +85,7 @@ public class NodeType<TNode, TNodeDto> : ObjectGraphType<TNodeDto>, INodeType
         AddField(new()
         {
             Name = member.Name,
+            Description = typeof(TNode).GetProperty(member.Name)?.GetXmlDocsSummary(false),
             Type = type.GetType(),
             ResolvedType = type,
             Resolver = NodeReferenceQuery.CreateMultiReferenceResolver(dtoType, nodeType, member),
