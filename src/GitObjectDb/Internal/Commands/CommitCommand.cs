@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace GitObjectDb.Internal.Commands
 {
-    internal class CommitCommand
+    internal partial class CommitCommand : ICommitCommand
     {
         private readonly ITreeValidation _treeValidation;
 
@@ -14,12 +14,12 @@ namespace GitObjectDb.Internal.Commands
             _treeValidation = treeValidation;
         }
 
-        internal Commit Commit(IConnectionInternal connection, TransformationComposer transformationComposer, string message, Signature author, Signature committer, bool amendPreviousCommit = false, Commit? mergeParent = null, Action<ITransformation>? beforeProcessing = null)
+        public Commit Commit(IConnectionInternal connection, TransformationComposer transformationComposer, string message, Signature author, Signature committer, bool amendPreviousCommit = false, Commit? mergeParent = null, Action<ITransformation>? beforeProcessing = null)
         {
             var tip = connection.Info.IsHeadUnborn ? null : connection.Head.Tip;
             var definition = transformationComposer.ApplyTransformations(connection.Repository.ObjectDatabase, tip, beforeProcessing);
             var parents = RetrieveParentsOfTheCommitBeingCreated(connection.Repository, amendPreviousCommit, mergeParent).ToList();
-            return Commit(connection, definition, message, author, committer, parents, amendPreviousCommit, true);
+            return Commit(connection, definition, message, author, committer, parents, amendPreviousCommit, updateHead: true);
         }
 
         internal Commit Commit(IConnectionInternal connection, Commit predecessor, IEnumerable<ApplyUpdateTreeDefinition> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, bool updateHead = true, Commit? mergeParent = null)
@@ -53,7 +53,7 @@ namespace GitObjectDb.Internal.Commands
             return result;
         }
 
-        private static List<Commit> RetrieveParentsOfTheCommitBeingCreated(Repository repository, bool amendPreviousCommit, Commit? mergeParent = null)
+        internal static List<Commit> RetrieveParentsOfTheCommitBeingCreated(Repository repository, bool amendPreviousCommit, Commit? mergeParent = null)
         {
             if (amendPreviousCommit)
             {

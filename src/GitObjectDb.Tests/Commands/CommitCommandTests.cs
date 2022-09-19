@@ -1,6 +1,7 @@
 using AutoFixture;
 using FakeItEasy;
 using GitObjectDb.Comparison;
+using GitObjectDb.Injection;
 using GitObjectDb.Internal;
 using GitObjectDb.Internal.Commands;
 using GitObjectDb.Model;
@@ -18,16 +19,25 @@ namespace GitObjectDb.Tests.Commands
     public class CommitCommandTests
     {
         [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
-        public void AddNewNodeUsingNodeFolders(IFixture fixture, Application application, UniqueId newTableId, string message, Signature signature)
+        [InlineAutoDataCustomizations(
+            new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+            CommitCommandType.Normal)]
+        [InlineAutoDataCustomizations(
+            new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+            CommitCommandType.FastImport)]
+        public void AddNewNodeUsingNodeFolders(CommitCommandType commitType, IFixture fixture, Application application, UniqueId newTableId, string message, Signature signature)
         {
             // Arrange
-            var (updateCommand, comparer, sut, connection) = Arrange(fixture);
+            var updateCommand = fixture.Create<UpdateTreeCommand>();
+            var updateFastInsert = fixture.Create<UpdateFastInsertFile>();
+            var comparer = fixture.Create<Comparer>();
+            var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+            var connection = fixture.Create<IConnectionInternal>();
 
             // Act
-            var composer = new TransformationComposer(updateCommand, sut, connection);
+            var composer = new TransformationComposer(updateCommand, updateFastInsert, commitCommandFactory: sut, connection: connection);
             composer.CreateOrUpdate(new Table { Id = newTableId }, application);
-            sut.Commit(connection, composer, message, signature, signature);
+            sut.Invoke(commitType).Commit(connection, composer, message, signature, signature);
 
             // Assert
             var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
@@ -37,16 +47,25 @@ namespace GitObjectDb.Tests.Commands
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
-        public void AddNewNodeWithoutNodeFolders(IFixture fixture, Table table, UniqueId newFieldId, string message, Signature signature)
+        [InlineAutoDataCustomizations(
+            new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+            CommitCommandType.Normal)]
+        [InlineAutoDataCustomizations(
+            new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+            CommitCommandType.FastImport)]
+        public void AddNewNodeWithoutNodeFolders(CommitCommandType commitType, IFixture fixture, Table table, UniqueId newFieldId, string message, Signature signature)
         {
             // Arrange
-            var (updateCommand, comparer, sut, connection) = Arrange(fixture);
+            var updateCommand = fixture.Create<UpdateTreeCommand>();
+            var updateFastInsert = fixture.Create<UpdateFastInsertFile>();
+            var comparer = fixture.Create<Comparer>();
+            var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+            var connection = fixture.Create<IConnectionInternal>();
 
             // Act
-            var composer = new TransformationComposer(updateCommand, sut, connection);
+            var composer = new TransformationComposer(updateCommand, updateFastInsert, commitCommandFactory: sut, connection: connection);
             composer.CreateOrUpdate(new Field { Id = newFieldId }, table);
-            sut.Commit(connection, composer, message, signature, signature);
+            sut.Invoke(commitType).Commit(connection, composer, message, signature, signature);
 
             // Assert
             var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
@@ -56,17 +75,26 @@ namespace GitObjectDb.Tests.Commands
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
-        public void AddNewResource(IFixture fixture, Table table, string fileContent, string message, Signature signature)
+        [InlineAutoDataCustomizations(
+            new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+            CommitCommandType.Normal)]
+        [InlineAutoDataCustomizations(
+            new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+            CommitCommandType.FastImport)]
+        public void AddNewResource(CommitCommandType commitType, IFixture fixture, Table table, string fileContent, string message, Signature signature)
         {
             // Arrange
-            var (updateCommand, comparer, sut, connection) = Arrange(fixture);
+            var updateCommand = fixture.Create<UpdateTreeCommand>();
+            var updateFastInsert = fixture.Create<UpdateFastInsertFile>();
+            var comparer = fixture.Create<Comparer>();
+            var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+            var connection = fixture.Create<IConnectionInternal>();
             var resource = new Resource(table, "Some/Folder", "File.txt", new Resource.Data(fileContent));
 
             // Act
-            var composer = new TransformationComposer(updateCommand, sut, connection);
+            var composer = new TransformationComposer(updateCommand, updateFastInsert, commitCommandFactory: sut, connection: connection);
             composer.CreateOrUpdate(resource);
-            sut.Commit(connection, composer, message, signature, signature);
+            sut.Invoke(commitType).Commit(connection, composer, message, signature, signature);
 
             // Assert
             var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
@@ -78,16 +106,25 @@ namespace GitObjectDb.Tests.Commands
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
-        public void DeletingNodeRemovesNestedChildren(IFixture fixture, Table table, string message, Signature signature)
+        [InlineAutoDataCustomizations(
+            new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+            CommitCommandType.Normal)]
+        [InlineAutoDataCustomizations(
+            new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+            CommitCommandType.FastImport)]
+        public void DeletingNodeRemovesNestedChildren(CommitCommandType commitType, IFixture fixture, Table table, string message, Signature signature)
         {
             // Arrange
-            var (updateCommand, comparer, sut, connection) = Arrange(fixture);
+            var updateCommand = fixture.Create<UpdateTreeCommand>();
+            var updateFastInsert = fixture.Create<UpdateFastInsertFile>();
+            var comparer = fixture.Create<Comparer>();
+            var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+            var connection = fixture.Create<IConnectionInternal>();
 
             // Act
-            var composer = new TransformationComposer(updateCommand, sut, connection);
+            var composer = new TransformationComposer(updateCommand, updateFastInsert, commitCommandFactory: sut, connection: connection);
             composer.Delete(table);
-            sut.Commit(connection, composer, message, signature, signature);
+            sut.Invoke(commitType).Commit(connection, composer, message, signature, signature);
 
             // Assert
             var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
@@ -95,17 +132,26 @@ namespace GitObjectDb.Tests.Commands
         }
 
         [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
-        public void EditNestedProperty(IFixture fixture, Field field, string message, Signature signature)
+        [InlineAutoDataCustomizations(
+            new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+            CommitCommandType.Normal)]
+        [InlineAutoDataCustomizations(
+            new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+            CommitCommandType.FastImport)]
+        public void EditNestedProperty(CommitCommandType commitType, IFixture fixture, Field field, string message, Signature signature)
         {
             // Arrange
-            var (updateCommand, comparer, sut, connection) = Arrange(fixture);
+            var updateCommand = fixture.Create<UpdateTreeCommand>();
+            var updateFastInsert = fixture.Create<UpdateFastInsertFile>();
+            var comparer = fixture.Create<Comparer>();
+            var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+            var connection = fixture.Create<IConnectionInternal>();
 
             // Act
             field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
-            var composer = new TransformationComposer(updateCommand, sut, connection);
+            var composer = new TransformationComposer(updateCommand, updateFastInsert, commitCommandFactory: sut, connection: connection);
             composer.CreateOrUpdate(field);
-            sut.Commit(connection, composer, message, signature, signature);
+            sut.Invoke(commitType).Commit(connection, composer, message, signature, signature);
 
             // Act
             var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
@@ -114,14 +160,6 @@ namespace GitObjectDb.Tests.Commands
             Assert.That(changes.Added, Is.Empty);
             Assert.That(changes.Deleted, Is.Empty);
         }
-
-        private static (UpdateTreeCommand UpdateTreeCommand, Comparer Comparer, CommitCommand CommitCommand, IConnectionInternal Connection) Arrange(IFixture fixture) =>
-        (
-            fixture.Create<UpdateTreeCommand>(),
-            fixture.Create<Comparer>(),
-            fixture.Create<CommitCommand>(),
-            fixture.Create<IConnectionInternal>()
-        );
 
         private class InternalMocks : ICustomization
         {

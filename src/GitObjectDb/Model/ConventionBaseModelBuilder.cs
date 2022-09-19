@@ -2,14 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace GitObjectDb.Model
 {
     /// <summary>Used to automatically map CLR classes to a model based on a set of conventions.</summary>
     public class ConventionBaseModelBuilder : ModelBuilder
     {
-        private Dictionary<Type, NodeTypeDescription> _types = new Dictionary<Type, NodeTypeDescription>();
+        private readonly Dictionary<Type, NodeTypeDescription> _types = new Dictionary<Type, NodeTypeDescription>();
+
+        /// <summary>Gets the type descriptions.</summary>
+        public IReadOnlyCollection<NodeTypeDescription> Types => _types.Values;
 
         /// <summary>Registers all types from an assembly inheriting from <see cref="Node"/>.</summary>
         /// <param name="assembly">Assembly to scan.</param>
@@ -17,8 +19,12 @@ namespace GitObjectDb.Model
         /// <returns>The current <see cref="ConventionBaseModelBuilder"/> instance.</returns>
         public ConventionBaseModelBuilder RegisterAssemblyTypes(Assembly assembly, Predicate<Type>? filter = null)
         {
-            foreach (var type in assembly.GetTypes()
-                .Where(t => typeof(Node).IsAssignableFrom(t) && (filter?.Invoke(t) ?? true)))
+            foreach (var type in from t in assembly.GetTypes()
+                                 where !t.IsAbstract &&
+                                       !t.IsGenericTypeDefinition &&
+                                       typeof(Node).IsAssignableFrom(t) &&
+                                       (filter?.Invoke(t) ?? true)
+                                 select t)
             {
                 _types[type] = new NodeTypeDescription(type, GetTypeName(type));
             }
@@ -32,6 +38,18 @@ namespace GitObjectDb.Model
             where TNode : Node
         {
             _types[typeof(TNode)] = new NodeTypeDescription(typeof(TNode), GetTypeName(typeof(TNode)));
+            return this;
+        }
+
+        /// <summary>Register a type inheriting from <see cref="Node"/>.</summary>
+        /// <param name="types">The types of node to be added to the model.</param>
+        /// <returns>The current <see cref="ConventionBaseModelBuilder"/> instance.</returns>
+        public ConventionBaseModelBuilder RegisterTypes(IEnumerable<NodeTypeDescription> types)
+        {
+            foreach (var description in types)
+            {
+                _types[description.Type] = description;
+            }
             return this;
         }
 

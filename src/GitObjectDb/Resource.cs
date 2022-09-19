@@ -23,7 +23,7 @@ namespace GitObjectDb
         internal Resource(DataPath path, Data embedded)
         {
             Path = path;
-            _nodePath = new Lazy<DataPath>(Path.GetResourceParentNode);
+            _nodePath = new Lazy<DataPath>(Path.GetParentNode);
             Embedded = embedded;
         }
 

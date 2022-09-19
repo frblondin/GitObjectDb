@@ -42,7 +42,7 @@ namespace GitObjectDb
         /// <summary>Initiates a series of node transformations.</summary>
         /// <param name="transformations">The transformations to be applied.</param>
         /// <returns>The collection of transformations.</returns>
-        ITransformationComposer Update(Action<ITransformationComposer> transformations);
+        ITransformationComposer Update(Action<ITransformationComposer>? transformations = null);
 
         /// <summary>Lookups for the item defined in the specified path.</summary>
         /// <typeparam name="TItem">The type of the node.</typeparam>

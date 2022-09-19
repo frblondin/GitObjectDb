@@ -70,7 +70,7 @@ namespace GitObjectDb.Internal
 
         public IDataModel Model { get; }
 
-        private Repository GetOrCreateRepository(string path, string initialBranch)
+        private static Repository GetOrCreateRepository(string path, string initialBranch)
         {
             var absolute = Path.GetFullPath(path);
             if (!Repository.IsValid(absolute))
@@ -90,10 +90,10 @@ namespace GitObjectDb.Internal
             File.WriteAllText(head, newContent);
         }
 
-        public ITransformationComposer Update(Action<ITransformationComposer> transformations)
+        public ITransformationComposer Update(Action<ITransformationComposer>? transformations = null)
         {
             var composer = _transformationComposerFactory(this);
-            transformations(composer);
+            transformations?.Invoke(composer);
             return composer;
         }
 

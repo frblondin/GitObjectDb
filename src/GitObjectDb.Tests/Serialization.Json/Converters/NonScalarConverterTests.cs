@@ -3,6 +3,7 @@ using GitObjectDb.Serialization.Json;
 using GitObjectDb.Serialization.Json.Converters;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
+using GitObjectDb.Tools;
 using NUnit.Framework;
 using System;
 using System.Text;
@@ -18,10 +19,10 @@ namespace GitObjectDb.Tests.Serialization.Json.Converters
         public void ReadNode(string pPropertyValue, string camelCasePropertyValue)
         {
             // Arrange
-            var serializer = new NodeSerializer();
+            var serializer = new NodeSerializer(new Microsoft.IO.RecyclableMemoryStreamManager());
             var value = $@"
             {{
-                ""{nameof(NonScalar.Type)}"": ""{serializer.BindToName(typeof(TestNode))}"",
+                ""{nameof(NonScalar.Type)}"": ""{TypeHelper.BindToName(typeof(TestNode))}"",
                 ""{nameof(NonScalar.Node)}"":
                 {{
                     ""{nameof(Node.Id)}"": ""{UniqueId.CreateNew()}"",

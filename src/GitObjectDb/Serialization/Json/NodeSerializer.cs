@@ -1,13 +1,9 @@
 using GitObjectDb.Model;
 using GitObjectDb.Serialization.Json.Converters;
-using GitObjectDb.Tools;
 using Microsoft.IO;
 using System;
 using System.Buffers;
-using System.Collections.Concurrent;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -18,19 +14,16 @@ namespace GitObjectDb.Serialization.Json
         private const string CommentStringToEscape = "*/";
         private const string CommentStringToUnescape = "ø/";
 
-        private static readonly RecyclableMemoryStreamManager _streamManager = new();
-
+        private readonly RecyclableMemoryStreamManager _streamManager;
         private readonly JsonWriterOptions _writerOptions = new()
         {
             Indented = true,
         };
 
-        private readonly ConcurrentDictionary<string, Type> _typeBindingCache;
-
-        public NodeSerializer()
+        public NodeSerializer(RecyclableMemoryStreamManager streamManager)
         {
             Options = CreateSerializerOptions();
-            _typeBindingCache = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+            _streamManager = streamManager;
         }
 
         public JsonSerializerOptions Options { get; }
@@ -123,41 +116,6 @@ namespace GitObjectDb.Serialization.Json
         {
             result.Path = path;
             result.EmbeddedResource = embeddedResource;
-        }
-
-        public string BindToName(Type type) => $"{type.FullName}, {type.Assembly.FullName}";
-
-        public Type BindToType(string fullTypeName)
-        {
-            return _typeBindingCache.GetOrAdd(fullTypeName, ParseType);
-
-            Type ParseType(string name)
-            {
-                var index = TypeHelper.GetAssemblyDelimiterIndex(name);
-
-                var assemblyFullName = name.Substring(index + 1).Trim();
-                var assemblyName = GetAssemblyName(assemblyFullName);
-
-                // Try first to retrieve loaded assembly with no strong version check
-                // ... and load assembly if none could be found
-                var assembly =
-                    AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(
-                        a => !a.IsDynamic && a.GetName().Name == assemblyName) ??
-                    Assembly.Load(assemblyFullName);
-
-                var typeName = name.Substring(0, index).Trim();
-                var type = assembly.GetType(typeName);
-
-                return type;
-            }
-
-            string GetAssemblyName(string fullName)
-            {
-                var index = fullName.IndexOf(',');
-                return index == -1 ?
-                    fullName :
-                    fullName.Substring(0, index).Trim();
-            }
         }
     }
 }

@@ -47,6 +47,9 @@ namespace GitObjectDb
         /// <summary>Gets a value indicating whether the path represents a path to a node (e.g. not a resource).</summary>
         public bool IsNode => !_isInResourceFolderRegex.IsMatch(FolderPath);
 
+        /// <summary>Gets a value indicating whether the path represents a path to a node (e.g. not a resource).</summary>
+        public bool IsRootNode => IsNode && FolderParts.Length <= (UseNodeFolders ? 2 : 1);
+
         /// <summary>Gets a value indicating whether node should be stored in a nested folder (FolderName/NodeId/data.json) or not (FolderName/NodeId.json).</summary>
         public bool UseNodeFolders { get; }
 
@@ -169,9 +172,13 @@ namespace GitObjectDb
         public bool Equals(DataPath? other) =>
             string.Equals(FilePath, other?.FilePath, StringComparison.Ordinal);
 
-        internal DataPath GetResourceParentNode()
+        /// <summary>Gets the parent node path.</summary>
+        /// <returns>The parent node path.</returns>
+        public DataPath GetParentNode()
         {
-            int position = Array.FindIndex(FolderParts, p => StringComparer.Ordinal.Equals(p, FileSystemStorage.ResourceFolder));
+            int position = IsNode ?
+                           FolderParts.Length - 1 :
+                           Array.FindIndex(FolderParts, p => StringComparer.Ordinal.Equals(p, FileSystemStorage.ResourceFolder));
             if (position == -1)
             {
                 throw new InvalidOperationException($"Path doesn't refer to a resource.");

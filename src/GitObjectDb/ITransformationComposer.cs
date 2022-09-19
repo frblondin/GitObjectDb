@@ -18,6 +18,21 @@ namespace GitObjectDb
         TNode CreateOrUpdate<TNode>(TNode node, Node? parent = null)
             where TNode : Node;
 
+        /// <summary>Creates the specified node under an existing parent.</summary>
+        /// <typeparam name="TNode">The type of the node being modified.</typeparam>
+        /// <param name="node">The node to be added.</param>
+        /// <param name="parent">The parent to insert the node into.</param>
+        /// <returns>The node itself.</returns>
+        TNode CreateOrUpdate<TNode>(TNode node, DataPath? parent = null)
+            where TNode : Node;
+
+        /// <summary>Creates the specified node under an existing parent.</summary>
+        /// <typeparam name="TNode">The type of the node being modified.</typeparam>
+        /// <param name="node">The node to be added.</param>
+        /// <returns>The node itself.</returns>
+        TNode CreateOrUpdate<TNode>(TNode node)
+            where TNode : Node;
+
         /// <summary>Updates the specified resource.</summary>
         /// <param name="resource">The item to update.</param>
         /// <returns>The resource itself.</returns>
@@ -40,7 +55,8 @@ namespace GitObjectDb
         /// <param name="committer">The committer of the commit.</param>
         /// <param name="amendPreviousCommit">If set to <c>true</c>, previous commit will be amended.</param>
         /// <param name="beforeProcessing">Callback that gets invoked before processing each transformation.</param>
+        /// <param name="type">Type of commit command to use.</param>
         /// <returns>The resulting commit.</returns>
-        Commit Commit(string message, Signature author, Signature committer, bool amendPreviousCommit = false, Action<ITransformation>? beforeProcessing = null);
+        Commit Commit(string message, Signature author, Signature committer, bool amendPreviousCommit = false, Action<ITransformation>? beforeProcessing = null, CommitCommandType type = CommitCommandType.Auto);
     }
 }
