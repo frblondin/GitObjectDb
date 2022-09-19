@@ -24,7 +24,7 @@ internal class StringReaderStream : Stream
         _input = input;
         _encoding = encoding;
         Length = encoding.GetByteCount(input);
-        _maxBytesPerChar = encoding == Encoding.ASCII ? 1 : encoding.GetMaxByteCount(1);
+        _maxBytesPerChar = encoding.Equals(Encoding.ASCII) ? 1 : encoding.GetMaxByteCount(1);
     }
 
     [ExcludeFromCodeCoverage]
@@ -50,7 +50,7 @@ internal class StringReaderStream : Stream
                 Reset();
                 return;
             }
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
     }
 
@@ -85,7 +85,7 @@ internal class StringReaderStream : Stream
             Reset();
             return 0L;
         }
-        throw new NotImplementedException();
+        throw new NotSupportedException();
     }
 
     private void Reset()
@@ -96,9 +96,9 @@ internal class StringReaderStream : Stream
 
     [ExcludeFromCodeCoverage]
     public override void SetLength(long value) =>
-        throw new NotImplementedException();
+        throw new NotSupportedException();
 
     [ExcludeFromCodeCoverage]
     public override void Write(byte[] buffer, int offset, int count) =>
-        throw new NotImplementedException();
+        throw new NotSupportedException();
 }

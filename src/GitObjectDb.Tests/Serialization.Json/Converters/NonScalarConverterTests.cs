@@ -42,7 +42,7 @@ public class NonScalarConverterTests
         // Act
         var reader = new Utf8JsonReader(Encoding.Default.GetBytes(value).AsSpan());
         reader.Read();
-        var deserialized = new NonScalarConverter(serializer).Read(ref reader, typeof(NonScalar), serializer.Options)?.Node as TestNode;
+        var deserialized = new NonScalarConverter().Read(ref reader, typeof(NonScalar), serializer.Options)?.Node as TestNode;
 
         // Assert
         Assert.That(deserialized, Is.Not.Null);

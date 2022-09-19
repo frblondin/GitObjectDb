@@ -14,7 +14,7 @@ internal class QueryResources : IQuery<QueryResources.Parameters, IEnumerable<(D
         _loader = loader;
     }
 
-    public IEnumerable<(DataPath Path, Lazy<Resource> Resource)> Execute(IConnectionInternal connection, Parameters parms)
+    public IEnumerable<(DataPath Path, Lazy<Resource> Resource)> Execute(IConnection connection, Parameters parms)
     {
         var referenceResourceTree = parms.RelativeTree[FileSystemStorage.ResourceFolder];
         if (referenceResourceTree?.TargetType == TreeEntryTargetType.Tree)
@@ -28,7 +28,10 @@ internal class QueryResources : IQuery<QueryResources.Parameters, IEnumerable<(D
                     yield return
                     (
                         dataPath,
-                        new Lazy<Resource>(() => (Resource)_loader.Execute(connection, new LoadItem.Parameters(parms.Tree, dataPath, parms.ReferenceCache)))
+                        new Lazy<Resource>(() => (Resource)_loader.Execute(connection,
+                                                                           new LoadItem.Parameters(parms.Tree,
+                                                                                                   dataPath,
+                                                                                                   parms.ReferenceCache)))
                     );
                 }
             }
@@ -37,7 +40,10 @@ internal class QueryResources : IQuery<QueryResources.Parameters, IEnumerable<(D
 
     internal class Parameters
     {
-        public Parameters(Tree tree, Tree relativeTree, DataPath path, ConcurrentDictionary<DataPath, ITreeItem>? referenceCache)
+        public Parameters(Tree tree,
+                          Tree relativeTree,
+                          DataPath path,
+                          ConcurrentDictionary<DataPath, ITreeItem>? referenceCache)
         {
             Tree = tree;
             RelativeTree = relativeTree;

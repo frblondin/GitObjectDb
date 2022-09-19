@@ -18,37 +18,34 @@ internal static class TypeHelper
     /// <summary>Converts a <see cref="string"/> representation to its corresponding <see cref="Type"/>.</summary>
     /// <param name="fullTypeName">The <see cref="string"/> representation of the <see cref="Type"/> to be converted.</param>
     /// <returns>The <see cref="Type"/> corresponding to <paramref name="fullTypeName"/>.</returns>
-    public static Type BindToType(string fullTypeName)
+    public static Type BindToType(string fullTypeName) => _typeBindingCache.GetOrAdd(fullTypeName, ParseType);
+
+    private static Type ParseType(string name)
     {
-        return _typeBindingCache.GetOrAdd(fullTypeName, ParseType);
+        var index = GetAssemblyDelimiterIndex(name);
 
-        Type ParseType(string name)
-        {
-            var index = GetAssemblyDelimiterIndex(name);
+        var assemblyFullName = name.Substring(index + 1).Trim();
+        var assemblyName = GetAssemblyName(assemblyFullName);
 
-            var assemblyFullName = name.Substring(index + 1).Trim();
-            var assemblyName = GetAssemblyName(assemblyFullName);
+        // Try first to retrieve loaded assembly with no strong version check
+        // ... and load assembly if none could be found
+        var assembly =
+            AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(
+                a => !a.IsDynamic && a.GetName().Name == assemblyName) ??
+            Assembly.Load(assemblyFullName);
 
-            // Try first to retrieve loaded assembly with no strong version check
-            // ... and load assembly if none could be found
-            var assembly =
-                AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(
-                    a => !a.IsDynamic && a.GetName().Name == assemblyName) ??
-                Assembly.Load(assemblyFullName);
+        var typeName = name.Substring(0, index).Trim();
+        var type = assembly.GetType(typeName);
 
-            var typeName = name.Substring(0, index).Trim();
-            var type = assembly.GetType(typeName);
+        return type;
+    }
 
-            return type;
-        }
-
-        string GetAssemblyName(string fullName)
-        {
-            var index = fullName.IndexOf(',');
-            return index == -1 ?
-                fullName :
-                fullName.Substring(0, index).Trim();
-        }
+    private static string GetAssemblyName(string fullName)
+    {
+        var index = fullName.IndexOf(',');
+        return index == -1 ?
+            fullName :
+            fullName.Substring(0, index).Trim();
     }
 
     internal static int GetAssemblyDelimiterIndex(string fullTypeName)

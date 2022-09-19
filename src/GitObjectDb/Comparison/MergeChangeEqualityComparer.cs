@@ -30,7 +30,7 @@ internal sealed class MergeChangeEqualityComparer : IEqualityComparer<MergeChang
         {
             Node node => node.Id,
             Resource resource => resource.Path,
-            _ => throw new NotImplementedException(),
+            _ => throw new NotSupportedException(),
         };
     }
 }

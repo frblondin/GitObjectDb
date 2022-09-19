@@ -3,7 +3,6 @@ using GitObjectDb.Injection;
 using GitObjectDb.Internal.Commands;
 using LibGit2Sharp;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
@@ -20,9 +19,15 @@ internal sealed class CherryPick : ICherryPick
     private readonly Signature? _committer;
 
     [FactoryDelegateConstructor(typeof(Factories.CherryPickFactory))]
-    public CherryPick(
-        IComparerInternal comparer, IMergeComparer mergeComparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand,
-        IConnectionInternal connection, string committish, Signature? committer, Branch? branch = null, CherryPickPolicy? policy = null)
+    public CherryPick(IComparerInternal comparer,
+                      IMergeComparer mergeComparer,
+                      UpdateTreeCommand updateCommand,
+                      CommitCommand commitCommand,
+                      IConnectionInternal connection,
+                      string committish,
+                      Signature? committer,
+                      Branch? branch = null,
+                      CherryPickPolicy? policy = null)
     {
         _comparer = comparer;
         _mergeComparer = mergeComparer;
@@ -64,7 +69,7 @@ internal sealed class CherryPick : ICherryPick
             Policy.ComparisonPolicy);
 
         CurrentChanges = _mergeComparer.Compare(localChanges, changes, Policy.ComparisonPolicy).ToList();
-        if (!CurrentChanges.Any(c => c.Status == ItemMergeStatus.EditConflict || c.Status == ItemMergeStatus.TreeConflict))
+        if (!CurrentChanges.HasAnyConflict())
         {
             CommitChanges();
         }
@@ -80,29 +85,34 @@ internal sealed class CherryPick : ICherryPick
         {
             return Status;
         }
-        if (CurrentChanges.Any(c => c.Status == ItemMergeStatus.EditConflict || c.Status == ItemMergeStatus.TreeConflict))
+        if (CurrentChanges.HasAnyConflict())
         {
             throw new GitObjectDbException("Remaining conflicts were not resolved.");
         }
 
         if (CurrentChanges.Any())
         {
-            // If last commit, update head so it points to the new commit
-            CompletedCommit = _commitCommand.Commit(
-                _connection,
-                Branch.Tip,
-                CurrentChanges.Select(c =>
-                    (ApplyUpdateTreeDefinition)((ObjectDatabase db, TreeDefinition t, Tree? @ref) =>
-                    c.Transform(_updateCommand, db, t, @ref))),
-                UpstreamCommit.Message, UpstreamCommit.Author, _committer ?? UpstreamCommit.Committer,
-                updateHead: false);
-
-            // Update tip
-            var logMessage = CompletedCommit.BuildCommitLogMessage(false, false, false);
-            _connection.Repository.UpdateTerminalReference(Branch.Reference, CompletedCommit, logMessage);
+            CommitChangesImpl();
         }
 
         Status = CherryPickStatus.CherryPicked;
         return Status;
+    }
+
+    private void CommitChangesImpl()
+    {
+        // If last commit, update head so it points to the new commit
+        CompletedCommit = _commitCommand.Commit(
+            _connection,
+            Branch.Tip,
+            CurrentChanges.Select(c =>
+                (ApplyUpdateTreeDefinition)((database, treeDefinition, refTree) =>
+                c.Transform(_updateCommand, database, treeDefinition, refTree))),
+            UpstreamCommit.Message, UpstreamCommit.Author, _committer ?? UpstreamCommit.Committer,
+            updateHead: false);
+
+        // Update tip
+        var logMessage = CompletedCommit.BuildCommitLogMessage(false, false, false);
+        _connection.Repository.UpdateTerminalReference(Branch.Reference, CompletedCommit, logMessage);
     }
 }

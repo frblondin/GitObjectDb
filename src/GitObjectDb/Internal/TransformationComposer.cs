@@ -17,7 +17,10 @@ internal class TransformationComposer : ITransformationComposer
     private readonly ServiceResolver<CommitCommandType, ICommitCommand> _commitCommandFactory;
 
     [FactoryDelegateConstructor(typeof(Factories.TransformationComposerFactory))]
-    public TransformationComposer(UpdateTreeCommand updateTreeCommand, UpdateFastInsertFile updateFastInsertFile, ServiceResolver<CommitCommandType, ICommitCommand> commitCommandFactory, IConnectionInternal connection)
+    public TransformationComposer(UpdateTreeCommand updateTreeCommand,
+                                  UpdateFastInsertFile updateFastInsertFile,
+                                  ServiceResolver<CommitCommandType, ICommitCommand> commitCommandFactory,
+                                  IConnectionInternal connection)
     {
         _updateTreeCommand = updateTreeCommand;
         _updateFastInsertFile = updateFastInsertFile;
@@ -34,11 +37,11 @@ internal class TransformationComposer : ITransformationComposer
         where TNode : Node =>
         CreateOrUpdateItem(node, default);
 
-    public TNode CreateOrUpdate<TNode>(TNode node, DataPath? parent = null)
+    public TNode CreateOrUpdate<TNode>(TNode node, DataPath? parent)
         where TNode : Node =>
         CreateOrUpdateItem(node, parent);
 
-    public TNode CreateOrUpdate<TNode>(TNode node, Node? parent = null)
+    public TNode CreateOrUpdate<TNode>(TNode node, Node? parent)
         where TNode : Node =>
         CreateOrUpdateItem(node, parent?.Path);
 
@@ -98,21 +101,24 @@ internal class TransformationComposer : ITransformationComposer
             ThrowIfWrongExistingPath(node, newPath);
             node.Path = newPath;
         }
-        if (node.Path is null)
-        {
-            node.Path = DataPath.Root(node, Connection.Model);
-        }
-        return node.Path;
+        return node.Path ??= DataPath.Root(node, Connection.Model);
     }
 
-    Commit ITransformationComposer.Commit(string message, Signature author, Signature committer, bool amendPreviousCommit, Action<ITransformation>? beforeProcessing, CommitCommandType type) =>
+    Commit ITransformationComposer.Commit(string message,
+                                          Signature author,
+                                          Signature committer,
+                                          bool amendPreviousCommit,
+                                          Action<ITransformation>? beforeProcessing,
+                                          CommitCommandType type) =>
         _commitCommandFactory.Invoke(type).Commit(
             Connection,
             this,
             message, author, committer, amendPreviousCommit,
             beforeProcessing: beforeProcessing);
 
-    internal TreeDefinition ApplyTransformations(ObjectDatabase dataBase, Commit? commit, Action<ITransformation>? beforeProcessing = null)
+    internal TreeDefinition ApplyTransformations(ObjectDatabase dataBase,
+                                                 Commit? commit,
+                                                 Action<ITransformation>? beforeProcessing = null)
     {
         var result = commit is not null ? TreeDefinition.From(commit) : new TreeDefinition();
         foreach (var transformation in Transformations)
@@ -123,7 +129,10 @@ internal class TransformationComposer : ITransformationComposer
         return result;
     }
 
-    internal void ApplyTransformations(Commit? commit, System.IO.StreamWriter writer, IList<string> commitIndex, Action<ITransformation>? beforeProcessing = null)
+    internal void ApplyTransformations(Commit? commit,
+                                       System.IO.StreamWriter writer,
+                                       IList<string> commitIndex,
+                                       Action<ITransformation>? beforeProcessing = null)
     {
         foreach (var transformation in Transformations)
         {
@@ -146,7 +155,8 @@ internal class TransformationComposer : ITransformationComposer
     {
         if (node.Path is not null && !node.Path.Equals(newPath))
         {
-            throw new GitObjectDbException("Node path has already been set. This generally means that a node has been created multiple times. Make sure to reset cloned path value.");
+            throw new GitObjectDbException("Node path has already been set. This generally means that a " +
+                "node has been created multiple times. Make sure to reset cloned path value.");
         }
     }
 }

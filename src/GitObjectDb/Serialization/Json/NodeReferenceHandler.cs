@@ -6,7 +6,8 @@ namespace GitObjectDb.Serialization.Json;
 
 internal class NodeReferenceHandler : ReferenceHandler
 {
-    internal static AsyncLocal<Func<DataPath, ITreeItem>?> NodeAccessor { get; } = new AsyncLocal<Func<DataPath, ITreeItem>?>();
+    internal static AsyncLocal<Func<DataPath, ITreeItem>?> NodeAccessor { get; } =
+        new AsyncLocal<Func<DataPath, ITreeItem>?>();
 
     public override ReferenceResolver CreateResolver()
     {

@@ -29,7 +29,7 @@ public static class MvcBuilderExtensions
                 .AddMetrics(true)
                 .AddSystemTextJson()
                 .AddGraphTypes(query.DtoEmitter.AssemblyBuilder));
-        return source
-            .ConfigureApplicationPartManager(m => m.ApplicationParts.Add(new AssemblyPart(Assembly.GetExecutingAssembly())));
+        var part = new AssemblyPart(typeof(NodeController).Assembly);
+        return source.ConfigureApplicationPartManager(m => m.ApplicationParts.Add(part));
     }
 }

@@ -12,17 +12,12 @@ public partial class GitObjectDbQuery : ObjectGraphType
     {
         var provider = context.RequestServices?.GetRequiredService<DataProvider>() ??
             throw new NotSupportedException("No request context set.");
-        var parentNode = context.Source is NodeDTO dto ? dto.Node : null;
+        var parentNode = context.Source is NodeDto dto ? dto.Node : null;
 
-        if (parentNode?.Path is null)
-        {
-            return Enumerable.Empty<Commit>();
-        }
-        else
-        {
-            return provider.Connection.Repository.Commits
+        return parentNode?.Path is null ?
+            Enumerable.Empty<Commit>() :
+            provider.Connection.Repository.Commits
                 .QueryBy(parentNode.Path.FilePath)
                 .Select(e => e.Commit);
-        }
     }
 }

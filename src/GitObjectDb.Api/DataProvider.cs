@@ -20,9 +20,11 @@ public sealed class DataProvider
 
     public IConnection Connection { get; }
 
-    public IEnumerable<TNodeDTO> GetNodes<TNode, TNodeDTO>(string? parentPath = null, string? committish = null, bool isRecursive = false)
+    public IEnumerable<TNodeDTO> GetNodes<TNode, TNodeDTO>(string? parentPath = null,
+                                                           string? committish = null,
+                                                           bool isRecursive = false)
         where TNode : Node
-        where TNodeDTO : NodeDTO
+        where TNodeDTO : NodeDto
     {
         var commit = LookupCommit(committish);
         var referenceCache = _cache.GetOrCreate<ConcurrentDictionary<DataPath, ITreeItem>>(commit.Sha, _ => new());

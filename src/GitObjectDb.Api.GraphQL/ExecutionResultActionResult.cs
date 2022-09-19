@@ -14,7 +14,7 @@ public class ExecutionResultActionResult : IActionResult
         _executionResult = executionResult;
     }
 
-    public async Task ExecuteResultAsync([ValidatedNotNull] ActionContext context)
+    public async Task ExecuteResultAsync(ActionContext context)
     {
         var writer = context.HttpContext.RequestServices.GetRequiredService<IGraphQLSerializer>();
         var response = context.HttpContext.Response;

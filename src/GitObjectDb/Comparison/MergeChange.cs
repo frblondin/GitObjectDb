@@ -28,11 +28,17 @@ public sealed class MergeChange
     /// <summary>Gets the node on their side.</summary>
     public ITreeItem? Theirs { get; internal set; }
 
+    private bool StillExists => Ours != null && Theirs != null;
+
     /// <summary>Gets the parent root deleted node on our side.</summary>
     public ITreeItem? OurRootDeletedParent { get; internal set; }
 
     /// <summary>Gets the parent root deleted node on their side.</summary>
     public ITreeItem? TheirRootDeletedParent { get; internal set; }
+
+    private bool IsTreeConflict => OurRootDeletedParent != null || TheirRootDeletedParent != null;
+
+    private bool IsDeletion => Ancestor != null && (Theirs == null || Ours == null);
 
     /// <summary>Gets the merged node.</summary>
     public ITreeItem? Merged { get; private set; }
@@ -42,6 +48,8 @@ public sealed class MergeChange
 
     /// <summary>Gets the list of conflicts.</summary>
     public IImmutableList<MergeValueConflict> Conflicts { get; internal set; } = ImmutableList.Create<MergeValueConflict>();
+
+    private bool HasUnresolvedConflicts => Conflicts.Any(c => !c.IsResolved);
 
     /// <summary>Gets the merge policy.</summary>
     public ComparisonPolicy Policy { get; private set; }
@@ -56,7 +64,11 @@ public sealed class MergeChange
         var conflicts = ImmutableList.CreateBuilder<MergeValueConflict>();
         foreach (var property in Comparer.GetProperties(type, Policy))
         {
-            if (!TryMergePropertyValue(property, out var setter, out var ancestorValue, out var ourValue, out var theirValue))
+            if (!TryMergePropertyValue(property,
+                                       out var setter,
+                                       out var ancestorValue,
+                                       out var ourValue,
+                                       out var theirValue))
             {
                 void ResolveCallback(object value)
                 {
@@ -87,7 +99,7 @@ public sealed class MergeChange
                 Merged = new Resource(resource.Path, new Resource.Data(System.IO.Stream.Null));
                 break;
             default:
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
         return type;
     }
@@ -118,19 +130,18 @@ public sealed class MergeChange
 
     private void UpdateStatus()
     {
-        if (OurRootDeletedParent != null || TheirRootDeletedParent != null)
+        if (IsTreeConflict)
         {
             Status = ItemMergeStatus.TreeConflict;
         }
-        else if (Ancestor != null && (Theirs == null || Ours == null))
+        else if (IsDeletion)
         {
-            // Deletion
             var nonNull = Theirs ?? Ours;
             Status = nonNull != null && !Comparer.CompareInternal(Ancestor, nonNull, Policy).AreEqual ?
                 ItemMergeStatus.TreeConflict :
                 ItemMergeStatus.Delete;
         }
-        else if (Conflicts.Any(c => !c.IsResolved))
+        else if (HasUnresolvedConflicts)
         {
             Status = ItemMergeStatus.EditConflict;
         }
@@ -144,15 +155,19 @@ public sealed class MergeChange
         }
     }
 
-    private bool TryMergePropertyValue(PropertyInfo property, out MemberSetter setter, out object? ancestorValue, out object? ourValue, out object? theirValue)
+    private bool TryMergePropertyValue(PropertyInfo property,
+                                       out MemberSetter setter,
+                                       out object? ancestorValue,
+                                       out object? ourValue,
+                                       out object? theirValue)
     {
         var getter = Reflect.PropertyGetter(property);
         setter = Reflect.PropertySetter(property);
-        ancestorValue = Ancestor != null ? getter(Ancestor) : null;
-        ourValue = Ours != null ? getter(Ours) : null;
-        theirValue = Theirs != null ? getter(Theirs) : null;
+        ancestorValue = GetValue(Ancestor);
+        ourValue = GetValue(Ours);
+        theirValue = GetValue(Theirs);
 
-        if (Ours != null && Theirs != null)
+        if (StillExists)
         {
             // Both values are equal -> no conflict
             if (Comparer.CompareInternal(ourValue, theirValue, Policy).AreEqual)
@@ -191,6 +206,11 @@ public sealed class MergeChange
             setter(Merged, ancestorValue);
             return true;
         }
-        throw new NotImplementedException("Expected execution path.");
+        throw new NotSupportedException("Expected execution path.");
+
+        object? GetValue(ITreeItem? item)
+        {
+            return item != null ? getter(item) : null;
+        }
     }
 }

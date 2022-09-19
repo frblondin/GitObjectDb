@@ -5,7 +5,9 @@ namespace GitObjectDb.Internal;
 [DebuggerDisplay("{Message}")]
 internal class Transformation : ITransformation
 {
-    internal Transformation(ApplyUpdateTreeDefinition transformation, ApplyUpdateFastInsert fastInsertTransformation, string message)
+    internal Transformation(ApplyUpdateTreeDefinition transformation,
+                            ApplyUpdateFastInsert fastInsertTransformation,
+                            string message)
     {
         TreeTransformation = transformation;
         FastInsertTransformation = fastInsertTransformation;

@@ -5,13 +5,13 @@ using System.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.Model;
 
-internal class NodeInterface : InterfaceGraphType<NodeDTO>
+internal class NodeInterface : InterfaceGraphType<NodeDto>
 {
     public NodeInterface()
     {
         Name = nameof(Node);
 
-        foreach (var property in typeof(NodeDTO).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        foreach (var property in typeof(NodeDto).GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
             if (!SchemaTypes.BuiltInScalarMappings.ContainsKey(property.PropertyType))
             {

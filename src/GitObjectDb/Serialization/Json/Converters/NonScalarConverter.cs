@@ -7,16 +7,9 @@ namespace GitObjectDb.Serialization.Json.Converters;
 
 internal class NonScalarConverter : JsonConverter<NonScalar>
 {
-    private readonly INodeSerializer _nodeSerializer;
-
-    public NonScalarConverter(INodeSerializer nodeSerializer)
-    {
-        _nodeSerializer = nodeSerializer ?? throw new ArgumentNullException(nameof(nodeSerializer));
-    }
-
     public override NonScalar Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        var type = NonScalarConverter.ReadType(ref reader);
+        var type = ReadType(ref reader);
 
         Utf8JsonReaderHelper.ReadNextToken(ref reader, JsonTokenType.PropertyName, nameof(NonScalar.Node));
 

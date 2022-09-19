@@ -15,7 +15,7 @@ public interface ITransformationComposer
     /// <param name="node">The node to be added.</param>
     /// <param name="parent">The parent to insert the node into.</param>
     /// <returns>The node itself.</returns>
-    TNode CreateOrUpdate<TNode>(TNode node, Node? parent = null)
+    TNode CreateOrUpdate<TNode>(TNode node, Node? parent)
         where TNode : Node;
 
     /// <summary>Creates the specified node under an existing parent.</summary>
@@ -23,7 +23,7 @@ public interface ITransformationComposer
     /// <param name="node">The node to be added.</param>
     /// <param name="parent">The parent to insert the node into.</param>
     /// <returns>The node itself.</returns>
-    TNode CreateOrUpdate<TNode>(TNode node, DataPath? parent = null)
+    TNode CreateOrUpdate<TNode>(TNode node, DataPath? parent)
         where TNode : Node;
 
     /// <summary>Creates the specified node under an existing parent.</summary>
@@ -57,5 +57,10 @@ public interface ITransformationComposer
     /// <param name="beforeProcessing">Callback that gets invoked before processing each transformation.</param>
     /// <param name="type">Type of commit command to use.</param>
     /// <returns>The resulting commit.</returns>
-    Commit Commit(string message, Signature author, Signature committer, bool amendPreviousCommit = false, Action<ITransformation>? beforeProcessing = null, CommitCommandType type = CommitCommandType.Auto);
+    Commit Commit(string message,
+                  Signature author,
+                  Signature committer,
+                  bool amendPreviousCommit = false,
+                  Action<ITransformation>? beforeProcessing = null,
+                  CommitCommandType type = CommitCommandType.Auto);
 }

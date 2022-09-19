@@ -11,22 +11,8 @@ public class NodeType<TNode, TNodeDTO> : ObjectGraphType<TNodeDTO>
     {
         Name = typeof(TNode).Name;
 
-        foreach (var property in typeof(TNodeDTO).GetProperties(BindingFlags.Instance | BindingFlags.Public))
-        {
-            if (!SchemaTypes.BuiltInScalarMappings.ContainsKey(property.PropertyType))
-            {
-                continue;
-            }
-            var type = property.PropertyType.GetGraphTypeFromType(isNullable: true, TypeMappingMode.OutputType);
-            Field(type, property.Name);
-        }
-
-        var description = query.Model.GetDescription(typeof(TNode));
-        foreach (var childType in description.Children)
-        {
-            var dtoEmitterInfo = query.DtoEmitter.TypeDescriptions.First(d => d.NodeType == childType);
-            GitObjectDbQuery.AddCollectionField(query, this, dtoEmitterInfo);
-        }
+        AddProperties();
+        AddChildren(query);
 
         AddField(new FieldType
         {
@@ -36,5 +22,28 @@ public class NodeType<TNode, TNodeDTO> : ObjectGraphType<TNodeDTO>
         });
 
         Interface<NodeInterface>();
+    }
+
+    private void AddProperties()
+    {
+        foreach (var property in typeof(TNodeDTO).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        {
+            if (!SchemaTypes.BuiltInScalarMappings.ContainsKey(property.PropertyType))
+            {
+                continue;
+            }
+            var type = property.PropertyType.GetGraphTypeFromType(isNullable: true, TypeMappingMode.OutputType);
+            Field(type, property.Name);
+        }
+    }
+
+    private void AddChildren(GitObjectDbQuery query)
+    {
+        var description = query.Model.GetDescription(typeof(TNode));
+        foreach (var childType in description.Children)
+        {
+            var dtoEmitterInfo = query.DtoEmitter.TypeDescriptions.First(d => d.NodeType == childType);
+            GitObjectDbQuery.AddCollectionField(query, this, dtoEmitterInfo);
+        }
     }
 }

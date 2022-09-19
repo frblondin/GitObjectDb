@@ -1,7 +1,7 @@
 namespace GitObjectDb.Api.Model;
 
 [AttributeUsage(AttributeTargets.Class)]
-public class DtoDescriptionAttribute : Attribute
+public sealed class DtoDescriptionAttribute : Attribute
 {
     public DtoDescriptionAttribute(string entitySetName)
     {

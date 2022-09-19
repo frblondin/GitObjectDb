@@ -38,7 +38,7 @@ public static class ServiceConfiguration
             .GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
             .Where(t => typeof(Delegate).IsAssignableFrom(t))
             .ToArray();
-        source.AddFactoryDelegates(Assembly.GetExecutingAssembly(), internalFactories);
+        source.AddFactoryDelegates(typeof(Connection).Assembly, internalFactories);
         source.AddSingleton<INodeSerializer, NodeSerializer>();
         source.AddSingleton<Comparer>();
         source.AddSingleton<IComparer>(s => s.GetRequiredService<Comparer>());
@@ -50,7 +50,7 @@ public static class ServiceConfiguration
 
     private static void ConfigureQueries(IServiceCollection source)
     {
-        source.AddServicesImplementing(typeof(IQuery<,>), ServiceLifetime.Singleton);
+        source.AddServicesImplementing(typeof(QueryItems).Assembly, typeof(IQuery<,>), ServiceLifetime.Singleton);
     }
 
     private static void ConfigureCommands(IServiceCollection source)
@@ -69,7 +69,7 @@ public static class ServiceConfiguration
             {
                 CommitCommandType.Normal => serviceProvider.GetRequiredService<CommitCommand>(),
                 CommitCommandType.FastImport => serviceProvider.GetRequiredService<FastImportCommitCommand>(),
-                _ => throw new NotImplementedException(),
+                _ => throw new NotSupportedException(),
             };
         });
     }

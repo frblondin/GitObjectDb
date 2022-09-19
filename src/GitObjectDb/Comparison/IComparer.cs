@@ -22,5 +22,8 @@ internal interface IComparerInternal
     /// <param name="newTree">The end start of comparison.</param>
     /// <param name="policy">The merge policy to use.</param>
     /// <returns>Details about the comparison.</returns>
-    ChangeCollection Compare(IConnectionInternal connection, Tree oldTree, Tree newTree, ComparisonPolicy? policy = null);
+    ChangeCollection Compare(IConnection connection,
+                             Tree oldTree,
+                             Tree newTree,
+                             ComparisonPolicy? policy = null);
 }

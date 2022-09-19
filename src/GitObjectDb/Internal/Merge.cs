@@ -20,9 +20,14 @@ internal sealed class Merge : IMerge
     private readonly string? _upstreamCommittish;
 
     [FactoryDelegateConstructor(typeof(Factories.MergeFactory))]
-    public Merge(
-        IComparerInternal comparer, IMergeComparer mergeComparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand,
-        IConnectionInternal connection, Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null)
+    public Merge(IComparerInternal comparer,
+                 IMergeComparer mergeComparer,
+                 UpdateTreeCommand updateCommand,
+                 CommitCommand commitCommand,
+                 IConnectionInternal connection,
+                 Branch? branch = null,
+                 string? upstreamCommittish = null,
+                 ComparisonPolicy? policy = null)
     {
         _comparer = comparer;
         _mergeComparer = mergeComparer;
@@ -86,7 +91,7 @@ internal sealed class Merge : IMerge
         {
             Status = MergeStatus.UpToDate;
         }
-        else if (!CurrentChanges.Any(c => c.Status == ItemMergeStatus.EditConflict || c.Status == ItemMergeStatus.TreeConflict))
+        else if (!CurrentChanges.HasAnyConflict())
         {
             Status = RequiresMergeCommit ? MergeStatus.NonFastForward : MergeStatus.FastForward;
         }
@@ -102,7 +107,7 @@ internal sealed class Merge : IMerge
         {
             throw new GitObjectDbException("Merge is already completed.");
         }
-        if (CurrentChanges.Any(c => c.Status == ItemMergeStatus.EditConflict || c.Status == ItemMergeStatus.TreeConflict))
+        if (CurrentChanges.HasAnyConflict())
         {
             throw new GitObjectDbException("Remaining conflicts were not resolved.");
         }
@@ -110,28 +115,38 @@ internal sealed class Merge : IMerge
         // If last commit, update head so it points to the new commit
         if (RequiresMergeCommit && CurrentChanges.Any())
         {
-            var message = $"Merge {_upstreamCommittish ?? UpstreamCommit.Sha} into {Branch.FriendlyName}";
-            MergeCommit = _commitCommand.Commit(
-                _connection,
-                Branch.Tip,
-                CurrentChanges.Select(c =>
-                    (ApplyUpdateTreeDefinition)((ObjectDatabase db, TreeDefinition t, Tree? @ref) =>
-                    c.Transform(_updateCommand, db, t, @ref))),
-                message, author, committer,
-                updateHead: false,
-                mergeParent: UpstreamCommit);
-            var logMessage = MergeCommit.BuildCommitLogMessage(false, false, isMergeCommit: true);
-            _connection.Repository.UpdateTerminalReference(Branch.Reference, MergeCommit, logMessage);
-            Status = MergeStatus.NonFastForward;
-            return MergeCommit;
+            return CommitMerge(author, committer);
         }
         else
         {
-            MergeCommit = UpstreamCommit;
-            var logMessage = MergeCommit.BuildCommitLogMessage(false, false, false);
-            _connection.Repository.UpdateTerminalReference(Branch.Reference, UpstreamCommit, logMessage);
-            Status = MergeStatus.FastForward;
-            return UpstreamCommit;
+            return CommitFastForward();
         }
+    }
+
+    private Commit CommitMerge(Signature author, Signature committer)
+    {
+        var message = $"Merge {_upstreamCommittish ?? UpstreamCommit.Sha} into {Branch.FriendlyName}";
+        MergeCommit = _commitCommand.Commit(
+            _connection,
+            Branch.Tip,
+            CurrentChanges.Select(c =>
+                (ApplyUpdateTreeDefinition)((database, treeDefinition, refTree) =>
+                c.Transform(_updateCommand, database, treeDefinition, refTree))),
+            message, author, committer,
+            updateHead: false,
+            mergeParent: UpstreamCommit);
+        var logMessage = MergeCommit.BuildCommitLogMessage(false, false, isMergeCommit: true);
+        _connection.Repository.UpdateTerminalReference(Branch.Reference, MergeCommit, logMessage);
+        Status = MergeStatus.NonFastForward;
+        return MergeCommit;
+    }
+
+    private Commit CommitFastForward()
+    {
+        MergeCommit = UpstreamCommit;
+        var logMessage = MergeCommit.BuildCommitLogMessage(false, false, false);
+        _connection.Repository.UpdateTerminalReference(Branch.Reference, UpstreamCommit, logMessage);
+        Status = MergeStatus.FastForward;
+        return UpstreamCommit;
     }
 }

@@ -4,5 +4,7 @@ namespace GitObjectDb.Comparison;
 
 internal interface IMergeComparer
 {
-    IEnumerable<MergeChange> Compare(ChangeCollection localChanges, ChangeCollection toBeMergedIntoLocal, ComparisonPolicy policy);
+    IEnumerable<MergeChange> Compare(ChangeCollection localChanges,
+                                     ChangeCollection toBeMergedIntoLocal,
+                                     ComparisonPolicy policy);
 }

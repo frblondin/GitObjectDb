@@ -26,11 +26,11 @@ internal class UpdateFastInsertFile
                 CreateOrUpdateResource(resource, writer, commitIndex);
                 break;
             default:
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
     };
 
-    internal static ApplyUpdateFastInsert Delete(ITreeItem item) => (reference, writer, commitIndex) =>
+    internal static ApplyUpdateFastInsert Delete(ITreeItem item) => (reference, _, commitIndex) =>
     {
         var path = item.ThrowIfNoPath();
 
@@ -46,7 +46,7 @@ internal class UpdateFastInsertFile
         }
     };
 
-    internal static ApplyUpdateFastInsert Delete(DataPath path) => (reference, writer, commitIndex) =>
+    internal static ApplyUpdateFastInsert Delete(DataPath path) => (reference, _, commitIndex) =>
     {
         // For nodes, delete whole folder containing node and nested entries
         // For resources, only deleted resource

@@ -88,9 +88,10 @@ internal static class ExpressionReflector
                 case TExpression found:
                     ThrowIfExpressionAlreadyFound();
                     Result = found;
-                    break;
+                    return base.Visit(node);
+                default:
+                    return base.Visit(node);
             }
-            return base.Visit(node);
         }
 
         [ExcludeFromCodeCoverage]
