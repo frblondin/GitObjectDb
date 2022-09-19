@@ -147,8 +147,7 @@ namespace GitObjectDb
         private static bool GetSuffix(Node node, IDataModel model, out string suffix)
         {
             var type = node.GetType();
-            var description = model.NodeTypes.FirstOrDefault(t => t.Type == type) ??
-                throw new GitObjectDbException($"Type {type} could not be found in model.");
+            var description = model.GetDescription(type);
             suffix = description.UseNodeFolders ? $"{description.Name}/{node.Id}" : description.Name;
             return description.UseNodeFolders;
         }

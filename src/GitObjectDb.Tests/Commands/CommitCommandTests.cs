@@ -166,10 +166,7 @@ namespace GitObjectDb.Tests.Commands
             public void Customize(IFixture fixture)
             {
                 var connection = A.Fake<IConnectionInternal>(x => x.Strict());
-                A.CallTo(() => connection.Repository).Returns(fixture.Create<Repository>());
-                A.CallTo(() => connection.Head).Returns(fixture.Create<Repository>().Head);
-                A.CallTo(() => connection.Info).Returns(fixture.Create<Repository>().Info);
-                A.CallTo(() => connection.Branches).Returns(fixture.Create<Repository>().Branches);
+                A.CallTo(() => connection.Repository).Returns(fixture.Create<IRepository>());
                 A.CallTo(() => connection.Model).Returns(fixture.Create<IDataModel>());
                 fixture.Inject(connection);
 

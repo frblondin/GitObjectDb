@@ -59,8 +59,8 @@ namespace GitObjectDb.Model
         {
             foreach (var kvp in _deprecatedTypes)
             {
-                var deprecatedDescription = NodeTypes.First(d => d.Type == kvp.Key);
-                var newDescription = NodeTypes.First(d => d.Type == kvp.Value);
+                var deprecatedDescription = GetDescription(kvp.Key);
+                var newDescription = GetDescription(kvp.Value);
 
                 if (deprecatedDescription.UseNodeFolders != newDescription.UseNodeFolders)
                 {
@@ -72,5 +72,9 @@ namespace GitObjectDb.Model
                 }
             }
         }
+
+        public NodeTypeDescription GetDescription(Type type) =>
+            NodeTypes.FirstOrDefault(t => t.Type == type) ??
+            throw new GitObjectDbException($"Type {type} could not be found in model.");
     }
 }

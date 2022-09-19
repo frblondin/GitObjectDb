@@ -22,21 +22,6 @@ namespace GitObjectDb
         /// <summary>Gets the underlying Git repository.</summary>
         IRepository Repository { get; }
 
-        /// <summary>Gets high level information about this repository.</summary>
-        RepositoryInformation Info { get; }
-
-        /// <summary>Gets branches in the repository.</summary>
-        BranchCollection Branches { get; }
-
-        /// <summary>Gets the branch pointed to by HEAD.</summary>
-        Branch Head { get; }
-
-        /// <summary>Lookups and enumerates commits in the repository. Iterating this collection directly
-        /// starts walking from the HEAD.</summary>
-#pragma warning disable SA1623 // Property summary documentation should match accessors
-        IQueryableCommitLog Commits { get; }
-#pragma warning restore SA1623 // Property summary documentation should match accessors
-
         /// <summary>Gets the model that this connection should manage.</summary>
         IDataModel Model { get; }
 

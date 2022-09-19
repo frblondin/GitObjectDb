@@ -27,6 +27,11 @@ namespace GitObjectDb.Model
         /// <returns>The new type that should replace the deprecated one.</returns>
         Type? GetNewTypeIfDeprecated(Type nodeType);
 
+        /// <summary>Gets the type description from model.</summary>
+        /// <param name="type">The type expected to be described in model.</param>
+        /// <returns>The type description.</returns>
+        NodeTypeDescription GetDescription(Type type);
+
         /// <summary>Gets the types that a given <paramref name="folderName"/> should contain.</summary>
         /// <param name="folderName">The name of the folder.</param>
         /// <returns>The matching types.</returns>
