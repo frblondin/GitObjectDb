@@ -11,6 +11,8 @@
     <PackageReference Include="AutoFixture.NUnit3" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="coverlet.msbuild" />
+    <PackageReference Include="NBomber" />
+    <PackageReference Include="NBomber.Http" />
     <PackageReference Include="NUnit" />
     <PackageReference Include="NUnit.Analyzers" />
     <PackageReference Include="NUnit3TestAdapter" />

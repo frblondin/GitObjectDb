@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="AutoFixture" />
+    <PackageReference Include="Bogus" />
     <PackageReference Include="IsExternalInit">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
