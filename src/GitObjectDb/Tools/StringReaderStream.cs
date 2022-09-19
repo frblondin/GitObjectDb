@@ -15,7 +15,7 @@ internal class StringReaderStream : Stream
     private long _position;
 
     public StringReaderStream(string input)
-        : this(input, Encoding.Default)
+        : this(input, Encoding.UTF8)
     {
     }
 

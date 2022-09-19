@@ -3,7 +3,7 @@ using System.Diagnostics;
 namespace GitObjectDb.Internal;
 
 [DebuggerDisplay("{Message}")]
-internal class Transformation : ITransformation
+internal class Transformation : ITransformationInternal
 {
     internal Transformation(ApplyUpdateTreeDefinition transformation,
                             ApplyUpdateFastInsert fastInsertTransformation,

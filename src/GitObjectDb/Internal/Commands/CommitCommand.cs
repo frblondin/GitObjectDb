@@ -40,10 +40,11 @@ internal class CommitCommand : ICommitCommand
                            bool updateHead = true,
                            Commit? mergeParent = null)
     {
+        var modules = new ModuleCommands(predecessor.Tree);
         var definition = TreeDefinition.From(predecessor);
         foreach (var transformation in transformations)
         {
-            transformation(connection.Repository.ObjectDatabase, definition, predecessor.Tree);
+            transformation(predecessor.Tree, modules, connection.Repository.ObjectDatabase, definition);
         }
         var parents = new List<Commit> { predecessor };
         if (mergeParent != null)

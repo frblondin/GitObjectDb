@@ -15,12 +15,12 @@ internal class UpdateFastInsertFile
         _serializer = serializer;
     }
 
-    internal ApplyUpdateFastInsert CreateOrUpdate(ITreeItem item) => (_, writer, commitIndex) =>
+    internal ApplyUpdateFastInsert CreateOrUpdate(ITreeItem item) => (tree, modules, writer, commitIndex) =>
     {
         switch (item)
         {
             case Node node:
-                CreateOrUpdateNode(node, writer, commitIndex);
+                CreateOrUpdateNode(node, writer, commitIndex, tree, modules);
                 break;
             case Resource resource:
                 CreateOrUpdateResource(resource, writer, commitIndex);
@@ -30,7 +30,7 @@ internal class UpdateFastInsertFile
         }
     };
 
-    internal static ApplyUpdateFastInsert Delete(ITreeItem item) => (reference, _, commitIndex) =>
+    internal static ApplyUpdateFastInsert Delete(ITreeItem item) => (reference, modules, _, commitIndex) =>
     {
         var path = item.ThrowIfNoPath();
 
@@ -44,9 +44,10 @@ internal class UpdateFastInsertFile
         {
             commitIndex.Add($"D {path.FilePath}");
         }
+        modules.RemoveRecursively(path);
     };
 
-    internal static ApplyUpdateFastInsert Delete(DataPath path) => (reference, _, commitIndex) =>
+    internal static ApplyUpdateFastInsert Delete(DataPath path) => (reference, modules, _, commitIndex) =>
     {
         // For nodes, delete whole folder containing node and nested entries
         // For resources, only deleted resource
@@ -58,6 +59,7 @@ internal class UpdateFastInsertFile
         {
             commitIndex.Add($"D {path.FilePath}");
         }
+        modules.RemoveRecursively(path);
     };
 
     private static void DeleteNodeFolder(Tree? reference, IList<string> commitIndex, DataPath path)
@@ -67,7 +69,8 @@ internal class UpdateFastInsertFile
         {
             foreach (var item in nested)
             {
-                if (item.Entry.TargetType == TreeEntryTargetType.Blob)
+                if (item.Entry.TargetType == TreeEntryTargetType.Blob ||
+                    item.Entry.TargetType == TreeEntryTargetType.GitLink)
                 {
                     commitIndex.Add($"D {item.Path}");
                 }
@@ -79,19 +82,48 @@ internal class UpdateFastInsertFile
         }
     }
 
-    private void CreateOrUpdateNode(Node node, StreamWriter writer, IList<string> commitIndex)
+    private void CreateOrUpdateNode(Node node,
+                                    StreamWriter writer,
+                                    ICollection<string> commitIndex,
+                                    Tree? tree,
+                                    ModuleCommands modules)
     {
         using var stream = _serializer.Serialize(node);
         AddBlob(node.Path!, stream, writer, commitIndex);
+
+        CreateOrUpdateNodeRemoteResource(node, tree, commitIndex, modules);
     }
 
-    private static void CreateOrUpdateResource(Resource resource, StreamWriter writer, IList<string> commitIndex)
+    private static void CreateOrUpdateNodeRemoteResource(Node node,
+                                                  Tree? tree,
+                                                  ICollection<string> commitIndex,
+                                                  ModuleCommands modules)
+    {
+        var resourcePath = $"{node.ThrowIfNoPath().FolderPath}/{FileSystemStorage.ResourceFolder}";
+        if (node.RemoteResource is not null)
+        {
+            modules[resourcePath] = new(resourcePath, node.RemoteResource.Repository, null);
+            commitIndex.Add($"M 160000 {node.RemoteResource.Sha} {resourcePath}");
+        }
+        else if (tree is not null && tree[resourcePath]?.TargetType == TreeEntryTargetType.GitLink)
+        {
+            modules.Remove(resourcePath);
+            commitIndex.Add($"D {resourcePath}");
+        }
+    }
+
+    private static void CreateOrUpdateResource(Resource resource, StreamWriter writer, ICollection<string> commitIndex)
     {
         var stream = resource.Embedded.GetContentStream();
         AddBlob(resource.Path!, stream, writer, commitIndex);
     }
 
-    private static void AddBlob(DataPath path, Stream stream, StreamWriter writer, IList<string> commitIndex)
+    private static void AddBlob(DataPath path, Stream stream, StreamWriter writer, ICollection<string> commitIndex)
+    {
+        AddBlob(path.FilePath, stream, writer, commitIndex);
+    }
+
+    internal static void AddBlob(string path, Stream stream, StreamWriter writer, ICollection<string> commitIndex)
     {
         var mark = commitIndex.Count + 1;
         writer.WriteLine($"blob");
@@ -100,6 +132,6 @@ internal class UpdateFastInsertFile
         writer.Flush();
         stream.CopyTo(writer.BaseStream);
         writer.WriteLine();
-        commitIndex.Add($"M 100644 :{mark} {path.FilePath}");
+        commitIndex.Add($"M 100644 :{mark} {path}");
     }
 }

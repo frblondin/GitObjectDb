@@ -28,5 +28,9 @@ public static class FileSystemStorage
         }
     }
 
-    internal static bool IsResourcePath(string path) => _resourcePath.IsMatch(path);
+    internal static bool IsResourcePath(string path) =>
+        _resourcePath.IsMatch(path);
+
+    internal static bool IsResourceName(string name) =>
+        name.Equals(ResourceFolder, StringComparison.Ordinal);
 }

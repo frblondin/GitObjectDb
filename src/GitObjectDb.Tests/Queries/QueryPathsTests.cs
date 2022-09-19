@@ -18,7 +18,7 @@ public class QueryPathsTests : DisposeArguments
         var result = connection.GetPaths().ToList();
 
         // Assert
-        Assert.That(result, Has.Count.EqualTo(SoftwareBenchmarkCustomization.DefaultApplicationCount));
+        Assert.That(result, Has.Exactly(SoftwareBenchmarkCustomization.DefaultApplicationCount).Items);
     }
 
     [Test]
@@ -29,7 +29,7 @@ public class QueryPathsTests : DisposeArguments
         var result = connection.GetPaths(application.Path).ToList();
 
         // Assert
-        Assert.That(result, Has.Count.EqualTo(SoftwareBenchmarkCustomization.DefaultTablePerApplicationCount));
+        Assert.That(result, Has.Exactly(SoftwareBenchmarkCustomization.DefaultTablePerApplicationCount).Items);
     }
 
     [Test]
@@ -40,7 +40,7 @@ public class QueryPathsTests : DisposeArguments
         var result = connection.GetPaths<Field>(application.Path, isRecursive: true).ToList();
 
         // Assert
-        Assert.That(result, Has.Count.EqualTo(SoftwareBenchmarkCustomization.DefaultTablePerApplicationCount * SoftwareBenchmarkCustomization.DefaultFieldPerTableCount));
+        Assert.That(result, Has.Exactly(SoftwareBenchmarkCustomization.DefaultTablePerApplicationCount * SoftwareBenchmarkCustomization.DefaultFieldPerTableCount).Items);
     }
 
     [Test]
@@ -51,6 +51,6 @@ public class QueryPathsTests : DisposeArguments
         var result = connection.GetPaths<Resource>(table.Path, isRecursive: true).ToList();
 
         // Assert
-        Assert.That(result, Has.Count.EqualTo(SoftwareBenchmarkCustomization.DefaultResourcePerTableCount));
+        Assert.That(result, Has.Exactly(SoftwareBenchmarkCustomization.DefaultResourcePerTableCount).Items);
     }
 }
