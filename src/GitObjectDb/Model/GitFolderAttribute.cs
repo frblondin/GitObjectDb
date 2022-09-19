@@ -9,27 +9,16 @@ namespace GitObjectDb.Model
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public class GitFolderAttribute : Attribute
     {
+        /// <summary>Gets the default value of <see cref="UseNodeFolders"/>.</summary>
+        public const bool DefaultUseNodeFoldersValue = true;
+
         private static readonly ConcurrentDictionary<Type, GitFolderAttribute> _cache = new ConcurrentDictionary<Type, GitFolderAttribute>();
 
-        /// <summary>Initializes a new instance of the <see cref="GitFolderAttribute"/> class.</summary>
-        /// <param name="folderName">Name of the folder.</param>
-        /// <exception cref="ArgumentException">Folder name cannot be empty and cannot containt '/' character.</exception>
-        public GitFolderAttribute(string folderName)
-        {
-            if (string.IsNullOrWhiteSpace(folderName) || folderName.IndexOf('/') != -1)
-            {
-                throw new ArgumentException("Folder name cannot be empty and cannot containt '/' character.", nameof(folderName));
-            }
-            if (FileSystemStorage.ReservedNames.Contains(folderName))
-            {
-                throw new ArgumentException($"'{FolderName}' is a reserved name and cannot be used as a folder name.", nameof(folderName));
-            }
-
-            FolderName = folderName;
-        }
-
         /// <summary>Gets the name of the folder.</summary>
-        public string FolderName { get; }
+        public string? FolderName { get; init; }
+
+        /// <summary>Gets a value indicating whether node should be stored in a nested folder (FolderName/NodeId/data.json) or not (FolderName/NodeId.json).</summary>
+        public bool UseNodeFolders { get; init; } = DefaultUseNodeFoldersValue;
 
         internal static GitFolderAttribute Get(Type type) =>
             _cache.GetOrAdd(type, type => type.GetCustomAttribute<GitFolderAttribute>(true));

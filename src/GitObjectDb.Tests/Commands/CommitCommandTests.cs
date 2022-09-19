@@ -19,7 +19,29 @@ namespace GitObjectDb.Tests.Commands
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
-        public void AddNewField(IFixture fixture, Table table, UniqueId newFieldId, string message, Signature signature)
+        public void AddNewNodeUsingNodeFolders(IFixture fixture, Application application, UniqueId newTableId, string message, Signature signature)
+        {
+            // Arrange
+            var (updateCommand, comparer, sut, connection) = Arrange(fixture);
+
+            // Act
+            var composer = new TransformationComposer(updateCommand, sut, connection);
+            composer.CreateOrUpdate(new Table { Id = newTableId }, application);
+            var result = sut.Commit(
+                connection.Repository,
+                composer.Transformations,
+                message, signature, signature);
+
+            // Assert
+            var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
+            Assert.That(changes, Has.Count.EqualTo(1));
+            var expectedPath = $"{application.Path.FolderPath}/Pages/{newTableId}/{newTableId}.json";
+            Assert.That(changes.Added.Single().New.Path.FilePath, Is.EqualTo(expectedPath));
+        }
+
+        [Test]
+        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+        public void AddNewNodeWithoutNodeFolders(IFixture fixture, Table table, UniqueId newFieldId, string message, Signature signature)
         {
             // Arrange
             var (updateCommand, comparer, sut, connection) = Arrange(fixture);
@@ -35,7 +57,7 @@ namespace GitObjectDb.Tests.Commands
             // Assert
             var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
             Assert.That(changes, Has.Count.EqualTo(1));
-            var expectedPath = $"{table.Path.FolderPath}/Fields/{newFieldId}/{FileSystemStorage.DataFile}";
+            var expectedPath = $"{table.Path.FolderPath}/Fields/{newFieldId}.json";
             Assert.That(changes.Added.Single().New.Path.FilePath, Is.EqualTo(expectedPath));
         }
 
@@ -45,13 +67,12 @@ namespace GitObjectDb.Tests.Commands
         {
             // Arrange
             var (updateCommand, comparer, sut, connection) = Arrange(fixture);
-            var relativePath = new DataPath("Some/Folder", "File.txt");
-            var resource = new Resource(table, relativePath, fileContent);
+            var resource = new Resource(table, "Some/Folder", "File.txt", fileContent);
 
             // Act
             var composer = new TransformationComposer(updateCommand, sut, connection);
             composer.CreateOrUpdate(resource);
-            var result = sut.Commit(
+            sut.Commit(
                 connection.Repository,
                 composer.Transformations,
                 message, signature, signature);
@@ -59,7 +80,7 @@ namespace GitObjectDb.Tests.Commands
             // Assert
             var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, ComparisonPolicy.Default);
             Assert.That(changes, Has.Count.EqualTo(1));
-            var expectedPath = $"{table.Path.FolderPath}/{FileSystemStorage.ResourceFolder}/{relativePath.FilePath}";
+            var expectedPath = $"{table.Path.FolderPath}/{FileSystemStorage.ResourceFolder}/Some/Folder/File.txt";
             Assert.That(changes.Added.Single().New.Path.FilePath, Is.EqualTo(expectedPath));
             var loaded = (Resource)changes.Added.Single().New;
             var content = new StreamReader(loaded.GetContentStream()).ReadToEnd();
@@ -76,7 +97,7 @@ namespace GitObjectDb.Tests.Commands
             // Act
             var composer = new TransformationComposer(updateCommand, sut, connection);
             composer.Delete(table);
-            var result = sut.Commit(
+            sut.Commit(
                 connection.Repository,
                 composer.Transformations,
                 message, signature, signature);
@@ -97,7 +118,7 @@ namespace GitObjectDb.Tests.Commands
             field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
             var composer = new TransformationComposer(updateCommand, sut, connection);
             composer.CreateOrUpdate(field);
-            var result = sut.Commit(
+            sut.Commit(
                 connection.Repository,
                 composer.Transformations,
                 message, signature, signature);

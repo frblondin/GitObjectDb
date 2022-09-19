@@ -3,7 +3,7 @@ using GitObjectDb.Model;
 
 namespace Models.Software
 {
-    [GitFolder("Configuration")]
+    [GitFolder(FolderName = "Configuration")]
     public record Configuration : Node
     {
     }

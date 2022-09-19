@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Models.Software
 {
-    [GitFolder("Fields")]
+    [GitFolder(FolderName = "Fields", UseNodeFolders = false)]
     public record Field : Node
     {
 #pragma warning disable SA1011 // Closing square brackets should be spaced correctly

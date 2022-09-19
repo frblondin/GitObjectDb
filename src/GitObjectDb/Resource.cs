@@ -12,42 +12,41 @@ namespace GitObjectDb
 
         /// <summary>Initializes a new instance of the <see cref="Resource"/> class.</summary>
         /// <param name="node">The node this resources will belong to.</param>
-        /// <param name="relativePath">The relative path.</param>
+        /// <param name="folderPath">The path within the resource folder.</param>
+        /// <param name="file">The file name.</param>
         /// <param name="value">The resource content.</param>
-        public Resource(Node node, DataPath relativePath, string value)
+        public Resource(Node node, string folderPath, string file, string value)
             : this(
-                  DataPath.FromGitBlobPath(
-                      $"{(node.Path ?? throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.")).FolderPath}/" +
-                      $"{FileSystemStorage.ResourceFolder}/{relativePath.FilePath}"),
+                  (node.Path ?? throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.")).CreateResourcePath(folderPath, file),
                   new StringReaderStream(value))
         {
-            FileSystemStorage.ThrowIfAnyReservedName(relativePath.FilePath);
+            FileSystemStorage.ThrowIfAnyReservedName(folderPath);
         }
 
         /// <summary>Initializes a new instance of the <see cref="Resource"/> class.</summary>
         /// <param name="parentPath">The parent path of the node this resources will belong to.</param>
-        /// <param name="relativePath">The relative path.</param>
+        /// <param name="folderPath">The path within the resource folder.</param>
+        /// <param name="file">The file name.</param>
         /// <param name="value">The resource content.</param>
-        public Resource(DataPath parentPath, DataPath relativePath, string value)
+        public Resource(DataPath parentPath, string folderPath, string file, string value)
             : this(
-                  DataPath.FromGitBlobPath(
-                      $"{parentPath.FolderPath}/" +
-                      $"{FileSystemStorage.ResourceFolder}/{relativePath.FilePath}"),
+                  parentPath.CreateResourcePath(folderPath, file),
                   new StringReaderStream(value))
         {
-            FileSystemStorage.ThrowIfAnyReservedName(relativePath.FilePath);
+            FileSystemStorage.ThrowIfAnyReservedName(folderPath);
         }
 
         /// <summary>Initializes a new instance of the <see cref="Resource"/> class.</summary>
         /// <param name="node">The node this resources will belong to.</param>
-        /// <param name="relativePath">The relative path.</param>
+        /// <param name="folderPath">The path within the resource folder.</param>
+        /// <param name="file">The file name.</param>
         /// <param name="stream">The resource content.</param>
-        public Resource(Node node, DataPath relativePath, Stream stream)
+        public Resource(Node node, string folderPath, string file, Stream stream)
             : this(
-                  (node.Path ?? throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.")).CreateResourcePath(relativePath),
+                  (node.Path ?? throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.")).CreateResourcePath(folderPath, file),
                   () => stream)
         {
-            FileSystemStorage.ThrowIfAnyReservedName(relativePath.FilePath);
+            FileSystemStorage.ThrowIfAnyReservedName(folderPath);
         }
 
         internal Resource(DataPath path, Blob blob)

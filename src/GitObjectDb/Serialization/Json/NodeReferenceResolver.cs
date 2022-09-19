@@ -17,9 +17,9 @@ namespace GitObjectDb.Serialization.Json
 
         public override void AddReference(string referenceId, object value)
         {
-            if (value is ITreeItem item)
+            if (value is ITreeItem item && DataPath.TryParse(referenceId, out var path))
             {
-                _items[new DataPath(referenceId, FileSystemStorage.DataFile)] = item;
+                _items[path!] = item;
             }
         }
 

@@ -24,7 +24,7 @@ namespace GitObjectDb.Tests.Model
             Assert.That(model.NodeTypes.First().Children.Single().Type, Is.EqualTo(typeof(SomeChild)));
         }
 
-        [GitFolder(FolderName)]
+        [GitFolder(FolderName = FolderName)]
         [HasChild(typeof(SomeChild))]
         public record SomeNode : Node
         {

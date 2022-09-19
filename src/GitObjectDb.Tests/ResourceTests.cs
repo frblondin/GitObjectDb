@@ -9,10 +9,10 @@ namespace GitObjectDb.Tests
     {
         [Test]
         [AutoData]
-        public void StreamResourceValue(DataPath parentPath, DataPath relativePath, string value)
+        public void StreamResourceValue(DataPath parentPath, string folder, string file, string value)
         {
             // Arrange
-            var sut = new Resource(parentPath, relativePath, value);
+            var sut = new Resource(parentPath, folder, file, value);
 
             // Act
             using var stream = sut.GetContentStream();
@@ -24,10 +24,10 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoData]
-        public void StreamResourceValueSupportsRepositioning(DataPath parentPath, DataPath relativePath, string value)
+        public void StreamResourceValueSupportsRepositioning(DataPath parentPath, string folder, string file, string value)
         {
             // Arrange
-            var sut = new Resource(parentPath, relativePath, value);
+            var sut = new Resource(parentPath, folder, file, value);
 
             // Act
             using var stream = sut.GetContentStream();
@@ -41,10 +41,10 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoData]
-        public void StreamResourceValueSupportsAbsoluteSeek(DataPath parentPath, DataPath relativePath, string value)
+        public void StreamResourceValueSupportsAbsoluteSeek(DataPath parentPath, string folder, string file, string value)
         {
             // Arrange
-            var sut = new Resource(parentPath, relativePath, value);
+            var sut = new Resource(parentPath, folder, file, value);
 
             // Act
             using var stream = sut.GetContentStream();
@@ -58,10 +58,10 @@ namespace GitObjectDb.Tests
 
         [Test]
         [AutoData]
-        public void StreamResourceValueThrowsExceptionForNonZeroSeek(DataPath parentPath, DataPath relativePath, string value)
+        public void StreamResourceValueThrowsExceptionForNonZeroSeek(DataPath parentPath, string folder, string file, string value)
         {
             // Arrange
-            var sut = new Resource(parentPath, relativePath, value);
+            var sut = new Resource(parentPath, folder, file, value);
 
             // Act
             using var stream = sut.GetContentStream();

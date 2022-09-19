@@ -1,11 +1,15 @@
 using GitObjectDb.Model;
 using System;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace GitObjectDb
 {
     /// <summary>Represents a data path.</summary>
     public sealed class DataPath : IEquatable<DataPath>
     {
+        private static readonly Regex _isInResourceFolderRegex = new Regex($"/{FileSystemStorage.ResourceFolder}[/$]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         private readonly Lazy<string> _filePath;
 
         /// <summary>
@@ -13,8 +17,10 @@ namespace GitObjectDb
         /// </summary>
         /// <param name="folderPath">The folder path.</param>
         /// <param name="fileName">The file name containing data.</param>
-        public DataPath(string folderPath, string fileName)
+        /// <param name="useNodeFolders">Sets whether node should be stored in a nested folder (FolderName/NodeId/data.json) or not (FolderName/NodeId.json).</param>
+        public DataPath(string folderPath, string fileName, bool useNodeFolders)
         {
+            UseNodeFolders = useNodeFolders;
             (FolderParts, FolderPath, FolderName) = CleanupFolder(folderPath, fileName);
             FileName = fileName;
 
@@ -38,7 +44,10 @@ namespace GitObjectDb
         public string[] FolderParts { get; }
 
         /// <summary>Gets a value indicating whether the path represents a path to a node (e.g. not a resource).</summary>
-        public bool IsNode => StringComparer.OrdinalIgnoreCase.Equals(FileName, FileSystemStorage.DataFile);
+        public bool IsNode => !_isInResourceFolderRegex.IsMatch(FolderPath);
+
+        /// <summary>Gets a value indicating whether node should be stored in a nested folder (FolderName/NodeId/data.json) or not (FolderName/NodeId.json).</summary>
+        public bool UseNodeFolders { get; }
 
         /// <summary>
         /// Indicates whether the values of two specified <see cref="DataPath" /> objects are equal.
@@ -60,11 +69,14 @@ namespace GitObjectDb
         /// <summary>Gets the root path of the specified node.</summary>
         /// <param name="node">The node.</param>
         /// <returns>The root path.</returns>
-        public static DataPath Root(Node node) =>
-            new DataPath(GetSuffix(node), FileSystemStorage.DataFile);
+        public static DataPath Root(Node node)
+        {
+            var useNodeFolders = GetSuffix(node, out var suffix);
+            return new DataPath(suffix, $"{node.Id}.json", useNodeFolders);
+        }
 
-        internal static DataPath Root(string folderName, UniqueId id) =>
-            new DataPath($"{folderName}/{id}", FileSystemStorage.DataFile);
+        internal static DataPath Root(string folderName, UniqueId id, bool useNodeFolders) =>
+            new DataPath(useNodeFolders ? $"{folderName}/{id}" : folderName, $"{id}.json", useNodeFolders);
 
         internal static DataPath FromGitBlobPath(string path)
         {
@@ -87,9 +99,12 @@ namespace GitObjectDb
             }
 
             var separator = path.LastIndexOf('/');
+            var folder = path.Substring(0, separator);
+            var file = path.Substring(separator + 1);
+            var useNodeFolders = !folder.Contains(FileSystemStorage.ResourceFolder) && folder.EndsWith(System.IO.Path.GetFileNameWithoutExtension(file));
             result = separator != -1 ?
-                new DataPath(path.Substring(0, separator), path.Substring(separator + 1)) :
-                new DataPath(string.Empty, path);
+                new DataPath(folder, file, useNodeFolders) :
+                new DataPath(string.Empty, path, false);
 
             return true;
         }
@@ -113,26 +128,25 @@ namespace GitObjectDb
         /// <returns>The new <see cref="DataPath"/> representing the child node path.</returns>
         public DataPath AddChild(Node node)
         {
-            var path = string.IsNullOrEmpty(FolderPath) ?
-                GetSuffix(node) :
-                $"{FolderPath}/{GetSuffix(node)}";
-            return new DataPath(path, FileSystemStorage.DataFile);
+            var useNodeFolders = GetSuffix(node, out var suffix);
+            var path = string.IsNullOrEmpty(FolderPath) ? suffix : $"{FolderPath}/{suffix}";
+            return new DataPath(path, $"{node.Id}.json", useNodeFolders);
         }
 
-        internal DataPath AddChild(string folderName, UniqueId id) =>
-            new DataPath($"{FolderPath}/{folderName}/{id}", FileSystemStorage.DataFile);
+        internal DataPath AddChild(string folderName, UniqueId id, bool useNodeFolders)
+        {
+            var folder = useNodeFolders ? $"{FolderPath}/{folderName}/{id}" : $"{FolderPath}/{folderName}";
+            return new DataPath(folder, $"{id}.json", useNodeFolders);
+        }
 
-        private static string GetSuffix(Node node)
+        private static bool GetSuffix(Node node, out string suffix)
         {
             var type = node.GetType();
-            var folder = GetFolderName(type);
-            return string.IsNullOrEmpty(folder) ? node.Id.ToString() : $"{folder}/{node.Id}";
-        }
-
-        internal static string GetFolderName(Type type)
-        {
             var attribute = GitFolderAttribute.Get(type);
-            return attribute?.FolderName ?? $"{type.Name}s";
+            var folder = attribute?.FolderName ?? $"{type.Name}s";
+            var result = attribute?.UseNodeFolders ?? GitFolderAttribute.DefaultUseNodeFoldersValue;
+            suffix = result ? $"{folder}/{node.Id}" : folder;
+            return result;
         }
 
         /// <inheritdoc/>
@@ -152,17 +166,28 @@ namespace GitObjectDb
 
         internal DataPath GetResourceParentNode()
         {
-            int position = FolderPath.IndexOf($"/{FileSystemStorage.ResourceFolder}/", StringComparison.Ordinal);
+            int position = Array.FindIndex(FolderParts, p => StringComparer.Ordinal.Equals(p, FileSystemStorage.ResourceFolder));
             if (position == -1)
             {
                 throw new InvalidOperationException($"Path doesn't refer to a resource.");
             }
-            return new DataPath(FolderPath.Substring(0, position), FileSystemStorage.DataFile);
+            return new DataPath(string.Join("/", FolderParts.Take(position)), $"{FolderParts[position - 1]}.json", true);
         }
 
-        internal DataPath CreateResourcePath(DataPath resourcePath)
+        internal DataPath CreateResourcePath(string folderPath, string file)
         {
-            return FromGitBlobPath($"{FolderPath}/{FileSystemStorage.ResourceFolder}/{resourcePath.FilePath}");
+            ThrowIfNotUsingNodeFolders();
+
+            var folder = string.IsNullOrEmpty(folderPath) ? string.Empty : $"/{folderPath}";
+            return FromGitBlobPath($"{FolderPath}/{FileSystemStorage.ResourceFolder}{folder}/{file}");
+        }
+
+        internal void ThrowIfNotUsingNodeFolders()
+        {
+            if (!UseNodeFolders)
+            {
+                throw new GitObjectDbException("The path contains reserved folder names;");
+            }
         }
     }
 }
