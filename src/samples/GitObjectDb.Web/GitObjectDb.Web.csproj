@@ -20,7 +20,6 @@
   <ItemGroup>
     <PackageReference Include="GraphQL.Server.Ui.Altair" />
     <PackageReference Include="Microsoft.AspNetCore.OData" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
   </ItemGroup>
 

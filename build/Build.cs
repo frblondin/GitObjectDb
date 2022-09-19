@@ -21,7 +21,6 @@ using System.Linq;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
-[CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
 [GitHubActions(
     "Release",
