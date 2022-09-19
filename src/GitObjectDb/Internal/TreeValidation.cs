@@ -49,7 +49,7 @@ internal class TreeValidation : ITreeValidation
             var types = _model.GetTypesMatchingFolderName(entry.Name);
             if (!types.Any())
             {
-                throw new GitObjectDbException($"No type matching folder name '{entry.Name}' could be found.");
+                throw new GitObjectDbValidationException($"No type matching folder name '{entry.Name}' could be found.");
             }
             var useNodeFolder = types.GroupBy(t => t.UseNodeFolders);
             ThrowIfDifferentNodeFolderValues(useNodeFolder);
@@ -83,14 +83,14 @@ internal class TreeValidation : ITreeValidation
                         ValidateNodeId(nodeId);
                         break;
                     case TreeEntryTargetType.Blob:
-                        throw new GitObjectDbException($"A node collection with {nameof(GitFolderAttribute.UseNodeFolders)} = false " +
+                        throw new GitObjectDbValidationException($"A node collection with {nameof(GitFolderAttribute.UseNodeFolders)} = false " +
                             $"should only contain nodes of type '<ParentNodeId>.json'. Blob entry {item.Name}' was not expected.");
                     case TreeEntryTargetType.Tree:
                     case TreeEntryTargetType.GitLink:
-                        throw new GitObjectDbException($"A tree or link was not expected in a node collection that does " +
+                        throw new GitObjectDbValidationException($"A tree or link was not expected in a node collection that does " +
                             $"not use {nameof(GitFolderAttribute.UseNodeFolders)}.");
                     default:
-                        throw new NotSupportedException(item.TargetType.ToString());
+                        throw new NotSupportedException($"{item.TargetType} is not supported.");
                 }
                 path.Pop();
             }
@@ -108,14 +108,14 @@ internal class TreeValidation : ITreeValidation
                         ValidateNodeFolder(item, path);
                         break;
                     case TreeEntryTargetType.Blob:
-                        throw new NotSupportedException($"A blob was not expected to be found in a node collection " +
+                        throw new GitObjectDbValidationException($"A blob was not expected to be found in a node collection " +
                             $"using {nameof(GitFolderAttribute.UseNodeFolders)}.");
                     case TreeEntryTargetType.Tree when item.Name == FileSystemStorage.ResourceFolder:
                     case TreeEntryTargetType.GitLink:
                         ThrowGitLinkOrResourceFolderNotExpected();
                         return;
                     default:
-                        throw new NotSupportedException(item.TargetType.ToString());
+                        throw new NotSupportedException($"{item.TargetType} is not supported.");
                 }
                 path.Pop();
             }
@@ -128,7 +128,7 @@ internal class TreeValidation : ITreeValidation
             var nodeDataFileFound = ValidateNodeFolderItems(nodeFolder.Name, nodeFolderTree, path);
             if (!nodeDataFileFound)
             {
-                throw new GitObjectDbException($"Node data folder '{nodeFolder.Name}.json' could be found in {nodeFolder.Path}.");
+                throw new GitObjectDbValidationException($"Node data folder '{nodeFolder.Name}.json' could be found in {nodeFolder.Path}.");
             }
         }
 
@@ -136,11 +136,11 @@ internal class TreeValidation : ITreeValidation
         {
             if (!UniqueId.TryParse(nodeId, out var id))
             {
-                throw new GitObjectDbException($"Folder name '{nodeId}' could not be parsed as a valid {nameof(UniqueId)}.");
+                throw new GitObjectDbValidationException($"Folder name '{nodeId}' could not be parsed as a valid {nameof(UniqueId)}.");
             }
             if (_identifiers.Contains(id))
             {
-                throw new GitObjectDbException($"Node id '{nodeId}' exists for multiple nodes.");
+                throw new GitObjectDbValidationException($"Node id '{nodeId}' exists for multiple nodes.");
             }
             _identifiers.Add(id);
         }
@@ -168,10 +168,10 @@ internal class TreeValidation : ITreeValidation
                         result = true;
                         break;
                     case TreeEntryTargetType.Blob:
-                        throw new GitObjectDbException($"A node folder should only contain a file named '<ParentNodeId>.json'. " +
+                        throw new GitObjectDbValidationException($"A node folder should only contain a file named '<ParentNodeId>.json'. " +
                             $"Blob entry '{item.Name}' was not expected.");
                     case TreeEntryTargetType.GitLink:
-                        throw new GitObjectDbException($"A link folder is only valid as a resource. " +
+                        throw new GitObjectDbValidationException($"A link folder is only valid as a resource. " +
                             $"Git link '{item.Name}' was not expected.");
                     default:
                         throw new NotSupportedException($"{item.TargetType} is not supported.");
@@ -186,7 +186,7 @@ internal class TreeValidation : ITreeValidation
         {
             if (useNodeFolder.Count() > 1)
             {
-                throw new NotSupportedException($"A model containing several types with different values " +
+                throw new GitObjectDbValidationException($"A model containing several types with different values " +
                     $"for {nameof(GitFolderAttribute.UseNodeFolders)} is not supported.");
             }
         }
@@ -210,7 +210,8 @@ internal class TreeValidation : ITreeValidation
 
         private static void ThrowGitLinkOrResourceFolderNotExpected()
         {
-            throw new NotSupportedException($"A resource folder or link was not expected to be found in a node collection.");
+            throw new GitObjectDbValidationException(
+                $"A resource folder or link was not expected to be found in a node collection.");
         }
 
         private void ThrowIfMixingEmbeddedAndLinkedResources(Stack<string> path)
@@ -219,7 +220,7 @@ internal class TreeValidation : ITreeValidation
             var module = _modules[gitPath];
             if (module is not null)
             {
-                throw new NotSupportedException(
+                throw new GitObjectDbValidationException(
                     $"Cannot mix embedded and linked resources for the same node {gitPath}");
             }
         }
@@ -230,7 +231,7 @@ internal class TreeValidation : ITreeValidation
             var module = _modules[gitPath];
             if (module is null)
             {
-                throw new GitObjectDbException(
+                throw new GitObjectDbValidationException(
                     $"Linked resource {gitPath} could not be found in .gitmodules.");
             }
         }

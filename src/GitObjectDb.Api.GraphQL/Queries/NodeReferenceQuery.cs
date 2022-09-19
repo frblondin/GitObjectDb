@@ -2,6 +2,7 @@ using AutoMapper;
 using Fasterflect;
 using GitObjectDb.Api.Model;
 using GraphQL;
+using GraphQL.Execution;
 using GraphQL.Resolvers;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
@@ -16,11 +17,11 @@ internal static class NodeReferenceQuery
         object Execute(IResolveFieldContext<object?> context)
         {
             var parentNode = (context.Source as NodeDto)?.Node ??
-                throw new NotSupportedException("Could not get parent node.");
+                throw new RequestError("Could not get parent node.");
             var getter = Reflect.PropertyGetter(parentNode.GetType(), property.Name);
             var reference = (Node)getter.Invoke(parentNode);
             var mapper = context.RequestServices?.GetRequiredService<IMapper>() ??
-                throw new NotSupportedException("No mapper context set.");
+                throw new ExecutionError("No mapper context set.");
             return mapper.Map(reference, nodeType, property.PropertyType);
         }
     }
@@ -34,11 +35,11 @@ internal static class NodeReferenceQuery
         object Execute(IResolveFieldContext<object?> context)
         {
             var parentNode = (context.Source as NodeDto)?.Node ??
-                throw new NotSupportedException("Could not get parent node.");
+                throw new RequestError("Could not get parent node.");
             var getter = Reflect.PropertyGetter(parentNode.GetType(), member.Name);
             var references = (Node)getter.Invoke(parentNode);
             var mapper = context.RequestServices?.GetRequiredService<IMapper>() ??
-                throw new NotSupportedException("No mapper context set.");
+                throw new ExecutionError("No mapper context set.");
             return mapper.Map(references,
                               sourceEnumType,
                               destEnumType);
