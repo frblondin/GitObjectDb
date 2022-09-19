@@ -42,7 +42,7 @@ public class GitObjectDbApiFixture
     [OneTimeSetUp]
     public void RestoreRepositories()
     {
-        if (!Directory.Exists(Path.Combine(SoftwareBenchmarkRepositoryPath, ".git")))
+        if (!Directory.Exists(SoftwareBenchmarkRepositoryPath))
         {
             ZipFile.ExtractToDirectory(
                 Path.Combine(
