@@ -7,147 +7,146 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
-namespace GitObjectDb.Internal
+namespace GitObjectDb.Internal;
+
+[DebuggerDisplay("Transformations: {Transformations.Count}")]
+internal class TransformationComposer : ITransformationComposer
 {
-    [DebuggerDisplay("Transformations: {Transformations.Count}")]
-    internal class TransformationComposer : ITransformationComposer
+    private readonly UpdateTreeCommand _updateTreeCommand;
+    private readonly UpdateFastInsertFile _updateFastInsertFile;
+    private readonly ServiceResolver<CommitCommandType, ICommitCommand> _commitCommandFactory;
+
+    [FactoryDelegateConstructor(typeof(Factories.TransformationComposerFactory))]
+    public TransformationComposer(UpdateTreeCommand updateTreeCommand, UpdateFastInsertFile updateFastInsertFile, ServiceResolver<CommitCommandType, ICommitCommand> commitCommandFactory, IConnectionInternal connection)
     {
-        private readonly UpdateTreeCommand _updateTreeCommand;
-        private readonly UpdateFastInsertFile _updateFastInsertFile;
-        private readonly ServiceResolver<CommitCommandType, ICommitCommand> _commitCommandFactory;
+        _updateTreeCommand = updateTreeCommand;
+        _updateFastInsertFile = updateFastInsertFile;
+        _commitCommandFactory = commitCommandFactory;
+        Connection = connection;
+        Transformations = new List<ITransformation>();
+    }
 
-        [FactoryDelegateConstructor(typeof(Factories.TransformationComposerFactory))]
-        public TransformationComposer(UpdateTreeCommand updateTreeCommand, UpdateFastInsertFile updateFastInsertFile, ServiceResolver<CommitCommandType, ICommitCommand> commitCommandFactory, IConnectionInternal connection)
+    public IConnectionInternal Connection { get; }
+
+    public IList<ITransformation> Transformations { get; }
+
+    public TNode CreateOrUpdate<TNode>(TNode node)
+        where TNode : Node =>
+        CreateOrUpdateItem(node, default);
+
+    public TNode CreateOrUpdate<TNode>(TNode node, DataPath? parent = null)
+        where TNode : Node =>
+        CreateOrUpdateItem(node, parent);
+
+    public TNode CreateOrUpdate<TNode>(TNode node, Node? parent = null)
+        where TNode : Node =>
+        CreateOrUpdateItem(node, parent?.Path);
+
+    public Resource CreateOrUpdate(Resource resource) =>
+        CreateOrUpdateItem(resource, default);
+
+    public TItem Delete<TItem>(TItem item)
+        where TItem : ITreeItem
+    {
+        item.ThrowIfNoPath();
+
+        var transformation = new Transformation(
+            UpdateTreeCommand.Delete(item),
+            UpdateFastInsertFile.Delete(item),
+            $"Removing {item.Path!.FolderPath}.");
+        Transformations.Add(transformation);
+        return item;
+    }
+
+    public void Delete(DataPath path)
+    {
+        var transformation = new Transformation(
+            UpdateTreeCommand.Delete(path),
+            UpdateFastInsertFile.Delete(path),
+            $"Removing {path}.");
+        Transformations.Add(transformation);
+    }
+
+    private TItem CreateOrUpdateItem<TItem>(TItem item, DataPath? parent = null)
+        where TItem : ITreeItem
+    {
+        var path = item.Path;
+        if (item is Node node)
         {
-            _updateTreeCommand = updateTreeCommand;
-            _updateFastInsertFile = updateFastInsertFile;
-            _commitCommandFactory = commitCommandFactory;
-            Connection = connection;
-            Transformations = new List<ITransformation>();
+            path = UpdateNodePathIfNeeded(node, parent);
         }
-
-        public IConnectionInternal Connection { get; }
-
-        public IList<ITransformation> Transformations { get; }
-
-        public TNode CreateOrUpdate<TNode>(TNode node)
-            where TNode : Node =>
-            CreateOrUpdateItem(node, default(DataPath));
-
-        public TNode CreateOrUpdate<TNode>(TNode node, DataPath? parent = null)
-            where TNode : Node =>
-            CreateOrUpdateItem(node, parent);
-
-        public TNode CreateOrUpdate<TNode>(TNode node, Node? parent = null)
-            where TNode : Node =>
-            CreateOrUpdateItem(node, parent?.Path);
-
-        public Resource CreateOrUpdate(Resource resource) =>
-            CreateOrUpdateItem(resource, default);
-
-        public TItem Delete<TItem>(TItem item)
-            where TItem : ITreeItem
+        else
         {
             item.ThrowIfNoPath();
-
-            var transformation = new Transformation(
-                UpdateTreeCommand.Delete(item),
-                UpdateFastInsertFile.Delete(item),
-                $"Removing {item.Path!.FolderPath}.");
-            Transformations.Add(transformation);
-            return item;
         }
 
-        public void Delete(DataPath path)
+        var transformation = new Transformation(
+            _updateTreeCommand.CreateOrUpdate(item),
+            _updateFastInsertFile.CreateOrUpdate(item),
+            $"Adding or updating {path!.FolderPath}.");
+        Transformations.Add(transformation);
+        return item;
+    }
+
+    private DataPath UpdateNodePathIfNeeded(Node node, DataPath? parent)
+    {
+        if (parent is not null)
         {
-            var transformation = new Transformation(
-                UpdateTreeCommand.Delete(path),
-                UpdateFastInsertFile.Delete(path),
-                $"Removing {path}.");
-            Transformations.Add(transformation);
+            ThrowIfWrongParentPath(parent);
+
+            var newPath = parent.AddChild(node, Connection.Model);
+            ThrowIfWrongExistingPath(node, newPath);
+            node.Path = newPath;
         }
-
-        private TItem CreateOrUpdateItem<TItem>(TItem item, DataPath? parent = null)
-            where TItem : ITreeItem
+        if (node.Path is null)
         {
-            var path = item.Path;
-            if (item is Node node)
-            {
-                path = UpdateNodePathIfNeeded(node, parent);
-            }
-            else
-            {
-                item.ThrowIfNoPath();
-            }
-
-            var transformation = new Transformation(
-                _updateTreeCommand.CreateOrUpdate(item),
-                _updateFastInsertFile.CreateOrUpdate(item),
-                $"Adding or updating {path!.FolderPath}.");
-            Transformations.Add(transformation);
-            return item;
+            node.Path = DataPath.Root(node, Connection.Model);
         }
+        return node.Path;
+    }
 
-        private DataPath UpdateNodePathIfNeeded(Node node, DataPath? parent)
+    Commit ITransformationComposer.Commit(string message, Signature author, Signature committer, bool amendPreviousCommit, Action<ITransformation>? beforeProcessing, CommitCommandType type) =>
+        _commitCommandFactory.Invoke(type).Commit(
+            Connection,
+            this,
+            message, author, committer, amendPreviousCommit,
+            beforeProcessing: beforeProcessing);
+
+    internal TreeDefinition ApplyTransformations(ObjectDatabase dataBase, Commit? commit, Action<ITransformation>? beforeProcessing = null)
+    {
+        var result = commit is not null ? TreeDefinition.From(commit) : new TreeDefinition();
+        foreach (var transformation in Transformations)
         {
-            if (parent is not null)
-            {
-                ThrowIfWrongParentPath(parent);
-
-                var newPath = parent.AddChild(node, Connection.Model);
-                ThrowIfWrongExistingPath(node, newPath);
-                node.Path = newPath;
-            }
-            if (node.Path is null)
-            {
-                node.Path = DataPath.Root(node, Connection.Model);
-            }
-            return node.Path;
+            beforeProcessing?.Invoke(transformation);
+            transformation.TreeTransformation(dataBase, result, commit?.Tree);
         }
+        return result;
+    }
 
-        Commit ITransformationComposer.Commit(string message, Signature author, Signature committer, bool amendPreviousCommit, Action<ITransformation>? beforeProcessing, CommitCommandType type) =>
-            _commitCommandFactory.Invoke(type).Commit(
-                Connection,
-                this,
-                message, author, committer, amendPreviousCommit,
-                beforeProcessing: beforeProcessing);
-
-        internal TreeDefinition ApplyTransformations(ObjectDatabase dataBase, Commit? commit, Action<ITransformation>? beforeProcessing = null)
+    internal void ApplyTransformations(Commit? commit, System.IO.StreamWriter writer, IList<string> commitIndex, Action<ITransformation>? beforeProcessing = null)
+    {
+        foreach (var transformation in Transformations)
         {
-            var result = commit is not null ? TreeDefinition.From(commit) : new TreeDefinition();
-            foreach (var transformation in Transformations)
-            {
-                beforeProcessing?.Invoke(transformation);
-                transformation.TreeTransformation(dataBase, result, commit?.Tree);
-            }
-            return result;
+            beforeProcessing?.Invoke(transformation);
+            transformation.FastInsertTransformation(commit?.Tree, writer, commitIndex);
         }
+    }
 
-        internal void ApplyTransformations(Commit? commit, System.IO.StreamWriter writer, IList<string> commitIndex, Action<ITransformation>? beforeProcessing = null)
+    [ExcludeFromCodeCoverage]
+    private static void ThrowIfWrongParentPath(DataPath parent)
+    {
+        if (!parent.IsNode || !parent.UseNodeFolders)
         {
-            foreach (var transformation in Transformations)
-            {
-                beforeProcessing?.Invoke(transformation);
-                transformation.FastInsertTransformation(commit?.Tree, writer, commitIndex);
-            }
+            throw new GitObjectDbException("Parent path has not been set.");
         }
+    }
 
-        [ExcludeFromCodeCoverage]
-        private static void ThrowIfWrongParentPath(DataPath parent)
+    [ExcludeFromCodeCoverage]
+    private static void ThrowIfWrongExistingPath(Node node, DataPath newPath)
+    {
+        if (node.Path is not null && !node.Path.Equals(newPath))
         {
-            if (!parent.IsNode || !parent.UseNodeFolders)
-            {
-                throw new GitObjectDbException("Parent path has not been set.");
-            }
-        }
-
-        [ExcludeFromCodeCoverage]
-        private static void ThrowIfWrongExistingPath(Node node, DataPath newPath)
-        {
-            if (node.Path is not null && !node.Path.Equals(newPath))
-            {
-                throw new GitObjectDbException("Node path has already been set. This generally means that a node has been created multiple times. Make sure to reset cloned path value.");
-            }
+            throw new GitObjectDbException("Node path has already been set. This generally means that a node has been created multiple times. Make sure to reset cloned path value.");
         }
     }
 }

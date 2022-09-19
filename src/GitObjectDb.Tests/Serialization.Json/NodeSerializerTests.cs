@@ -7,37 +7,36 @@ using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
 using System;
 
-namespace GitObjectDb.Tests.Serialization.Json
+namespace GitObjectDb.Tests.Serialization.Json;
+
+public partial class NodeSerializerTests
 {
-    public partial class NodeSerializerTests
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void EmbeddedResourceGetPreserved(IFixture fixture)
     {
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void EmbeddedResourceGetPreserved(IFixture fixture)
+        // Arrange
+        var model = new ConventionBaseModelBuilder()
+            .RegisterType<SomeNode>()
+            .Build();
+
+        // Arrange
+        var value = new SomeNode
         {
-            // Arrange
-            var model = new ConventionBaseModelBuilder()
-                .RegisterType<SomeNode>()
-                .Build();
+            EmbeddedResource = "\nSome\nValueContaining Special chars such as /*, */, or //.\n",
+            Path = new DataPath("Nodes", "foo.json", false),
+        };
 
-            // Arrange
-            var value = new SomeNode
-            {
-                EmbeddedResource = "\nSome\nValueContaining Special chars such as /*, */, or //.\n",
-                Path = new DataPath("Nodes", "foo.json", false),
-            };
+        // Act
+        var nodeSerializer = fixture.Create<INodeSerializer>();
+        var serialized = nodeSerializer.Serialize(value);
+        var deserialized = nodeSerializer.Deserialize(serialized, null, model, _ => throw new NotImplementedException());
 
-            // Act
-            var nodeSerializer = fixture.Create<INodeSerializer>();
-            var serialized = nodeSerializer.Serialize(value);
-            var deserialized = nodeSerializer.Deserialize(serialized, null, model, _ => throw new NotImplementedException());
+        // Assert
+        Assert.That(deserialized.EmbeddedResource, Is.EqualTo(value.EmbeddedResource));
+    }
 
-            // Assert
-            Assert.That(deserialized.EmbeddedResource, Is.EqualTo(value.EmbeddedResource));
-        }
-
-        private record SomeNode : Node
-        {
-        }
+    private record SomeNode : Node
+    {
     }
 }

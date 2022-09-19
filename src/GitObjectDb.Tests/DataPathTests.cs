@@ -4,15 +4,14 @@ using GitObjectDb.Tests.Assets.Tools;
 using Models.Software;
 using NUnit.Framework;
 
-namespace GitObjectDb.Tests
+namespace GitObjectDb.Tests;
+
+public class DataPathTests : DisposeArguments
 {
-    public class DataPathTests : DisposeArguments
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void GetParentNode(IConnection sut, Application application, Table table)
     {
-        [Test]
-        [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void GetParentNode(IConnection sut, Application application, Table table)
-        {
-            Assert.That(table.Path.GetParentNode(), Is.EqualTo(application.Path));
-       }
+        Assert.That(table.Path.GetParentNode(), Is.EqualTo(application.Path));
     }
 }

@@ -1,10 +1,9 @@
 using GitObjectDb;
 using GitObjectDb.Model;
 
-namespace Models.Software
+namespace Models.Software;
+
+[GitFolder(FolderName = "Configuration")]
+public record Configuration : Node
 {
-    [GitFolder(FolderName = "Configuration")]
-    public record Configuration : Node
-    {
-    }
 }

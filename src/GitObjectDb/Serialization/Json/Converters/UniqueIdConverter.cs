@@ -5,14 +5,13 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace GitObjectDb.Serialization.Json.Converters
-{
-    internal class UniqueIdConverter : JsonConverter<UniqueId>
-    {
-        public override UniqueId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-            new UniqueId(reader.GetString() ?? throw new JsonException("Reader did not return any string value."));
+namespace GitObjectDb.Serialization.Json.Converters;
 
-        public override void Write(Utf8JsonWriter writer, UniqueId value, JsonSerializerOptions options) =>
-            writer.WriteStringValue(value.ToString());
-    }
+internal class UniqueIdConverter : JsonConverter<UniqueId>
+{
+    public override UniqueId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        new(reader.GetString() ?? throw new JsonException("Reader did not return any string value."));
+
+    public override void Write(Utf8JsonWriter writer, UniqueId value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.ToString());
 }
