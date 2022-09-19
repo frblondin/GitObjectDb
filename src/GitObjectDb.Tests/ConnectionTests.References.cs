@@ -42,7 +42,8 @@ namespace GitObjectDb.Tests.Serialization.Json
         {
             var path = GitObjectDbFixture.GetAvailableFolderPath();
             var repositoryFactory = serviceProvider.GetRequiredService<ConnectionFactory>();
-            var result = (IConnectionInternal)repositoryFactory(path, "main");
+            var model = serviceProvider.GetRequiredService<IDataModel>();
+            var result = (IConnectionInternal)repositoryFactory(path, model);
             return result;
         }
 

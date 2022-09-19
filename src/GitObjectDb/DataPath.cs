@@ -106,7 +106,12 @@ namespace GitObjectDb
             return (folderParts, path, lastSlash != -1 ? path.Substring(lastSlash + 1) : string.Empty);
         }
 
-        internal DataPath AddChild(Node node)
+        /// <summary>
+        /// Adds a node to the current instance.
+        /// </summary>
+        /// <param name="node">The node to be added.</param>
+        /// <returns>The new <see cref="DataPath"/> representing the child node path.</returns>
+        public DataPath AddChild(Node node)
         {
             var path = string.IsNullOrEmpty(FolderPath) ?
                 GetSuffix(node) :

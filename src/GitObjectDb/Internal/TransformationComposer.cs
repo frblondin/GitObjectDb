@@ -98,10 +98,11 @@ namespace GitObjectDb.Internal
             return node.Path;
         }
 
-        public Commit Commit(string message, Signature author, Signature committer, bool amendPreviousCommit = false) =>
+        public Commit Commit(string message, Signature author, Signature committer, bool amendPreviousCommit = false, Action<ITransformation>? beforeProcessing = null) =>
             _commitCommand.Commit(
                 Connection.Repository,
-                Transformations.Select(t => t.TreeTransformation),
-                message, author, committer, amendPreviousCommit);
+                Transformations,
+                message, author, committer, amendPreviousCommit,
+                beforeProcessing: beforeProcessing);
     }
 }

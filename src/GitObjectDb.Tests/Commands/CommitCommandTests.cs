@@ -29,7 +29,7 @@ namespace GitObjectDb.Tests.Commands
             composer.CreateOrUpdate(new Field { Id = newFieldId }, table);
             var result = sut.Commit(
                 connection.Repository,
-                composer.Transformations.Select(t => t.TreeTransformation),
+                composer.Transformations,
                 message, signature, signature);
 
             // Assert
@@ -53,7 +53,7 @@ namespace GitObjectDb.Tests.Commands
             composer.CreateOrUpdate(resource);
             var result = sut.Commit(
                 connection.Repository,
-                composer.Transformations.Select(t => t.TreeTransformation),
+                composer.Transformations,
                 message, signature, signature);
 
             // Assert
@@ -78,7 +78,7 @@ namespace GitObjectDb.Tests.Commands
             composer.Delete(table);
             var result = sut.Commit(
                 connection.Repository,
-                composer.Transformations.Select(t => t.TreeTransformation),
+                composer.Transformations,
                 message, signature, signature);
 
             // Assert
@@ -99,7 +99,7 @@ namespace GitObjectDb.Tests.Commands
             composer.CreateOrUpdate(field);
             var result = sut.Commit(
                 connection.Repository,
-                composer.Transformations.Select(t => t.TreeTransformation),
+                composer.Transformations,
                 message, signature, signature);
 
             // Act

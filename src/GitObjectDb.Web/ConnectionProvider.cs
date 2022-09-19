@@ -19,7 +19,7 @@ namespace GitObjectDb.Web
                 "Repository");
             var alreadyExists = Directory.Exists(path);
             var repositoryFactory = provider.GetRequiredService<ConnectionFactory>();
-            var result = repositoryFactory(path, "main");
+            var result = repositoryFactory(path, Model);
             if (!alreadyExists)
             {
                 var software = new DataGenerator(result);
