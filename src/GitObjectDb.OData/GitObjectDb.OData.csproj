@@ -24,4 +24,8 @@
     <ProjectReference Include="..\samples\Models.Software\Models.Software.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\GitObjectDb.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
 </Project>

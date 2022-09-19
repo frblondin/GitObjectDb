@@ -50,7 +50,7 @@ namespace GitObjectDb.Tests
                 ZipFile.ExtractToDirectory(
                     Path.Combine(
                         TestContext.CurrentContext.TestDirectory,
-                        "Assets\\Data\\Software\\Benchmark.zip"),
+                        "Assets", "Data", "Software", "Benchmark.zip"),
                     SoftwareBenchmarkRepositoryPath);
             }
         }

@@ -1,6 +1,7 @@
 using Nuke.Common;
 using Nuke.Common.CI;
 using Nuke.Common.CI.AzurePipelines;
+using Nuke.Common.CI.GitHubActions;
 using Nuke.Common.Execution;
 using Nuke.Common.Git;
 using Nuke.Common.IO;
@@ -17,8 +18,10 @@ using static Nuke.Common.Tools.ReportGenerator.ReportGeneratorTasks;
 
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
-[AzurePipelines(
-    AzurePipelinesImage.Windows2022,
+[GitHubActions(
+    "ci",
+    GitHubActionsImage.UbuntuLatest,
+    OnPushBranches = new[] { "main" },
     InvokedTargets = new[] { nameof(Coverage), nameof(Pack) })]
 class Build : NukeBuild
 {
@@ -30,10 +33,10 @@ class Build : NukeBuild
 
     public static int Main () => Execute<Build>(x => x.Pack);
 
-    [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
+    [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server).")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
-    [Parameter("Coverage threshold. Default is 80%")]
+    [Parameter("Coverage threshold. Default is 80%.")]
     readonly int CoverageThreshold = 80;
 
     [Solution] readonly Solution Solution;
@@ -101,8 +104,10 @@ class Build : NukeBuild
         .Executes(() =>
         {
             ReportGenerator(s => s
-                .SetProcessToolPath(ToolPathResolver.GetPackageExecutable("dotnet-reportgenerator-globaltool", "ReportGenerator.exe", framework: "net6.0"))
+                .SetFramework("net6.0")
+                //.SetProcessToolPath(ToolPathResolver.GetPackageExecutable("dotnet-reportgenerator-globaltool", "ReportGenerator.dll", framework: "net6.0"))
                 .SetReports(CoverageResult / "coverage.cobertura.xml")
+                .SetVerbosity(ReportGeneratorVerbosity.Verbose)
                 .SetTargetDirectory(CoverageResult));
 
             //AzurePipelines?.UploadArtifact(ArtifactDirectory);
