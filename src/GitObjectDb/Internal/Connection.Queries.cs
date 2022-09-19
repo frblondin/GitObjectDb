@@ -19,21 +19,17 @@ internal sealed partial class Connection
     private readonly ConcurrentDictionary<DataPath, Lazy<Repository>> _repositories = new();
 
     public TItem Lookup<TItem>(DataPath path,
-                               string? committish = null,
-                               IMemoryCache? referenceCache = null)
+                               string? committish = null)
         where TItem : ITreeItem
     {
         var (commit, _) = GetTree(path, committish);
         return (TItem)_loader.Execute(this,
-                                      new(commit.Tree,
-                                          path,
-                                          referenceCache ?? CreateEphemeralCache()));
+                                      new(commit.Tree, path));
     }
 
     public IEnumerable<TItem> GetItems<TItem>(Node? parent = null,
                                               string? committish = null,
-                                              bool isRecursive = false,
-                                              IMemoryCache? referenceCache = null)
+                                              bool isRecursive = false)
         where TItem : ITreeItem
     {
         var (commit, relativeTree) = GetTree(parent?.Path, committish);
@@ -42,8 +38,7 @@ internal sealed partial class Connection
                                relativeTree,
                                typeof(TItem),
                                parent?.Path,
-                               isRecursive,
-                               referenceCache ?? CreateEphemeralCache()))
+                               isRecursive))
             .AsParallel()
                 .Select(i => i.Item.Value)
                 .OfType<TItem>()
@@ -53,11 +48,10 @@ internal sealed partial class Connection
 
     public IEnumerable<TNode> GetNodes<TNode>(Node? parent = null,
                                               string? committish = null,
-                                              bool isRecursive = false,
-                                              IMemoryCache? referenceCache = null)
+                                              bool isRecursive = false)
         where TNode : Node
     {
-        return GetItems<TNode>(parent, committish, isRecursive, referenceCache);
+        return GetItems<TNode>(parent, committish, isRecursive);
     }
 
     public IEnumerable<DataPath> GetPaths(DataPath? parentPath = null,
@@ -78,16 +72,14 @@ internal sealed partial class Connection
                                        relativeTree,
                                        typeof(TItem),
                                        parentPath,
-                                       isRecursive,
-                                       CreateEphemeralCache())).Select(i => i.Path);
+                                       isRecursive)).Select(i => i.Path);
     }
 
     public IEnumerable<ITreeItem> Search(string pattern,
                                         DataPath? parentPath = null,
                                         string? committish = null,
                                         bool ignoreCase = false,
-                                        bool recurseSubModules = false,
-                                        IMemoryCache? referenceCache = null)
+                                        bool recurseSubModules = false)
     {
         var (commit, _) = GetTree(parentPath, committish);
         return _searchItems
@@ -97,14 +89,11 @@ internal sealed partial class Connection
                                parentPath,
                                committish,
                                ignoreCase,
-                               recurseSubModules,
-                               referenceCache ?? CreateEphemeralCache()))
+                               recurseSubModules))
             .Select(i => i.Item);
     }
 
-    public IEnumerable<Resource> GetResources(Node node,
-                                              string? committish = null,
-                                              IMemoryCache? referenceCache = null)
+    public IEnumerable<Resource> GetResources(Node node, string? committish = null)
     {
         if (node.Path is null)
         {
@@ -113,18 +102,12 @@ internal sealed partial class Connection
 
         var (commit, relativeTree) = GetTree(node.Path, committish);
         return _queryResources
-            .Execute(this, new QueryResources.Parameters(commit.Tree,
-                                                         relativeTree,
-                                                         node,
-                                                         referenceCache ?? CreateEphemeralCache()))
+            .Execute(this, new(commit.Tree, relativeTree, node))
             .AsParallel()
                 .Select(i => i.Resource.Value)
                 .OrderBy(i => i.Path)
             .AsSequential();
     }
-
-    internal static IMemoryCache CreateEphemeralCache() =>
-        new MemoryCache(Options.Create<MemoryCacheOptions>(new()));
 
     public ChangeCollection Compare(string startCommittish,
                                     string? committish = null,

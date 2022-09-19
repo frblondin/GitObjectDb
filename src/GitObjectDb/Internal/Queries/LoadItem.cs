@@ -10,7 +10,7 @@ internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
     public ITreeItem Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
         var loadParameters = new DataLoadParameters(parms.Path, parms.Tree.Id);
-        return parms.ReferenceCache?.GetOrCreate(loadParameters, Load) ??
+        return queryAccessor.ReferenceCache?.GetOrCreate(loadParameters, Load) ??
                Load(default);
 
         ITreeItem Load(ICacheEntry? entry) =>
@@ -39,17 +39,14 @@ internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
 
     internal record Parameters
     {
-        public Parameters(Tree tree, DataPath path, IMemoryCache referenceCache)
+        public Parameters(Tree tree, DataPath path)
         {
             Tree = tree;
             Path = path;
-            ReferenceCache = referenceCache;
         }
 
         public Tree Tree { get; }
 
         public DataPath Path { get; init; }
-
-        public IMemoryCache ReferenceCache { get; }
     }
 }

@@ -98,7 +98,7 @@ public class RebaseTests : DisposeArguments
 
     [Test]
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void EditOnTheirParentDeletion(IConnection sut, Application parentApplication, Table parentTable, Field field, string newName, Signature signature)
+    public void EditOnTheirParentDeletion(IConnection sut, Application parentApplication, Table parentTable, Field field, string newName, string newDescription, Signature signature)
     {
         // main:      A---B
         //             \
@@ -112,8 +112,7 @@ public class RebaseTests : DisposeArguments
         sut
             .Update(c =>
             {
-                field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
-                c.CreateOrUpdate(field);
+                c.CreateOrUpdate(field with { Description = newDescription });
                 c.CreateOrUpdate(parentApplication with { Name = newName });
             })
             .Commit(new("C", signature, signature));
@@ -277,9 +276,8 @@ public class RebaseTests : DisposeArguments
 
         // Arrange
         var a = sut.Repository.Head.Tip;
-        field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
         var b = sut
-            .Update(c => c.CreateOrUpdate(field))
+            .Update(c => c.CreateOrUpdate(field with { Description = newDescription }))
             .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         sut

@@ -46,7 +46,7 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
                         where data is not null
                         let colon = data.IndexOf(':')
                         where DataPath.TryParse(data.Substring(colon + 1), out path)
-                        let item = new Lazy<ITreeItem>(() => _loader.Execute(queryAccessor, new LoadItem.Parameters(parms.Tree, path!, parms.ReferenceCache)))
+                        let item = new Lazy<ITreeItem>(() => _loader.Execute(queryAccessor, new LoadItem.Parameters(parms.Tree, path!)))
                         select (path, item);
         return lazyItems
             .AsParallel()
@@ -100,8 +100,7 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
                           DataPath? parentPath,
                           string? committish,
                           bool ignoreCase,
-                          bool recurseSubModules,
-                          IMemoryCache referenceCache)
+                          bool recurseSubModules)
         {
             Connection = connection;
             Tree = tree;
@@ -110,7 +109,6 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
             Committish = committish;
             IgnoreCase = ignoreCase;
             RecurseSubModules = recurseSubModules;
-            ReferenceCache = referenceCache;
         }
 
         public IConnection Connection { get; }
@@ -126,7 +124,5 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
         public bool IgnoreCase { get; }
 
         public bool RecurseSubModules { get; }
-
-        public IMemoryCache ReferenceCache { get; }
     }
 }

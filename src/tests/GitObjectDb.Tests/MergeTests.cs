@@ -118,18 +118,17 @@ public class MergeTests : DisposeArguments
 
     [Test]
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void EditOnTheirParentDeletion(IConnection sut, Application parentApplication, Table parentTable, Field field, Signature signature)
+    public void EditOnTheirParentDeletion(IConnection sut, Application parentApplication, Table parentTable, Field field, string newDescription, Signature signature)
     {
         // main:      A---B    A---B
         //             \    ->  \   \
         // newBranch:   C        C---x
 
         // Arrange
-        field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
         sut
             .Update(c =>
             {
-                c.CreateOrUpdate(field);
+                c.CreateOrUpdate(field with { Description = newDescription });
                 c.CreateOrUpdate(parentApplication);
             })
             .Commit(new("C", signature, signature));

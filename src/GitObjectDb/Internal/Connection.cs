@@ -5,6 +5,7 @@ using GitObjectDb.Model;
 using GitObjectDb.Serialization;
 using GitObjectDb.Tools;
 using LibGit2Sharp;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -33,10 +34,12 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
     public Connection(string path,
                       IDataModel model,
                       string initialBranch,
+                      IMemoryCache referenceCache,
                       IServiceProvider serviceProvider)
     {
         Repository = GetOrCreateRepository(path, initialBranch);
         Model = model;
+        ReferenceCache = referenceCache;
         Serializer = serviceProvider.GetRequiredService<NodeSerializerFactory>().Invoke(model);
         _transformationComposerFactory = serviceProvider.GetRequiredService<TransformationComposerFactory>();
         _rebaseFactory = serviceProvider.GetRequiredService<RebaseFactory>();
@@ -50,6 +53,8 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
     }
 
     public IRepository Repository { get; }
+
+    public IMemoryCache? ReferenceCache { get; }
 
     public INodeSerializer Serializer { get; }
 

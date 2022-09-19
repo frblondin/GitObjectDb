@@ -10,6 +10,7 @@ using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
+using Microsoft.Extensions.Caching.Memory;
 using Models.Software;
 using NUnit.Framework;
 using System.Linq;
@@ -156,9 +157,17 @@ public class CommitCommandTests
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
         var composer = new TransformationComposer(updateFastInsert, commitCommandFactory: sut, connection: connection);
-        composer.CreateOrUpdate(field);
+        composer.CreateOrUpdate(field with
+        {
+            SomeValue = new()
+            {
+                B = new()
+                {
+                    IsVisible = !field.SomeValue.B.IsVisible,
+                },
+            },
+        });
         sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
         // Act
@@ -183,6 +192,7 @@ public class CommitCommandTests
             A.CallTo(() => connection.Repository).Returns(fixture.Create<IRepository>());
             A.CallTo(() => connection.Model).Returns(fixture.Create<IDataModel>());
             A.CallTo(() => connection.Serializer).Returns(fixture.Create<NodeSerializerFactory>().Invoke(fixture.Create<IDataModel>()));
+            A.CallTo(() => connection.ReferenceCache).Returns(fixture.Create<IMemoryCache>());
             fixture.Inject(connection);
 
             var validation = A.Fake<ITreeValidation>(x => x.Strict());

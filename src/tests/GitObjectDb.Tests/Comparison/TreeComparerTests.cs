@@ -16,9 +16,15 @@ public class TreeComparerTests
     public void CompareFieldEdit(IConnection connection, Field field, string message, Signature signature)
     {
         // Arrange
-        field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
         connection
-            .Update(c => c.CreateOrUpdate(field))
+            .Update(c => c.CreateOrUpdate(
+                field with
+                {
+                    SomeValue = new NestedA
+                    {
+                        B = new NestedB { IsVisible = !field.SomeValue.B.IsVisible },
+                    },
+                }))
             .Commit(new(message, signature, signature));
 
         // Act
@@ -26,8 +32,11 @@ public class TreeComparerTests
 
         // Assert
         Assert.That(comparison, Has.Count.EqualTo(1));
-        Assert.That(comparison.Modified.OfType<Change.NodeChange>().Single().Differences, Has.Count.EqualTo(1));
-        Assert.That(comparison.Added, Is.Empty);
-        Assert.That(comparison.Deleted, Is.Empty);
+        Assert.Multiple(() =>
+        {
+            Assert.That(comparison.Modified.OfType<Change.NodeChange>().Single().Differences, Has.Count.EqualTo(1));
+            Assert.That(comparison.Added, Is.Empty);
+            Assert.That(comparison.Deleted, Is.Empty);
+        });
     }
 }

@@ -1,6 +1,7 @@
 using GitObjectDb.Internal.Queries;
 using KellermanSoftware.CompareNetObjects;
 using LibGit2Sharp;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -59,37 +60,29 @@ internal class Comparer : IComparer, IComparerInternal
                             PatchEntryChanges change,
                             ComparisonPolicy? policy)
     {
-        var oldPath = new Lazy<DataPath>(() => DataPath.Parse(change.OldPath));
-        var old = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
-            queryAccessor,
-            new LoadItem.Parameters(oldTree,
-                                    oldPath.Value,
-                                    Internal.Connection.CreateEphemeralCache())));
-        var newPath = new Lazy<DataPath>(() => DataPath.Parse(change.Path));
-        var @new = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
-            queryAccessor,
-            new LoadItem.Parameters(newTree,
-                                    newPath.Value,
-                                    Internal.Connection.CreateEphemeralCache())));
         var treeChange = change.Status switch
         {
             ChangeKind.Modified => Change.Create(change,
-                                                 old.Value,
-                                                 @new.Value,
+                                                 CreateNode(oldTree, change.OldPath),
+                                                 CreateNode(newTree, change.Path),
                                                  ChangeStatus.Edit,
                                                  policy ?? queryAccessor.Model.DefaultComparisonPolicy),
             ChangeKind.Added => Change.Create(change,
                                               default,
-                                              @new.Value,
+                                              CreateNode(newTree, change.Path),
                                               ChangeStatus.Add,
                                               policy ?? queryAccessor.Model.DefaultComparisonPolicy),
             ChangeKind.Deleted => Change.Create(change,
-                                                old.Value,
+                                                CreateNode(oldTree, change.OldPath),
                                                 default,
                                                 ChangeStatus.Delete,
                                                 policy ?? queryAccessor.Model.DefaultComparisonPolicy),
             _ => throw new NotSupportedException(change.Status.ToString()),
         };
+        ITreeItem CreateNode (Tree tree, string path) =>
+            _nodeLoader.Execute(
+                queryAccessor,
+                new(tree, DataPath.Parse(path)));
         return treeChange;
     }
 
