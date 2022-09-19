@@ -138,7 +138,7 @@ internal sealed class Rebase : IRebase
             CurrentChanges.Select(c =>
                 (ApplyUpdateTreeDefinition)((database, treeDefinition, refTree) =>
                 c.Transform(_updateCommand, database, treeDefinition, refTree))),
-            replayedCommit.Message, replayedCommit.Author, replayedCommit.Committer,
+            new CommitDescription(replayedCommit.Message, replayedCommit.Author, replayedCommit.Committer),
             updateHead: false);
 
         // Update tip if last commit

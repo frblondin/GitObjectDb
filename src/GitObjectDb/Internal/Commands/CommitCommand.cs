@@ -16,11 +16,7 @@ internal class CommitCommand : ICommitCommand
 
     public Commit Commit(IConnection connection,
                          TransformationComposer transformationComposer,
-                         string message,
-                         Signature author,
-                         Signature committer,
-                         bool amendPreviousCommit = false,
-                         Commit? mergeParent = null,
+                         CommitDescription description,
                          Action<ITransformation>? beforeProcessing = null)
     {
         var tip = connection.Repository.Info.IsHeadUnborn ? null : connection.Repository.Head.Tip;
@@ -28,25 +24,19 @@ internal class CommitCommand : ICommitCommand
                                                                      tip,
                                                                      beforeProcessing);
         var parents = RetrieveParentsOfTheCommitBeingCreated(connection.Repository,
-                                                             amendPreviousCommit,
-                                                             mergeParent).ToList();
+                                                             description.AmendPreviousCommit,
+                                                             description.MergeParent).ToList();
         return Commit(connection,
                       definition,
-                      message,
-                      author,
-                      committer,
+                      description,
                       parents,
-                      amendPreviousCommit,
                       updateHead: true);
     }
 
     internal Commit Commit(IConnection connection,
                            Commit predecessor,
                            IEnumerable<ApplyUpdateTreeDefinition> transformations,
-                           string message,
-                           Signature author,
-                           Signature committer,
-                           bool amendPreviousCommit = false,
+                           CommitDescription description,
                            bool updateHead = true,
                            Commit? mergeParent = null)
     {
@@ -62,32 +52,26 @@ internal class CommitCommand : ICommitCommand
         }
         return Commit(connection,
                       definition,
-                      message,
-                      author,
-                      committer,
+                      description,
                       parents,
-                      amendPreviousCommit,
                       updateHead);
     }
 
     private Commit Commit(IConnection connection,
                           TreeDefinition definition,
-                          string message,
-                          Signature author,
-                          Signature committer,
+                          CommitDescription description,
                           List<Commit> parents,
-                          bool amendPreviousCommit,
                           bool updateHead)
     {
         var tree = connection.Repository.ObjectDatabase.CreateTree(definition);
         _treeValidation.Validate(tree, connection.Model);
         var result = connection.Repository.ObjectDatabase.CreateCommit(
-            author, committer, message,
+            description.Author, description.Committer, description.Message,
             tree,
             parents, false);
         if (updateHead)
         {
-            var logMessage = result.BuildCommitLogMessage(amendPreviousCommit,
+            var logMessage = result.BuildCommitLogMessage(description.AmendPreviousCommit,
                                                           connection.Repository.Info.IsHeadUnborn,
                                                           parents.Count > 1);
             connection.Repository.UpdateHeadAndTerminalReference(result, logMessage);

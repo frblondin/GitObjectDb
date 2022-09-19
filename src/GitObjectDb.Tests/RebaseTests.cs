@@ -24,11 +24,11 @@ public class RebaseTests : DisposeArguments
         var a = sut.Repository.Head.Tip;
         var b = sut
             .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         sut
             .Update(c => c.CreateOrUpdate(table with { Name = newName }))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var rebase = sut.Rebase(upstreamCommittish: "main");
@@ -62,11 +62,11 @@ public class RebaseTests : DisposeArguments
         // Arrange
         sut
             .Update(c => c.CreateOrUpdate(table with { Description = bValue }))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         var branch = sut.Checkout("newBranch", "HEAD~1");
         sut
             .Update(c => c.CreateOrUpdate(table with { Description = cValue }))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var rebase = sut.Rebase(upstreamCommittish: "main");
@@ -107,7 +107,7 @@ public class RebaseTests : DisposeArguments
         // Arrange
         sut
             .Update(c => c.Delete(parentTable))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         var branch = sut.Checkout("newBranch", "HEAD~1");
         sut
             .Update(c =>
@@ -116,7 +116,7 @@ public class RebaseTests : DisposeArguments
                 c.CreateOrUpdate(field);
                 c.CreateOrUpdate(parentApplication with { Name = newName });
             })
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var rebase = sut.Rebase(upstreamCommittish: "main");
@@ -151,7 +151,7 @@ public class RebaseTests : DisposeArguments
         var a = sut.Repository.Head.Tip;
         var b = sut
             .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         var newFieldId = UniqueId.CreateNew();
         sut
@@ -161,7 +161,7 @@ public class RebaseTests : DisposeArguments
                 A = fixture.Create<NestedA[]>(),
                 SomeValue = fixture.Create<NestedA>(),
             }, parent: table))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var rebase = sut.Rebase(upstreamCommittish: "main");
@@ -197,7 +197,7 @@ public class RebaseTests : DisposeArguments
         var a = sut.Repository.Head.Tip;
         var b = sut
             .Update(c => c.Delete(table))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         var newFieldId = UniqueId.CreateNew();
         sut
@@ -207,7 +207,7 @@ public class RebaseTests : DisposeArguments
                 A = fixture.Create<NestedA[]>(),
                 SomeValue = fixture.Create<NestedA>(),
             }, parent: table))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var rebase = sut.Rebase(upstreamCommittish: "main");
@@ -239,11 +239,11 @@ public class RebaseTests : DisposeArguments
         var a = sut.Repository.Head.Tip;
         var b = sut
             .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         sut
             .Update(c => c.Delete(field))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var rebase = sut.Rebase(upstreamCommittish: "main");
@@ -280,11 +280,11 @@ public class RebaseTests : DisposeArguments
         field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
         var b = sut
             .Update(c => c.CreateOrUpdate(field))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         sut
             .Update(c => c.Delete(table))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var rebase = sut.Rebase(upstreamCommittish: "main");

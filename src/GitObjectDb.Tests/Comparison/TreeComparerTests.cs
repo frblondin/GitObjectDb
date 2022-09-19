@@ -19,7 +19,7 @@ public class TreeComparerTests
         field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
         connection
             .Update(c => c.CreateOrUpdate(field))
-            .Commit(message, signature, signature);
+            .Commit(new(message, signature, signature));
 
         // Act
         var comparison = connection.Compare("HEAD~1", connection.Repository.Head.Tip.Sha);

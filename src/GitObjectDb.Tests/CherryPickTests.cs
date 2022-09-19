@@ -24,11 +24,11 @@ public class CherryPickTests : DisposeArguments
         var a = sut.Repository.Head.Tip;
         var b = sut
             .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         var c = sut
             .Update(c => c.CreateOrUpdate(table with { Name = newName }))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var cherryPick = sut.CherryPick(b.Sha, cherryPickCommitter);
@@ -62,11 +62,11 @@ public class CherryPickTests : DisposeArguments
         // Arrange
         var b = sut
             .Update(c => c.CreateOrUpdate(table with { Description = bValue }))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         sut
             .Update(c => c.CreateOrUpdate(table with { Description = cValue }))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var cherryPick = sut.CherryPick(b.Sha);
@@ -112,11 +112,11 @@ public class CherryPickTests : DisposeArguments
                 c.CreateOrUpdate(field);
                 c.CreateOrUpdate(parentApplication with { Name = newName });
             })
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         sut
             .Update(c => c.Delete(parentTable))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var cherryPick = sut.CherryPick(b.Sha);
@@ -151,7 +151,7 @@ public class CherryPickTests : DisposeArguments
         var a = sut.Repository.Head.Tip;
         var b = sut
             .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         var newFieldId = UniqueId.CreateNew();
         var c = sut
@@ -161,7 +161,7 @@ public class CherryPickTests : DisposeArguments
                 A = fixture.Create<NestedA[]>(),
                 SomeValue = fixture.Create<NestedA>(),
             }, parent: table))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var cherryPick = sut.CherryPick(b.Sha);
@@ -201,11 +201,11 @@ public class CherryPickTests : DisposeArguments
                 A = fixture.Create<NestedA[]>(),
                 SomeValue = fixture.Create<NestedA>(),
             }, parent: table))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         sut
             .Update(c => c.Delete(table))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var cherryPick = sut.CherryPick(b.Sha);
@@ -237,11 +237,11 @@ public class CherryPickTests : DisposeArguments
         var a = sut.Repository.Head.Tip;
         var b = sut
             .Update(c => c.Delete(field))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         var c = sut
             .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var cherryPick = sut.CherryPick(b.Sha);
@@ -275,12 +275,12 @@ public class CherryPickTests : DisposeArguments
         // Arrange
         var b = sut
             .Update(c => c.Delete(table))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
         sut
             .Update(c => c.CreateOrUpdate(field))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var cherryPick = sut.CherryPick(b.Sha);

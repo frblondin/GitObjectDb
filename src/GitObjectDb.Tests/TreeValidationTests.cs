@@ -50,7 +50,7 @@ public class TreeValidationTests
         // Arrange, delete parent
         connection
             .Update(c => c.Delete(application))
-            .Commit(message, signature, signature);
+            .Commit(new(message, signature, signature));
 
         // Act, edit child
         var composer = (TransformationComposer)connection
