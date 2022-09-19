@@ -11,7 +11,7 @@ namespace GitObjectDb.Comparison
         /// <param name="actualObject">The actual object value to compare.</param>
         /// <param name="policy">The merge policy to use.</param>
         /// <returns>Details about the comparison.</returns>
-        ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy);
+        ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy? policy = null);
     }
 
     internal interface IComparerInternal

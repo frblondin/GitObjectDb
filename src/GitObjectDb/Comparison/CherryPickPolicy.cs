@@ -4,21 +4,15 @@ using System.Reflection;
 namespace GitObjectDb.Comparison
 {
     /// <summary>Provides a description of a cherry-pick policy.</summary>
-    public class CherryPickPolicy : ComparisonPolicy
+    public record CherryPickPolicy
     {
-        internal CherryPickPolicy()
-            : this(ImmutableList.Create<PropertyInfo>())
-        {
-        }
-
-        private CherryPickPolicy(IImmutableList<PropertyInfo> ignoredProperties)
-            : base(ignoredProperties)
-        {
-        }
-
         /// <summary>Gets the default policy.</summary>
-        public static new CherryPickPolicy Default { get; } = new CherryPickPolicy()
-            .UpdateWithDefaultExclusion();
+        public static CherryPickPolicy Default { get; } = new CherryPickPolicy();
+
+        /// <summary>
+        /// Gets the comparison policy.
+        /// </summary>
+        public ComparisonPolicy ComparisonPolicy { get; init; } = ComparisonPolicy.Default;
 
         /// <summary>
         /// Gets or sets the parent number to consider as mainline, starting from offset 1.
