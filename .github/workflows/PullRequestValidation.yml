@@ -9,15 +9,15 @@
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_ci --host GitHubActions
+#         nuke --generate-configuration GitHubActions_PullRequestValidation --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: ci
+name: PullRequestValidation
 
 on:
-  push:
+  pull_request:
     branches:
       - main
 
@@ -34,9 +34,5 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Coverage Pack'
-        run: ./build.cmd Coverage Pack
-      - uses: actions/upload-artifact@v1
-        with:
-          name: nuget
-          path: output/nuget
+      - name: Run './build.cmd Coverage'
+        run: ./build.cmd Coverage

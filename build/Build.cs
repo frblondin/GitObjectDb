@@ -19,10 +19,15 @@ using static Nuke.Common.Tools.ReportGenerator.ReportGeneratorTasks;
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
 [GitHubActions(
-    "ci",
+    "Release",
     GitHubActionsImage.UbuntuLatest,
     OnPushBranches = new[] { "main" },
     InvokedTargets = new[] { nameof(Coverage), nameof(Pack) })]
+[GitHubActions(
+    "PullRequestValidation",
+    GitHubActionsImage.UbuntuLatest,
+    OnPullRequestBranches = new[] { "main" },
+    InvokedTargets = new[] { nameof(Coverage) })]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -49,7 +54,6 @@ class Build : NukeBuild
     AbsolutePath NugetDirectory => OutputDirectory / "nuget";
 
     Target Clean => _ => _
-        .Before(Restore)
         .Executes(() =>
         {
             SourceDirectory.GlobDirectories("**/bin", "**/obj").ForEach(DeleteDirectory);
@@ -57,6 +61,7 @@ class Build : NukeBuild
         });
 
     Target Restore => _ => _
+        .DependsOn(Clean)
         .Executes(() =>
         {
             DotNetRestore(s => s
@@ -87,16 +92,13 @@ class Build : NukeBuild
                     .Add("/p:CollectCoverage=true")
                     .Add("/p:Exclude=\\\"{0}\\\"", "[Models.Software]*,[MetadataStorageConverter]*")
                     .Add("/p:CoverletOutput={0}/", CoverageResult)
+                    .Add("/p:CoverletOutputFormat=\\\"{0}\\\"", "cobertura,json")
                     .Add("/p:Threshold={0}", CoverageThreshold)
                     .Add("/p:ThresholdType={0}", "line")
                     .Add("/p:UseSourceLink={0}", "true")
-                    .Add("/p:CoverletOutputFormat={0}", "cobertura"))
+                    .Add("/p:MergeWith={0}", CoverageResult / "coverage.json")
+                    .Add("-m:1"))
                 .SetResultsDirectory(TestDirectory));
-
-            AzurePipelines.Instance?.PublishTestResults(
-                "Test results",
-                AzurePipelinesTestResultsType.VSTest,
-                GlobFiles(TestDirectory.Name, "*.trx"));
         });
 
     Target Coverage => _ => _
@@ -106,17 +108,8 @@ class Build : NukeBuild
         {
             ReportGenerator(s => s
                 .SetFramework("net6.0")
-                //.SetProcessToolPath(ToolPathResolver.GetPackageExecutable("dotnet-reportgenerator-globaltool", "ReportGenerator.dll", framework: "net6.0"))
                 .SetReports(CoverageResult / "coverage.cobertura.xml")
-                .SetVerbosity(ReportGeneratorVerbosity.Verbose)
                 .SetTargetDirectory(CoverageResult));
-
-            //AzurePipelines?.UploadArtifact(ArtifactDirectory);
-
-            AzurePipelines.Instance?.PublishCodeCoverage(
-                AzurePipelinesCodeCoverageToolType.Cobertura,
-                CoverageResult / "coverage.cobertura.xml",
-                CoverageResult);
         });
 
     Target Pack => _ =>
