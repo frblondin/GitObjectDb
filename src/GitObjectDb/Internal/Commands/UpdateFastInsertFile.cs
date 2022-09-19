@@ -5,9 +5,9 @@ using System.IO;
 
 namespace GitObjectDb.Internal.Commands;
 
-internal class UpdateFastInsertFile
+internal static class UpdateFastInsertFile
 {
-    internal ApplyUpdateFastInsert CreateOrUpdate(ITreeItem item) => (tree, modules, serializer, writer, commitIndex) =>
+    internal static ApplyUpdateFastInsert CreateOrUpdate(ITreeItem item) => (tree, modules, serializer, writer, commitIndex) =>
     {
         switch (item)
         {
@@ -74,12 +74,12 @@ internal class UpdateFastInsertFile
         }
     }
 
-    private void CreateOrUpdateNode(Node node,
-                                    INodeSerializer serializer,
-                                    StreamWriter writer,
-                                    ICollection<string> commitIndex,
-                                    Tree? tree,
-                                    ModuleCommands modules)
+    private static void CreateOrUpdateNode(Node node,
+                                           INodeSerializer serializer,
+                                           StreamWriter writer,
+                                           ICollection<string> commitIndex,
+                                           Tree? tree,
+                                           ModuleCommands modules)
     {
         using var stream = serializer.Serialize(node);
         AddBlob(node.Path!, stream, writer, commitIndex);

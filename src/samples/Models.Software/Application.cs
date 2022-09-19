@@ -16,7 +16,6 @@ public record Application : Node
     public string? Description { get; init; }
 }
 
-#pragma warning disable SA1402 // File may only contain a single type
 public static class IConnectionApplicationExtensions
 {
     public static IEnumerable<Application> GetApplications(this IConnection connection, string? committish = null) =>

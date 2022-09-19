@@ -140,6 +140,6 @@ public sealed class DataProvider
     private static void UpdateExpiration(ICacheEntry entry)
     {
         // TODO: make it configurable
-        entry.SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1));
+        entry.SetSlidingExpiration(TimeSpan.FromMinutes(1));
     }
 }

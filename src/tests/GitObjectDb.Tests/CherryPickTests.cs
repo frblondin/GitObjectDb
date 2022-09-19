@@ -41,14 +41,17 @@ public class CherryPickTests : DisposeArguments
             SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
         };
         var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
-        Assert.That(commits[0], Is.EqualTo(a));
-        Assert.That(commits[1], Is.EqualTo(c));
-        Assert.That(commits[2], Is.EqualTo(cherryPick.CompletedCommit));
-        Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
-        Assert.That(commits[2].Committer.Name, Is.EqualTo(cherryPickCommitter.Name));
         var newTable = sut.Lookup<Table>(table.Path);
-        Assert.That(newTable.Name, Is.EqualTo(newName));
-        Assert.That(newTable.Description, Is.EqualTo(newDescription));
+        Assert.Multiple(() =>
+        {
+            Assert.That(commits[0], Is.EqualTo(a));
+            Assert.That(commits[1], Is.EqualTo(c));
+            Assert.That(commits[2], Is.EqualTo(cherryPick.CompletedCommit));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
+            Assert.That(commits[2].Committer.Name, Is.EqualTo(cherryPickCommitter.Name));
+            Assert.That(newTable.Name, Is.EqualTo(newName));
+            Assert.That(newTable.Description, Is.EqualTo(newDescription));
+        });
     }
 
     [Test]
@@ -74,19 +77,25 @@ public class CherryPickTests : DisposeArguments
         // Assert
         Assert.That(cherryPick.Status, Is.EqualTo(CherryPickStatus.Conflicts));
         Assert.Throws<GitObjectDbException>(() => cherryPick.CommitChanges());
-        Assert.That(cherryPick.CurrentChanges, Has.Count.EqualTo(1));
-        Assert.That(cherryPick.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.EditConflict));
-        Assert.That(cherryPick.CurrentChanges[0].Conflicts, Has.Count.EqualTo(1));
-        Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].Property.Name, Is.EqualTo(nameof(table.Description)));
-        Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].AncestorValue, Is.EqualTo(table.Description));
-        Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].TheirValue, Is.EqualTo(bValue));
-        Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].OurValue, Is.EqualTo(cValue));
-        Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].IsResolved, Is.False);
-        Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].ResolvedValue, Is.Null);
+        Assert.Multiple(() =>
+        {
+            Assert.That(cherryPick.CurrentChanges, Has.Count.EqualTo(1));
+            Assert.That(cherryPick.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.EditConflict));
+            Assert.That(cherryPick.CurrentChanges[0].Conflicts, Has.Count.EqualTo(1));
+            Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].Property.Name, Is.EqualTo(nameof(table.Description)));
+            Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].AncestorValue, Is.EqualTo(table.Description));
+            Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].TheirValue, Is.EqualTo(bValue));
+            Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].OurValue, Is.EqualTo(cValue));
+            Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].IsResolved, Is.False);
+            Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].ResolvedValue, Is.Null);
+        });
         cherryPick.CurrentChanges[0].Conflicts[0].Resolve("resolved");
-        Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].IsResolved, Is.True);
-        Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].ResolvedValue, Is.EqualTo("resolved"));
-        Assert.That(cherryPick.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.Edit));
+        Assert.Multiple(() =>
+        {
+            Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].IsResolved, Is.True);
+            Assert.That(cherryPick.CurrentChanges[0].Conflicts[0].ResolvedValue, Is.EqualTo("resolved"));
+            Assert.That(cherryPick.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.Edit));
+        });
 
         // Act
         Assert.That(cherryPick.CommitChanges(), Is.EqualTo(CherryPickStatus.CherryPicked));
@@ -122,12 +131,18 @@ public class CherryPickTests : DisposeArguments
 
         // Assert
         Assert.That(cherryPick.Status, Is.EqualTo(CherryPickStatus.Conflicts));
-        Assert.Throws<GitObjectDbException>(() => cherryPick.CommitChanges());
-        Assert.That(cherryPick.CurrentChanges, Has.Count.EqualTo(2));
+        Assert.Multiple(() =>
+        {
+            Assert.Throws<GitObjectDbException>(() => cherryPick.CommitChanges());
+            Assert.That(cherryPick.CurrentChanges, Has.Count.EqualTo(2));
+        });
         Assert.That(cherryPick.CurrentChanges, Has.Exactly(1).Matches<MergeChange>(c => c.Status == ItemMergeStatus.TreeConflict));
         var conflict = cherryPick.CurrentChanges.Single(c => c.Status == ItemMergeStatus.TreeConflict);
-        Assert.That(((Node)conflict.Theirs).Id, Is.EqualTo(field.Id));
-        Assert.That(((Node)conflict.OurRootDeletedParent).Id, Is.EqualTo(parentTable.Id));
+        Assert.Multiple(() =>
+        {
+            Assert.That(((Node)conflict.Theirs).Id, Is.EqualTo(field.Id));
+            Assert.That(((Node)conflict.OurRootDeletedParent).Id, Is.EqualTo(parentTable.Id));
+        });
         cherryPick.CurrentChanges.Remove(conflict);
 
         // Act
@@ -173,14 +188,17 @@ public class CherryPickTests : DisposeArguments
             SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
         };
         var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
-        Assert.That(commits[0], Is.EqualTo(a));
-        Assert.That(commits[1], Is.EqualTo(c));
-        Assert.That(commits[2], Is.EqualTo(cherryPick.CompletedCommit));
-        Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
         var newTable = sut.Lookup<Table>(table.Path);
-        Assert.That(newTable.Description, Is.EqualTo(newDescription));
         var newField = sut.GetNodes<Field>(newTable).FirstOrDefault(f => f.Id == newFieldId);
-        Assert.That(newField, Is.Not.Null);
+        Assert.Multiple(() =>
+        {
+            Assert.That(commits[0], Is.EqualTo(a));
+            Assert.That(commits[1], Is.EqualTo(c));
+            Assert.That(commits[2], Is.EqualTo(cherryPick.CompletedCommit));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
+            Assert.That(newTable.Description, Is.EqualTo(newDescription));
+            Assert.That(newField, Is.Not.Null);
+        });
     }
 
     [Test]
@@ -211,17 +229,21 @@ public class CherryPickTests : DisposeArguments
 
         // Assert
         Assert.That(cherryPick.Status, Is.EqualTo(CherryPickStatus.Conflicts));
-        Assert.Throws<GitObjectDbException>(() => cherryPick.CommitChanges());
-        Assert.That(cherryPick.CurrentChanges, Has.Count.EqualTo(1));
-        Assert.That(cherryPick.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.TreeConflict));
-        Assert.That(((Node)cherryPick.CurrentChanges[0].Theirs).Id, Is.EqualTo(newFieldId));
+        Assert.Multiple(() =>
+        {
+            Assert.Throws<GitObjectDbException>(() => cherryPick.CommitChanges());
+            Assert.That(cherryPick.CurrentChanges, Has.Count.EqualTo(1));
+            Assert.That(cherryPick.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.TreeConflict));
+            Assert.That(((Node)cherryPick.CurrentChanges[0].Theirs).Id, Is.EqualTo(newFieldId));
+        });
 
         // Act
         cherryPick.CurrentChanges.Clear();
-        Assert.That(cherryPick.CommitChanges(), Is.EqualTo(CherryPickStatus.CherryPicked));
-
-        // Assert
-        Assert.That(cherryPick.CompletedCommit, Is.Null);
+        Assert.Multiple(() =>
+        {
+            Assert.That(cherryPick.CommitChanges(), Is.EqualTo(CherryPickStatus.CherryPicked));
+            Assert.That(cherryPick.CompletedCommit, Is.Null);
+        });
     }
 
     [Test]
@@ -253,14 +275,17 @@ public class CherryPickTests : DisposeArguments
             SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
         };
         var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
-        Assert.That(commits[0], Is.EqualTo(a));
-        Assert.That(commits[1], Is.EqualTo(c));
-        Assert.That(commits[2], Is.EqualTo(cherryPick.CompletedCommit));
-        Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
         var newTable = sut.Lookup<Table>(table.Path);
-        Assert.That(newTable.Description, Is.EqualTo(newDescription));
         var missingField = sut.GetNodes<Field>(newTable).FirstOrDefault(f => f.Id == field.Id);
-        Assert.That(missingField, Is.Null);
+        Assert.Multiple(() =>
+        {
+            Assert.That(commits[0], Is.EqualTo(a));
+            Assert.That(commits[1], Is.EqualTo(c));
+            Assert.That(commits[2], Is.EqualTo(cherryPick.CompletedCommit));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
+            Assert.That(newTable.Description, Is.EqualTo(newDescription));
+            Assert.That(missingField, Is.Null);
+        });
     }
 
     [Test]

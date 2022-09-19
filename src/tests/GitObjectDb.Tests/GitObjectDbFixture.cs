@@ -27,7 +27,9 @@ public class GitObjectDbFixture
     public static string TempRepoPath { get; } =
         Path.Combine(_workDirectory, "TempRepos");
 
+#pragma warning disable NUnit1028 // The non-test method is public
     public static string GetAvailableFolderPath()
+#pragma warning restore NUnit1028 // The non-test method is public
     {
         var i = 1;
         string result;

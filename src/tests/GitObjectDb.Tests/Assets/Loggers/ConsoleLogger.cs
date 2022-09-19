@@ -45,9 +45,7 @@ public class ConsoleLogger : ILogger
 
     private void GetScopeInformation(StringBuilder stringBuilder)
     {
-        if (_scopeProvider != null)
-        {
-            _scopeProvider.ForEachScope((scope, sb) =>
+        _scopeProvider?.ForEachScope((scope, sb) =>
             {
                 var empty = sb.Length == 0;
 #if NET6_0_OR_GREATER
@@ -57,6 +55,5 @@ public class ConsoleLogger : ILogger
 #endif
                 sb.Append(empty ? "=> " : " => ").Append(message);
             }, stringBuilder);
-        }
     }
 }

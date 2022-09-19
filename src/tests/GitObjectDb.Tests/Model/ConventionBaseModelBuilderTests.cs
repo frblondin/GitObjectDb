@@ -18,10 +18,13 @@ public class ConventionBaseModelBuilderTests
             .Build();
 
         Assert.That(model.NodeTypes, Has.Exactly(2).Items);
-        Assert.That(model.NodeTypes.First().Type, Is.EqualTo(typeof(SomeNode)));
-        Assert.That(model.NodeTypes.First().Name, Is.EqualTo(SomeNode.FolderName));
-        Assert.That(model.NodeTypes.First().Children, Has.Exactly(1).Items);
-        Assert.That(model.NodeTypes.First().Children.Single().Type, Is.EqualTo(typeof(SomeChild)));
+        Assert.Multiple(() =>
+        {
+            Assert.That(model.NodeTypes.First().Type, Is.EqualTo(typeof(SomeNode)));
+            Assert.That(model.NodeTypes.First().Name, Is.EqualTo(SomeNode.FolderName));
+            Assert.That(model.NodeTypes.First().Children, Has.Exactly(1).Items);
+            Assert.That(model.NodeTypes.First().Children.Single().Type, Is.EqualTo(typeof(SomeChild)));
+        });
     }
 
     [GitFolder(FolderName = FolderName)]

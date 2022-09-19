@@ -9,7 +9,6 @@ public abstract partial class Change
     /// Contains the details about the changes made to a <see cref="Resource"/>.
     /// </summary>
     /// <seealso cref="GitObjectDb.Comparison.Change" />
-#pragma warning disable CA1034 // Nested types should not be visible
     public class ResourceChange : Change
     {
         internal ResourceChange(ContentChanges changes, Resource? old, Resource? @new, ChangeStatus status)

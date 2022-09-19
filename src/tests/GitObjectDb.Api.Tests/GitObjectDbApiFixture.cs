@@ -24,21 +24,6 @@ public class GitObjectDbApiFixture
     public static string TempRepoPath { get; } =
         Path.Combine(_workDirectory, "TempRepos");
 
-    public static string GetAvailableFolderPath()
-    {
-        var i = 1;
-        string result;
-        while (true)
-        {
-            result = Path.Combine(TempRepoPath, i.ToString("D4", CultureInfo.InvariantCulture));
-            if (!Directory.Exists(result))
-            {
-                return result;
-            }
-            i++;
-        }
-    }
-
     [OneTimeSetUp]
     public void RestoreRepositories()
     {

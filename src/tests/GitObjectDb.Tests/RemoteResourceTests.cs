@@ -32,8 +32,11 @@ public class RemoteResourceTests
         // Assert
         var result = connection.GetResources(applicationWithLinkedResources).ToList();
         Assert.That(result, Has.Exactly(1).Items);
-        Assert.That(result[0].Path, Is.EqualTo(application.Path.CreateResourcePath("folder", "file.txt")));
-        Assert.That(result[0].Embedded.ReadAsString(), Is.EqualTo(content));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result[0].Path, Is.EqualTo(application.Path.CreateResourcePath("folder", "file.txt")));
+            Assert.That(result[0].Embedded.ReadAsString(), Is.EqualTo(content));
+        });
     }
 
     [Test]

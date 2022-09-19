@@ -1,8 +1,8 @@
+#if NETSTANDARD2_0
 using System.Buffers;
 
 namespace System.IO;
 
-#if NETSTANDARD2_0
 internal static class StreamExtensions
 {
     internal static int Read(this Stream stream, Span<byte> buffer)

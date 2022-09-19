@@ -53,10 +53,12 @@ public static class ServiceConfiguration
     private static void ConfigureMain(IServiceCollection source)
     {
         source.AddFactoryDelegate<ConnectionFactory, Connection>();
+#pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
         var internalFactories = typeof(Factories)
             .GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
             .Where(t => typeof(Delegate).IsAssignableFrom(t))
             .ToArray();
+#pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
         source.AddFactoryDelegates(typeof(Connection).Assembly, internalFactories);
         source.AddSingleton<Comparer>();
         source.AddSingleton<IComparer>(s => s.GetRequiredService<Comparer>());
@@ -72,7 +74,6 @@ public static class ServiceConfiguration
 
     private static void ConfigureCommands(IServiceCollection source)
     {
-        source.AddSingleton<UpdateFastInsertFile>();
         source.AddSingleton<CommitCommand>();
         source.AddSingleton<FastImportCommitCommand>();
         source.AddSingleton<ServiceResolver<CommitCommandType, ICommitCommand>>(serviceProvider => type =>

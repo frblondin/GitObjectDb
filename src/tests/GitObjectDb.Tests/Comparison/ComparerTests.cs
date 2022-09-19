@@ -44,6 +44,8 @@ public class ComparerTests
 
     private record SomeNode : Node
     {
+#pragma warning disable S1144 // Unused private types or members should be removed
         public string Value { get; set; }
+#pragma warning restore S1144 // Unused private types or members should be removed
     }
 }

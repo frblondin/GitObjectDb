@@ -17,15 +17,13 @@ public class GitObjectDbMutation : ObjectGraphType
     internal const string EMailArgument = "email";
     internal const string MessageArgument = "message";
 
-    private readonly GitObjectDbQuery _query;
     private readonly Dictionary<DataTransferTypeDescription, IInputObjectGraphType> _typeToGraphType = new();
 
     public GitObjectDbMutation(GitObjectDbQuery query)
     {
         Name = "Mutation";
         Description = "Mutates GitObjectDb data.";
-        _query = query;
-        foreach (var description in _query.DtoEmitter.TypeDescriptions)
+        foreach (var description in query.DtoEmitter.TypeDescriptions)
         {
             AddNodeField(description);
         }

@@ -1,9 +1,5 @@
-using LibGit2Sharp;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace LibGit2Sharp;
 
@@ -12,10 +8,12 @@ namespace LibGit2Sharp;
 /// </summary>
 internal static class LibGit2SharpHackExtensions
 {
+#pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
     private static readonly MethodInfo _referenceCollectionMoveHeadTarget =
         (from m in typeof(ReferenceCollection).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
          where m.Name == "MoveHeadTarget" && m.IsGenericMethodDefinition
          select m).Single();
+#pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
 
     /// <summary>
     /// Moves the head target.

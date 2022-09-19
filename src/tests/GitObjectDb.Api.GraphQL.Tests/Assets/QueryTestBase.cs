@@ -91,9 +91,9 @@ public class QueryTestBase<TDocumentBuilder>
         Inputs? variables = null,
         object? root = null,
         IDictionary<string, object?>? userContext = null,
-        CancellationToken cancellationToken = default,
         IEnumerable<IValidationRule>? rules = null,
-        INameConverter? nameConverter = null)
+        INameConverter? nameConverter = null,
+        CancellationToken cancellationToken = default)
     {
         var queryResult = expected is not null ? CreateQueryResult(expected) : null;
         return await AssertQueryAsync(query,

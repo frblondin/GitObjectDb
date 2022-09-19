@@ -60,11 +60,12 @@ public class ConventionBaseModelBuilder : ModelBuilder
     {
         foreach (var type in _types.Values)
         {
-            foreach (var child in type.Type.GetCustomAttributes<HasChildAttribute>())
+            foreach (var childType in from a in type.Type.GetCustomAttributes<HasChildAttribute>()
+                                      select a.ChildType)
             {
-                if (!_types.TryGetValue(child.ChildType, out var childDescription))
+                if (!_types.TryGetValue(childType, out var childDescription))
                 {
-                    throw new GitObjectDbException($"Child type {child.ChildType} could not be found in registered types.");
+                    throw new GitObjectDbException($"Child type {childType} could not be found in registered types.");
                 }
                 type.AddChild(childDescription);
             }

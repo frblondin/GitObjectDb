@@ -19,9 +19,12 @@ public class QueryNodesTests : DisposeArguments
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(SoftwareBenchmarkCustomization.DefaultApplicationCount));
-        Assert.That(result[0].Path, Is.Not.Null);
-        Assert.That(result[0].Name, Is.Not.Null);
-        Assert.That(result[0].Description, Is.Not.Null);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result[0].Path, Is.Not.Null);
+            Assert.That(result[0].Name, Is.Not.Null);
+            Assert.That(result[0].Description, Is.Not.Null);
+        });
     }
 
     [Test]
@@ -33,9 +36,12 @@ public class QueryNodesTests : DisposeArguments
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(SoftwareBenchmarkCustomization.DefaultTablePerApplicationCount));
-        Assert.That(result[0].Path, Is.Not.Null);
-        Assert.That(result[0].Name, Is.Not.Null);
-        Assert.That(result[0].Description, Is.Not.Null);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result[0].Path, Is.Not.Null);
+            Assert.That(result[0].Name, Is.Not.Null);
+            Assert.That(result[0].Description, Is.Not.Null);
+        });
     }
 
     [Test]

@@ -8,7 +8,7 @@ namespace GitObjectDb.Api.OData.Model;
 
 public static class EdmModelConverter
 {
-    public static IEdmModel ConvertToEdm(this IDataModel model, IEnumerable<Type> dtoTypes)
+    public static IEdmModel ConvertToEdm(this IEnumerable<Type> dtoTypes)
     {
         var builder = new ODataConventionModelBuilder(new EmptyAssemblyResolver());
 
@@ -28,24 +28,10 @@ public static class EdmModelConverter
             builder.AddEntitySet(attribute.EntitySetName, entityType);
         }
 
-        UpdateTypeInheritance(model, builder);
-
         return builder.GetEdmModel();
     }
 
-    private static void UpdateTypeInheritance(IDataModel model, ODataModelBuilder builder)
-    {
-        // foreach (var entityType in builder.NavigationSources.OfType<EntitySetConfiguration>())
-        // {
-        //     var attribute = type.GetCustomAttribute<DtoDescriptionAttribute>() ??
-        //                     throw new NotSupportedException($"No {nameof(DtoDescriptionAttribute)} attribute defined for type '{type}'.");
-        //
-        //     var parent = builder.NavigationSources.OfType<EntitySetConfiguration>().FirstOrDefault(c => c.ClrType == entityType.ClrType.BaseType) ??
-        //                  entityType.DerivesFrom(node);
-        // }
-    }
-
-    private class EmptyAssemblyResolver : IAssemblyResolver
+    private sealed class EmptyAssemblyResolver : IAssemblyResolver
     {
         public IEnumerable<Assembly> Assemblies => Enumerable.Empty<Assembly>();
     }

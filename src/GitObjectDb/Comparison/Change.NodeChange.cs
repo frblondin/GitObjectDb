@@ -8,7 +8,6 @@ public abstract partial class Change
 {
     /// <summary>Contains the details about the changes made to a <see cref="Node"/>.</summary>
     /// <seealso cref="GitObjectDb.Comparison.Change" />
-#pragma warning disable CA1034 // Nested types should not be visible
     public class NodeChange : Change
     {
         internal NodeChange(Node? old, Node? @new, ChangeStatus status, ComparisonResult? differences = null)
