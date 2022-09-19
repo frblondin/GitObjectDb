@@ -2,6 +2,7 @@ using GitObjectDb.Comparison;
 using GitObjectDb.Injection;
 using GitObjectDb.Internal.Queries;
 using GitObjectDb.Model;
+using GitObjectDb.Serialization;
 using GitObjectDb.Tools;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using static GitObjectDb.Internal.Factories;
 
 namespace GitObjectDb.Internal;
@@ -17,6 +19,7 @@ namespace GitObjectDb.Internal;
 [DebuggerDisplay("{Repository}")]
 internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvider
 {
+    private readonly INodeSerializer _nodeSerializer;
     private readonly TransformationComposerFactory _transformationComposerFactory;
     private readonly RebaseFactory _rebaseFactory;
     private readonly MergeFactory _mergeFactory;
@@ -34,6 +37,7 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
     {
         Repository = GetOrCreateRepository(path, initialBranch);
         Model = model;
+        _nodeSerializer = serviceProvider.GetRequiredService<INodeSerializer>();
         _transformationComposerFactory = serviceProvider.GetRequiredService<TransformationComposerFactory>();
         _rebaseFactory = serviceProvider.GetRequiredService<RebaseFactory>();
         _mergeFactory = serviceProvider.GetRequiredService<MergeFactory>();
@@ -45,6 +49,12 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
     }
 
     public IRepository Repository { get; }
+
+    public JsonSerializerOptions SerializerOptions
+    {
+        get => _nodeSerializer.Options;
+        set => _nodeSerializer.Options = value;
+    }
 
     public IDataModel Model { get; }
 

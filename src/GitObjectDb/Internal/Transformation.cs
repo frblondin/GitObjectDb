@@ -5,14 +5,22 @@ namespace GitObjectDb.Internal;
 [DebuggerDisplay("{Message}")]
 internal class Transformation : ITransformationInternal
 {
-    internal Transformation(ApplyUpdateTreeDefinition transformation,
+    internal Transformation(DataPath path,
+                            ITreeItem? item,
+                            ApplyUpdateTreeDefinition transformation,
                             ApplyUpdateFastInsert fastInsertTransformation,
                             string message)
     {
+        Path = path;
+        Item = item;
         TreeTransformation = transformation;
         FastInsertTransformation = fastInsertTransformation;
         Message = message;
     }
+
+    public DataPath Path { get; }
+
+    public ITreeItem? Item { get; }
 
     public ApplyUpdateTreeDefinition TreeTransformation { get; }
 

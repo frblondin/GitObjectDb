@@ -51,12 +51,14 @@ internal class TransformationComposer : ITransformationComposer
     public TItem Delete<TItem>(TItem item)
         where TItem : ITreeItem
     {
-        item.ThrowIfNoPath();
+        var path = item.ThrowIfNoPath();
 
         var transformation = new Transformation(
+            path,
+            default,
             UpdateTreeCommand.Delete(item),
             UpdateFastInsertFile.Delete(item),
-            $"Removing {item.Path!.FolderPath}.");
+            $"Removing {path}.");
         Transformations.Add(transformation);
         return item;
     }
@@ -64,6 +66,8 @@ internal class TransformationComposer : ITransformationComposer
     public void Delete(DataPath path)
     {
         var transformation = new Transformation(
+            path,
+            default,
             UpdateTreeCommand.Delete(path),
             UpdateFastInsertFile.Delete(path),
             $"Removing {path}.");
@@ -73,20 +77,16 @@ internal class TransformationComposer : ITransformationComposer
     private TItem CreateOrUpdateItem<TItem>(TItem item, DataPath? parent = null)
         where TItem : ITreeItem
     {
-        var path = item.Path;
-        if (item is Node node)
-        {
-            path = UpdateNodePathIfNeeded(node, parent);
-        }
-        else
-        {
+        var path = item is Node node ?
+            UpdateNodePathIfNeeded(node, parent) :
             item.ThrowIfNoPath();
-        }
 
         var transformation = new Transformation(
+            path,
+            item,
             _updateTreeCommand.CreateOrUpdate(item),
             _updateFastInsertFile.CreateOrUpdate(item),
-            $"Adding or updating {path!.FolderPath}.");
+            $"Adding or updating {path}.");
         Transformations.Add(transformation);
         return item;
     }
