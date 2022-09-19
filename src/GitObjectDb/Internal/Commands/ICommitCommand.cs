@@ -7,10 +7,6 @@ internal interface ICommitCommand
 {
     Commit Commit(IConnection connection,
                   TransformationComposer transformationComposer,
-                  string message,
-                  Signature author,
-                  Signature committer,
-                  bool amendPreviousCommit = false,
-                  Commit? mergeParent = null,
+                  CommitDescription description,
                   Action<ITransformation>? beforeProcessing = null);
 }

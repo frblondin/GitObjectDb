@@ -22,11 +22,11 @@ public class MergeTests : DisposeArguments
         // Arrange
         var b = sut
             .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         var c = sut
             .Update(c => c.CreateOrUpdate(table with { Name = newName }))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var merge = sut.Merge(upstreamCommittish: "main");
@@ -55,7 +55,7 @@ public class MergeTests : DisposeArguments
         // Arrange
         var b = sut
             .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
 
         // Act
@@ -82,11 +82,11 @@ public class MergeTests : DisposeArguments
         var oldValue = table.Description;
         sut
             .Update(c => c.CreateOrUpdate(table with { Description = bValue }))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         sut
             .Update(c => c.CreateOrUpdate(table with { Description = cValue }))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
 
         // Act
         var merge = sut.Merge(upstreamCommittish: "main");
@@ -132,11 +132,11 @@ public class MergeTests : DisposeArguments
                 c.CreateOrUpdate(field);
                 c.CreateOrUpdate(parentApplication);
             })
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         sut
             .Update(c => c.Delete(parentTable.Path))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
 
         // Act
         var merge = sut.Merge(upstreamCommittish: "main");
@@ -170,11 +170,11 @@ public class MergeTests : DisposeArguments
         // Arrange
         sut
             .Update(c => c.Delete(parentApplication.Path))
-            .Commit("C", signature, signature);
+            .Commit(new("C", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
         sut
             .Update(c => c.CreateOrUpdate(new Field { }, parentTable))
-            .Commit("B", signature, signature);
+            .Commit(new("B", signature, signature));
 
         // Act
         var merge = sut.Merge(upstreamCommittish: "main");

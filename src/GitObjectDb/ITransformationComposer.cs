@@ -50,17 +50,11 @@ public interface ITransformationComposer
     void Delete(DataPath path);
 
     /// <summary>Applies the transformation and store them in a new commit.</summary>
-    /// <param name="message">The message of the commit.</param>
-    /// <param name="author">The author of the commit.</param>
-    /// <param name="committer">The committer of the commit.</param>
-    /// <param name="amendPreviousCommit">If set to <c>true</c>, previous commit will be amended.</param>
+    /// <param name="description">The commit description.</param>
     /// <param name="beforeProcessing">Callback that gets invoked before processing each transformation.</param>
     /// <param name="type">Type of commit command to use.</param>
     /// <returns>The resulting commit.</returns>
-    Commit Commit(string message,
-                  Signature author,
-                  Signature committer,
-                  bool amendPreviousCommit = false,
+    Commit Commit(CommitDescription description,
                   Action<ITransformation>? beforeProcessing = null,
                   CommitCommandType type = CommitCommandType.Auto);
 }

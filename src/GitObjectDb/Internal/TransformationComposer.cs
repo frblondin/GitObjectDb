@@ -104,16 +104,13 @@ internal class TransformationComposer : ITransformationComposer
         return node.Path ??= DataPath.Root(node, Connection.Model);
     }
 
-    Commit ITransformationComposer.Commit(string message,
-                                          Signature author,
-                                          Signature committer,
-                                          bool amendPreviousCommit,
+    Commit ITransformationComposer.Commit(CommitDescription description,
                                           Action<ITransformation>? beforeProcessing,
                                           CommitCommandType type) =>
         _commitCommandFactory.Invoke(type).Commit(
             Connection,
             this,
-            message, author, committer, amendPreviousCommit,
+            description,
             beforeProcessing: beforeProcessing);
 
     internal TreeDefinition ApplyTransformations(ObjectDatabase dataBase,

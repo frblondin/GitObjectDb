@@ -23,7 +23,7 @@ public partial class ConnectionTests : DisposeArguments
             var node1 = c.CreateOrUpdate(new NodeWithReference { Name = name });
             var node2 = c.CreateOrUpdate(new NodeWithReference { Reference = node1 });
             path = node2.Path;
-        }).Commit("foo", signature, signature);
+        }).Commit(new("foo", signature, signature));
 
         // Act
         var result = sut.Lookup<NodeWithReference>(path);
@@ -49,7 +49,7 @@ public partial class ConnectionTests : DisposeArguments
                 References = new[] { node1, node2 },
             });
             path = node3.Path;
-        }).Commit("foo", signature, signature);
+        }).Commit(new("foo", signature, signature));
 
         // Act
         var result = sut.Lookup<NodeWithMultipleReference>(path);

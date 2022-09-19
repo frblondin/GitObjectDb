@@ -37,7 +37,7 @@ public class CommitCommandTests
         // Act
         var composer = new TransformationComposer(updateCommand, updateFastInsert, commitCommandFactory: sut, connection: connection);
         composer.CreateOrUpdate(new Table { Id = newTableId }, application);
-        sut.Invoke(commitType).Commit(connection, composer, message, signature, signature);
+        sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
         // Assert
         var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
@@ -65,7 +65,7 @@ public class CommitCommandTests
         // Act
         var composer = new TransformationComposer(updateCommand, updateFastInsert, commitCommandFactory: sut, connection: connection);
         composer.CreateOrUpdate(new Field { Id = newFieldId }, table);
-        sut.Invoke(commitType).Commit(connection, composer, message, signature, signature);
+        sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
         // Assert
         var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
@@ -94,7 +94,7 @@ public class CommitCommandTests
         // Act
         var composer = new TransformationComposer(updateCommand, updateFastInsert, commitCommandFactory: sut, connection: connection);
         composer.CreateOrUpdate(resource);
-        sut.Invoke(commitType).Commit(connection, composer, message, signature, signature);
+        sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
         // Assert
         var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
@@ -124,7 +124,7 @@ public class CommitCommandTests
         // Act
         var composer = new TransformationComposer(updateCommand, updateFastInsert, commitCommandFactory: sut, connection: connection);
         composer.Delete(table);
-        sut.Invoke(commitType).Commit(connection, composer, message, signature, signature);
+        sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
         // Assert
         var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);
@@ -151,7 +151,7 @@ public class CommitCommandTests
         field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
         var composer = new TransformationComposer(updateCommand, updateFastInsert, commitCommandFactory: sut, connection: connection);
         composer.CreateOrUpdate(field);
-        sut.Invoke(commitType).Commit(connection, composer, message, signature, signature);
+        sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
         // Act
         var changes = comparer.Compare(connection, connection.Repository.Lookup<Commit>("HEAD~1").Tree, connection.Repository.Head.Tip.Tree, connection.Model.DefaultComparisonPolicy);

@@ -21,19 +21,15 @@ internal class FastImportCommitCommand : ICommitCommand
 
     public Commit Commit(IConnection connection,
                          TransformationComposer transformationComposer,
-                         string message,
-                         Signature author,
-                         Signature committer,
-                         bool amendPreviousCommit = false,
-                         Commit? mergeParent = null,
+                         CommitDescription description,
                          Action<ITransformation>? beforeProcessing = null)
     {
         var importFile = Path.GetTempFileName();
         try
         {
             var parents = CommitCommand.RetrieveParentsOfTheCommitBeingCreated(connection.Repository,
-                                                                               amendPreviousCommit,
-                                                                               mergeParent).ToList();
+                                                                               description.AmendPreviousCommit,
+                                                                               description.MergeParent).ToList();
             int commitMarkId;
             using (var writer = new StreamWriter(File.OpenWrite(importFile)))
             {
@@ -43,9 +39,7 @@ internal class FastImportCommitCommand : ICommitCommand
                                                          parents,
                                                          writer,
                                                          index,
-                                                         message,
-                                                         author,
-                                                         committer,
+                                                         description,
                                                          beforeProcessing);
             }
             var commit = SendCommandThroughCli(connection, importFile, commitMarkId);
@@ -63,16 +57,14 @@ internal class FastImportCommitCommand : ICommitCommand
                                                  List<Commit> parents,
                                                  StreamWriter writer,
                                                  List<string> index,
-                                                 string message,
-                                                 Signature author,
-                                                 Signature committer,
+                                                 CommitDescription description,
                                                  Action<ITransformation>? beforeProcessing)
     {
         var tip = connection.Repository.Info.IsHeadUnborn ? null : connection.Repository.Head.Tip;
         transformationComposer.ApplyTransformations(tip, writer, index, beforeProcessing);
 
         var commitMarkId = index.Count + 1;
-        WriteFastInsertCommit(connection, parents, writer, message, author, committer, commitMarkId);
+        WriteFastInsertCommit(connection, parents, writer, description, commitMarkId);
         WriteFastInsertCommitIndex(writer, index);
 
         return commitMarkId;
@@ -81,9 +73,7 @@ internal class FastImportCommitCommand : ICommitCommand
     private static void WriteFastInsertCommit(IConnection connection,
                                               List<Commit> parents,
                                               TextWriter writer,
-                                              string message,
-                                              Signature author,
-                                              Signature committer,
+                                              CommitDescription description,
                                               int commitMarkId)
     {
         var branch = connection.Repository.Refs.Head.TargetIdentifier;

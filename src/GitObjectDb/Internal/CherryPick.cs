@@ -108,7 +108,7 @@ internal sealed class CherryPick : ICherryPick
             CurrentChanges.Select(c =>
                 (ApplyUpdateTreeDefinition)((database, treeDefinition, refTree) =>
                 c.Transform(_updateCommand, database, treeDefinition, refTree))),
-            UpstreamCommit.Message, UpstreamCommit.Author, _committer ?? UpstreamCommit.Committer,
+            new(UpstreamCommit.Message, UpstreamCommit.Author, _committer ?? UpstreamCommit.Committer),
             updateHead: false);
 
         // Update tip

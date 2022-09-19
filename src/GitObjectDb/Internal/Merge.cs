@@ -132,7 +132,7 @@ internal sealed class Merge : IMerge
             CurrentChanges.Select(c =>
                 (ApplyUpdateTreeDefinition)((database, treeDefinition, refTree) =>
                 c.Transform(_updateCommand, database, treeDefinition, refTree))),
-            message, author, committer,
+            new CommitDescription(message, author, committer),
             updateHead: false,
             mergeParent: UpstreamCommit);
         var logMessage = MergeCommit.BuildCommitLogMessage(false, false, isMergeCommit: true);

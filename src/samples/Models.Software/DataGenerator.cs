@@ -43,7 +43,7 @@ public class DataGenerator
         Table? firstTable = default;
         var fixture = new Fixture();
         var transformations = Connection.Update(CreateApplications);
-        transformations.Commit(commitMessage, signature, signature);
+        transformations.Commit(new(commitMessage, signature, signature));
 
         void CreateApplications(ITransformationComposer composer)
         {
