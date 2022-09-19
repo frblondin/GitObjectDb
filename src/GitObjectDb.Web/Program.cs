@@ -26,7 +26,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    app.UseGraphQLAltair(new() { GraphQLEndPoint = "/api/graphql" }, "/ui/altair");
+    app.UseGraphQLAltair(new() { GraphQLEndPoint = "/api/graphql" }, "/");
 }
 
 app.UseHttpsRedirection()
