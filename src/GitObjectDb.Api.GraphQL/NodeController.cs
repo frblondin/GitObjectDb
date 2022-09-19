@@ -1,8 +1,12 @@
 using GraphQL;
+using GraphQL.Execution;
 using GraphQL.SystemTextJson;
 using GraphQL.Transport;
 using GraphQL.Types;
+using GraphQL.Validation;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using System.Text.Json.Nodes;
 
 namespace GitObjectDb.Api.GraphQL;
@@ -22,24 +26,86 @@ public class NodeController : Controller
         _serializer = serializer;
     }
 
-    [HttpPost("graphql")]
-    public async Task<IActionResult> GraphQL([FromBody] JsonObject content)
+    [HttpGet]
+    [ActionName("graphql")]
+    public Task<IActionResult> GraphQLGetAsync(string query, string? operationName)
     {
-        var request = _serializer.Deserialize<GraphQLRequest>(content.ToJsonString())!;
-        var result = await _documentExecuter.ExecuteAsync(s =>
+        if (HttpContext.WebSockets.IsWebSocketRequest)
         {
-            s.Schema = _schema;
-            s.Query = request.Query;
-            s.Variables = request.Variables;
-            s.OperationName = request.OperationName;
-            s.RequestServices = HttpContext.RequestServices;
-            s.UserContext = new GraphQLUserContext
-            {
-                User = HttpContext.User,
-            };
-            s.CancellationToken = HttpContext.RequestAborted;
-        });
+            return Task.FromResult<IActionResult>(BadRequest());
+        }
+        else
+        {
+            return ExecuteGraphQLRequestAsync(BuildRequest(query, operationName));
+        }
+    }
 
-        return new ExecutionResultActionResult(result);
+    [HttpPost("graphql")]
+    public async Task<IActionResult> GraphQL()
+    {
+        if (HttpContext.Request.HasFormContentType)
+        {
+            var request = BuildRequest(
+                await HttpContext.Request.ReadFormAsync(HttpContext.RequestAborted));
+            return await ExecuteGraphQLRequestAsync(request);
+        }
+        else if (HttpContext.Request.HasJsonContentType())
+        {
+            var request = await _serializer.ReadAsync<GraphQLRequest>(HttpContext.Request.Body,
+                                                                      HttpContext.RequestAborted);
+            return await ExecuteGraphQLRequestAsync(request);
+        }
+        return BadRequest();
+    }
+
+    private GraphQLRequest BuildRequest(IFormCollection form) =>
+        BuildRequest(form["query"].ToString(),
+                     form["operationName"].ToString(),
+                     form["variables"].ToString(),
+                     form["extensions"].ToString());
+
+    private GraphQLRequest BuildRequest(string query, string? operationName, string? variables = null,
+                                        string? extensions = null) => new()
+    {
+        Query = query == string.Empty ? null : query,
+        OperationName = operationName == string.Empty ? null : operationName,
+        Variables = _serializer.Deserialize<Inputs>(variables == string.Empty ? null : variables),
+        Extensions = _serializer.Deserialize<Inputs>(extensions == string.Empty ? null : extensions),
+    };
+
+    private async Task<IActionResult> ExecuteGraphQLRequestAsync(GraphQLRequest? request)
+    {
+        try
+        {
+            var result = await _documentExecuter.ExecuteAsync(s =>
+            {
+                s.Schema = _schema;
+                s.Query = request?.Query;
+                s.Variables = request?.Variables;
+                s.OperationName = request?.OperationName;
+                s.RequestServices = HttpContext.RequestServices;
+                s.UserContext = new GraphQLUserContext
+                {
+                    User = HttpContext.User,
+                };
+                s.UnhandledExceptionDelegate = WaitHandleCannotBeOpenedException;
+                s.CancellationToken = HttpContext.RequestAborted;
+            });
+
+            return new ExecutionResultActionResult(result);
+        }
+        catch
+        {
+            return BadRequest();
+        }
+    }
+
+    private static Task WaitHandleCannotBeOpenedException(UnhandledExceptionContext context)
+    {
+        if (context.Exception is GitObjectDbException)
+        {
+            context.ErrorMessage = context.Exception.Message;
+        }
+        return Task.CompletedTask;
     }
 }

@@ -1,5 +1,6 @@
 using AutoMapper;
 using GraphQL;
+using GraphQL.Execution;
 using GraphQL.Resolvers;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,9 +14,9 @@ internal static class GraphQLHelper
             {
                 var source = context.Source as TSource;
                 var provider = context.RequestServices?.GetRequiredService<DataProvider>() ??
-                    throw new NotSupportedException("No request context set.");
+                    throw new RequestError("No request context set.");
                 var mapper = context.RequestServices?.GetRequiredService<IMapper>() ??
-                   throw new NotSupportedException("No mapper context set.");
+                   throw new RequestError("No mapper context set.");
                 return resolver(source, context, provider, mapper);
             });
 }

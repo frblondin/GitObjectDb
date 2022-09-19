@@ -3,6 +3,7 @@ using GitObjectDb.Api.GraphQL.GraphModel;
 using GitObjectDb.Api.GraphQL.Tools;
 using GitObjectDb.Api.Model;
 using GraphQL;
+using GraphQL.Execution;
 using GraphQL.Resolvers;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -22,7 +23,7 @@ internal static class NodeDeltaQuery
         where TNodeDto : NodeDto
     {
         var provider = context.RequestServices?.GetRequiredService<DataProvider>() ??
-            throw new NotSupportedException("No request context set.");
+            throw new ExecutionError("No request context set.");
 
         var start = context.GetArgument<string>(GitObjectDbQuery.DeltaStartCommit);
         var end = context.GetArgument(GitObjectDbQuery.DeltaEndCommit, default(string?));

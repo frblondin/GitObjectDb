@@ -6,7 +6,7 @@ using System;
 namespace GitObjectDb;
 
 /// <summary>Represents a method that creates a <see cref="IConnection"/>.</summary>
-/// <param name="path">The path containing the .git repository.</param>
+/// <param name="path">The path containing the git repository.</param>
 /// <param name="model">Model that this connection should manage.</param>
 /// <param name="initialBranch">Name of the default branch name.</param>
 /// <returns>A new connection instance.</returns>

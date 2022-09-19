@@ -21,7 +21,7 @@ internal static class NodeQuery
         where TNodeDto : NodeDto
     {
         var provider = context.RequestServices?.GetRequiredService<DataProvider>() ??
-            throw new NotSupportedException("No request context set.");
+            throw new ExecutionError("No request context set.");
         var parentNode = context.Source is NodeDto dto ? dto.Node : null;
         var parentPath = parentNode?.Path?.FilePath ?? context.GetArgument(GitObjectDbQuery.ParentPathArgument, default(string?));
 

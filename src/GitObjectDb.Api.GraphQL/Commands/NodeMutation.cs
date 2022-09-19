@@ -4,6 +4,7 @@ using GitObjectDb.Api.GraphQL.Tools;
 using GitObjectDb.Api.Model;
 using GitObjectDb.Model;
 using GraphQL;
+using GraphQL.Execution;
 using GraphQLParser.AST;
 using LibGit2Sharp;
 using System.Reflection;
@@ -89,7 +90,7 @@ internal static partial class NodeMutation
         if (!context.UserContext.TryGetValue(NodeMutationVariableName, out var existing))
         {
             var serviceProvider = context.RequestServices ??
-                throw new NotSupportedException("No service provider could be found.");
+                throw new ExecutionError("No service provider could be found.");
             existing = new Context(serviceProvider);
             context.UserContext[NodeMutationVariableName] = existing;
         }
@@ -132,7 +133,7 @@ internal static partial class NodeMutation
         if (parentId is not null)
         {
             var parent = mutationContext.TryResolve(new UniqueId(parentId))?.Path ??
-                throw new NotSupportedException($"Parent {parentId} could not be found from its identifier.");
+                throw new RequestError($"Parent {parentId} could not be found from its identifier.");
             return parent!.AddChild(node.Id, typeof(TNode), model, fileExtension);
         }
         return DataPath.Root(node, model, fileExtension);
@@ -143,15 +144,15 @@ internal static partial class NodeMutation
         if (context.FieldAst.Arguments is null ||
             context.FieldDefinition.Arguments is null)
         {
-            throw new NotSupportedException("Missing metadata context.");
+            throw new RequestError("Missing metadata context.");
         }
         var argument = context.FieldAst
             .Arguments
             .FirstOrDefault(a => StringComparer.OrdinalIgnoreCase.Equals(a.Name.StringValue, GitObjectDbMutation.NodeArgument))?
             .Value as GraphQLObjectValue ??
-            throw new NotSupportedException("Could not get input values.");
+            throw new RequestError("Could not get input values.");
         return argument.Fields ??
-            throw new NotSupportedException("Could not get fields.");
+            throw new RequestError("Could not get fields.");
     }
 
     internal static TNode Merge<TNode>(TNode? original, TNode @new, IEnumerable<GraphQLObjectField> modifiedMembers)
