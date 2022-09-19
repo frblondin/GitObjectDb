@@ -1,7 +1,7 @@
 using GitObjectDb.Model;
-using GitObjectDb.Tools;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.Json;
@@ -56,12 +56,11 @@ internal class NodeTypeInfoResolver : DefaultJsonTypeInfoResolver
 
     private void AddDerivedTypes(Type nodeType, ICollection<JsonDerivedType> derivedTypes)
     {
-        foreach (var description in Model.NodeTypes)
+        foreach (var type in from description in Model.NodeTypes
+                             where nodeType.IsAssignableFrom(description.Type)
+                             select description.Type)
         {
-            if (nodeType.IsAssignableFrom(description.Type))
-            {
-                derivedTypes.Add(new(description.Type, description.Type.FullName));
-            }
+            derivedTypes.Add(new(type, type.FullName));
         }
     }
 }

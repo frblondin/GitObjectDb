@@ -24,7 +24,7 @@ internal class FastImportCommitCommand : ICommitCommand
                          CommitDescription description,
                          Action<ITransformation>? beforeProcessing = null)
     {
-        var importFile = Path.GetTempFileName();
+        var importFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         var tempBranch = $"refs/fastimport/{UniqueId.CreateNew()}";
         try
         {
@@ -67,14 +67,13 @@ internal class FastImportCommitCommand : ICommitCommand
         transformationComposer.ApplyTransformations(tip, writer, index, beforeProcessing);
 
         var commitMarkId = index.Count + 1;
-        WriteFastInsertCommit(connection, tempBranch, parents, writer, description, commitMarkId);
+        WriteFastInsertCommit(tempBranch, parents, writer, description, commitMarkId);
         WriteFastInsertCommitIndex(writer, index);
 
         return commitMarkId;
     }
 
-    private static void WriteFastInsertCommit(IConnection connection,
-                                              string tempBranch,
+    private static void WriteFastInsertCommit(string tempBranch,
                                               List<Commit> parents,
                                               TextWriter writer,
                                               CommitDescription description,
@@ -120,7 +119,7 @@ internal class FastImportCommitCommand : ICommitCommand
 
     private static Commit SendCommandThroughCli(IConnection connection, string importFile, int commitMarkId)
     {
-        var markFile = Path.GetTempFileName();
+        var markFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         try
         {
             using var stream = File.OpenRead(importFile);
@@ -149,6 +148,7 @@ internal class FastImportCommitCommand : ICommitCommand
         }
         catch
         {
+            // Ignored
         }
     }
 

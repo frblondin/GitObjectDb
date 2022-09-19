@@ -30,8 +30,11 @@ public partial class NodeSerializerTests
         var result = sut.Lookup<NodeWithReference>(path);
 
         // Act, Assert
-        Assert.That(result.Reference, Is.InstanceOf<NodeWithReference>());
-        Assert.That(((NodeWithReference)result.Reference).Name, Is.EqualTo(name));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Reference, Is.InstanceOf<NodeWithReference>());
+            Assert.That(((NodeWithReference)result.Reference).Name, Is.EqualTo(name));
+        });
     }
 
     [Test]
@@ -53,8 +56,11 @@ public partial class NodeSerializerTests
         var result = sut.Lookup<NodeWithReference>(path);
 
         // Act, Assert
-        Assert.That(result.Reference, Is.InstanceOf<NodeWithReference>());
-        Assert.That(((NodeWithReference)result.Reference).Name, Is.EqualTo(name));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Reference, Is.InstanceOf<NodeWithReference>());
+            Assert.That(((NodeWithReference)result.Reference).Name, Is.EqualTo(name));
+        });
     }
 
     [Test]
@@ -79,8 +85,11 @@ public partial class NodeSerializerTests
         var result = sut.Lookup<NodeWithMultipleReference>(path);
 
         // Act, Assert
-        Assert.That(result.References, Has.Exactly(2).Items);
-        Assert.That(((NodeWithMultipleReference)result.References[0]).Name, Is.EqualTo(name1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.References, Has.Exactly(2).Items);
+            Assert.That(((NodeWithMultipleReference)result.References[0]).Name, Is.EqualTo(name1));
+        });
     }
 
     private static IConnection CreateRepository(IServiceProvider serviceProvider)

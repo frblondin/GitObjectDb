@@ -36,9 +36,12 @@ public class DataProviderTests
 
         // Arrange
         Assert.That(result, Has.Exactly(nodes.Length).Items);
-        Assert.That(result[0].Node, Is.SameAs(nodes[0]));
-        Assert.That(result[0].Id, Is.EqualTo(nodes[0].Id.ToString()));
-        Assert.That(result[0].Path, Is.EqualTo(nodes[0].Path!.FilePath));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result[0].Node, Is.SameAs(nodes[0]));
+            Assert.That(result[0].Id, Is.EqualTo(nodes[0].Id.ToString()));
+            Assert.That(result[0].Path, Is.EqualTo(nodes[0].Path!.FilePath));
+        });
     }
 
     [Test]
@@ -62,8 +65,11 @@ public class DataProviderTests
                 .Getter(multiReferenceNodeDto.DtoType, nameof(MultiReferenceNode.MultiReference))
                 .Invoke(result[0]))
             .First();
-        Assert.That(firstReference.Node, Is.SameAs(nodes[0].MultiReference[0]));
-        Assert.That(firstReference.Id, Is.EqualTo(nodes[0].MultiReference[0].Id.ToString()));
+        Assert.Multiple(() =>
+        {
+            Assert.That(firstReference.Node, Is.SameAs(nodes[0].MultiReference[0]));
+            Assert.That(firstReference.Id, Is.EqualTo(nodes[0].MultiReference[0].Id.ToString()));
+        });
     }
 
     [Test]
@@ -87,8 +93,11 @@ public class DataProviderTests
 
         // Arrange
         Assert.That(resolvedChildren, Has.Exactly(children.Length).Items);
-        Assert.That(resolvedChildren[0].Node, Is.SameAs(children[0]));
-        Assert.That(resolvedChildren[0].Id, Is.EqualTo(children[0].Id.ToString()));
+        Assert.Multiple(() =>
+        {
+            Assert.That(resolvedChildren[0].Node, Is.SameAs(children[0]));
+            Assert.That(resolvedChildren[0].Id, Is.EqualTo(children[0].Id.ToString()));
+        });
     }
 
     private static DataProvider CreateDataProvider<TNode>(IEnumerable<TNode> nodes, out DtoTypeEmitter typeEmitter)

@@ -109,6 +109,9 @@
         "SONAR_TOKEN": {
           "type": "string"
         },
+        "SonarHostUrl": {
+          "type": "string"
+        },
         "SonarOrganization": {
           "type": "string"
         },

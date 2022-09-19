@@ -34,21 +34,24 @@ public class RebaseTests : DisposeArguments
         var rebase = sut.Rebase(upstreamCommittish: "main");
 
         // Assert
-        Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
-        Assert.That(rebase.ReplayedCommits, Has.Count.EqualTo(1));
         var commitFilter = new CommitFilter
         {
             IncludeReachableFrom = sut.Repository.Head.Tip,
             SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
         };
         var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
-        Assert.That(commits[0], Is.EqualTo(a));
-        Assert.That(commits[1], Is.EqualTo(b));
-        Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
-        Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
         var newTable = sut.Lookup<Table>(table.Path);
-        Assert.That(newTable.Name, Is.EqualTo(newName));
-        Assert.That(newTable.Description, Is.EqualTo(newDescription));
+        Assert.Multiple(() =>
+        {
+            Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
+            Assert.That(rebase.ReplayedCommits, Has.Count.EqualTo(1));
+            Assert.That(commits[0], Is.EqualTo(a));
+            Assert.That(commits[1], Is.EqualTo(b));
+            Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
+            Assert.That(newTable.Name, Is.EqualTo(newName));
+            Assert.That(newTable.Description, Is.EqualTo(newDescription));
+        });
     }
 
     [Test]
@@ -63,7 +66,7 @@ public class RebaseTests : DisposeArguments
         sut
             .Update(c => c.CreateOrUpdate(table with { Description = bValue }))
             .Commit(new("B", signature, signature));
-        var branch = sut.Checkout("newBranch", "HEAD~1");
+        sut.Checkout("newBranch", "HEAD~1");
         sut
             .Update(c => c.CreateOrUpdate(table with { Description = cValue }))
             .Commit(new("C", signature, signature));
@@ -73,20 +76,27 @@ public class RebaseTests : DisposeArguments
 
         // Assert
         Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
-        Assert.Throws<GitObjectDbException>(() => rebase.Continue());
-        Assert.That(rebase.CurrentChanges, Has.Count.EqualTo(1));
-        Assert.That(rebase.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.EditConflict));
-        Assert.That(rebase.CurrentChanges[0].Conflicts, Has.Count.EqualTo(1));
-        Assert.That(rebase.CurrentChanges[0].Conflicts[0].Property.Name, Is.EqualTo(nameof(table.Description)));
-        Assert.That(rebase.CurrentChanges[0].Conflicts[0].AncestorValue, Is.EqualTo(table.Description));
-        Assert.That(rebase.CurrentChanges[0].Conflicts[0].TheirValue, Is.EqualTo(cValue));
-        Assert.That(rebase.CurrentChanges[0].Conflicts[0].OurValue, Is.EqualTo(bValue));
-        Assert.That(rebase.CurrentChanges[0].Conflicts[0].IsResolved, Is.False);
-        Assert.That(rebase.CurrentChanges[0].Conflicts[0].ResolvedValue, Is.Null);
+        Assert.Multiple(() =>
+        {
+            Assert.Throws<GitObjectDbException>(() => rebase.Continue());
+            Assert.That(rebase.CurrentChanges, Has.Count.EqualTo(1));
+            Assert.That(rebase.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.EditConflict));
+            Assert.That(rebase.CurrentChanges[0].Conflicts, Has.Count.EqualTo(1));
+            Assert.That(rebase.CurrentChanges[0].Conflicts[0].Property.Name, Is.EqualTo(nameof(table.Description)));
+            Assert.That(rebase.CurrentChanges[0].Conflicts[0].AncestorValue, Is.EqualTo(table.Description));
+            Assert.That(rebase.CurrentChanges[0].Conflicts[0].TheirValue, Is.EqualTo(cValue));
+            Assert.That(rebase.CurrentChanges[0].Conflicts[0].OurValue, Is.EqualTo(bValue));
+            Assert.That(rebase.CurrentChanges[0].Conflicts[0].IsResolved, Is.False);
+            Assert.That(rebase.CurrentChanges[0].Conflicts[0].ResolvedValue, Is.Null);
+        });
+
         rebase.CurrentChanges[0].Conflicts[0].Resolve("resolved");
-        Assert.That(rebase.CurrentChanges[0].Conflicts[0].IsResolved, Is.True);
-        Assert.That(rebase.CurrentChanges[0].Conflicts[0].ResolvedValue, Is.EqualTo("resolved"));
-        Assert.That(rebase.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.Edit));
+        Assert.Multiple(() =>
+        {
+            Assert.That(rebase.CurrentChanges[0].Conflicts[0].IsResolved, Is.True);
+            Assert.That(rebase.CurrentChanges[0].Conflicts[0].ResolvedValue, Is.EqualTo("resolved"));
+            Assert.That(rebase.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.Edit));
+        });
 
         // Act
         Assert.That(rebase.Continue(), Is.EqualTo(RebaseStatus.Complete));
@@ -108,7 +118,7 @@ public class RebaseTests : DisposeArguments
         sut
             .Update(c => c.Delete(parentTable))
             .Commit(new("B", signature, signature));
-        var branch = sut.Checkout("newBranch", "HEAD~1");
+        sut.Checkout("newBranch", "HEAD~1");
         sut
             .Update(c =>
             {
@@ -121,16 +131,19 @@ public class RebaseTests : DisposeArguments
         var rebase = sut.Rebase(upstreamCommittish: "main");
 
         // Assert
-        Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
-        Assert.Throws<GitObjectDbException>(() => rebase.Continue());
-        Assert.That(rebase.CurrentChanges, Has.Count.EqualTo(2));
-        Assert.That(rebase.CurrentChanges, Has.Exactly(1).Matches<MergeChange>(c => c.Status == ItemMergeStatus.TreeConflict));
         var conflict = rebase.CurrentChanges.Single(c => c.Status == ItemMergeStatus.TreeConflict);
-        Assert.That(((Node)conflict.Theirs).Id, Is.EqualTo(field.Id));
-        Assert.That(((Node)conflict.OurRootDeletedParent).Id, Is.EqualTo(parentTable.Id));
-        rebase.CurrentChanges.Remove(conflict);
+        Assert.Multiple(() =>
+        {
+            Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
+            Assert.Throws<GitObjectDbException>(() => rebase.Continue());
+            Assert.That(rebase.CurrentChanges, Has.Count.EqualTo(2));
+            Assert.That(rebase.CurrentChanges, Has.Exactly(1).Matches<MergeChange>(c => c.Status == ItemMergeStatus.TreeConflict));
+            Assert.That(((Node)conflict.Theirs).Id, Is.EqualTo(field.Id));
+            Assert.That(((Node)conflict.OurRootDeletedParent).Id, Is.EqualTo(parentTable.Id));
+        });
 
         // Act
+        rebase.CurrentChanges.Remove(conflict);
         Assert.That(rebase.Continue(), Is.EqualTo(RebaseStatus.Complete));
 
         // Assert
@@ -166,22 +179,25 @@ public class RebaseTests : DisposeArguments
         var rebase = sut.Rebase(upstreamCommittish: "main");
 
         // Assert
-        Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
-        Assert.That(rebase.ReplayedCommits, Has.Count.EqualTo(1));
         var commitFilter = new CommitFilter
         {
             IncludeReachableFrom = sut.Repository.Head.Tip,
             SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
         };
         var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
-        Assert.That(commits[0], Is.EqualTo(a));
-        Assert.That(commits[1], Is.EqualTo(b));
-        Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
-        Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
         var newTable = sut.Lookup<Table>(table.Path);
-        Assert.That(newTable.Description, Is.EqualTo(newDescription));
         var newField = sut.GetNodes<Field>(newTable).FirstOrDefault(f => f.Id == newFieldId);
-        Assert.That(newField, Is.Not.Null);
+        Assert.Multiple(() =>
+        {
+            Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
+            Assert.That(rebase.ReplayedCommits, Has.Count.EqualTo(1));
+            Assert.That(commits[0], Is.EqualTo(a));
+            Assert.That(commits[1], Is.EqualTo(b));
+            Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
+            Assert.That(newTable.Description, Is.EqualTo(newDescription));
+            Assert.That(newField, Is.Not.Null);
+        });
     }
 
     [Test]
@@ -193,8 +209,7 @@ public class RebaseTests : DisposeArguments
         // newBranch:   C   ->   A---B---C
 
         // Arrange
-        var a = sut.Repository.Head.Tip;
-        var b = sut
+        sut
             .Update(c => c.Delete(table))
             .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
@@ -212,18 +227,24 @@ public class RebaseTests : DisposeArguments
         var rebase = sut.Rebase(upstreamCommittish: "main");
 
         // Assert
-        Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
-        Assert.Throws<GitObjectDbException>(() => rebase.Continue());
-        Assert.That(rebase.CurrentChanges, Has.Count.EqualTo(1));
-        Assert.That(rebase.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.TreeConflict));
-        Assert.That(((Node)rebase.CurrentChanges[0].Theirs).Id, Is.EqualTo(newFieldId));
+        Assert.Multiple(() =>
+        {
+            Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
+            Assert.Throws<GitObjectDbException>(() => rebase.Continue());
+            Assert.That(rebase.CurrentChanges, Has.Count.EqualTo(1));
+            Assert.That(rebase.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.TreeConflict));
+            Assert.That(((Node)rebase.CurrentChanges[0].Theirs).Id, Is.EqualTo(newFieldId));
+        });
 
         // Act
         rebase.CurrentChanges.Clear();
-        Assert.That(rebase.Continue(), Is.EqualTo(RebaseStatus.Complete));
 
         // Assert
-        Assert.That(rebase.CompletedCommits, Has.Count.EqualTo(0));
+        Assert.Multiple(() =>
+        {
+            Assert.That(rebase.Continue(), Is.EqualTo(RebaseStatus.Complete));
+            Assert.That(rebase.CompletedCommits, Has.Count.EqualTo(0));
+        });
     }
 
     [Test]
@@ -248,22 +269,25 @@ public class RebaseTests : DisposeArguments
         var rebase = sut.Rebase(upstreamCommittish: "main");
 
         // Assert
-        Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
-        Assert.That(rebase.ReplayedCommits, Has.Count.EqualTo(1));
         var commitFilter = new CommitFilter
         {
             IncludeReachableFrom = sut.Repository.Head.Tip,
             SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
         };
         var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
-        Assert.That(commits[0], Is.EqualTo(a));
-        Assert.That(commits[1], Is.EqualTo(b));
-        Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
-        Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
         var newTable = sut.Lookup<Table>(table.Path);
-        Assert.That(newTable.Description, Is.EqualTo(newDescription));
         var missingField = sut.GetNodes<Field>(newTable).FirstOrDefault(f => f.Id == field.Id);
-        Assert.That(missingField, Is.Null);
+        Assert.Multiple(() =>
+        {
+            Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
+            Assert.That(rebase.ReplayedCommits, Has.Count.EqualTo(1));
+            Assert.That(commits[0], Is.EqualTo(a));
+            Assert.That(commits[1], Is.EqualTo(b));
+            Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
+            Assert.That(newTable.Description, Is.EqualTo(newDescription));
+            Assert.That(missingField, Is.Null);
+        });
     }
 
     [Test]
@@ -275,8 +299,7 @@ public class RebaseTests : DisposeArguments
         // newBranch:   C   ->   A---B---C
 
         // Arrange
-        var a = sut.Repository.Head.Tip;
-        var b = sut
+        sut
             .Update(c => c.CreateOrUpdate(field with { Description = newDescription }))
             .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
@@ -288,16 +311,22 @@ public class RebaseTests : DisposeArguments
         var rebase = sut.Rebase(upstreamCommittish: "main");
 
         // Assert
-        Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
-        Assert.Throws<GitObjectDbException>(() => rebase.Continue());
         var conflicts = rebase.CurrentChanges.Where(c => c.Status == ItemMergeStatus.TreeConflict).ToList();
-        Assert.That(conflicts, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
+            Assert.Throws<GitObjectDbException>(() => rebase.Continue());
+            Assert.That(conflicts, Has.Count.EqualTo(1));
+        });
 
         // Act
         rebase.CurrentChanges.Remove(conflicts[0]);
-        Assert.That(rebase.Continue(), Is.EqualTo(RebaseStatus.Complete));
 
         // Assert
-        Assert.That(rebase.CompletedCommits, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(rebase.Continue(), Is.EqualTo(RebaseStatus.Complete));
+            Assert.That(rebase.CompletedCommits, Has.Count.EqualTo(1));
+        });
     }
 }

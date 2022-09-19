@@ -124,7 +124,7 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
     }
 
     internal static DataPath Root(string folderName, UniqueId id, bool useNodeFolders, string fileExtension) =>
-        new DataPath(useNodeFolders ? $"{folderName}/{id}" : folderName, $"{id}.{fileExtension}", useNodeFolders);
+        new(useNodeFolders ? $"{folderName}/{id}" : folderName, $"{id}.{fileExtension}", useNodeFolders);
 
     /// <summary>Converts the specified string representation to its <see cref="DataPath" /> equivalent.</summary>
     /// <param name="path">A string containing a sha to convert.</param>
@@ -155,7 +155,7 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
         var separator = path.LastIndexOf('/');
         var folder = path.Substring(0, separator);
         var file = path.Substring(separator + 1);
-        var useNodeFolders = folder.IndexOf(FileSystemStorage.ResourceFolder, StringComparison.Ordinal) == -1 &&
+        var useNodeFolders = !folder.Contains(FileSystemStorage.ResourceFolder) &&
                              folder.EndsWith(System.IO.Path.GetFileNameWithoutExtension(file), StringComparison.Ordinal);
         result = separator != -1 ?
             new DataPath(folder, file, useNodeFolders) :

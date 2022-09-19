@@ -103,12 +103,14 @@ public class NodeController : Controller
 
     private static Task WaitHandleCannotBeOpenedException(UnhandledExceptionContext context)
     {
-#if !DEBUG
+#if DEBUG
+        context.ErrorMessage = context.Exception.Message;
+#else
         if (context.Exception is GitObjectDbException)
-#endif
         {
             context.ErrorMessage = context.Exception.Message;
         }
+#endif
         return Task.CompletedTask;
     }
 }

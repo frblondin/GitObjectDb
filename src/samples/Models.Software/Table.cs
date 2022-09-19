@@ -17,7 +17,6 @@ public record Table : Node
     public string? Description { get; init; }
 }
 
-#pragma warning disable SA1402 // File may only contain a single type
 public static class IConnectionTableExtensions
 {
     public static IEnumerable<Table> GetTables(this IConnection connection, Application application, string? committish = null) =>

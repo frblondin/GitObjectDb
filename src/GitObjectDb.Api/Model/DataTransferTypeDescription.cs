@@ -5,7 +5,7 @@ namespace GitObjectDb.Api.Model;
 
 /// <summary>Describes the data transfer type information.</summary>
 [ExcludeFromCodeCoverage]
-public class DataTransferTypeDescription : IEquatable<DataTransferTypeDescription>
+public sealed class DataTransferTypeDescription : IEquatable<DataTransferTypeDescription>
 {
     /// <summary>Initializes a new instance of the <see cref="DataTransferTypeDescription"/> class.</summary>
     /// <param name="nodeType">The original node type description.</param>
@@ -47,7 +47,7 @@ public class DataTransferTypeDescription : IEquatable<DataTransferTypeDescriptio
             return true;
         }
 
-        if (obj.GetType() != this.GetType())
+        if (obj.GetType() != GetType())
         {
             return false;
         }

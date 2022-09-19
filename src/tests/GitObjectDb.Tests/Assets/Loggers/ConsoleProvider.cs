@@ -11,14 +11,11 @@ public sealed class ConsoleProvider : ILoggerProvider
     private readonly ConcurrentDictionary<string, ConsoleLogger> _loggers = new();
     private readonly IExternalScopeProvider _scopeProvider = new LoggerExternalScopeProvider();
 
-    public ILogger CreateLogger(string name) =>
-        _loggers.GetOrAdd(name, _ => new ConsoleLogger(name, _scopeProvider));
+    public ILogger CreateLogger(string categoryName) =>
+        _loggers.GetOrAdd(categoryName, _ => new ConsoleLogger(categoryName, _scopeProvider));
 
-#pragma warning disable CA1063 // Implement IDisposable Correctly
-#pragma warning disable CA1816 // Dispose methods should call SuppressFinalize
     public void Dispose()
     {
+        // Not needed
     }
-#pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
-#pragma warning restore CA1063 // Implement IDisposable Correctly
 }

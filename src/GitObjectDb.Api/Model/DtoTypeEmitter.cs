@@ -6,7 +6,6 @@ using System.Reflection.Emit;
 namespace GitObjectDb.Api.Model;
 
 /// <summary>Emits data transfer types from a <see cref="IDataModel"/>.</summary>
-#pragma warning disable SA1402 // File may only contain a single type
 public sealed class DtoTypeEmitter
 {
     /// <summary>Initializes a new instance of the <see cref="DtoTypeEmitter"/> class.</summary>
@@ -92,10 +91,12 @@ public sealed class DtoTypeEmitter
     private static void EmitDtoFromNodeConstructor(TypeBuilder result)
     {
         var parameters = new[] { typeof(Node), typeof(ObjectId) };
+#pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
         var baseConstructor = typeof(NodeDto).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance,
                                                              null,
                                                              parameters,
                                                              null)!;
+#pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
         var constructor = result.DefineConstructor(MethodAttributes.Public,
                                                    CallingConventions.Standard | CallingConventions.HasThis,
                                                    parameters);

@@ -28,14 +28,6 @@ internal class Comparer : IComparer, IComparerInternal
         return CompareInternal(expectedObject, actualObject, policy);
     }
 
-    internal static ComparisonResult CompareInternal(object? expectedObject,
-                                                     object? actualObject,
-                                                     ComparisonPolicy policy)
-    {
-        var logic = Cache.Get(policy);
-        return logic.Compare(expectedObject, actualObject);
-    }
-
     public ChangeCollection Compare(IConnectionInternal connection,
                                     Commit old,
                                     Commit @new,
@@ -84,6 +76,14 @@ internal class Comparer : IComparer, IComparerInternal
                 queryAccessor,
                 new(tree, DataPath.Parse(path)));
         return treeChange;
+    }
+
+    internal static ComparisonResult CompareInternal(object? expectedObject,
+                                                     object? actualObject,
+                                                     ComparisonPolicy policy)
+    {
+        var logic = Cache.Get(policy);
+        return logic.Compare(expectedObject, actualObject);
     }
 
     internal static class Cache

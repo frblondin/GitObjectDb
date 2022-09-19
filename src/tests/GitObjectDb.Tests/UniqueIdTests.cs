@@ -9,13 +9,15 @@ public class UniqueIdTests
 {
     [Test]
     [AutoDataCustomizations(typeof(Customization))]
+#pragma warning disable NUnit2009 // The same value has been provided as both the actual and the expected argument
     public void OperatorEquality(string sha) =>
-        Assert.That(new UniqueId(sha) == new UniqueId(sha), Is.True);
+        Assert.That(new UniqueId(sha), Is.EqualTo(new UniqueId(sha)));
+#pragma warning restore NUnit2009 // The same value has been provided as both the actual and the expected argument
 
     [Test]
     [AutoDataCustomizations(typeof(Customization))]
     public void OperatorInequality(string sha1, string sha2) =>
-        Assert.That(new UniqueId(sha1) != new UniqueId(sha2), Is.True);
+        Assert.That(new UniqueId(sha1), Is.Not.EqualTo(new UniqueId(sha2)));
 
     [Test]
     [AutoDataCustomizations(typeof(Customization))]

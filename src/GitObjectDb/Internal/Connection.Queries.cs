@@ -192,7 +192,7 @@ internal sealed partial class Connection
                 }
                 path.Pop();
             }
-            return null;
+            return default;
         }
     }
 

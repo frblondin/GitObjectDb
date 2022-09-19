@@ -30,13 +30,12 @@ public class CommitCommandTests
     public void AddNewNodeUsingNodeFolders(CommitCommandType commitType, IFixture fixture, Application application, UniqueId newTableId, string message, Signature signature)
     {
         // Arrange
-        var updateFastInsert = fixture.Create<UpdateFastInsertFile>();
         var comparer = fixture.Create<Comparer>();
         var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(updateFastInsert, commitCommandFactory: sut, connection: connection);
+        var composer = new TransformationComposer(commitCommandFactory: sut, connection: connection);
         composer.CreateOrUpdate(new Table { Id = newTableId }, application);
         sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
@@ -60,13 +59,12 @@ public class CommitCommandTests
     public void AddNewNodeWithoutNodeFolders(CommitCommandType commitType, IFixture fixture, Table table, UniqueId newFieldId, string message, Signature signature)
     {
         // Arrange
-        var updateFastInsert = fixture.Create<UpdateFastInsertFile>();
         var comparer = fixture.Create<Comparer>();
         var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(updateFastInsert, commitCommandFactory: sut, connection: connection);
+        var composer = new TransformationComposer(commitCommandFactory: sut, connection: connection);
         composer.CreateOrUpdate(new Field { Id = newFieldId }, table);
         sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
@@ -90,14 +88,13 @@ public class CommitCommandTests
     public void AddNewResource(CommitCommandType commitType, IFixture fixture, Table table, string fileContent, string message, Signature signature)
     {
         // Arrange
-        var updateFastInsert = fixture.Create<UpdateFastInsertFile>();
         var comparer = fixture.Create<Comparer>();
         var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
         var connection = fixture.Create<IConnectionInternal>();
         var resource = new Resource(table, "Some/Folder", "File.txt", new Resource.Data(fileContent));
 
         // Act
-        var composer = new TransformationComposer(updateFastInsert, commitCommandFactory: sut, connection: connection);
+        var composer = new TransformationComposer(commitCommandFactory: sut, connection: connection);
         composer.CreateOrUpdate(resource);
         sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
@@ -123,13 +120,12 @@ public class CommitCommandTests
     public void DeletingNodeRemovesNestedChildren(CommitCommandType commitType, IFixture fixture, Table table, string message, Signature signature)
     {
         // Arrange
-        var updateFastInsert = fixture.Create<UpdateFastInsertFile>();
         var comparer = fixture.Create<Comparer>();
         var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(updateFastInsert, commitCommandFactory: sut, connection: connection);
+        var composer = new TransformationComposer(commitCommandFactory: sut, connection: connection);
         composer.Delete(table);
         sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
@@ -151,13 +147,12 @@ public class CommitCommandTests
     public void EditNestedProperty(CommitCommandType commitType, IFixture fixture, Field field, string message, Signature signature)
     {
         // Arrange
-        var updateFastInsert = fixture.Create<UpdateFastInsertFile>();
         var comparer = fixture.Create<Comparer>();
         var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(updateFastInsert, commitCommandFactory: sut, connection: connection);
+        var composer = new TransformationComposer(commitCommandFactory: sut, connection: connection);
         composer.CreateOrUpdate(field with
         {
             SomeValue = new()

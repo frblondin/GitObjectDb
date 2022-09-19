@@ -47,7 +47,7 @@ switch (repositoryType)
         throw new NotSupportedException($"'{repositoryType}' is not supported.");
 }
 
-void CacheStrategy(ICacheEntry entry) => entry.SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1));
+static void CacheStrategy(ICacheEntry entry) => entry.SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1));
 
 builder.Services
     .AddControllers()

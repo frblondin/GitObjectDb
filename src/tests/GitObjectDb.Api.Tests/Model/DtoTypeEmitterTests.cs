@@ -21,10 +21,13 @@ public class DtoTypeEmitterTests
 
         // Assert
         Assert.That(sut.TypeDescriptions, Has.Exactly(1).Items);
-        Assert.That(sut.TypeDescriptions[0].NodeType.Type, Is.SameAs(typeof(SimpleNode)));
-        Assert.That(sut.TypeDescriptions[0].DtoType.Name, Is.EqualTo($"{nameof(SimpleNode)}DTO"));
-        Assert.That(sut.TypeDescriptions[0].DtoType.GetProperties(), Has.Exactly(1).Matches<PropertyInfo>(
-            p => p.Name == nameof(SimpleNode.Name)));
+        Assert.Multiple(() =>
+        {
+            Assert.That(sut.TypeDescriptions[0].NodeType.Type, Is.SameAs(typeof(SimpleNode)));
+            Assert.That(sut.TypeDescriptions[0].DtoType.Name, Is.EqualTo($"{nameof(SimpleNode)}DTO"));
+            Assert.That(sut.TypeDescriptions[0].DtoType.GetProperties(), Has.Exactly(1).Matches<PropertyInfo>(
+                p => p.Name == nameof(SimpleNode.Name)));
+        });
     }
 
     [Test]
@@ -39,11 +42,14 @@ public class DtoTypeEmitterTests
 
         // Assert
         Assert.That(sut.TypeDescriptions, Has.Exactly(2).Items);
-        Assert.That(sut.TypeDescriptions[1].NodeType.Type, Is.SameAs(typeof(SingleReferenceNode)));
-        Assert.That(sut.TypeDescriptions[1].DtoType.Name, Is.EqualTo($"{nameof(SingleReferenceNode)}DTO"));
-        Assert.That(sut.TypeDescriptions[1].DtoType.GetProperties(), Has.Exactly(1).Matches<PropertyInfo>(
-            p => p.Name == nameof(SingleReferenceNode.SingleReference) &&
-                 p.PropertyType == sut.TypeDescriptions[0].DtoType));
+        Assert.Multiple(() =>
+        {
+            Assert.That(sut.TypeDescriptions[1].NodeType.Type, Is.SameAs(typeof(SingleReferenceNode)));
+            Assert.That(sut.TypeDescriptions[1].DtoType.Name, Is.EqualTo($"{nameof(SingleReferenceNode)}DTO"));
+            Assert.That(sut.TypeDescriptions[1].DtoType.GetProperties(), Has.Exactly(1).Matches<PropertyInfo>(
+                p => p.Name == nameof(SingleReferenceNode.SingleReference) &&
+                     p.PropertyType == sut.TypeDescriptions[0].DtoType));
+        });
     }
 
     [Test]
@@ -58,11 +64,14 @@ public class DtoTypeEmitterTests
 
         // Assert
         Assert.That(sut.TypeDescriptions, Has.Exactly(2).Items);
-        Assert.That(sut.TypeDescriptions[1].NodeType.Type, Is.SameAs(typeof(MultiReferenceNode)));
-        Assert.That(sut.TypeDescriptions[1].DtoType.Name, Is.EqualTo($"{nameof(MultiReferenceNode)}DTO"));
-        Assert.That(sut.TypeDescriptions[1].DtoType.GetProperties(), Has.Exactly(1).Matches<PropertyInfo>(
-            p => p.Name == nameof(MultiReferenceNode.MultiReference) &&
-                 p.PropertyType == typeof(IEnumerable<>).MakeGenericType(sut.TypeDescriptions[0].DtoType)));
+        Assert.Multiple(() =>
+        {
+            Assert.That(sut.TypeDescriptions[1].NodeType.Type, Is.SameAs(typeof(MultiReferenceNode)));
+            Assert.That(sut.TypeDescriptions[1].DtoType.Name, Is.EqualTo($"{nameof(MultiReferenceNode)}DTO"));
+            Assert.That(sut.TypeDescriptions[1].DtoType.GetProperties(), Has.Exactly(1).Matches<PropertyInfo>(
+                p => p.Name == nameof(MultiReferenceNode.MultiReference) &&
+                     p.PropertyType == typeof(IEnumerable<>).MakeGenericType(sut.TypeDescriptions[0].DtoType)));
+        });
     }
 
     [Test]

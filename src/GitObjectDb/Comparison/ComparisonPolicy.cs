@@ -33,7 +33,7 @@ public record ComparisonPolicy
         var @default = new ComparisonPolicy().UpdateWithDefaultExclusion();
         return @default with { IgnoredProperties = @default.IgnoredProperties.AddRange(model, IgnoreProperty) };
 
-        bool IgnoreProperty(PropertyInfo property)
+        static bool IgnoreProperty(PropertyInfo property)
         {
             var isIgnored = property.GetCustomAttribute<IgnoreDataMemberAttribute>() is not null;
             return isIgnored && property.Name != nameof(Node.EmbeddedResource);
@@ -41,7 +41,6 @@ public record ComparisonPolicy
     }
 }
 
-#pragma warning disable SA1402 // File may only contain a single type
 /// <summary>Adds ability to add ignored properties.</summary>
 public static class ComparisonPolicyExtensions
 {
@@ -97,12 +96,11 @@ public static class ComparisonPolicyExtensions
         builder.AddRange(source);
         foreach (var type in dataModel.NodeTypes)
         {
-            foreach (var property in type.Type.GetProperties().Except(builder))
+            foreach (var property in from property in type.Type.GetProperties().Except(builder)
+                                     where propertyPredicate(property)
+                                     select property)
             {
-                if (propertyPredicate(property))
-                {
-                    builder.Add(property);
-                }
+                builder.Add(property);
             }
         }
         return builder.ToImmutable();

@@ -12,15 +12,12 @@ namespace GitObjectDb.Internal;
 [DebuggerDisplay("Transformations: {Transformations.Count}")]
 internal class TransformationComposer : ITransformationComposer
 {
-    private readonly UpdateFastInsertFile _updateFastInsertFile;
     private readonly ServiceResolver<CommitCommandType, ICommitCommand> _commitCommandFactory;
 
     [FactoryDelegateConstructor(typeof(Factories.TransformationComposerFactory))]
-    public TransformationComposer(UpdateFastInsertFile updateFastInsertFile,
-                                  ServiceResolver<CommitCommandType, ICommitCommand> commitCommandFactory,
+    public TransformationComposer(ServiceResolver<CommitCommandType, ICommitCommand> commitCommandFactory,
                                   IConnectionInternal connection)
     {
-        _updateFastInsertFile = updateFastInsertFile;
         _commitCommandFactory = commitCommandFactory;
         Connection = connection;
         Transformations = new List<ITransformation>();
@@ -82,7 +79,7 @@ internal class TransformationComposer : ITransformationComposer
             path,
             item,
             UpdateTreeCommand.CreateOrUpdate(item),
-            _updateFastInsertFile.CreateOrUpdate(item),
+            UpdateFastInsertFile.CreateOrUpdate(item),
             $"Adding or updating {path}.");
         Transformations.Add(transformation);
         return item;

@@ -9,7 +9,7 @@ namespace GitObjectDb.Model;
 
 /// <summary>Provides a description of a node type.</summary>
 [DebuggerDisplay("Name = {Name}, Type = {Type}")]
-public class NodeTypeDescription : IEquatable<NodeTypeDescription>
+public sealed class NodeTypeDescription : IEquatable<NodeTypeDescription>
 {
     private readonly List<NodeTypeDescription> _children = new();
 

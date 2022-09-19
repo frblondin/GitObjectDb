@@ -66,7 +66,7 @@ internal static class ExpressionReflector
         return (FieldInfo)found.Member;
     }
 
-    private class Visitor<TExpression> : ExpressionVisitor
+    private sealed class Visitor<TExpression> : ExpressionVisitor
         where TExpression : Expression
     {
         public TExpression? Result { get; private set; }

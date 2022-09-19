@@ -3,13 +3,12 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace GitObjectDb.Api.GraphQL.Loaders;
 
-#pragma warning disable SA1402 // File may only contain a single type
 internal abstract class GitObjectDbDataLoaderBase<TKey, TResult> : DataLoaderBase<TKey, TResult>
 {
     private readonly IMemoryCache _memoryCache;
     private readonly CacheEntryStrategyProvider _cacheStrategy;
 
-    public GitObjectDbDataLoaderBase(IMemoryCache memoryCache, CacheEntryStrategyProvider cacheStrategy)
+    protected GitObjectDbDataLoaderBase(IMemoryCache memoryCache, CacheEntryStrategyProvider cacheStrategy)
         : base(false)
     {
         _memoryCache = memoryCache;

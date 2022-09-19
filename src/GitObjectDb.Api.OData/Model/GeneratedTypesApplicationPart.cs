@@ -20,7 +20,7 @@ internal class GeneratedTypesApplicationPart : ApplicationPart, IApplicationPart
 
     public override string Name => nameof(GeneratedTypesApplicationPart);
 
-    public IList<TypeInfo> Types { get; } = new List<TypeInfo>();
+    public IList<TypeInfo> Types { get; }
 
     IEnumerable<TypeInfo> IApplicationPartTypeProvider.Types => Types;
 
@@ -53,7 +53,9 @@ internal class GeneratedTypesApplicationPart : ApplicationPart, IApplicationPart
 
     private static void EmitConstructor(Type genericType, TypeBuilder controllerType)
     {
+#pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
         var baseConstructor = genericType.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).Single();
+#pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
         var parameterTypes = baseConstructor.GetParameters().Select(p => p.ParameterType).ToArray();
         var constructor = controllerType.DefineConstructor(
             MethodAttributes.Public, CallingConventions.Standard | CallingConventions.HasThis,

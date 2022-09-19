@@ -47,12 +47,6 @@ public class LoadTests : LoadTestBase
         RunScenarios(scenario);
     }
 
-    [Test]
-    public void InitZinzin()
-    {
-        InitializeRepository(default);
-    }
-
     private Task InitializeRepository(IScenarioContext context)
     {
         var generator = new DataGenerator(Connection, TotalNodeCount, 5);
