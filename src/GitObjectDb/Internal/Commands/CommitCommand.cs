@@ -16,7 +16,7 @@ namespace GitObjectDb.Internal.Commands
 
         public Commit Commit(IConnectionInternal connection, TransformationComposer transformationComposer, string message, Signature author, Signature committer, bool amendPreviousCommit = false, Commit? mergeParent = null, Action<ITransformation>? beforeProcessing = null)
         {
-            var tip = connection.Info.IsHeadUnborn ? null : connection.Head.Tip;
+            var tip = connection.Repository.Info.IsHeadUnborn ? null : connection.Repository.Head.Tip;
             var definition = transformationComposer.ApplyTransformations(connection.Repository.ObjectDatabase, tip, beforeProcessing);
             var parents = RetrieveParentsOfTheCommitBeingCreated(connection.Repository, amendPreviousCommit, mergeParent).ToList();
             return Commit(connection, definition, message, author, committer, parents, amendPreviousCommit, updateHead: true);
@@ -47,7 +47,7 @@ namespace GitObjectDb.Internal.Commands
                 parents, false);
             if (updateHead)
             {
-                var logMessage = result.BuildCommitLogMessage(amendPreviousCommit, connection.Info.IsHeadUnborn, parents.Count > 1);
+                var logMessage = result.BuildCommitLogMessage(amendPreviousCommit, connection.Repository.Info.IsHeadUnborn, parents.Count > 1);
                 connection.Repository.UpdateHeadAndTerminalReference(result, logMessage);
             }
             return result;

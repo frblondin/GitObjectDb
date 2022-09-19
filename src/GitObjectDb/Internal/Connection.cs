@@ -7,7 +7,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using static GitObjectDb.Internal.Factories;
@@ -53,21 +52,6 @@ namespace GitObjectDb.Internal
         }
 
         public IRepository Repository { get; }
-
-        [ExcludeFromCodeCoverage]
-        public Configuration Config => Repository.Config;
-
-        [ExcludeFromCodeCoverage]
-        public RepositoryInformation Info => Repository.Info;
-
-        [ExcludeFromCodeCoverage]
-        public BranchCollection Branches => Repository.Branches;
-
-        [ExcludeFromCodeCoverage]
-        public Branch Head => Repository.Head;
-
-        [ExcludeFromCodeCoverage]
-        public IQueryableCommitLog Commits => Repository.Commits;
 
         public IDataModel Model { get; }
 
@@ -161,11 +145,10 @@ namespace GitObjectDb.Internal
 
         public Branch Checkout(string branchName, string? committish = null)
         {
-            var head = Head;
-            var branch = Branches[branchName];
+            var branch = Repository.Branches[branchName];
             if (branch == null)
             {
-                var reflogName = committish ?? (Repository.Refs.Head is SymbolicReference ? head.FriendlyName : head.Tip.Sha);
+                var reflogName = committish ?? (Repository.Refs.Head is SymbolicReference ? Repository.Head.FriendlyName : Repository.Head.Tip.Sha);
                 branch = Repository.CreateBranch(branchName, reflogName);
             }
             Repository.Refs.MoveHeadTarget(branch.CanonicalName);
@@ -194,7 +177,7 @@ namespace GitObjectDb.Internal
             }
             else
             {
-                return Branches[branch.UpstreamBranchCanonicalName].Tip;
+                return Repository.Branches[branch.UpstreamBranchCanonicalName].Tip;
             }
         }
 
@@ -202,7 +185,7 @@ namespace GitObjectDb.Internal
         {
             var commit = committish != null ?
                 (Commit)Repository.Lookup(committish) :
-                Head.Tip;
+                Repository.Head.Tip;
             if (commit == null)
             {
                 throw new GitObjectDbException("No valid commit could be found.");

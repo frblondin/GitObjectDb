@@ -43,7 +43,7 @@ namespace GitObjectDb.Internal.Commands
 
         private static int WriteFastInsertImportFile(IConnectionInternal connection, TransformationComposer transformationComposer, List<Commit> parents, StreamWriter writer, List<string> index, string message, Signature author, Signature committer, Action<ITransformation>? beforeProcessing)
         {
-            var tip = connection.Info.IsHeadUnborn ? null : connection.Head.Tip;
+            var tip = connection.Repository.Info.IsHeadUnborn ? null : connection.Repository.Head.Tip;
             transformationComposer.ApplyTransformations(tip, writer, index, beforeProcessing);
 
             var commitMarkId = index.Count + 1;
@@ -97,7 +97,7 @@ namespace GitObjectDb.Internal.Commands
             try
             {
                 using var stream = File.OpenRead(importFile);
-                GitCliCommand.Execute(connection.Info.WorkingDirectory, @$"fast-import --export-marks=""{markFile}""", stream);
+                GitCliCommand.Execute(connection.Repository.Info.WorkingDirectory, @$"fast-import --export-marks=""{markFile}""", stream);
                 var linePrefix = $":{commitMarkId} ";
                 var line = File.ReadLines(markFile).FirstOrDefault(l => l.StartsWith(linePrefix)) ??
                     throw new GitObjectDbException("Could not locate commit id in fast-import mark file.");

@@ -10,19 +10,21 @@
 
   <ItemGroup>
     <Using Include="GitObjectDb" />
-    <Using Include="GitObjectDb.OData" />
+    <Using Include="GitObjectDb.Api.OData" />
     <Using Include="GitObjectDb.Web" />
     <Using Include="Models.Software" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="GraphQL.Server.Ui.Altair" />
     <PackageReference Include="Microsoft.AspNetCore.OData" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GitObjectDb.OData\GitObjectDb.OData.csproj" />
+    <ProjectReference Include="..\GitObjectDb.Api.GraphQL\GitObjectDb.Api.GraphQL.csproj" />
+    <ProjectReference Include="..\GitObjectDb.Api.OData\GitObjectDb.Api.OData.csproj" />
     <ProjectReference Include="..\samples\Models.Software\Models.Software.csproj" />
   </ItemGroup>
 

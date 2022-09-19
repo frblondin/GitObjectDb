@@ -1,11 +1,18 @@
+using GitObjectDb.Api.GraphQL;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddGitObjectDb()
-                .AddSoftwareModel()
-                .AddTransient(ConnectionProvider.GetOrCreateConnection)
-                .AddControllers()
-                .AddOData("v1", ConnectionProvider.Model, o => o.Select().Filter().OrderBy().Expand());
+var controllers = builder.Services
+    .AddGitObjectDb()
+    .AddMemoryCache()
+    .AddSoftwareModel()
+    .AddTransient(ConnectionProvider.GetOrCreateConnection)
+    .AddControllers();
+
+controllers
+    .AddGitObjectDbOData("v1", ConnectionProvider.Model, o => o.Select().Filter().OrderBy().Expand())
+    .AddGitObjectDbGraphQL(ConnectionProvider.Model);
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -19,6 +26,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseGraphQLAltair(new() { GraphQLEndPoint = "/api/graphql" }, "/ui/altair");
 }
 
 app.UseHttpsRedirection()

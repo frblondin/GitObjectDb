@@ -71,7 +71,7 @@ namespace GitObjectDb.Serialization.Json
                     var span = new ReadOnlySpan<byte>(bytes, 0, length);
                     var result = JsonSerializer.Deserialize<NonScalar>(span, Options)!.Node;
                     var embeddedResource = ReadEmbeddedResource(new ReadOnlySequence<byte>(bytes, 0, length));
-                    UpdateBaseProperties(result, path, embeddedResource);
+                    result = UpdateBaseProperties(result, path, embeddedResource);
 
                     var newType = model.GetNewTypeIfDeprecated(result.GetType());
                     if (newType is not null)

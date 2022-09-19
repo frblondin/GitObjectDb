@@ -16,12 +16,10 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" />
-    <PackageReference Include="Microsoft.AspNetCore.OData" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\GitObjectDb\GitObjectDb.csproj" />
-    <ProjectReference Include="..\samples\Models.Software\Models.Software.csproj" />
   </ItemGroup>
 
   <ItemGroup>

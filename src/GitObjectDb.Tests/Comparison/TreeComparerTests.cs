@@ -1,4 +1,3 @@
-using AutoFixture;
 using GitObjectDb.Comparison;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
@@ -14,7 +13,7 @@ namespace GitObjectDb.Tests.Comparison
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void CompareFieldEdit(IConnection connection, Repository repository, Field field, string message, Signature signature)
+        public void CompareFieldEdit(IConnection connection, Field field, string message, Signature signature)
         {
             // Arrange
             field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
@@ -23,7 +22,7 @@ namespace GitObjectDb.Tests.Comparison
                 .Commit(message, signature, signature);
 
             // Act
-            var comparison = connection.Compare("HEAD~1", repository.Head.Tip.Sha);
+            var comparison = connection.Compare("HEAD~1", connection.Repository.Head.Tip.Sha);
 
             // Assert
             Assert.That(comparison, Has.Count.EqualTo(1));

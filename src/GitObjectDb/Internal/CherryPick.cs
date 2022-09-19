@@ -30,7 +30,7 @@ namespace GitObjectDb.Internal
             _commitCommand = commitCommand;
             _connection = connection;
             _committer = committer;
-            Branch = branch ?? connection.Head;
+            Branch = branch ?? connection.Repository.Head;
             UpstreamCommit = connection.FindUpstreamCommit(committish, Branch);
             Policy = policy ?? new CherryPickPolicy(connection.Model.DefaultComparisonPolicy);
 

@@ -21,7 +21,7 @@ namespace GitObjectDb.Tests
             // newBranch:   C   ->   A---B---C
 
             // Arrange
-            var a = sut.Head.Tip;
+            var a = sut.Repository.Head.Tip;
             var b = sut
                 .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
                 .Commit("B", signature, signature);
@@ -38,14 +38,14 @@ namespace GitObjectDb.Tests
             Assert.That(rebase.ReplayedCommits, Has.Count.EqualTo(1));
             var commitFilter = new CommitFilter
             {
-                IncludeReachableFrom = sut.Head.Tip,
+                IncludeReachableFrom = sut.Repository.Head.Tip,
                 SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
             };
-            var commits = sut.Commits.QueryBy(commitFilter).ToList();
+            var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
             Assert.That(commits[0], Is.EqualTo(a));
             Assert.That(commits[1], Is.EqualTo(b));
             Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
-            Assert.That(commits[2], Is.EqualTo(sut.Head.Tip));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
             var newTable = sut.Lookup<Table>(table.Path);
             Assert.That(newTable.Name, Is.EqualTo(newName));
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
@@ -148,7 +148,7 @@ namespace GitObjectDb.Tests
             // newBranch:   C   ->   A---B---C
 
             // Arrange
-            var a = sut.Head.Tip;
+            var a = sut.Repository.Head.Tip;
             var b = sut
                 .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
                 .Commit("B", signature, signature);
@@ -171,14 +171,14 @@ namespace GitObjectDb.Tests
             Assert.That(rebase.ReplayedCommits, Has.Count.EqualTo(1));
             var commitFilter = new CommitFilter
             {
-                IncludeReachableFrom = sut.Head.Tip,
+                IncludeReachableFrom = sut.Repository.Head.Tip,
                 SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
             };
-            var commits = sut.Commits.QueryBy(commitFilter).ToList();
+            var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
             Assert.That(commits[0], Is.EqualTo(a));
             Assert.That(commits[1], Is.EqualTo(b));
             Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
-            Assert.That(commits[2], Is.EqualTo(sut.Head.Tip));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
             var newTable = sut.Lookup<Table>(table.Path);
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
             var newField = sut.GetNodes<Field>(newTable).FirstOrDefault(f => f.Id == newFieldId);
@@ -194,7 +194,7 @@ namespace GitObjectDb.Tests
             // newBranch:   C   ->   A---B---C
 
             // Arrange
-            var a = sut.Head.Tip;
+            var a = sut.Repository.Head.Tip;
             var b = sut
                 .Update(c => c.Delete(table))
                 .Commit("B", signature, signature);
@@ -236,7 +236,7 @@ namespace GitObjectDb.Tests
             // newBranch:   C   ->   A---B---C
 
             // Arrange
-            var a = sut.Head.Tip;
+            var a = sut.Repository.Head.Tip;
             var b = sut
                 .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
                 .Commit("B", signature, signature);
@@ -253,14 +253,14 @@ namespace GitObjectDb.Tests
             Assert.That(rebase.ReplayedCommits, Has.Count.EqualTo(1));
             var commitFilter = new CommitFilter
             {
-                IncludeReachableFrom = sut.Head.Tip,
+                IncludeReachableFrom = sut.Repository.Head.Tip,
                 SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
             };
-            var commits = sut.Commits.QueryBy(commitFilter).ToList();
+            var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
             Assert.That(commits[0], Is.EqualTo(a));
             Assert.That(commits[1], Is.EqualTo(b));
             Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
-            Assert.That(commits[2], Is.EqualTo(sut.Head.Tip));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
             var newTable = sut.Lookup<Table>(table.Path);
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
             var missingField = sut.GetNodes<Field>(newTable).FirstOrDefault(f => f.Id == field.Id);
@@ -276,7 +276,7 @@ namespace GitObjectDb.Tests
             // newBranch:   C   ->   A---B---C
 
             // Arrange
-            var a = sut.Head.Tip;
+            var a = sut.Repository.Head.Tip;
             field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
             var b = sut
                 .Update(c => c.CreateOrUpdate(field))

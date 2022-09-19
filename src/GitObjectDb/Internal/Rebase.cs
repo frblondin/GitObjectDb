@@ -28,7 +28,7 @@ namespace GitObjectDb.Internal
             _updateCommand = updateCommand;
             _commitCommand = commitCommand;
             _connection = connection;
-            Branch = branch ?? connection.Head;
+            Branch = branch ?? connection.Repository.Head;
             UpstreamCommit = connection.FindUpstreamCommit(upstreamCommittish, Branch);
             Policy = policy ?? connection.Model.DefaultComparisonPolicy;
             (MergeBaseCommit, ReplayedCommits) = Initialize();

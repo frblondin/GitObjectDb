@@ -65,7 +65,7 @@ namespace GitObjectDb.Tests
         private static Tree UpdateTree(IConnection connection, TransformationComposer composer)
         {
             var repository = ((IConnectionInternal)connection).Repository;
-            var definition = composer.ApplyTransformations(repository.ObjectDatabase, connection.Head.Tip);
+            var definition = composer.ApplyTransformations(repository.ObjectDatabase, connection.Repository.Head.Tip);
             var tree = repository.ObjectDatabase.CreateTree(definition);
             return tree;
         }

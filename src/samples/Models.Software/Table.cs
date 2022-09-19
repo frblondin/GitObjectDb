@@ -5,6 +5,8 @@ using System.Collections.Generic;
 namespace Models.Software
 {
     [GitFolder(FolderName = "Pages")]
+    [HasChild(typeof(Field))]
+    [HasChild(typeof(Constant))]
     public record Table : Node
     {
         public string? Name { get; set; }
