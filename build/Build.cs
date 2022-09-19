@@ -27,13 +27,15 @@ using System.Text.RegularExpressions;
     GitHubActionsImage.UbuntuLatest,
     OnPushBranches = new[] { "main" },
     InvokedTargets = new[] { nameof(Default) },
-    ImportSecrets = new[] { "SONAR_TOKEN" })]
+    ImportSecrets = new[] { "SONAR_TOKEN" },
+    FetchDepth = 0)]
 [GitHubActions(
     "PullRequestValidation",
     GitHubActionsImage.UbuntuLatest,
     OnPullRequestBranches = new[] { "main" },
     InvokedTargets = new[] { nameof(Run) },
-    ImportSecrets = new[] { "SONAR_TOKEN" })]
+    ImportSecrets = new[] { "SONAR_TOKEN" },
+    FetchDepth = 0)]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
