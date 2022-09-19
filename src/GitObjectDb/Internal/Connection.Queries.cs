@@ -1,8 +1,9 @@
 using GitObjectDb.Comparison;
 using GitObjectDb.Internal.Queries;
 using LibGit2Sharp;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,17 +13,20 @@ internal sealed partial class Connection
 {
     public TItem Lookup<TItem>(DataPath path,
                                string? committish = null,
-                               ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
+                               IMemoryCache? referenceCache = null)
         where TItem : ITreeItem
     {
         var (tree, _) = GetTree(path, committish);
-        return (TItem)_loader.Execute(this, new LoadItem.Parameters(tree, path, referenceCache));
+        return (TItem)_loader.Execute(this,
+                                      new LoadItem.Parameters(tree,
+                                                              path,
+                                                              referenceCache ?? CreateEphemeralCache()));
     }
 
     public IEnumerable<TItem> GetItems<TItem>(Node? parent = null,
                                               string? committish = null,
                                               bool isRecursive = false,
-                                              ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
+                                              IMemoryCache? referenceCache = null)
         where TItem : ITreeItem
     {
         var (tree, relativeTree) = GetTree(parent?.Path, committish);
@@ -32,7 +36,7 @@ internal sealed partial class Connection
                                                      typeof(TItem),
                                                      parent?.Path,
                                                      isRecursive,
-                                                     referenceCache))
+                                                     referenceCache ?? CreateEphemeralCache()))
             .AsParallel()
                 .Select(i => i.Item.Value)
                 .OfType<TItem>()
@@ -43,7 +47,7 @@ internal sealed partial class Connection
     public IEnumerable<TNode> GetNodes<TNode>(Node? parent = null,
                                               string? committish = null,
                                               bool isRecursive = false,
-                                              ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
+                                              IMemoryCache? referenceCache = null)
         where TNode : Node
     {
         return GetItems<TNode>(parent, committish, isRecursive, referenceCache);
@@ -68,12 +72,12 @@ internal sealed partial class Connection
                                                              typeof(TItem),
                                                              parentPath,
                                                              isRecursive,
-                                                             null)).Select(i => i.Path);
+                                                             CreateEphemeralCache())).Select(i => i.Path);
     }
 
     public IEnumerable<Resource> GetResources(Node node,
                                               string? committish = null,
-                                              ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
+                                              IMemoryCache? referenceCache = null)
     {
         if (node.Path is null)
         {
@@ -85,12 +89,15 @@ internal sealed partial class Connection
             .Execute(this, new QueryResources.Parameters(tree,
                                                          relativeTree,
                                                          node.Path,
-                                                         referenceCache))
+                                                         referenceCache ?? CreateEphemeralCache()))
             .AsParallel()
                 .Select(i => i.Resource.Value)
                 .OrderBy(i => i.Path)
             .AsSequential();
     }
+
+    internal static IMemoryCache CreateEphemeralCache() =>
+        new MemoryCache(Options.Create<MemoryCacheOptions>(new()));
 
     public ChangeCollection Compare(string startCommittish,
                                     string? committish = null,

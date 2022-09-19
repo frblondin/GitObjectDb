@@ -62,11 +62,15 @@ internal class Comparer : IComparer, IComparerInternal
         var oldPath = new Lazy<DataPath>(() => DataPath.Parse(change.OldPath));
         var old = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
             connection,
-            new LoadItem.Parameters(oldTree, oldPath.Value, null)));
+            new LoadItem.Parameters(oldTree,
+                                    oldPath.Value,
+                                    Internal.Connection.CreateEphemeralCache())));
         var newPath = new Lazy<DataPath>(() => DataPath.Parse(change.Path));
         var @new = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
             connection,
-            new LoadItem.Parameters(newTree, newPath.Value, null)));
+            new LoadItem.Parameters(newTree,
+                                    newPath.Value,
+                                    Internal.Connection.CreateEphemeralCache())));
         var treeChange = change.Status switch
         {
             ChangeKind.Modified => Change.Create(change,

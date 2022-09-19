@@ -4,6 +4,7 @@ using GitObjectDb.Serialization;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
+using LibGit2Sharp;
 using NUnit.Framework;
 using System;
 using System.Reflection;
@@ -32,7 +33,7 @@ public partial class NodeSerializerTests
             Flags = (int)(BindingFlags.Public | BindingFlags.Instance),
         };
         var serialized = nodeSerializer.Serialize(node);
-        var deserialized = (SomeNodeV2)nodeSerializer.Deserialize(serialized, node.Path, model, _ => throw new NotImplementedException());
+        var deserialized = (SomeNodeV2)nodeSerializer.Deserialize(serialized, ObjectId.Zero, node.Path, model, _ => throw new NotImplementedException());
 
         // Assert
         Assert.That(deserialized.TypedFlags, Is.EqualTo(BindingFlags.Public | BindingFlags.Instance));

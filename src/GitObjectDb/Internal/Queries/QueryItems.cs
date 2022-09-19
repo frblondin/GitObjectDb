@@ -1,4 +1,5 @@
 using LibGit2Sharp;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -19,7 +20,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
         _queryResources = queryResources;
     }
 
-    public IEnumerable<(DataPath Path, Lazy<ITreeItem> Item)> Execute(IConnection connection, Parameters parms)
+    public IEnumerable<(DataPath Path, Lazy<ITreeItem> Item)> Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
         var entries = new Stack<Parameters>();
         var includeResources = IncludeResources(parms);
@@ -27,7 +28,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
         // Fetch direct resources
         if (parms.ParentPath is not null && includeResources)
         {
-            var resources = GetResources(connection, parms);
+            var resources = GetResources(queryAccessor, parms);
             foreach (var resource in resources)
             {
                 yield return (resource.Path, new Lazy<ITreeItem>(() => resource.Resource.Value));
@@ -39,14 +40,14 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
         while (entries.Count > 0)
         {
             var entryParams = entries.Pop();
-            if (IsOfType(connection, entryParams.ParentPath!, parms.Type))
+            if (IsOfType(queryAccessor, entryParams.ParentPath!, parms.Type))
             {
-                yield return (entryParams.ParentPath!, LoadItem(connection, entryParams));
+                yield return (entryParams.ParentPath!, LoadItem(queryAccessor, entryParams));
             }
 
             if (entryParams.ParentPath!.IsNode && parms.IsRecursive && includeResources)
             {
-                var resources = GetResources(connection, entryParams);
+                var resources = GetResources(queryAccessor, entryParams);
                 foreach (var resource in resources)
                 {
                     yield return (resource.Path, new Lazy<ITreeItem>(() => resource.Resource.Value));
@@ -60,14 +61,14 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
         }
     }
 
-    private Lazy<ITreeItem> LoadItem(IConnection connection, Parameters parms) =>
-        new(() => _loader.Execute(connection,
+    private Lazy<ITreeItem> LoadItem(IQueryAccessor queryAccessor, Parameters parms) =>
+        new(() => _loader.Execute(queryAccessor,
                                   new LoadItem.Parameters(parms.Tree,
                                                           parms.ParentPath!,
                                                           parms.ReferenceCache)));
 
-    private IEnumerable<(DataPath Path, Lazy<Resource> Resource)> GetResources(IConnection connection, Parameters parms) =>
-        _queryResources.Execute(connection,
+    private IEnumerable<(DataPath Path, Lazy<Resource> Resource)> GetResources(IQueryAccessor queryAccessor, Parameters parms) =>
+        _queryResources.Execute(queryAccessor,
                                 new QueryResources.Parameters(parms.Tree,
                                                               parms.RelativeTree,
                                                               parms.ParentPath!,
@@ -76,7 +77,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
     private static bool IncludeResources(Parameters parms) =>
         parms.Type == null || parms.Type == typeof(Resource) || parms.Type == typeof(ITreeItem);
 
-    private static bool IsOfType(IConnection connection, DataPath path, Type? type)
+    private static bool IsOfType(IQueryAccessor queryAccessor, DataPath path, Type? type)
     {
         if (type == null || type == typeof(ITreeItem) || type == typeof(Node))
         {
@@ -87,7 +88,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
             var nodeFolderName = path.UseNodeFolders ?
                                  path.FolderParts[path.FolderParts.Length - 2] :
                                  path.FolderParts[path.FolderParts.Length - 1];
-            return connection.Model.GetTypesMatchingFolderName(nodeFolderName).Any(
+            return queryAccessor.Model.GetTypesMatchingFolderName(nodeFolderName).Any(
                 typeDescription => type.IsAssignableFrom(typeDescription.Type));
         }
     }
@@ -140,7 +141,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
                           Type? type,
                           DataPath? parentPath,
                           bool isRecursive,
-                          ConcurrentDictionary<DataPath, ITreeItem>? referenceCache)
+                          IMemoryCache referenceCache)
         {
             Tree = tree;
             RelativeTree = relativeTree;
@@ -160,6 +161,6 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
 
         public bool IsRecursive { get; }
 
-        public ConcurrentDictionary<DataPath, ITreeItem>? ReferenceCache { get; }
+        public IMemoryCache ReferenceCache { get; }
     }
 }
