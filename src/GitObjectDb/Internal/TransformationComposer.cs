@@ -88,19 +88,19 @@ namespace GitObjectDb.Internal
             return item;
         }
 
-        private static DataPath UpdateNodePathIfNeeded(Node node, DataPath? parent)
+        private DataPath UpdateNodePathIfNeeded(Node node, DataPath? parent)
         {
             if (parent is not null)
             {
                 ThrowIfWrongParentPath(parent);
 
-                var newPath = parent.AddChild(node);
+                var newPath = parent.AddChild(node, Connection.Model);
                 ThrowIfWrongExistingPath(node, newPath);
                 node.Path = newPath;
             }
             if (node.Path is null)
             {
-                node.Path = DataPath.Root(node);
+                node.Path = DataPath.Root(node, Connection.Model);
             }
             return node.Path;
         }
