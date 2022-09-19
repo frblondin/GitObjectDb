@@ -29,9 +29,9 @@ public partial class NodeSerializerTests
         };
 
         // Act
-        var nodeSerializer = fixture.Create<INodeSerializer>();
+        var nodeSerializer = fixture.Create<NodeSerializerFactory>().Invoke(model);
         var serialized = nodeSerializer.Serialize(value);
-        var deserialized = nodeSerializer.Deserialize(serialized, ObjectId.Zero, null, model, _ => throw new NotImplementedException());
+        var deserialized = nodeSerializer.Deserialize(serialized, ObjectId.Zero, null, _ => throw new NotImplementedException());
 
         // Assert
         Assert.That(deserialized.EmbeddedResource, Is.EqualTo(value.EmbeddedResource));

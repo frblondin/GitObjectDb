@@ -25,7 +25,7 @@ public partial class NodeSerializerTests
             .Build();
 
         // Act
-        var nodeSerializer = fixture.Create<INodeSerializer>();
+        var nodeSerializer = fixture.Create<NodeSerializerFactory>().Invoke(model);
         var node = new SomeNodeV1
         {
             Id = new UniqueId("id"),
@@ -33,7 +33,7 @@ public partial class NodeSerializerTests
             Flags = (int)(BindingFlags.Public | BindingFlags.Instance),
         };
         var serialized = nodeSerializer.Serialize(node);
-        var deserialized = (SomeNodeV2)nodeSerializer.Deserialize(serialized, ObjectId.Zero, node.Path, model, _ => throw new NotImplementedException());
+        var deserialized = (SomeNodeV2)nodeSerializer.Deserialize(serialized, ObjectId.Zero, node.Path, _ => throw new NotImplementedException());
 
         // Assert
         Assert.That(deserialized.TypedFlags, Is.EqualTo(BindingFlags.Public | BindingFlags.Instance));

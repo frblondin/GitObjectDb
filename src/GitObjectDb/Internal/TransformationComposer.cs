@@ -12,17 +12,14 @@ namespace GitObjectDb.Internal;
 [DebuggerDisplay("Transformations: {Transformations.Count}")]
 internal class TransformationComposer : ITransformationComposer
 {
-    private readonly UpdateTreeCommand _updateTreeCommand;
     private readonly UpdateFastInsertFile _updateFastInsertFile;
     private readonly ServiceResolver<CommitCommandType, ICommitCommand> _commitCommandFactory;
 
     [FactoryDelegateConstructor(typeof(Factories.TransformationComposerFactory))]
-    public TransformationComposer(UpdateTreeCommand updateTreeCommand,
-                                  UpdateFastInsertFile updateFastInsertFile,
+    public TransformationComposer(UpdateFastInsertFile updateFastInsertFile,
                                   ServiceResolver<CommitCommandType, ICommitCommand> commitCommandFactory,
                                   IConnectionInternal connection)
     {
-        _updateTreeCommand = updateTreeCommand;
         _updateFastInsertFile = updateFastInsertFile;
         _commitCommandFactory = commitCommandFactory;
         Connection = connection;
@@ -84,7 +81,7 @@ internal class TransformationComposer : ITransformationComposer
         var transformation = new Transformation(
             path,
             item,
-            _updateTreeCommand.CreateOrUpdate(item),
+            UpdateTreeCommand.CreateOrUpdate(item),
             _updateFastInsertFile.CreateOrUpdate(item),
             $"Adding or updating {path}.");
         Transformations.Add(transformation);
@@ -122,7 +119,7 @@ internal class TransformationComposer : ITransformationComposer
         foreach (var transformation in Transformations.OfType<ITransformationInternal>())
         {
             beforeProcessing?.Invoke(transformation);
-            transformation.TreeTransformation(commit?.Tree, modules, dataBase, result);
+            transformation.TreeTransformation(commit?.Tree, modules, Connection.Serializer, dataBase, result);
         }
 
         if (modules.HasAnyChange)
@@ -144,7 +141,7 @@ internal class TransformationComposer : ITransformationComposer
         foreach (var transformation in Transformations.OfType<ITransformationInternal>())
         {
             beforeProcessing?.Invoke(transformation);
-            transformation.FastInsertTransformation(commit?.Tree, modules, writer, commitIndex);
+            transformation.FastInsertTransformation(commit?.Tree, modules, Connection.Serializer, writer, commitIndex);
         }
 
         if (modules.HasAnyChange)

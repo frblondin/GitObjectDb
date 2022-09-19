@@ -27,7 +27,7 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
 
     public IEnumerable<(DataPath Path, ITreeItem Item)> Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
-        var regex = CreateRegex(parms.Pattern, parms.Connection);
+        var regex = queryAccessor.Serializer.EscapeRegExPattern(parms.Pattern);
         var arguments = $"grep --name-only " +
             $"{(parms.IgnoreCase ? "--ignore-case " : string.Empty)}" +
             $"{(parms.RecurseSubModules ? "--recurse-submodules " : string.Empty)}" +
@@ -91,35 +91,6 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
     private static bool Matches(string? value, string pattern, StringComparison comparison) =>
         value is not null &&
         value.ToString().IndexOf(pattern, comparison) != -1;
-
-    private string CreateRegex(string pattern, IConnection connection)
-    {
-        var jsonPattern = ConvertToJsonValue(pattern, connection);
-        return pattern.Equals(jsonPattern, StringComparison.Ordinal) ?
-               pattern :
-               $"{Regex.Escape(pattern)}|{Regex.Escape(jsonPattern)}";
-    }
-
-    private string ConvertToJsonValue(string pattern, IConnection connection)
-    {
-        var stream = _streamManager.GetStream();
-        WriteJsonValue(pattern, connection, stream);
-        stream.Position = 0L;
-        using var reader = new StreamReader(stream);
-        var jsonValue = reader.ReadToEnd();
-        return jsonValue.Substring(1, jsonValue.Length - 2); // Remove double quotes
-    }
-
-    private static void WriteJsonValue(string pattern, IConnection connection, MemoryStream stream)
-    {
-        var options = new JsonWriterOptions()
-        {
-            Encoder = connection.SerializerOptions.Encoder,
-            SkipValidation = true,
-        };
-        using var writer = new Utf8JsonWriter(stream, options);
-        writer.WriteStringValue(pattern);
-    }
 
     internal record Parameters
     {

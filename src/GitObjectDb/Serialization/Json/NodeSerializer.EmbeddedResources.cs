@@ -8,7 +8,7 @@ internal partial class NodeSerializer : INodeSerializer
 {
     private static string? ReadEmbeddedResource(in ReadOnlySequence<byte> jsonData)
     {
-        var reader = new Utf8JsonReader(jsonData, new JsonReaderOptions
+        var reader = new Utf8JsonReader(jsonData, new()
         {
             CommentHandling = JsonCommentHandling.Allow,
         });

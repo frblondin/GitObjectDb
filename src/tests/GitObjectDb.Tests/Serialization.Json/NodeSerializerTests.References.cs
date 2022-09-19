@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace GitObjectDb.Tests.Serialization.Json;
 
-public partial class ConnectionTests : DisposeArguments
+public partial class NodeSerializerTests
 {
     [Test]
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
@@ -22,6 +22,29 @@ public partial class ConnectionTests : DisposeArguments
         {
             var node1 = c.CreateOrUpdate(new NodeWithReference { Name = name });
             var node2 = c.CreateOrUpdate(new NodeWithReference { Reference = node1 });
+            path = node2.Path;
+        }).Commit(new("foo", signature, signature));
+
+        // Act
+        var result = sut.Lookup<NodeWithReference>(path);
+
+        // Act, Assert
+        Assert.That(result.Reference, Is.InstanceOf<NodeWithReference>());
+        Assert.That(((NodeWithReference)result.Reference).Name, Is.EqualTo(name));
+    }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
+    public void CircularReferencesAreSupported(IServiceProvider serviceProvider, string name, Signature signature)
+    {
+        // Arrange
+        var sut = CreateRepository(serviceProvider);
+        DataPath path = default;
+        sut.Update(c =>
+        {
+            var node1 = c.CreateOrUpdate(new NodeWithReference { Name = name });
+            var node2 = c.CreateOrUpdate(new NodeWithReference { Reference = node1 });
+            node1 = c.CreateOrUpdate(node1 with { Reference = node2 });
             path = node2.Path;
         }).Commit(new("foo", signature, signature));
 

@@ -1,11 +1,18 @@
+using GitObjectDb.Model;
 using LibGit2Sharp;
 using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading;
 
 namespace GitObjectDb.Serialization.Json;
 
-internal delegate ITreeItem ItemLoader(DataPath path);
+/// <summary>
+/// <summary>Represents a method that creates a <see cref="ITreeItem"/> from a path.</summary>
+/// </summary>
+/// <param name="path">The path of item.</param>
+/// <returns>An item.</returns>
+public delegate ITreeItem ItemLoader(DataPath path);
 
 internal class NodeReferenceHandler : ReferenceHandler
 {
@@ -15,7 +22,7 @@ internal class NodeReferenceHandler : ReferenceHandler
     public override ReferenceResolver CreateResolver()
     {
         var context = CurrentContext.Value;
-        return new NodeReferenceResolver(context);
+        return context?.Resolver ?? new NodeReferenceResolver(context);
     }
 
     internal class DataContext
@@ -24,10 +31,13 @@ internal class NodeReferenceHandler : ReferenceHandler
         {
             Accessor = accessor;
             TreeId = treeId;
+            Resolver = new NodeReferenceResolver(this);
         }
 
         internal ItemLoader Accessor { get; }
 
         internal ObjectId TreeId { get; }
+
+        internal ReferenceResolver? Resolver { get; set; }
     }
 }

@@ -15,6 +15,7 @@ public class GitObjectDbFixture
 {
     private const string TempPath = @"C:\Temp";
 
+    private static readonly object _sync = new();
     private static readonly string _workDirectory =
         Directory.Exists(TempPath) ?
         TempPath :
@@ -30,21 +31,25 @@ public class GitObjectDbFixture
     {
         var i = 1;
         string result;
-        while (true)
+        lock (_sync)
         {
-            result = Path.Combine(TempRepoPath, i.ToString("D4", CultureInfo.InvariantCulture));
-            if (!Directory.Exists(result))
+            while (true)
             {
-                return result;
+                result = Path.Combine(TempRepoPath, i.ToString("D4", CultureInfo.InvariantCulture));
+                if (!Directory.Exists(result))
+                {
+                    Directory.CreateDirectory(result);
+                    return result;
+                }
+                i++;
             }
-            i++;
         }
     }
 
     [OneTimeSetUp]
     public void RestoreRepositories()
     {
-        if (!Directory.Exists(Path.Combine(SoftwareBenchmarkRepositoryPath, ".git")))
+        if (!Directory.Exists(SoftwareBenchmarkRepositoryPath))
         {
             ZipFile.ExtractToDirectory(
                 Path.Combine(

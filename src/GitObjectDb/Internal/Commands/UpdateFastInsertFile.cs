@@ -8,19 +8,12 @@ namespace GitObjectDb.Internal.Commands;
 
 internal class UpdateFastInsertFile
 {
-    private readonly INodeSerializer _serializer;
-
-    public UpdateFastInsertFile(INodeSerializer serializer)
-    {
-        _serializer = serializer;
-    }
-
-    internal ApplyUpdateFastInsert CreateOrUpdate(ITreeItem item) => (tree, modules, writer, commitIndex) =>
+    internal ApplyUpdateFastInsert CreateOrUpdate(ITreeItem item) => (tree, modules, serializer, writer, commitIndex) =>
     {
         switch (item)
         {
             case Node node:
-                CreateOrUpdateNode(node, writer, commitIndex, tree, modules);
+                CreateOrUpdateNode(node, serializer, writer, commitIndex, tree, modules);
                 break;
             case Resource resource:
                 CreateOrUpdateResource(resource, writer, commitIndex);
@@ -30,7 +23,7 @@ internal class UpdateFastInsertFile
         }
     };
 
-    internal static ApplyUpdateFastInsert Delete(ITreeItem item) => (reference, modules, _, commitIndex) =>
+    internal static ApplyUpdateFastInsert Delete(ITreeItem item) => (reference, modules, _, _, commitIndex) =>
     {
         var path = item.ThrowIfNoPath();
 
@@ -47,7 +40,7 @@ internal class UpdateFastInsertFile
         modules.RemoveRecursively(path);
     };
 
-    internal static ApplyUpdateFastInsert Delete(DataPath path) => (reference, modules, _, commitIndex) =>
+    internal static ApplyUpdateFastInsert Delete(DataPath path) => (reference, modules, _, _, commitIndex) =>
     {
         // For nodes, delete whole folder containing node and nested entries
         // For resources, only deleted resource
@@ -83,12 +76,13 @@ internal class UpdateFastInsertFile
     }
 
     private void CreateOrUpdateNode(Node node,
+                                    INodeSerializer serializer,
                                     StreamWriter writer,
                                     ICollection<string> commitIndex,
                                     Tree? tree,
                                     ModuleCommands modules)
     {
-        using var stream = _serializer.Serialize(node);
+        using var stream = serializer.Serialize(node);
         AddBlob(node.Path!, stream, writer, commitIndex);
 
         CreateOrUpdateNodeRemoteResource(node, tree, commitIndex, modules);

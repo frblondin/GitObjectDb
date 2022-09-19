@@ -14,7 +14,6 @@ internal sealed class Merge : IMerge
 {
     private readonly IComparerInternal _comparer;
     private readonly IMergeComparer _mergeComparer;
-    private readonly UpdateTreeCommand _updateCommand;
     private readonly CommitCommand _commitCommand;
     private readonly IConnectionInternal _connection;
     private readonly string? _upstreamCommittish;
@@ -22,7 +21,6 @@ internal sealed class Merge : IMerge
     [FactoryDelegateConstructor(typeof(Factories.MergeFactory))]
     public Merge(IComparerInternal comparer,
                  IMergeComparer mergeComparer,
-                 UpdateTreeCommand updateCommand,
                  CommitCommand commitCommand,
                  IConnectionInternal connection,
                  Branch? branch = null,
@@ -31,7 +29,6 @@ internal sealed class Merge : IMerge
     {
         _comparer = comparer;
         _mergeComparer = mergeComparer;
-        _updateCommand = updateCommand;
         _commitCommand = commitCommand;
         _connection = connection;
         Branch = branch ?? connection.Repository.Head;
@@ -125,8 +122,8 @@ internal sealed class Merge : IMerge
             _connection,
             Branch.Tip,
             CurrentChanges.Select(c =>
-                (ApplyUpdateTreeDefinition)((refTree, modules, database, treeDefinition) =>
-                c.Transform(_updateCommand, database, treeDefinition, refTree, modules))),
+                (ApplyUpdateTreeDefinition)((refTree, modules, serializer, database, treeDefinition) =>
+                c.Transform(database, treeDefinition, refTree, modules, serializer))),
             new CommitDescription(message, author, committer),
             updateHead: false,
             mergeParent: UpstreamCommit);
