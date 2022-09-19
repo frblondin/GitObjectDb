@@ -24,6 +24,7 @@ public static class ServiceConfiguration
 
     private static IServiceCollection ConfigureServices(IServiceCollection source)
     {
+        source.AddMemoryCache();
         ConfigureMain(source);
         ConfigureQueries(source);
         ConfigureCommands(source);

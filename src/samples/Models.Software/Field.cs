@@ -8,11 +8,13 @@ namespace Models.Software;
 public record Field : Node
 {
 #pragma warning disable SA1011 // Closing square brackets should be spaced correctly
-    public NestedA[]? A { get; set; }
+    public string? Description { get; init; }
 
-    public NestedA? SomeValue { get; set; }
+    public NestedA[]? A { get; init; }
 
-    public Table? LinkedTable { get; set; }
+    public NestedA? SomeValue { get; init; }
+
+    public Table? LinkedTable { get; init; }
 }
 
 #pragma warning disable SA1402 // File may only contain a single type

@@ -6,7 +6,6 @@ var builder = WebApplication.CreateBuilder(args);
 var controllers = builder.Services
     .AddGitObjectDb()
     .AddGitObjectDbConnection()
-    .AddMemoryCache()
     .AddSoftwareModel()
     .AddControllers();
 

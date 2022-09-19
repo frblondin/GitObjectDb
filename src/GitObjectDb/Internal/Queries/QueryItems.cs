@@ -64,18 +64,13 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
 
     private Lazy<ITreeItem> LoadItem(IQueryAccessor queryAccessor, Parameters parms) =>
         new(() => _loader.Execute(queryAccessor,
-                                  new LoadItem.Parameters(parms.Tree,
-                                                          parms.ParentPath!,
-                                                          parms.ReferenceCache)));
+                                  new LoadItem.Parameters(parms.Tree, parms.ParentPath!)));
 
     private IEnumerable<(DataPath Path, Lazy<Resource> Resource)> GetResources(IQueryAccessor queryAccessor,
                                                                                Node node,
                                                                                Parameters parms) =>
         _queryResources.Execute(queryAccessor,
-                                new QueryResources.Parameters(parms.Tree,
-                                                              parms.RelativeTree,
-                                                              node,
-                                                              parms.ReferenceCache));
+                                new QueryResources.Parameters(parms.Tree, parms.RelativeTree, node));
 
     private static bool IncludeResources(Parameters parms) =>
         (parms.Type == null || parms.Type == typeof(Resource) || parms.Type == typeof(ITreeItem)) &&
@@ -144,15 +139,13 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
                           Tree relativeTree,
                           Type? type,
                           DataPath? parentPath,
-                          bool isRecursive,
-                          IMemoryCache referenceCache)
+                          bool isRecursive)
         {
             Tree = tree;
             RelativeTree = relativeTree;
             Type = type;
             ParentPath = parentPath;
             IsRecursive = isRecursive;
-            ReferenceCache = referenceCache;
         }
 
         public Tree Tree { get; }
@@ -164,7 +157,5 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
         public DataPath? ParentPath { get; init; }
 
         public bool IsRecursive { get; }
-
-        public IMemoryCache ReferenceCache { get; }
     }
 }

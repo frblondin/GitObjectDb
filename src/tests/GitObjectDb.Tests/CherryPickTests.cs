@@ -98,18 +98,17 @@ public class CherryPickTests : DisposeArguments
 
     [Test]
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void EditOnTheirParentDeletion(IConnection sut, Application parentApplication, Table parentTable, Field field, string newName, Signature signature)
+    public void EditOnTheirParentDeletion(IConnection sut, Application parentApplication, Table parentTable, Field field, string newName, string newDescription, Signature signature)
     {
         // main:      A---B
         //             \
         // newBranch:   C   ->   A---C---B
 
         // Arrange
-        field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
         var b = sut
             .Update(c =>
             {
-                c.CreateOrUpdate(field);
+                c.CreateOrUpdate(field with { Description = newDescription });
                 c.CreateOrUpdate(parentApplication with { Name = newName });
             })
             .Commit(new("B", signature, signature));
@@ -266,7 +265,7 @@ public class CherryPickTests : DisposeArguments
 
     [Test]
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void DeleteChildConflict(IConnection sut, Table table, Field field, string newDescription, Signature signature)
+    public void DeleteChildConflict(IConnection sut, Application application, Table table, string newDescription, Signature signature)
     {
         // main:      A---B
         //             \
@@ -274,12 +273,11 @@ public class CherryPickTests : DisposeArguments
 
         // Arrange
         var b = sut
-            .Update(c => c.Delete(table))
+            .Update(c => c.Delete(application))
             .Commit(new("B", signature, signature));
         sut.Checkout("newBranch", "HEAD~1");
-        field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
         sut
-            .Update(c => c.CreateOrUpdate(field))
+            .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
             .Commit(new("C", signature, signature));
 
         // Act

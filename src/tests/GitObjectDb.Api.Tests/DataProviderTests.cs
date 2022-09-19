@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 using AutoFixture.Kernel;
 using AutoMapper;
 using FakeItEasy;
@@ -73,7 +73,7 @@ public class DataProviderTests
         var simpleNodeDto =
             typeEmitter.TypeDescriptions.Single(d => d.NodeType.Type == typeof(SimpleNode));
         var accessor = sut.QueryAccessor;
-        A.CallTo(() => accessor.GetNodes<Node>(node, default, default, A<IMemoryCache>.Ignored)).Returns(children);
+        A.CallTo(() => accessor.GetNodes<Node>(node, default, default)).Returns(children);
 
         // Act
         var result = ((IEnumerable<NodeDto>)typeof(DataProvider).GetMethod(nameof(DataProvider.GetNodes))!
@@ -96,8 +96,8 @@ public class DataProviderTests
             new MapperConfiguration(
                 c => c.AddProfile(new AutoMapperProfile(emitter.TypeDescriptions))));
         var queryAccessor = A.Fake<IQueryAccessor>();
-        A.CallTo(() => queryAccessor.GetNodes<TNode>(default, default, default, A<IMemoryCache>.Ignored)).Returns(nodes);
-        return new DataProvider(queryAccessor, mapper, new MemoryCache(new MemoryCacheOptions()));
+        A.CallTo(() => queryAccessor.GetNodes<TNode>(default, default, default)).Returns(nodes);
+        return new DataProvider(queryAccessor, mapper);
     }
 
     private class Customization : ICustomization, ISpecimenBuilder

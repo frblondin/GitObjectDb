@@ -73,13 +73,11 @@ internal class QueryResources : IQuery<QueryResources.Parameters, IEnumerable<(D
     {
         public Parameters(Tree tree,
                           Tree relativeTree,
-                          Node node,
-                          IMemoryCache referenceCache)
+                          Node node)
         {
             Tree = tree;
             RelativeTree = relativeTree;
             Node = node;
-            ReferenceCache = referenceCache;
         }
 
         public Tree Tree { get; }
@@ -87,7 +85,5 @@ internal class QueryResources : IQuery<QueryResources.Parameters, IEnumerable<(D
         public Tree RelativeTree { get; }
 
         public Node Node { get; }
-
-        public IMemoryCache ReferenceCache { get; }
     }
 }

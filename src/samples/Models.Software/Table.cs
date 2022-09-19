@@ -9,9 +9,9 @@ namespace Models.Software;
 [HasChild(typeof(Constant))]
 public record Table : Node
 {
-    public string? Name { get; set; }
+    public string? Name { get; init; }
 
-    public string? Description { get; set; }
+    public string? Description { get; init; }
 }
 
 #pragma warning disable SA1402 // File may only contain a single type

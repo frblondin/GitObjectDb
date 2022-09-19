@@ -1,5 +1,6 @@
 using KellermanSoftware.CompareNetObjects;
 using LibGit2Sharp;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace GitObjectDb.Comparison;
 
