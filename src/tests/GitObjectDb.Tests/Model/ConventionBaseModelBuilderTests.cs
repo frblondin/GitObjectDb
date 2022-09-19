@@ -11,7 +11,7 @@ public class ConventionBaseModelBuilderTests
 {
     [Test]
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
-    public void SSS(ConventionBaseModelBuilder sut)
+    public void LoadsBasicConfiguration(ConventionBaseModelBuilder sut)
     {
         var model = sut
             .RegisterAssemblyTypes(Assembly.GetExecutingAssembly(), t => t == typeof(SomeNode) || t == typeof(SomeChild))
