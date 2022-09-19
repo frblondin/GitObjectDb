@@ -34,8 +34,10 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Coverage Pack'
-        run: ./build.cmd Coverage Pack
+      - name: Run './build.cmd Default'
+        run: ./build.cmd Default
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       - uses: actions/upload-artifact@v1
         with:
           name: nuget

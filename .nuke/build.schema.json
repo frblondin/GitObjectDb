@@ -6,6 +6,12 @@
     "build": {
       "type": "object",
       "properties": {
+        "BuildBranch": {
+          "type": "string"
+        },
+        "BuildNumber": {
+          "type": "string"
+        },
         "Configuration": {
           "type": "string",
           "description": "Configuration to build - Default is 'Debug' (local) or 'Release' (server)",
@@ -20,7 +26,7 @@
         },
         "CoverageThreshold": {
           "type": "integer",
-          "description": "Coverage threshold. Default is 80%"
+          "description": "Coverage threshold. Default is 90%"
         },
         "Help": {
           "type": "boolean",
@@ -46,6 +52,10 @@
             "VSCode"
           ]
         },
+        "NetFramework": {
+          "type": "string",
+          "description": ".Net Framework version"
+        },
         "NoLogo": {
           "type": "boolean",
           "description": "Disables displaying the NUKE logo"
@@ -58,12 +68,18 @@
           "type": "boolean",
           "description": "Shows the execution plan (HTML)"
         },
+        "PrNumber": {
+          "type": "string"
+        },
         "Profile": {
           "type": "array",
           "description": "Defines the profiles to load",
           "items": {
             "type": "string"
           }
+        },
+        "PrTargetBranch": {
+          "type": "string"
         },
         "Root": {
           "type": "string",
@@ -78,8 +94,13 @@
               "Clean",
               "Compile",
               "Coverage",
+              "Default",
+              "EndSonarqube",
+              "GitVersion",
               "Pack",
               "Restore",
+              "Run",
+              "StartSonarqube",
               "Test"
             ]
           }
@@ -87,6 +108,15 @@
         "Solution": {
           "type": "string",
           "description": "Path to a solution file that is automatically loaded"
+        },
+        "SONAR_TOKEN": {
+          "type": "string"
+        },
+        "SonarOrganization": {
+          "type": "string"
+        },
+        "SonarqubeProjectKey": {
+          "type": "string"
         },
         "Target": {
           "type": "array",
@@ -97,8 +127,13 @@
               "Clean",
               "Compile",
               "Coverage",
+              "Default",
+              "EndSonarqube",
+              "GitVersion",
               "Pack",
               "Restore",
+              "Run",
+              "StartSonarqube",
               "Test"
             ]
           }

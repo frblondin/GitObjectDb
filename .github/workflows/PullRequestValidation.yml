@@ -34,5 +34,7 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Coverage'
-        run: ./build.cmd Coverage
+      - name: Run './build.cmd Run'
+        run: ./build.cmd Run
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
