@@ -20,7 +20,7 @@ namespace GitObjectDb.Comparison
 
         internal delegate bool ConflictResolver(PropertyInfo property, object ancestorValue, object ourValue, object theirValue, out object result);
 
-        public ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy)
+        public ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy? policy = null)
         {
             return CompareInternal(expectedObject, actualObject, policy);
         }
@@ -29,9 +29,9 @@ namespace GitObjectDb.Comparison
             type.GetTypeInfo().GetProperties(BindingFlags.Instance | BindingFlags.Public)
             .Where(p => p.CanRead && p.CanWrite && !policy.IgnoredProperties.Contains(p));
 
-        internal static ComparisonResult CompareInternal(object? expectedObject, object? actualObject, ComparisonPolicy policy)
+        internal static ComparisonResult CompareInternal(object? expectedObject, object? actualObject, ComparisonPolicy? policy = null)
         {
-            var logic = Cache.Get(policy);
+            var logic = Cache.Get(policy ?? ComparisonPolicy.Default);
             return logic.Compare(expectedObject, actualObject);
         }
 
@@ -156,6 +156,7 @@ namespace GitObjectDb.Comparison
                     MaxDifferences = int.MaxValue,
                     SkipInvalidIndexers = true,
                     MembersToIgnore = policy.IgnoredProperties.Select(p => $"{p.DeclaringType.Name}.{p.Name}").ToList(),
+                    AttributesToIgnore = policy.AttributesToIgnore.ToList(),
                 };
                 return new CompareLogic(config);
             }

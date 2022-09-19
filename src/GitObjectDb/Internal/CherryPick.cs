@@ -52,14 +52,14 @@ namespace GitObjectDb.Internal
                 _connection,
                 mergeBaseCommit.Tree,
                 Branch.Tip.Tree,
-                Policy);
+                Policy.ComparisonPolicy);
             var changes = _comparer.Compare(
                 _connection,
                 UpstreamCommit.Parents.ElementAt(Policy.Mainline).Tree,
                 UpstreamCommit.Tree,
-                Policy);
+                Policy.ComparisonPolicy);
 
-            CurrentChanges = Comparer.Compare(localChanges, changes, Policy).ToList();
+            CurrentChanges = Comparer.Compare(localChanges, changes, Policy.ComparisonPolicy).ToList();
             if (!CurrentChanges.Any(c => c.Status == ItemMergeStatus.EditConflict || c.Status == ItemMergeStatus.TreeConflict))
             {
                 CommitChanges();
