@@ -23,9 +23,9 @@ internal sealed partial class Connection
                                IMemoryCache? referenceCache = null)
         where TItem : ITreeItem
     {
-        var (tree, _) = GetTree(path, committish);
+        var (commit, _) = GetTree(path, committish);
         return (TItem)_loader.Execute(this,
-                                      new(tree,
+                                      new(commit.Tree,
                                           path,
                                           referenceCache ?? CreateEphemeralCache()));
     }
@@ -36,9 +36,9 @@ internal sealed partial class Connection
                                               IMemoryCache? referenceCache = null)
         where TItem : ITreeItem
     {
-        var (tree, relativeTree) = GetTree(parent?.Path, committish);
+        var (commit, relativeTree) = GetTree(parent?.Path, committish);
         return _queryItems
-            .Execute(this, new(tree,
+            .Execute(this, new(commit.Tree,
                                relativeTree,
                                typeof(TItem),
                                parent?.Path,
@@ -72,9 +72,9 @@ internal sealed partial class Connection
                                                  bool isRecursive = false)
         where TItem : ITreeItem
     {
-        var (tree, relativeTree) = GetTree(parentPath, committish);
+        var (commit, relativeTree) = GetTree(parentPath, committish);
         return _queryItems.Execute(this,
-                                   new(tree,
+                                   new(commit.Tree,
                                        relativeTree,
                                        typeof(TItem),
                                        parentPath,
@@ -89,10 +89,10 @@ internal sealed partial class Connection
                                         bool recurseSubModules = false,
                                         IMemoryCache? referenceCache = null)
     {
-        var (tree, _) = GetTree(parentPath, committish);
+        var (commit, _) = GetTree(parentPath, committish);
         return _searchItems
             .Execute(this, new(this,
-                               tree,
+                               commit.Tree,
                                pattern,
                                parentPath,
                                committish,
@@ -111,9 +111,9 @@ internal sealed partial class Connection
             throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.");
         }
 
-        var (tree, relativeTree) = GetTree(node.Path, committish);
+        var (commit, relativeTree) = GetTree(node.Path, committish);
         return _queryResources
-            .Execute(this, new QueryResources.Parameters(tree,
+            .Execute(this, new QueryResources.Parameters(commit.Tree,
                                                          relativeTree,
                                                          node,
                                                          referenceCache ?? CreateEphemeralCache()))
@@ -145,7 +145,7 @@ internal sealed partial class Connection
         return Repository.Commits.QueryBy(filePath, filter);
     }
 
-    private (Tree Tree, Tree RelativePath) GetTree(DataPath? path = null, string? committish = null)
+    private (Commit Commit, Tree RelativePath) GetTree(DataPath? path = null, string? committish = null)
     {
         var commit = committish != null ?
             (Commit)Repository.Lookup(committish) :
@@ -156,13 +156,13 @@ internal sealed partial class Connection
         }
         if (path is null || string.IsNullOrEmpty(path.FolderPath))
         {
-            return (commit.Tree, commit.Tree);
+            return (commit, commit.Tree);
         }
         else
         {
             var tree = commit.Tree[path.FolderPath] ??
                        throw new GitObjectDbException("Requested path could not be found.");
-            return (commit.Tree, tree.Target.Peel<Tree>());
+            return (commit, tree.Target.Peel<Tree>());
         }
     }
 

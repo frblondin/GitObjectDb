@@ -56,13 +56,13 @@ internal sealed class CherryPick : ICherryPick
         var mergeBaseCommit = _connection.Repository.ObjectDatabase.FindMergeBase(UpstreamCommit, Branch.Tip);
         var localChanges = _comparer.Compare(
             _connection,
-            mergeBaseCommit.Tree,
-            Branch.Tip.Tree,
+            mergeBaseCommit,
+            Branch.Tip,
             Policy.ComparisonPolicy);
         var changes = _comparer.Compare(
             _connection,
-            UpstreamCommit.Parents.ElementAt(Policy.Mainline).Tree,
-            UpstreamCommit.Tree,
+            UpstreamCommit.Parents.ElementAt(Policy.Mainline),
+            UpstreamCommit,
             Policy.ComparisonPolicy);
 
         CurrentChanges = _mergeComparer.Compare(localChanges, changes, Policy.ComparisonPolicy).ToList();

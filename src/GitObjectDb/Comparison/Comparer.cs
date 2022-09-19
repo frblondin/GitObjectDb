@@ -35,16 +35,16 @@ internal class Comparer : IComparer, IComparerInternal
         return logic.Compare(expectedObject, actualObject);
     }
 
-    public ChangeCollection Compare(IConnection connection,
-                                    Tree oldTree,
-                                    Tree newTree,
+    public ChangeCollection Compare(IConnectionInternal connection,
+                                    Commit old,
+                                    Commit @new,
                                     ComparisonPolicy? policy = null)
     {
-        using var changes = connection.Repository.Diff.Compare<Patch>(oldTree, newTree);
-        var result = new ChangeCollection();
+        using var changes = connection.Repository.Diff.Compare<Patch>(old.Tree, @new.Tree);
+        var result = new ChangeCollection(old, @new);
         foreach (var change in changes)
         {
-            var treeChange = Compare(connection, oldTree, newTree, change, policy);
+            var treeChange = Compare(connection, old.Tree, @new.Tree, change, policy);
             if (treeChange != null)
             {
                 result.Add(treeChange);

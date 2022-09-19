@@ -25,7 +25,14 @@ internal static class ConnectionProvider
         if (!alreadyExists)
         {
             var software = new DataGenerator(result);
-            software.CreateData("Initial commit", new Signature("foo", "foo@acme.com", DateTimeOffset.Now));
+            software.CreateData("Initial commit", new("foo", "foo@acme.com", DateTimeOffset.Now));
+
+            var application = software.Connection.GetApplications().First();
+            software.Connection
+                .Update(c => c.CreateOrUpdate(application with { Description = "New description" }))
+                .Commit(new("Update appication",
+                            new("foo", "foo@acme.com", DateTimeOffset.Now),
+                            new("foo", "foo@acme.com", DateTimeOffset.Now)));
         }
         return result;
     }
