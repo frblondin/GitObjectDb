@@ -7,14 +7,14 @@ namespace GitObjectDb.Model
     /// <summary>Instructs the engine in which folder name to store nodes.</summary>
     /// <seealso cref="Attribute" />
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
-    public class GitPathAttribute : Attribute
+    public class GitFolderAttribute : Attribute
     {
-        private static readonly ConcurrentDictionary<Type, GitPathAttribute> _cache = new ConcurrentDictionary<Type, GitPathAttribute>();
+        private static readonly ConcurrentDictionary<Type, GitFolderAttribute> _cache = new ConcurrentDictionary<Type, GitFolderAttribute>();
 
-        /// <summary>Initializes a new instance of the <see cref="GitPathAttribute"/> class.</summary>
+        /// <summary>Initializes a new instance of the <see cref="GitFolderAttribute"/> class.</summary>
         /// <param name="folderName">Name of the folder.</param>
         /// <exception cref="ArgumentException">Folder name cannot be empty and cannot containt '/' character.</exception>
-        public GitPathAttribute(string folderName)
+        public GitFolderAttribute(string folderName)
         {
             if (string.IsNullOrWhiteSpace(folderName) || folderName.IndexOf('/') != -1)
             {
@@ -31,7 +31,7 @@ namespace GitObjectDb.Model
         /// <summary>Gets the name of the folder.</summary>
         public string FolderName { get; }
 
-        internal static GitPathAttribute Get(Type type) =>
-            _cache.GetOrAdd(type, type => type.GetCustomAttribute<GitPathAttribute>(true));
+        internal static GitFolderAttribute Get(Type type) =>
+            _cache.GetOrAdd(type, type => type.GetCustomAttribute<GitFolderAttribute>(true));
     }
 }

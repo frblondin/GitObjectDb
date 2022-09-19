@@ -13,31 +13,19 @@ Here's a simple example:
 
 .. code-block:: csharp
 
-    [GitPath("Applications")]
+    [GitFolder("Applications")]
     public class Application : Node
     {
-        public Application(UniqueId id) : base(id)
-        {
-        }
-
         public string Name { get; set; }
 
         public string Description { get; set; }
-
-        public IEnumerable<Table> GetTables(IConnection connection) => (this).GetChildren<Table>(connection);
     }
-    [GitPath("Pages")]
+    [GitFolder("Pages")]
     public class Table : Node
     {
-        public Table(UniqueId id) : base(id)
-        {
-        }
-
         public string Name { get; set; }
 
         public string Description { get; set; }
-
-        public IEnumerable<Field> GetFields(IConnection connection) => (this).GetChildren<Field>(connection);
     }
 
 See `Getting Started`_ for how to manipulate data.

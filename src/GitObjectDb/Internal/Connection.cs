@@ -111,8 +111,14 @@ namespace GitObjectDb.Internal
 
         public IEnumerable<DataPath> GetPaths(DataPath? parentPath = null, string? committish = null, bool isRecursive = false)
         {
+            return GetPaths<ITreeItem>(parentPath, committish, isRecursive);
+        }
+
+        public IEnumerable<DataPath> GetPaths<TItem>(DataPath? parentPath = null, string? committish = null, bool isRecursive = false)
+            where TItem : ITreeItem
+        {
             var (tree, relativeTree) = GetTree(parentPath, committish);
-            return _queryPaths.Execute(this, new QueryPaths.Parameters(null, parentPath, tree, relativeTree, isRecursive));
+            return _queryPaths.Execute(this, new QueryPaths.Parameters(typeof(TItem), parentPath, tree, relativeTree, isRecursive));
         }
 
         private (Tree Tree, Tree RelativePath) GetTree(DataPath? path = null, string? committish = null)

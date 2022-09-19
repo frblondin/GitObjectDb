@@ -18,41 +18,40 @@ The Git repository is used as a pure database as the files containing the serial
 Here's a simple example:
 1. Define your own repository data model:
     ```csharp
-    [GitPath("Applications")]
-    public class Application : Node
+    [GitFolder("Applications")]
+    public record Application : Node
     {
-        public Application(UniqueId id) : base(id)
-        {
-        }
-
         public string Name { get; set; }
 
         public string Description { get; set; }
-
-        public IEnumerable<Table> GetTables(IConnection connection) => (this).GetChildren<Table>(connection);
     }
-    [GitPath("Pages")]
-    public class Table : Node
+    [GitFolder("Pages")]
+    public record Table : Node
     {
-        public Table(UniqueId id) : base(id)
-        {
-        }
-
         public string Name { get; set; }
 
         public string Description { get; set; }
-
-        public IEnumerable<Field> GetFields(IConnection connection) => (this).GetChildren<Field>(connection);
     }
     ```
 2. Manipulate objects as follows:
     ```csharp
-	var application = connection.Get<Application>(applicationId);
-	var table = new Table(UniqueId.CreateNew()) { ... };
+	var existingApplication = connection.Lookup<Application>("applications", new UniqueId(id));
+	var newTable = new Table { ... };
 	connection
-	    .Update(c => c.Add(table, application))
-		.Commit("Added table.", author, committer);
+	    .Update(c => c.CreateOrUpdate(newTable, parent: existingApplication))
+		.Commit("Added new table.", author, committer);
     ```
+
+### Features
+
+* Support of structured (nodes) and raw/plain storage (resources for plain text or binary data)
+* Branching
+* History
+* Compare commits
+* Node references
+* Merge
+* Rebase
+* Cherry-pick
 
 ### Documentation
 
@@ -62,7 +61,7 @@ See [Documentation][Documentation].
 
 ## Prerequisites
 
- - .NET Standard 2.0
+ - .NET Standard 2.0 or 2.1
 
 ## Online resources
 
@@ -78,6 +77,6 @@ See [Documentation][Documentation].
 
 ## License
 
-The MIT license (Refer to the [LICENSE][license] file)
+The MIT license (Refer to the [LICENSE][license] file).
 
  [license]: https://github.com/frblondin/GitObjectDb/blob/master/LICENSE

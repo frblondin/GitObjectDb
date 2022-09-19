@@ -83,10 +83,5 @@ namespace GitObjectDb
         /// <returns>The stream.</returns>
         public Stream GetContentStream() =>
             _value.Invoke();
-
-        /// <summary>Sets the content stream of this resource.</summary>
-        /// <param name="stream">The content stream.</param>
-        public void SetContentStream(Stream stream) =>
-            _value = () => stream;
     }
 }

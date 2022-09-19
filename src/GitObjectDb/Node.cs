@@ -8,7 +8,7 @@ namespace GitObjectDb
 {
     /// <summary>Represents a single object stored in the repository.</summary>
     [DebuggerDisplay("Id = {Id}, Path = {Path}")]
-    public record Node : ITreeItem
+    public abstract record Node : ITreeItem
     {
         /// <summary>Gets or sets the unique node identifier.</summary>
         public UniqueId Id { get; set; } = UniqueId.CreateNew();

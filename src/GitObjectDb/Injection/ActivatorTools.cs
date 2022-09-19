@@ -1,9 +1,7 @@
 using GitObjectDb.Injection;
-using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -60,6 +58,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return true;
         }
 
+        [ExcludeFromCodeCoverage]
         private static void ThrowMarkedCtorDoesNotTakeAllProvidedArguments()
         {
             throw new InvalidOperationException($"Constructor marked with {nameof(FactoryDelegateConstructorAttribute)} does not accept all given argument types.");

@@ -14,6 +14,20 @@ namespace GitObjectDb.Internal.Queries
         public IEnumerable<DataPath> Execute(IConnectionInternal connection, Parameters parms)
         {
             var entries = new Stack<(Tree Tree, DataPath Path)>();
+            var resources = new Stack<DataPath>();
+
+            // Fetch direct resources
+            if (parms.ParentPath is not null && IncludeResources(parms))
+            {
+                FetchNodeResources(parms.RelativeTree, parms.ParentPath, resources, parms.IsRecursive);
+
+                foreach (var resource in resources)
+                {
+                    yield return resource;
+                }
+                resources.Clear();
+            }
+
             FetchDirectChildren(parms.RelativeTree, parms.ParentPath, entries);
 
             while (entries.Count > 0)
@@ -23,15 +37,15 @@ namespace GitObjectDb.Internal.Queries
                 {
                     yield return current.Path;
                 }
-                if (current.Path.FileName == FileSystemStorage.DataFile && parms.IsRecursive && (parms.Type == null || parms.Type == typeof(Resource)))
+                if (current.Path.IsNode && parms.IsRecursive && IncludeResources(parms))
                 {
-                    var resources = new Stack<DataPath>();
-                    FetchResources(current.Tree, current.Path, resources, new Stack<string>());
+                    FetchNodeResources(current.Tree, current.Path, resources, parms.IsRecursive);
 
                     foreach (var resource in resources)
                     {
                         yield return resource;
                     }
+                    resources.Clear();
                 }
                 if (parms.IsRecursive)
                 {
@@ -40,9 +54,14 @@ namespace GitObjectDb.Internal.Queries
             }
         }
 
+        private static bool IncludeResources(Parameters parms)
+        {
+            return parms.Type == null || parms.Type == typeof(Resource) || parms.Type == typeof(ITreeItem);
+        }
+
         private static bool IsOfType(DataPath path, Type? type)
         {
-            if (type == null)
+            if (type == null || type == typeof(ITreeItem))
             {
                 return true;
             }
@@ -70,26 +89,32 @@ namespace GitObjectDb.Internal.Queries
             }
         }
 
-        private static void FetchResources(Tree tree, DataPath nodePath, Stack<DataPath> entries, Stack<string> folderParts)
+        private static void FetchNodeResources(Tree tree, DataPath nodePath, Stack<DataPath> entries, bool isRecursive)
         {
             var resourceChildTree = tree[FileSystemStorage.ResourceFolder]?.Target.Peel<Tree>();
             if (resourceChildTree != null)
             {
-                foreach (var item in resourceChildTree)
+                var folderParts = new Stack<string>();
+                FetchResources(resourceChildTree, nodePath, entries, folderParts, isRecursive);
+            }
+        }
+
+        private static void FetchResources(Tree tree, DataPath nodePath, Stack<DataPath> entries, Stack<string> folderParts, bool isRecursive)
+        {
+            foreach (var item in tree)
+            {
+                switch (item.TargetType)
                 {
-                    switch (item.TargetType)
-                    {
-                        case TreeEntryTargetType.Blob:
-                            var resourcePath = nodePath.CreateResourcePath(
-                                new DataPath(string.Join("/", folderParts), item.Name));
-                            entries.Push(resourcePath);
-                            break;
-                        case TreeEntryTargetType.Tree:
-                            folderParts.Push(item.Name);
-                            FetchResources(item.Target.Peel<Tree>(), nodePath, entries, folderParts);
-                            folderParts.Pop();
-                            break;
-                    }
+                    case TreeEntryTargetType.Blob:
+                        var resourcePath = nodePath.CreateResourcePath(
+                            new DataPath(string.Join("/", folderParts), item.Name));
+                        entries.Push(resourcePath);
+                        break;
+                    case TreeEntryTargetType.Tree when isRecursive:
+                        folderParts.Push(item.Name);
+                        FetchResources(item.Target.Peel<Tree>(), nodePath, entries, folderParts, isRecursive);
+                        folderParts.Pop();
+                        break;
                 }
             }
         }

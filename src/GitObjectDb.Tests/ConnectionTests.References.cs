@@ -46,7 +46,7 @@ namespace GitObjectDb.Tests.Serialization.Json
             return result;
         }
 
-        [GitPath("Applications")]
+        [GitFolder("Applications")]
         public record NodeWithReference : Node
         {
             public string Name { get; set; }

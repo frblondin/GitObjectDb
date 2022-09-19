@@ -4,14 +4,12 @@ using System.Collections.Generic;
 
 namespace Models.Software
 {
-    [GitPath("Pages")]
+    [GitFolder("Pages")]
     public record Table : Node
     {
         public string? Name { get; set; }
 
         public string? Description { get; set; }
-
-        public Blob<string>? Blob { get; set; }
     }
 
 #pragma warning disable SA1402 // File may only contain a single type
