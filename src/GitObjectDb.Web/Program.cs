@@ -5,9 +5,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 var controllers = builder.Services
     .AddGitObjectDb()
+    .AddGitObjectDbConnection()
     .AddMemoryCache()
     .AddSoftwareModel()
-    .AddTransient(ConnectionProvider.GetOrCreateConnection)
     .AddControllers();
 
 controllers

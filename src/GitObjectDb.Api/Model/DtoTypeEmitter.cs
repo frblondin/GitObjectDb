@@ -32,29 +32,33 @@ public class DtoTypeEmitter<TTypeDescription>
 
     public AssemblyBuilder AssemblyBuilder { get; }
 
-    internal ModuleBuilder ModuleBuilder { get; }
+    protected ModuleBuilder ModuleBuilder { get; }
 
     private IList<TTypeDescription> EmitTypes()
     {
         var result = new List<TTypeDescription>();
-        foreach (var type in Model.NodeTypes)
+        var dtoTypes = Model.NodeTypes.Select(EmitDto).ToList();
+        foreach (var (type, dto) in dtoTypes)
         {
-            var description = (TTypeDescription)ProcessType(type, ModuleBuilder);
-            result.Add(description);
+            AddDtoDescription(type, dto);
+            EmitDtoConstructor(dto);
+            EmitDtoProperties(type, dto,
+                t => dtoTypes.FirstOrDefault(i => i.Type.Type == t).Dto ??
+                throw new NotSupportedException("Could not find dto type."));
+
+            result.Add((TTypeDescription)ProcessType(type, dto));
         }
         return result.AsReadOnly();
     }
 
-    protected virtual TypeDescription ProcessType(NodeTypeDescription type, ModuleBuilder moduleBuilder)
+    protected virtual TypeDescription ProcessType(NodeTypeDescription type, TypeBuilder dto)
     {
-        var dtoType = EmitDto(moduleBuilder, type).CreateTypeInfo()!;
-
-        return new TypeDescription(type, dtoType);
+        return new TypeDescription(type, dto.CreateTypeInfo()!);
     }
 
-    private static TypeBuilder EmitDto(ModuleBuilder moduleBuilder, NodeTypeDescription type)
+    private (NodeTypeDescription Type, TypeBuilder Dto) EmitDto(NodeTypeDescription type)
     {
-        var result = moduleBuilder.DefineType($"{type.Name}DTO",
+        var result = ModuleBuilder.DefineType($"{type.Name}DTO",
                                               TypeAttributes.Public |
                                               TypeAttributes.Class |
                                               TypeAttributes.AutoClass |
@@ -63,11 +67,7 @@ public class DtoTypeEmitter<TTypeDescription>
                                               TypeAttributes.AutoLayout,
                                               typeof(NodeDto));
 
-        AddDtoDescription(type, result);
-        EmitDtoConstructor(result);
-        EmirDtoProperties(type, result);
-
-        return result;
+        return (type, result);
     }
 
     private static void AddDtoDescription(NodeTypeDescription type, TypeBuilder result)
@@ -94,7 +94,9 @@ public class DtoTypeEmitter<TTypeDescription>
         ilGenerator.Emit(OpCodes.Ret);
     }
 
-    private static void EmirDtoProperties(NodeTypeDescription type, TypeBuilder result)
+    private static void EmitDtoProperties(NodeTypeDescription type,
+                                          TypeBuilder result,
+                                          Func<Type, TypeBuilder> nodeToDto)
     {
         var properties = typeof(NodeDto).GetProperties();
         var names = properties.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -104,32 +106,48 @@ public class DtoTypeEmitter<TTypeDescription>
             {
                 continue;
             }
-            EmitDtoProperty(result, property);
+            var adaptedType = AdaptDtoPropertyType(property, nodeToDto);
+            EmitDtoProperty(result, property, adaptedType);
         }
     }
 
-    private static void EmitDtoProperty(TypeBuilder result, PropertyInfo property)
+    private static Type AdaptDtoPropertyType(PropertyInfo property, Func<Type, TypeBuilder> nodeToDto)
+    {
+        if (property.PropertyType.IsAssignableTo(typeof(Node)))
+        {
+            return nodeToDto(property.PropertyType);
+        }
+        if (property.IsEnumerable(t => t.IsAssignableTo(typeof(Node)), out var type))
+        {
+            var dtoType = nodeToDto(type!);
+            return typeof(IEnumerable<>).MakeGenericType(dtoType);
+        }
+        return property.PropertyType;
+    }
+
+    private static void EmitDtoProperty(TypeBuilder result, PropertyInfo property, Type newTargetType)
     {
         var fieldBuilder = result.DefineField($"_{property.Name}",
-                                              property.PropertyType,
+                                              newTargetType,
                                               FieldAttributes.Private);
         var propertyBuilder = result.DefineProperty(property.Name,
                                                     PropertyAttributes.HasDefault,
-                                                    property.PropertyType,
+                                                    newTargetType,
                                                     null);
 
-        EmitDtoPropertyGetter(result, property, fieldBuilder, propertyBuilder);
-        EmitDtoPropertySetter(result, property, fieldBuilder, propertyBuilder);
+        EmitDtoPropertyGetter(result, property, newTargetType, fieldBuilder, propertyBuilder);
+        EmitDtoPropertySetter(result, property, newTargetType, fieldBuilder, propertyBuilder);
     }
 
     private static void EmitDtoPropertyGetter(TypeBuilder result,
                                               PropertyInfo property,
+                                              Type newTargetType,
                                               FieldInfo field,
                                               PropertyBuilder propertyBuilder)
     {
         var getter = result.DefineMethod($"get_{property.Name}",
                                          MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
-                                         property.PropertyType,
+                                         newTargetType,
                                          Type.EmptyTypes);
 
         var getterIL = getter.GetILGenerator();
@@ -142,13 +160,14 @@ public class DtoTypeEmitter<TTypeDescription>
 
     private static void EmitDtoPropertySetter(TypeBuilder result,
                                               PropertyInfo property,
+                                              Type newTargetType,
                                               FieldInfo field,
                                               PropertyBuilder propertyBuilder)
     {
         var setter = result.DefineMethod($"set_{property.Name}",
                                          MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
                                          null,
-                                         new[] { property.PropertyType });
+                                         new[] { newTargetType });
 
         var setterIL = setter.GetILGenerator();
         setterIL.Emit(OpCodes.Ldarg_0);

@@ -11,6 +11,8 @@ public record Field : Node
     public NestedA[]? A { get; set; }
 
     public NestedA? SomeValue { get; set; }
+
+    public Table? LinkedTable { get; set; }
 }
 
 #pragma warning disable SA1402 // File may only contain a single type

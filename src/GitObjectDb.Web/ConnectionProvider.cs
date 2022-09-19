@@ -10,6 +10,10 @@ internal static class ConnectionProvider
         .RegisterAssemblyTypes(typeof(Application).Assembly)
         .Build();
 
+    internal static IServiceCollection AddGitObjectDbConnection(this IServiceCollection services) => services
+        .AddScoped(GetOrCreateConnection)
+        .AddScoped<IQueryAccessor>(s => s.GetRequiredService<IConnection>());
+
     internal static IConnection GetOrCreateConnection(IServiceProvider provider)
     {
         var assemblyDirectory = Path.GetDirectoryName(typeof(Program).Assembly.Location) ??

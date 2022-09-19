@@ -30,10 +30,10 @@ internal class GeneratedTypesApplicationPart : ApplicationPart, IApplicationPart
         {
         }
 
-        protected override TypeDescription ProcessType(NodeTypeDescription type, ModuleBuilder moduleBuilder)
+        protected override TypeDescription ProcessType(NodeTypeDescription type, TypeBuilder dto)
         {
-            var baseDescription = base.ProcessType(type, moduleBuilder);
-            var controllerType = EmitController(type, baseDescription.DtoType, moduleBuilder).CreateTypeInfo()!;
+            var baseDescription = base.ProcessType(type, dto);
+            var controllerType = EmitController(type, baseDescription.DtoType, ModuleBuilder).CreateTypeInfo()!;
             return new ODataTypeDescription(baseDescription, controllerType);
         }
 

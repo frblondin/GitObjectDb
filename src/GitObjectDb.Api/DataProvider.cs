@@ -11,14 +11,14 @@ public sealed class DataProvider
     private readonly IMapper _mapper;
     private readonly IMemoryCache _cache;
 
-    public DataProvider(IConnection connection, IMapper mapper, IMemoryCache cache)
+    public DataProvider(IQueryAccessor queryAccessor, IMapper mapper, IMemoryCache cache)
     {
-        Connection = connection;
+        QueryAccessor = queryAccessor;
         _mapper = mapper;
         _cache = cache;
     }
 
-    public IConnection Connection { get; }
+    public IQueryAccessor QueryAccessor { get; }
 
     public IEnumerable<TNodeDTO> GetNodes<TNode, TNodeDTO>(string? parentPath = null,
                                                            string? committish = null,
@@ -26,25 +26,18 @@ public sealed class DataProvider
         where TNode : Node
         where TNodeDTO : NodeDto
     {
-        var commit = LookupCommit(committish);
-        var referenceCache = _cache.GetOrCreate<ConcurrentDictionary<DataPath, ITreeItem>>(commit.Sha, _ => new());
         var parent = parentPath != null ?
-            Connection.Lookup<Node>(
+            QueryAccessor.Lookup<Node>(
                 DataPath.Parse(parentPath),
-                commit.Sha) :
+                committish) :
             null;
-        var result = Connection.GetNodes<TNode>(parent, commit.Sha, isRecursive, referenceCache);
+        var result = QueryAccessor.GetNodes<TNode>(parent, committish, isRecursive, _cache);
 #pragma warning disable CS8974 // Converting method group to non-delegate type
         return _mapper.Map<IEnumerable<TNode>, IEnumerable<TNodeDTO>>(
             result,
             opt => opt.Items[AutoMapperProfile.ChildResolverName] = ResolveChildren);
 
         IEnumerable<Node> ResolveChildren(Node parent) =>
-            Connection.GetNodes<Node>(parent, commit.Sha, isRecursive: false, referenceCache);
+            QueryAccessor.GetNodes<Node>(parent, committish, isRecursive: false, _cache);
     }
-
-    private Commit LookupCommit(string? committish) =>
-        committish != null ?
-        (Commit)Connection.Repository.Lookup(committish) :
-        Connection.Repository.Head.Tip;
 }

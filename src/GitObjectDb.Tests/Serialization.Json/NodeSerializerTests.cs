@@ -4,6 +4,7 @@ using GitObjectDb.Serialization;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
+using LibGit2Sharp;
 using NUnit.Framework;
 using System;
 
@@ -30,7 +31,7 @@ public partial class NodeSerializerTests
         // Act
         var nodeSerializer = fixture.Create<INodeSerializer>();
         var serialized = nodeSerializer.Serialize(value);
-        var deserialized = nodeSerializer.Deserialize(serialized, null, model, _ => throw new NotImplementedException());
+        var deserialized = nodeSerializer.Deserialize(serialized, ObjectId.Zero, null, model, _ => throw new NotImplementedException());
 
         // Assert
         Assert.That(deserialized.EmbeddedResource, Is.EqualTo(value.EmbeddedResource));

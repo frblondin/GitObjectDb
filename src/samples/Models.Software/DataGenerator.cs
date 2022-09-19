@@ -40,6 +40,7 @@ public class DataGenerator
 
     public void CreateData(string commitMessage, Signature signature)
     {
+        Table? firstTable = default;
         var fixture = new Fixture();
         var transformations = Connection.Update(CreateApplications);
         transformations.Commit(commitMessage, signature, signature);
@@ -66,6 +67,10 @@ public class DataGenerator
                     Description = fixture.Create<string>(),
                     Name = fixture.Create<string>(),
                 }, parent: application);
+                if (firstTable is null)
+                {
+                    firstTable = table;
+                }
                 CreateFields(table, composer);
                 CreateConstants(table, composer);
                 CreateResource(table, composer);
@@ -80,6 +85,7 @@ public class DataGenerator
                 {
                     A = fixture.Create<NestedA[]>(),
                     SomeValue = fixture.Create<NestedA>(),
+                    LinkedTable = firstTable,
                 }, parent: table);
             });
         }

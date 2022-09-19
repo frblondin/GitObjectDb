@@ -16,7 +16,7 @@ public partial class GitObjectDbQuery : ObjectGraphType
 
         return parentNode?.Path is null ?
             Enumerable.Empty<Commit>() :
-            provider.Connection.Repository.Commits
+            provider.QueryAccessor.Repository.Commits
                 .QueryBy(parentNode.Path.FilePath)
                 .Select(e => e.Commit);
     }

@@ -1,6 +1,6 @@
 using GitObjectDb.Serialization;
 using LibGit2Sharp;
-using System.Collections.Concurrent;
+using Microsoft.Extensions.Caching.Memory;
 using System.IO;
 
 namespace GitObjectDb.Internal.Queries;
@@ -14,34 +14,47 @@ internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
         _serializer = serializer;
     }
 
-    public ITreeItem Execute(IConnection connection, Parameters parms)
+    public ITreeItem Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
-        return parms.ReferenceCache?.GetOrAdd(parms.Path, Load) ?? Load(parms.Path);
+        var loadParameters = new DataLoadParameters(parms.Path, parms.Tree.Id);
+        if (parms.ReferenceCache is not null)
+        {
+            return parms.ReferenceCache.GetOrCreate(loadParameters,
+                                                    _ => Load(loadParameters));
+        }
+        else
+        {
+            return Load(loadParameters);
+        }
 
-        ITreeItem Load(DataPath path) =>
+        ITreeItem Load(DataLoadParameters p) =>
             parms.Path.IsNode ?
-            LoadNode(connection, parms) :
+            LoadNode(queryAccessor, parms) :
             LoadResource(parms);
     }
 
-    private ITreeItem LoadNode(IConnection connection, Parameters parms)
+    private ITreeItem LoadNode(IQueryAccessor queryAccessor, Parameters parms)
     {
         using var stream = GetStream(parms);
         return _serializer.Deserialize(stream,
+                                       parms.Tree.Id,
                                        parms.Path,
-                                       connection.Model,
-                                       p => LoadNode(connection, parms with { Path = p }));
+                                       queryAccessor.Model,
+                                       p => LoadNode(queryAccessor, parms with { Path = p }));
     }
 
     private static ITreeItem LoadResource(Parameters parms) =>
         new Resource(parms.Path, new Resource.Data(() => GetStream(parms)));
 
-    private static Stream GetStream(Parameters parms) =>
-        parms.Tree[parms.Path.FilePath].Target.Peel<Blob>().GetContentStream();
+    private static Stream GetStream(Parameters parms)
+    {
+        var blob = parms.Tree[parms.Path.FilePath].Target.Peel<Blob>();
+        return blob.GetContentStream();
+    }
 
     internal record Parameters
     {
-        public Parameters(Tree tree, DataPath path, ConcurrentDictionary<DataPath, ITreeItem>? referenceCache)
+        public Parameters(Tree tree, DataPath path, IMemoryCache referenceCache)
         {
             Tree = tree;
             Path = path;
@@ -52,6 +65,6 @@ internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
 
         public DataPath Path { get; init; }
 
-        public ConcurrentDictionary<DataPath, ITreeItem>? ReferenceCache { get; }
+        public IMemoryCache ReferenceCache { get; }
     }
 }

@@ -1,5 +1,6 @@
 using GitObjectDb.Model;
 using GitObjectDb.Serialization.Json.Converters;
+using LibGit2Sharp;
 using Microsoft.IO;
 using System;
 using System.Buffers;
@@ -22,13 +23,13 @@ internal partial class NodeSerializer : INodeSerializer
 
     public NodeSerializer(RecyclableMemoryStreamManager streamManager)
     {
-        Options = CreateSerializerOptions();
+        Options = NodeSerializer.CreateSerializerOptions();
         _streamManager = streamManager;
     }
 
     public JsonSerializerOptions Options { get; }
 
-    internal JsonSerializerOptions CreateSerializerOptions()
+    internal static JsonSerializerOptions CreateSerializerOptions()
     {
         var result = new JsonSerializerOptions
         {
@@ -59,11 +60,12 @@ internal partial class NodeSerializer : INodeSerializer
     }
 
     public Node Deserialize(Stream stream,
+                            ObjectId treeId,
                             DataPath? path,
                             IDataModel model,
-                            Func<DataPath, ITreeItem> referenceResolver)
+                            ItemLoader referenceResolver)
     {
-        NodeReferenceHandler.NodeAccessor.Value = referenceResolver;
+        NodeReferenceHandler.CurrentContext.Value = new NodeReferenceHandler.DataContext(referenceResolver, treeId);
         try
         {
             var length = (int)stream.Length;
@@ -91,7 +93,7 @@ internal partial class NodeSerializer : INodeSerializer
         }
         finally
         {
-            NodeReferenceHandler.NodeAccessor.Value = null;
+            NodeReferenceHandler.CurrentContext.Value = null;
         }
     }
 

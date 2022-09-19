@@ -8,11 +8,11 @@ namespace GitObjectDb.Serialization.Json;
 internal class NodeReferenceResolver : ReferenceResolver
 {
     private readonly IDictionary<DataPath, ITreeItem> _items = new Dictionary<DataPath, ITreeItem>();
-    private readonly Func<DataPath, ITreeItem>? _nodeAccessor;
+    private readonly NodeReferenceHandler.DataContext? _context;
 
-    public NodeReferenceResolver(Func<DataPath, ITreeItem>? nodeAccessor)
+    public NodeReferenceResolver(NodeReferenceHandler.DataContext? context)
     {
-        _nodeAccessor = nodeAccessor;
+        _context = context;
     }
 
     public override void AddReference(string referenceId, object value)
@@ -52,11 +52,11 @@ internal class NodeReferenceResolver : ReferenceResolver
         {
             if (!_items.TryGetValue(path!, out var item))
             {
-                if (_nodeAccessor == null)
+                if (_context is null)
                 {
                     throw new NotSupportedException("The node accessor could not be found.");
                 }
-                _items[path!] = item = _nodeAccessor(path!);
+                _items[path!] = item = _context.Accessor(path!);
             }
             return item;
         }

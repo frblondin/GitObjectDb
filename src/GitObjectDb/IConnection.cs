@@ -2,9 +2,6 @@ using GitObjectDb.Comparison;
 using GitObjectDb.Model;
 using LibGit2Sharp;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace GitObjectDb;
 
@@ -17,78 +14,12 @@ public delegate IConnection ConnectionFactory(string path, IDataModel model, str
 
 /// <summary>Represents a GitObjectDb connection, allowing to query and perform operations on nodes.</summary>
 /// <seealso cref="IDisposable" />
-public interface IConnection : IDisposable
+public interface IConnection : IQueryAccessor, IDisposable
 {
-    /// <summary>Gets the underlying Git repository.</summary>
-    IRepository Repository { get; }
-
-    /// <summary>Gets the model that this connection should manage.</summary>
-    IDataModel Model { get; }
-
     /// <summary>Initiates a series of node transformations.</summary>
     /// <param name="transformations">The transformations to be applied.</param>
     /// <returns>The collection of transformations.</returns>
     ITransformationComposer Update(Action<ITransformationComposer>? transformations = null);
-
-    /// <summary>Lookups for the item defined in the specified path.</summary>
-    /// <typeparam name="TItem">The type of the node.</typeparam>
-    /// <param name="path">The path.</param>
-    /// <param name="committish">The committish.</param>
-    /// <param name="referenceCache">Cache that can be used to reuse same shared
-    /// node references between queries.</param>
-    /// <returns>The item being found, if any.</returns>
-    TItem Lookup<TItem>(DataPath path,
-                        string? committish = null,
-                        ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
-        where TItem : ITreeItem;
-
-    /// <summary>Gets all items from repository.</summary>
-    /// <param name="parent">The parent node.</param>
-    /// <param name="committish">The committish.</param>
-    /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
-    /// <param name="referenceCache">Cache that can be used to reuse same shared
-    /// node references between queries.</param>
-    /// <typeparam name="TItem">The type of requested items.</typeparam>
-    /// <returns>The <see cref="IQueryable{Node}"/> that represents the input sequence.</returns>
-    IEnumerable<TItem> GetItems<TItem>(Node? parent = null,
-                                       string? committish = null,
-                                       bool isRecursive = false,
-                                       ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
-        where TItem : ITreeItem;
-
-    /// <summary>Gets nodes from repository.</summary>
-    /// <param name="parent">The parent node.</param>
-    /// <param name="committish">The committish.</param>
-    /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
-    /// <param name="referenceCache">Cache that can be used to reuse same shared
-    /// node references between queries.</param>
-    /// <typeparam name="TNode">The type of requested nodes.</typeparam>
-    /// <returns>The <see cref="IEnumerable{TNode}"/> that represents the input sequence.</returns>
-    IEnumerable<TNode> GetNodes<TNode>(Node? parent = null,
-                                       string? committish = null,
-                                       bool isRecursive = false,
-                                       ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
-        where TNode : Node;
-
-    /// <summary>Gets data paths from repository.</summary>
-    /// <param name="parentPath">The parent node path.</param>
-    /// <param name="committish">The committish.</param>
-    /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
-    /// <returns>The <see cref="IEnumerable{Node}"/> that represents the input sequence.</returns>
-    IEnumerable<DataPath> GetPaths(DataPath? parentPath = null,
-                                   string? committish = null,
-                                   bool isRecursive = false);
-
-    /// <summary>Gets data paths from repository.</summary>
-    /// <param name="parentPath">The parent node path.</param>
-    /// <param name="committish">The committish.</param>
-    /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
-    /// <typeparam name="TItem">The type of requested item paths nodes.</typeparam>
-    /// <returns>The <see cref="IEnumerable{Node}"/> that represents the input sequence.</returns>
-    IEnumerable<DataPath> GetPaths<TItem>(DataPath? parentPath = null,
-                                          string? committish = null,
-                                          bool isRecursive = false)
-        where TItem : ITreeItem;
 
     /// <summary>Compares two commits (additions, deletions, editions, conflicts).</summary>
     /// <param name="startCommittish">Starting points of comparison.</param>
@@ -98,18 +29,6 @@ public interface IConnection : IDisposable
     ChangeCollection Compare(string startCommittish,
                              string? committish = null,
                              ComparisonPolicy? policy = null);
-
-    /// <summary>
-    /// Gets the resources associated to the node.
-    /// </summary>
-    /// <param name="node">The parent node.</param>
-    /// <param name="committish">The committish.</param>
-    /// <param name="referenceCache">Cache that can be used to reuse same shared
-    /// node references between queries.</param>
-    /// <returns>All nested resources.</returns>
-    public IEnumerable<Resource> GetResources(Node node,
-                                              string? committish = null,
-                                              ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null);
 
     /// <summary>Checkouts the specified branch name.</summary>
     /// <param name="branchName">Name of the branch.</param>
