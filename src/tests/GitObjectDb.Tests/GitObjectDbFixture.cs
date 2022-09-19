@@ -49,13 +49,16 @@ public class GitObjectDbFixture
     [OneTimeSetUp]
     public void RestoreRepositories()
     {
-        if (!Directory.Exists(SoftwareBenchmarkRepositoryPath))
+        lock (_sync)
         {
-            ZipFile.ExtractToDirectory(
-                Path.Combine(
-                    TestContext.CurrentContext.TestDirectory,
-                    "Assets", "Data", "Software", "Benchmark.zip"),
-                SoftwareBenchmarkRepositoryPath);
+            if (!Directory.Exists(SoftwareBenchmarkRepositoryPath))
+            {
+                ZipFile.ExtractToDirectory(
+                    Path.Combine(
+                        TestContext.CurrentContext.TestDirectory,
+                        "Assets", "Data", "Software", "Benchmark.zip"),
+                    SoftwareBenchmarkRepositoryPath);
+            }
         }
     }
 
