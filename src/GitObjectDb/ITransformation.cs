@@ -28,6 +28,12 @@ internal delegate void ApplyUpdateFastInsert(Tree? reference,
 /// <summary>Represents a node transformation.</summary>
 public interface ITransformation
 {
+    /// <summary>Gets the path of modified item.</summary>
+    public DataPath Path { get; }
+
+    /// <summary>Gets new value of item.</summary>
+    public ITreeItem? Item { get; }
+
     /// <summary>Gets the transformation description.</summary>
     public string Message { get; }
 }

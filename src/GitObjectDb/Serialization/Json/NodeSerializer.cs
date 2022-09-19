@@ -27,7 +27,7 @@ internal partial class NodeSerializer : INodeSerializer
         _streamManager = streamManager;
     }
 
-    public JsonSerializerOptions Options { get; }
+    public JsonSerializerOptions Options { get; set; }
 
     internal static JsonSerializerOptions CreateSerializerOptions()
     {
