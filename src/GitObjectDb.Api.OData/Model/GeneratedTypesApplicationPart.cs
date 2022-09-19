@@ -10,12 +10,9 @@ internal class GeneratedTypesApplicationPart : ApplicationPart, IApplicationPart
 {
     public GeneratedTypesApplicationPart(IDataModel model)
     {
-        Model = model;
         var emitter = new ODataDtoTypeEmitter(model);
         TypeDescriptions = emitter.TypeDescriptions;
     }
-
-    public IDataModel Model { get; }
 
     public override string Name => nameof(GeneratedTypesApplicationPart);
 
@@ -23,14 +20,14 @@ internal class GeneratedTypesApplicationPart : ApplicationPart, IApplicationPart
 
     public IList<ODataTypeDescription> TypeDescriptions { get; }
 
-    public class ODataDtoTypeEmitter : DtoTypeEmitter<ODataTypeDescription>
+    private class ODataDtoTypeEmitter : DtoTypeEmitter<ODataTypeDescription>
     {
         public ODataDtoTypeEmitter(IDataModel model)
             : base(model)
         {
         }
 
-        protected override TypeDescription ProcessType(NodeTypeDescription type, TypeBuilder dto)
+        protected override TypeDescription ProcessType(NodeTypeDescription type, TypeInfo dto)
         {
             var baseDescription = base.ProcessType(type, dto);
             var controllerType = EmitController(type, baseDescription.DtoType, ModuleBuilder).CreateTypeInfo()!;
@@ -40,7 +37,7 @@ internal class GeneratedTypesApplicationPart : ApplicationPart, IApplicationPart
         private static TypeBuilder EmitController(NodeTypeDescription type, Type dtoType, ModuleBuilder moduleBuilder)
         {
             var genericType = typeof(NodeController<,>).MakeGenericType(type.Type, dtoType);
-            var result = moduleBuilder.DefineType($"{type.Name}Controller",
+            var result = moduleBuilder.DefineType($"{GetTypeName(type.Type)}Controller",
                 TypeAttributes.Public |
                 TypeAttributes.Class |
                 TypeAttributes.AutoClass |

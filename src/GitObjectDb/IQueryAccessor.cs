@@ -9,9 +9,6 @@ namespace GitObjectDb;
 /// <summary>Provides various queries to access GitObjectDb items.</summary>
 public interface IQueryAccessor
 {
-    /// <summary>Gets the underlying Git repository.</summary>
-    IRepository Repository { get; }
-
     /// <summary>Gets the model that this connection should manage.</summary>
     IDataModel Model { get; }
 
@@ -86,4 +83,12 @@ public interface IQueryAccessor
     public IEnumerable<Resource> GetResources(Node node,
                                               string? committish = null,
                                               IMemoryCache? referenceCache = null);
+
+    /// <summary>
+    /// Gets the history of a node.
+    /// </summary>
+    /// <param name="node">The node whose commits should be returned.</param>
+    /// <param name="branch">The branch to get log from.</param>
+    /// <returns>The node history.</returns>
+    public IEnumerable<LogEntry> GetCommits(Node node, string? branch = null);
 }

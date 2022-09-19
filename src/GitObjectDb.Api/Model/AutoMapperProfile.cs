@@ -47,6 +47,10 @@ public class AutoMapperProfile : Profile
     {
         foreach (var property in description.DtoType.GetProperties())
         {
+            if (property == description.DtoType.GetProperty(nameof(NodeDto.Children)))
+            {
+                continue;
+            }
             if (property.PropertyType.IsAssignableTo(typeof(NodeDto)))
             {
                 MapSingleReference(description, mapping, property);

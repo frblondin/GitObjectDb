@@ -20,8 +20,7 @@ public class ConventionBaseModelBuilder : ModelBuilder
     public ConventionBaseModelBuilder RegisterAssemblyTypes(Assembly assembly, Predicate<Type>? filter = null)
     {
         foreach (var type in from t in assembly.GetTypes()
-                             where !t.IsAbstract &&
-                                   !t.IsGenericTypeDefinition &&
+                             where !t.IsGenericTypeDefinition &&
                                    typeof(Node).IsAssignableFrom(t) &&
                                    (filter?.Invoke(t) ?? true)
                              select t)

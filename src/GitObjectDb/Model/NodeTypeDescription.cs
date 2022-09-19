@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 
 namespace GitObjectDb.Model;
 
 /// <summary>Provides a description of a node type.</summary>
 [DebuggerDisplay("Name = {Name}, Type = {Type}")]
-public class NodeTypeDescription
+public class NodeTypeDescription : IEquatable<NodeTypeDescription>
 {
     private readonly List<NodeTypeDescription> _children = new();
 
@@ -44,15 +42,11 @@ public class NodeTypeDescription
 
     private static void ValidateType(Type type)
     {
-        if (type.IsAbstract)
-        {
-            throw new ArgumentException($"Type {type} is abstract.");
-        }
         if (type.IsGenericTypeDefinition)
         {
             throw new ArgumentException($"Type {type} is a generic type definition.");
         }
-        if (type.GetConstructor(Type.EmptyTypes) is null)
+        if (type != typeof(Node) && !type.IsAbstract && type.GetConstructor(Type.EmptyTypes) is null)
         {
             throw new ArgumentException($"No parameterless constructor found for type {type}.");
         }
@@ -68,5 +62,29 @@ public class NodeTypeDescription
         {
             _children.Add(nodeType);
         }
+    }
+
+    /// <inheritdoc />
+    public bool Equals(NodeTypeDescription? other)
+    {
+        if (ReferenceEquals(null, other))
+        {
+            return false;
+        }
+
+        return ReferenceEquals(this, other) ||
+               Type == other.Type;
+    }
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj)
+    {
+        return obj is NodeTypeDescription description && Equals(description);
+    }
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        return Type.GetHashCode();
     }
 }
