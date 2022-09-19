@@ -58,9 +58,9 @@ internal sealed partial class Connection : IConnectionInternal
 
     private static void InitializeRepository(string path, string initialBranch)
     {
-        LibGit2Sharp.Repository.Init(path);
+        LibGit2Sharp.Repository.Init(path, isBare: true);
 
-        var head = Path.Combine(path, ".git", "HEAD");
+        var head = Path.Combine(path, "HEAD");
         var content = File.ReadAllText(head);
         var newContent = content.Replace("refs/heads/master", $"refs/heads/{initialBranch}");
         File.WriteAllText(head, newContent);

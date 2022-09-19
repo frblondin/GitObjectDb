@@ -133,7 +133,7 @@ internal class FastImportCommitCommand : ICommitCommand
         try
         {
             using var stream = File.OpenRead(importFile);
-            GitCliCommand.Execute(connection.Repository.Info.WorkingDirectory,
+            GitCliCommand.Execute(connection.Repository.Info.Path,
                                   @$"fast-import --export-marks=""{markFile}""",
                                   stream);
             var linePrefix = $":{commitMarkId} ";
