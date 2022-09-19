@@ -1,4 +1,4 @@
 {
   "$schema": "./build.schema.json",
-  "Solution": "src/GitObjectDb.sln"
+  "Solution": "GitObjectDb.sln"
 }
