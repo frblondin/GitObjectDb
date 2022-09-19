@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -13,6 +13,7 @@
     <Using Include="GitObjectDb.Api.OData" />
     <Using Include="GitObjectDb.Api.GraphQL" />
     <Using Include="GitObjectDb.Web" />
+    <Using Include="Models.Organization" />
     <Using Include="Models.Software" />
   </ItemGroup>
 
@@ -26,6 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\GitObjectDb.Api.GraphQL\GitObjectDb.Api.GraphQL.csproj" />
     <ProjectReference Include="..\..\GitObjectDb.Api.OData\GitObjectDb.Api.OData.csproj" />
+    <ProjectReference Include="..\Models.Organization\Models.Organization.csproj" />
     <ProjectReference Include="..\Models.Software\Models.Software.csproj" />
   </ItemGroup>
 

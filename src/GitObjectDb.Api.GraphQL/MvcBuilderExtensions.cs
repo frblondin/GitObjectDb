@@ -2,12 +2,10 @@ using GitObjectDb.Api.GraphQL.GraphModel;
 using GitObjectDb.Api.Model;
 using GitObjectDb.Model;
 using GraphQL;
-using GraphQL.MicrosoftDI;
-using GraphQL.SystemTextJson;
+using GraphQL.DI;
 using GraphQL.Types;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace GitObjectDb.Api.GraphQL;
 
@@ -16,20 +14,32 @@ public static class MvcBuilderExtensions
 {
     /// <summary>Adds support of GraphQL queries.</summary>
     /// <param name="source">The source.</param>
-    /// <param name="model">The <see cref="IDataModel"/> to be exposed through GraphQL.</param>
+    /// <param name="emitter">The dto type emitter.</param>
+    /// <param name="configure">The GraphQL configuration delegate.</param>
     /// <returns>The source <see cref="IMvcBuilder"/>.</returns>
-    public static IMvcBuilder AddGitObjectDbGraphQL(this IMvcBuilder source, IDataModel model)
+    public static IMvcBuilder AddGitObjectDbGraphQLControllers(this IMvcBuilder source, DtoTypeEmitter emitter, Action<IGraphQLBuilder>? configure = null)
     {
-        var query = new GitObjectDbQuery(model);
+        // Avoid double-registrations
+        if (source.Services.Any(sd => sd.ServiceType == typeof(ISchema)))
+        {
+            return source;
+        }
+
+        var schema = new GitObjectDbSchema(emitter);
+        var query = (GitObjectDbQuery)schema.Query;
         source.Services
-            .AddGitObjectDbApi()
-            .AddAutoMapper(c => c.AddProfile(new AutoMapperProfile(query.DtoEmitter.TypeDescriptions)))
-            .AddSingleton<ISchema>(new GitObjectDbSchema(query))
-            .AddGraphQL(builder => builder
-                .AddApolloTracing(true)
-                .AddSystemTextJson()
-                .AddGraphTypes(query.DtoEmitter.AssemblyBuilder));
-        var part = new AssemblyPart(typeof(NodeController).Assembly);
-        return source.ConfigureApplicationPartManager(m => m.ApplicationParts.Add(part));
+            .AddSingleton<ISchema>(schema)
+            .AddGraphQL(builder =>
+            {
+                builder
+                    .AddSystemTextJson()
+                    .AddGraphTypes(query.DtoEmitter.AssemblyBuilder);
+                configure?.Invoke(builder);
+            });
+
+        source.ConfigureApplicationPartManager(m =>
+            m.ApplicationParts.Add(new AssemblyPart(typeof(NodeController).Assembly)));
+
+        return source;
     }
 }

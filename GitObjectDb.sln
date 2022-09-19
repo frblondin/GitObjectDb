@@ -40,6 +40,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb.Api.Tests", "sr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Models.Organization", "src\samples\Models.Organization\Models.Organization.csproj", "{CB3720E5-3D23-4135-8390-189D7A94F014}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb.Api.GraphQL.Tests", "src\tests\GitObjectDb.Api.GraphQL.Tests\GitObjectDb.Api.GraphQL.Tests.csproj", "{D1BFA3E4-F278-4078-B2B0-F38173D67A84}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -85,6 +87,10 @@ Global
 		{CB3720E5-3D23-4135-8390-189D7A94F014}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CB3720E5-3D23-4135-8390-189D7A94F014}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CB3720E5-3D23-4135-8390-189D7A94F014}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1BFA3E4-F278-4078-B2B0-F38173D67A84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1BFA3E4-F278-4078-B2B0-F38173D67A84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1BFA3E4-F278-4078-B2B0-F38173D67A84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1BFA3E4-F278-4078-B2B0-F38173D67A84}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -99,6 +105,7 @@ Global
 		{9E5B46DB-5D2F-4609-8710-E38056166795} = {02646CBF-41CC-48E1-A816-1F030E9A9D2D}
 		{144B9B14-0D26-4AB2-8199-69CD2710DC62} = {96852FB8-475B-4CF5-AD64-0565395F775D}
 		{CB3720E5-3D23-4135-8390-189D7A94F014} = {CD7D4EE2-82D1-4EFE-8023-A6DF6589D505}
+		{D1BFA3E4-F278-4078-B2B0-F38173D67A84} = {96852FB8-475B-4CF5-AD64-0565395F775D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {909F3182-5E05-4EE3-8A7E-65188A32A31E}

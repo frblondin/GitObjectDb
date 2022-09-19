@@ -18,14 +18,18 @@ public class AutoMapperProfile : Profile
     /// <param name="types">The types for which mappings need to be defined.</param>
     public AutoMapperProfile(IEnumerable<DataTransferTypeDescription> types)
     {
-        var baseMapping = CreateMap<Node, NodeDto>()
+        CreateMap<string?, DataPath?>()
+            .ConvertUsing((path, _) => path is null ? null : DataPath.Parse(path));
+
+        var baseNodeToDtoMapping = CreateMap<Node, NodeDto>()
             .ForMember(
                 n => n.Path,
                 m => m.MapFrom((source, _) => source.Path?.FilePath))
             .ForMember(
                 n => n.ChildResolver,
                 m => m.MapFrom(GetChildResolver));
-        AddTypes(types, baseMapping);
+        var baseDtoToNodeMapping = CreateMap<NodeDto, Node>();
+        AddTypes(types, baseNodeToDtoMapping, baseDtoToNodeMapping);
 
         Func<IEnumerable<NodeDto>> GetChildResolver(Node source,
                                                     NodeDto destination,
@@ -37,22 +41,30 @@ public class AutoMapperProfile : Profile
                                                     };
     }
 
-    private void AddTypes(IEnumerable<DataTransferTypeDescription> types, IMappingExpression<Node, NodeDto> baseMapping)
+    private void AddTypes(IEnumerable<DataTransferTypeDescription> types,
+                          IMappingExpression<Node, NodeDto> baseNodeToDtoMapping,
+                          IMappingExpression<NodeDto, Node> baseDtoToNodeMapping)
     {
         foreach (var description in types)
         {
-            var mapping = CreateMap(description.NodeType.Type, description.DtoType)
-                .ConstructUsing((src, context) =>
-                {
-                    var commitId = context.GetCommitId();
-                    var factory = Reflect.Constructor(description.DtoType, typeof(Node), typeof(ObjectId));
-                    return factory.Invoke(src, commitId);
-                });
-
-            MapReferenceProperties(description, mapping);
-
-            baseMapping.Include(description.NodeType.Type, description.DtoType);
+            CreateNodeToDtoMapping(description, baseNodeToDtoMapping);
+            CreateDtoToNodeMapping(description, baseDtoToNodeMapping);
         }
+    }
+
+    private void CreateNodeToDtoMapping(DataTransferTypeDescription description, IMappingExpression<Node, NodeDto> baseNodeToDtoMapping)
+    {
+        var mapping = CreateMap(description.NodeType.Type, description.DtoType)
+            .ConstructUsing((src, context) =>
+            {
+                var commitId = context.GetCommitId();
+                var factory = Reflect.Constructor(description.DtoType, typeof(Node), typeof(ObjectId));
+                return factory.Invoke(src, commitId);
+            });
+
+        MapReferenceProperties(description, mapping);
+
+        baseNodeToDtoMapping.Include(description.NodeType.Type, description.DtoType);
     }
 
     /// <summary>Maps to other nodes must also be mapped to dto types.</summary>
@@ -102,6 +114,13 @@ public class AutoMapperProfile : Profile
             context.Mapper.Map(sourceGetter(original),
                                typeof(IEnumerable<>).MakeGenericType(nodeType!),
                                typeof(IEnumerable<>).MakeGenericType(dtoType))));
+    }
+
+    private void CreateDtoToNodeMapping(DataTransferTypeDescription description, IMappingExpression<NodeDto, Node> baseDtoToNodeMapping)
+    {
+        CreateMap(description.DtoType, description.NodeType.Type);
+
+        baseDtoToNodeMapping.Include(description.DtoType, description.NodeType.Type);
     }
 }
 

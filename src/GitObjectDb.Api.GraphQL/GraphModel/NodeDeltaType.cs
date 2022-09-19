@@ -14,10 +14,12 @@ internal class NodeDeltaType<TNode, TNodeDto> : ObjectGraphType<DeltaDto<TNodeDt
         Description = $"Represents changes for {typeName}.";
 
         var updatedAtProperty = ExpressionReflector.GetProperty<DeltaDto<TNodeDto>>(d => d.UpdatedAt);
-        Field<StringGraphType>(updatedAtProperty.Name, updatedAtProperty.GetXmlDocsSummary(false));
+        Field<StringGraphType>(updatedAtProperty.Name)
+            .Description(updatedAtProperty.GetXmlDocsSummary(false));
 
         var deletedProperty = ExpressionReflector.GetProperty<DeltaDto<TNodeDto>>(d => d.Deleted);
-        Field<BooleanGraphType>(deletedProperty.Name, deletedProperty.GetXmlDocsSummary(false));
+        Field<BooleanGraphType>(deletedProperty.Name)
+            .Description(deletedProperty.GetXmlDocsSummary(false));
     }
 
     void INodeDeltaType.AddNodeReference(GitObjectDbQuery query)

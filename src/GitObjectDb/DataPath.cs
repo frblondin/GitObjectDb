@@ -118,7 +118,7 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
     /// <returns>The root path.</returns>
     public static DataPath Root(Node node, IDataModel model)
     {
-        var useNodeFolders = GetSuffix(node, model, out var suffix);
+        var useNodeFolders = GetSuffix(node.Id, node.GetType(), model, out var suffix);
         return new DataPath(suffix, $"{node.Id}.json", useNodeFolders);
     }
 
@@ -183,9 +183,23 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
     /// <returns>The new <see cref="DataPath"/> representing the child node path.</returns>
     public DataPath AddChild(Node node, IDataModel model)
     {
-        var useNodeFolders = GetSuffix(node, model, out var suffix);
+        var useNodeFolders = GetSuffix(node.Id, node.GetType(), model, out var suffix);
         var path = string.IsNullOrEmpty(FolderPath) ? suffix : $"{FolderPath}/{suffix}";
         return new DataPath(path, $"{node.Id}.json", useNodeFolders);
+    }
+
+    /// <summary>
+    /// Adds a node to the current instance.
+    /// </summary>
+    /// <param name="id">The node id to be added.</param>
+    /// <param name="nodeType">The node type to be added.</param>
+    /// <param name="model">The model.</param>
+    /// <returns>The new <see cref="DataPath"/> representing the child node path.</returns>
+    public DataPath AddChild(UniqueId id, Type nodeType, IDataModel model)
+    {
+        var useNodeFolders = GetSuffix(id, nodeType, model, out var suffix);
+        var path = string.IsNullOrEmpty(FolderPath) ? suffix : $"{FolderPath}/{suffix}";
+        return new DataPath(path, $"{id}.json", useNodeFolders);
     }
 
     internal DataPath AddChild(string folderName, UniqueId id, bool useNodeFolders)
@@ -194,11 +208,10 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
         return new DataPath(folder, $"{id}.json", useNodeFolders);
     }
 
-    private static bool GetSuffix(Node node, IDataModel model, out string suffix)
+    private static bool GetSuffix(UniqueId id, Type type, IDataModel model, out string suffix)
     {
-        var type = node.GetType();
         var description = model.GetDescription(type);
-        suffix = description.UseNodeFolders ? $"{description.Name}/{node.Id}" : description.Name;
+        suffix = description.UseNodeFolders ? $"{description.Name}/{id}" : description.Name;
         return description.UseNodeFolders;
     }
 

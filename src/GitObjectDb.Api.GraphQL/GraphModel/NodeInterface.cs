@@ -22,7 +22,7 @@ internal sealed class NodeInterface : InterfaceGraphType<NodeDto>
             }
             var type = property.PropertyType.GetGraphTypeFromType(isNullable: true, TypeMappingMode.OutputType);
             var summary = typeof(Node).GetProperty(property.Name)?.GetXmlDocsSummary(false);
-            Field(type, property.Name, summary);
+            Field(property.Name, type).Description(summary);
         }
 
         AddField(CreateHistoryField());

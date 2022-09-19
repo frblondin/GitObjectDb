@@ -1,14 +1,16 @@
 using GitObjectDb.Api.Model;
+using GitObjectDb.Model;
 using GraphQL.Types;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
 
 public class GitObjectDbSchema : Schema
 {
-    public GitObjectDbSchema(GitObjectDbQuery query)
+    public GitObjectDbSchema(DtoTypeEmitter emitter)
     {
-        Query = query;
+        AdditionalTypeMappings.Add(this);
 
-        RegisterTypeMapping(typeof(NodeDto), typeof(NodeInterface));
+        Query = new GitObjectDbQuery(emitter);
+        Mutation = new GitObjectDbMutation((GitObjectDbQuery)Query);
     }
 }

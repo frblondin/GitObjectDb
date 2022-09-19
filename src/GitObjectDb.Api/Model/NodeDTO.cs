@@ -8,20 +8,21 @@ public class NodeDto
     /// <summary>Initializes a new instance of the <see cref="NodeDto"/> class.</summary>
     /// <param name="node">The original <see cref="Node"/> instance that the data transfer object represents.</param>
     /// <param name="commitId">The commit id that the <paramref name="node"/> has been retrieved from.</param>
-    protected NodeDto(Node node, ObjectId commitId)
+    protected NodeDto(Node? node, ObjectId? commitId)
     {
         Node = node;
-        CommitId = commitId.Sha;
+        Id = node?.Id.ToString() ?? UniqueId.CreateNew().ToString();
+        CommitId = commitId?.Sha;
     }
 
     /// <summary>Gets the original <see cref="Node"/> instance that the data transfer object represents.</summary>
-    public Node Node { get; }
+    public Node? Node { get; }
 
     /// <summary>Gets the commit containing this node.</summary>
-    public string CommitId { get; }
+    public string? CommitId { get; }
 
     /// <summary>Gets the node unique identifier.</summary>
-    public string? Id { get; init; }
+    public string Id { get; init; }
 
     /// <summary>Gets the node path.</summary>
     public string? Path { get; init; }

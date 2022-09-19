@@ -34,12 +34,11 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
     public Connection(string path,
                       IDataModel model,
                       string initialBranch,
-                      IMemoryCache referenceCache,
                       IServiceProvider serviceProvider)
     {
         Repository = GetOrCreateRepository(path, initialBranch);
         Model = model;
-        ReferenceCache = referenceCache;
+        ReferenceCache = serviceProvider.GetRequiredService<IMemoryCache>();
         Serializer = serviceProvider.GetRequiredService<NodeSerializerFactory>().Invoke(model);
         _transformationComposerFactory = serviceProvider.GetRequiredService<TransformationComposerFactory>();
         _rebaseFactory = serviceProvider.GetRequiredService<RebaseFactory>();

@@ -35,14 +35,15 @@ public class NodeType<TNode, TNodeDto> : ObjectGraphType<TNodeDto>, INodeType
     {
         foreach (var property in typeof(TNodeDto).GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
-            if (!SchemaTypes.BuiltInScalarMappings.ContainsKey(property.PropertyType))
+            if (!AdditionalTypeMappings.IsScalarType(property.PropertyType))
             {
                 continue;
             }
             var type = property.PropertyType.GetGraphTypeFromType(isNullable: true, TypeMappingMode.OutputType);
             var summary = typeof(TNode).GetProperty(property.Name)?.GetXmlDocsSummary(false) ??
                 property.GetXmlDocsSummary(false);
-            Field(type, property.Name, summary);
+            Field(property.Name, type)
+                .Description(summary);
         }
     }
 
@@ -98,7 +99,7 @@ public class NodeType<TNode, TNodeDto> : ObjectGraphType<TNodeDto>, INodeType
 
     void INodeType.AddChildren(GitObjectDbQuery query)
     {
-        var description = query.Model.GetDescription(typeof(TNode));
+        var description = query.DtoEmitter.Model.GetDescription(typeof(TNode));
         foreach (var childType in description.Children)
         {
             var dtoEmitterInfo = query.DtoEmitter.TypeDescriptions.First(d => d.NodeType.Equals(childType));

@@ -25,7 +25,7 @@ internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
         return queryAccessor.Serializer.Deserialize(stream,
                                        parms.Tree.Id,
                                        parms.Path,
-                                       p => LoadNode(queryAccessor, parms with { Path = p }));
+                                       p => Execute(queryAccessor, parms with { Path = p }));
     }
 
     private static ITreeItem LoadResource(Parameters parms) =>
