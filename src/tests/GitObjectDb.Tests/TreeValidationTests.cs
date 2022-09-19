@@ -62,6 +62,20 @@ public class TreeValidationTests
         Assert.Throws<GitObjectDbException>(() => sut.Validate(tree, connection.Model));
     }
 
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void CannotCommitTwoNodesWithSameId(IFixture fixture, IConnection connection, Field field)
+    {
+        // Act
+        var composer = (TransformationComposer)connection
+            .Update(c => c.CreateOrUpdate(new Application { Id = field.Id }));
+        var tree = UpdateTree(connection, composer);
+
+        // Assert
+        var sut = fixture.Create<TreeValidation>();
+        Assert.Throws<GitObjectDbException>(() => sut.Validate(tree, connection.Model));
+    }
+
     private static Tree UpdateTree(IConnection connection, TransformationComposer composer)
     {
         var repository = ((IConnectionInternal)connection).Repository;

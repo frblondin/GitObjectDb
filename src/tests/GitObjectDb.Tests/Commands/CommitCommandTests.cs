@@ -199,7 +199,7 @@ public class CommitCommandTests
             A.CallTo(validation).WithVoidReturnType().DoesNothing();
             fixture.Inject(validation);
 
-            fixture.Inject(new CommitCommand(validation));
+            fixture.Inject(new CommitCommand(() => validation));
         }
     }
 }
