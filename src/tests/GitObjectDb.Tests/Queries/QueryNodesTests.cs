@@ -60,4 +60,26 @@ public class QueryNodesTests : DisposeArguments
         // Assert
         Assert.That(constant.EmbeddedResource, Is.Not.Null);
     }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
+    public void LookupByPass(IConnection connection, Table table)
+    {
+        // Act
+        var result = connection.Lookup<Table>(table.Path);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(table));
+    }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
+    public void LookupById(IConnection connection, Table table)
+    {
+        // Act
+        var result = connection.Lookup<Table>(table.Id);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(table));
+    }
 }

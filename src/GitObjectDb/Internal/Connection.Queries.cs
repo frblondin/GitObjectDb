@@ -18,13 +18,24 @@ internal sealed partial class Connection
     // Use lazy for concurrent dictionary thread safety
     private readonly ConcurrentDictionary<DataPath, Lazy<Repository>> _repositories = new();
 
-    public TItem Lookup<TItem>(DataPath path,
+    public TItem? Lookup<TItem>(DataPath path,
                                string? committish = null)
         where TItem : ITreeItem
     {
         var (commit, _) = GetTree(path, committish);
-        return (TItem)_loader.Execute(this,
-                                      new(commit.Tree, path));
+        return commit.Tree[path.FilePath] is null ?
+            default :
+            (TItem)_loader.Execute(this, new(commit.Tree, path));
+    }
+
+    public TItem? Lookup<TItem>(UniqueId id,
+                               string? committish = null)
+        where TItem : ITreeItem
+    {
+        var (commit, _, path) = TryGetTree(id, committish);
+        return path is null ?
+            default :
+            (TItem)_loader.Execute(this, new(commit.Tree, path));
     }
 
     public ICommitEnumerable<TItem> GetItems<TItem>(Node? parent = null,
@@ -148,6 +159,44 @@ internal sealed partial class Connection
             var tree = commit.Tree[path.FolderPath] ??
                        throw new GitObjectDbException("Requested path could not be found.");
             return (commit, tree.Target.Peel<Tree>());
+        }
+    }
+
+    private (Commit Commit, Tree? RelativePath, DataPath? Path) TryGetTree(UniqueId id, string? committish = null)
+    {
+        var commit = committish != null ?
+            (Commit)Repository.Lookup(committish) :
+            Repository.Head.Tip;
+        if (commit == null)
+        {
+            throw new GitObjectDbException("No valid commit could be found.");
+        }
+
+        var stack = new Stack<string>();
+        var tree = Search(commit.Tree, $"{id}.json", stack);
+        var path = DataPath.Parse(string.Join("/", stack.Reverse()));
+        return (commit, tree, path);
+
+        static Tree? Search(Tree tree, string blobName, Stack<string> path)
+        {
+            foreach (var item in tree)
+            {
+                path.Push(item.Name);
+                if (item.TargetType == TreeEntryTargetType.Blob && item.Name == blobName)
+                {
+                    return tree;
+                }
+                if (item.TargetType == TreeEntryTargetType.Tree)
+                {
+                    var found = Search(item.Target.Peel<Tree>(), blobName, path);
+                    if (found is not null)
+                    {
+                        return found;
+                    }
+                }
+                path.Pop();
+            }
+            return null;
         }
     }
 
