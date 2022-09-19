@@ -15,11 +15,11 @@
 # ------------------------------------------------------------------------------
 
 stages:
-  - stage: ubuntu_latest
-    displayName: 'ubuntu-latest'
+  - stage: windows_2022
+    displayName: 'windows-2022'
     dependsOn: [  ]
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: 'windows-2022'
     jobs:
       - job: Restore
         displayName: 'Restore'
@@ -36,7 +36,7 @@ stages:
             inputs:
               key: $(Agent.OS) | nuget-packages | **/global.json, **/*.csproj
               restoreKeys: $(Agent.OS) | nuget-packages
-              path: $(HOME)/.nuget/packages
+              path: $(USERPROFILE)/.nuget/packages
           - task: CmdLine@2
             inputs:
               script: './build.cmd Restore --skip'
@@ -55,7 +55,7 @@ stages:
             inputs:
               key: $(Agent.OS) | nuget-packages | **/global.json, **/*.csproj
               restoreKeys: $(Agent.OS) | nuget-packages
-              path: $(HOME)/.nuget/packages
+              path: $(USERPROFILE)/.nuget/packages
           - task: CmdLine@2
             inputs:
               script: './build.cmd Compile --skip'
@@ -74,7 +74,7 @@ stages:
             inputs:
               key: $(Agent.OS) | nuget-packages | **/global.json, **/*.csproj
               restoreKeys: $(Agent.OS) | nuget-packages
-              path: $(HOME)/.nuget/packages
+              path: $(USERPROFILE)/.nuget/packages
           - task: CmdLine@2
             inputs:
               script: './build.cmd Test --skip'
@@ -93,7 +93,7 @@ stages:
             inputs:
               key: $(Agent.OS) | nuget-packages | **/global.json, **/*.csproj
               restoreKeys: $(Agent.OS) | nuget-packages
-              path: $(HOME)/.nuget/packages
+              path: $(USERPROFILE)/.nuget/packages
           - task: CmdLine@2
             inputs:
               script: './build.cmd Coverage --skip'
@@ -112,7 +112,7 @@ stages:
             inputs:
               key: $(Agent.OS) | nuget-packages | **/global.json, **/*.csproj
               restoreKeys: $(Agent.OS) | nuget-packages
-              path: $(HOME)/.nuget/packages
+              path: $(USERPROFILE)/.nuget/packages
           - task: CmdLine@2
             inputs:
               script: './build.cmd Pack --skip'
