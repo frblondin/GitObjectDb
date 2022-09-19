@@ -31,7 +31,7 @@ internal class FastImportCommitCommand : ICommitCommand
                                                                                description.AmendPreviousCommit,
                                                                                description.MergeParent).ToList();
             int commitMarkId;
-            using (var writer = new StreamWriter(File.OpenWrite(importFile)))
+            using (var writer = new StreamWriter(File.OpenWrite(importFile)) { NewLine = "\n" })
             {
                 var index = new List<string>(transformationComposer.Transformations.Count);
                 commitMarkId = WriteFastInsertImportFile(connection,
@@ -79,31 +79,30 @@ internal class FastImportCommitCommand : ICommitCommand
         var branch = connection.Repository.Refs.Head.TargetIdentifier;
         if (parents.Count == 0)
         {
-            writer.Write($"reset {branch}\n");
+            writer.WriteLine($"reset {branch}");
         }
-        writer.Write($"commit {branch}\n");
-        writer.Write($"mark :{commitMarkId}\n");
-        WriteSignature(writer, nameof(author), author);
-        WriteSignature(writer, nameof(committer), committer);
-        writer.Write($"data {Encoding.UTF8.GetByteCount(message)}\n");
-        writer.Write(message);
-        writer.Write('\n');
+        writer.WriteLine($"commit {branch}");
+        writer.WriteLine($"mark :{commitMarkId}");
+        WriteSignature(writer, "author", description.Author);
+        WriteSignature(writer, "committer", description.Committer);
+        writer.WriteLine($"data {Encoding.UTF8.GetByteCount(description.Message)}");
+        writer.WriteLine(description.Message);
         WriteParentCommits(writer, parents);
     }
 
     private static void WriteSignature(TextWriter writer, string type, Signature signature)
     {
-        writer.Write($"{type} {signature.Name} <{signature.Email}> {signature.When.ToUnixTimeSeconds()} {signature.When.Offset.Minutes:+0000;-0000}\n");
+        writer.WriteLine($"{type} {signature.Name} <{signature.Email}> {signature.When.ToUnixTimeSeconds()} {signature.When.Offset.Minutes:+0000;-0000}");
     }
 
     private static void WriteParentCommits(TextWriter writer, List<Commit> parents)
     {
         if (parents.Count >= 1)
         {
-            writer.Write($"from {parents[0].Id}\n");
+            writer.WriteLine($"from {parents[0].Id}");
             if (parents.Count >= 2)
             {
-                writer.Write($"merge {parents[1].Id}\n");
+                writer.WriteLine($"merge {parents[1].Id}");
             }
         }
     }
@@ -112,8 +111,7 @@ internal class FastImportCommitCommand : ICommitCommand
     {
         foreach (var item in index)
         {
-            writer.Write(item);
-            writer.Write('\n');
+            writer.WriteLine(item);
         }
     }
 
