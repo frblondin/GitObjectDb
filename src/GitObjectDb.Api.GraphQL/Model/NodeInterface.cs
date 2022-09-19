@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.Model;
 
-internal class NodeInterface : InterfaceGraphType<NodeDto>
+internal sealed class NodeInterface : InterfaceGraphType<NodeDto>
 {
     public NodeInterface()
     {

@@ -18,11 +18,11 @@ internal interface INodeType : IGraphType
     void AddChildren(GitObjectDbQuery query);
 }
 
-public sealed class NodeType<TNode, TNodeDTO> : ObjectGraphType<TNodeDTO>, INodeType
+public sealed class NodeType<TNode, TNodeDto> : ObjectGraphType<TNodeDto>, INodeType
 {
     public NodeType()
     {
-        Name = typeof(TNode).Name;
+        Name = typeof(TNode).Name.Replace("`", string.Empty);
 
         AddScalarProperties();
 
@@ -30,6 +30,8 @@ public sealed class NodeType<TNode, TNodeDTO> : ObjectGraphType<TNodeDTO>, INode
         {
             Name = "History",
             Type = typeof(ListGraphType<CommitType>),
+            Arguments = new(
+                new QueryArgument<StringGraphType> { Name = GitObjectDbQuery.BranchArgument }),
             Resolver = new FuncFieldResolver<object?, object?>(GitObjectDbQuery.QueryLog),
         });
 
@@ -38,7 +40,7 @@ public sealed class NodeType<TNode, TNodeDTO> : ObjectGraphType<TNodeDTO>, INode
 
     private void AddScalarProperties()
     {
-        foreach (var property in typeof(TNodeDTO).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        foreach (var property in typeof(TNodeDto).GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
             if (!SchemaTypes.BuiltInScalarMappings.ContainsKey(property.PropertyType))
             {
@@ -51,7 +53,7 @@ public sealed class NodeType<TNode, TNodeDTO> : ObjectGraphType<TNodeDTO>, INode
 
     void INodeType.AddReferences(GitObjectDbQuery query)
     {
-        foreach (var property in typeof(TNodeDTO).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        foreach (var property in typeof(TNodeDto).GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
             if (property.PropertyType.IsAssignableTo(typeof(NodeDto)))
             {
@@ -66,8 +68,7 @@ public sealed class NodeType<TNode, TNodeDTO> : ObjectGraphType<TNodeDTO>, INode
 
     private void AddSingleReference(GitObjectDbQuery query, PropertyInfo property)
     {
-        var description = query.DtoEmitter.TypeDescriptions.First(d => d.DtoType == property.PropertyType);
-        var type = query.GetOrCreateGraphType(description);
+        var type = query.GetOrCreateGraphType(property.PropertyType, out var _);
 
         AddField(new()
         {
@@ -82,28 +83,27 @@ public sealed class NodeType<TNode, TNodeDTO> : ObjectGraphType<TNodeDTO>, INode
                 var reference = (Node)getter.Invoke(parentNode.Node);
                 var mapper = context.RequestServices?.GetRequiredService<IMapper>() ??
                     throw new NotSupportedException("No mapper context set.");
-                return mapper.Map(reference, property.PropertyType, description.DtoType);
+                return mapper.Map(reference, property.PropertyType, property.PropertyType);
             }),
         });
     }
 
-    private void AddMultiReference(GitObjectDbQuery query, PropertyInfo property, Type dtoType)
+    private void AddMultiReference(GitObjectDbQuery query, MemberInfo member, Type dtoType)
     {
-        var description = query.DtoEmitter.TypeDescriptions.First(d => d.DtoType == dtoType);
-        var type = query.GetOrCreateGraphType(description);
-        var sourceEnumType = typeof(IEnumerable<>).MakeGenericType(description.NodeType.Type);
+        var type = query.GetOrCreateGraphType(dtoType, out var nodeType);
+        var sourceEnumType = typeof(IEnumerable<>).MakeGenericType(nodeType);
         var destEnumType = typeof(IEnumerable<>).MakeGenericType(dtoType);
 
         AddField(new()
         {
-            Name = property.Name,
+            Name = member.Name,
             Type = type.GetType(),
             ResolvedType = type,
             Resolver = new FuncFieldResolver<object?, object?>(context =>
             {
                 var parentNode = context.Source as NodeDto ??
                     throw new NotSupportedException("Could not get parent node.");
-                var getter = Reflect.PropertyGetter(parentNode.Node.GetType(), property.Name);
+                var getter = Reflect.PropertyGetter(parentNode.Node.GetType(), member.Name);
                 var references = (Node)getter.Invoke(parentNode.Node);
                 var mapper = context.RequestServices?.GetRequiredService<IMapper>() ??
                     throw new NotSupportedException("No mapper context set.");
@@ -119,7 +119,7 @@ public sealed class NodeType<TNode, TNodeDTO> : ObjectGraphType<TNodeDTO>, INode
         var description = query.Model.GetDescription(typeof(TNode));
         foreach (var childType in description.Children)
         {
-            var dtoEmitterInfo = query.DtoEmitter.TypeDescriptions.First(d => d.NodeType == childType);
+            var dtoEmitterInfo = query.DtoEmitter.TypeDescriptions.First(d => d.NodeType.Equals(childType));
             query.AddCollectionField(this, dtoEmitterInfo);
         }
     }

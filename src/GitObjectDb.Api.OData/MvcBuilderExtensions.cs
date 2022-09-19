@@ -31,7 +31,7 @@ public static class MvcBuilderExtensions
             .AddOData(options =>
             {
                 var dtoTypes = applicationPart.TypeDescriptions.Select(d => d.DtoType);
-                var edmModel = EdmModelConverter.ConvertToEdm(model, dtoTypes);
+                var edmModel = model.ConvertToEdm(dtoTypes);
                 options.AddRouteComponents(routePrefix, edmModel);
                 setupAction(options);
             });

@@ -25,6 +25,21 @@ public partial class GitObjectDbQuery : ObjectGraphType
 
     public IDataModel Model { get; }
 
+    internal IGraphType GetOrCreateGraphType(Type dtoType, out Type nodeType)
+    {
+        if (dtoType == typeof(NodeDto))
+        {
+            nodeType = typeof(Node);
+            return new NodeInterface();
+        }
+        else
+        {
+            var description = DtoEmitter.TypeDescriptions.First(d => d.DtoType == dtoType);
+            nodeType = description.NodeType.Type;
+            return GetOrCreateGraphType(description);
+        }
+    }
+
     internal INodeType GetOrCreateGraphType(TypeDescription description)
     {
         if (!_typeToGraphType.TryGetValue(description, out var result))

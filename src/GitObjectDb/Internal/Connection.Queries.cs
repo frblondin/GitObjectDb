@@ -113,6 +113,16 @@ internal sealed partial class Connection
         return _comparer.Compare(this, old, @new, policy ?? Model.DefaultComparisonPolicy);
     }
 
+    public IEnumerable<LogEntry> GetCommits(Node node, string? branch = null)
+    {
+        var filePath = node.ThrowIfNoPath().FilePath;
+        var filter = new CommitFilter
+        {
+            IncludeReachableFrom = branch ?? "HEAD",
+        };
+        return Repository.Commits.QueryBy(filePath, filter);
+    }
+
     private (Tree Tree, Tree RelativePath) GetTree(DataPath? path = null, string? committish = null)
     {
         var commit = committish != null ?

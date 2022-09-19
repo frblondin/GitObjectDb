@@ -30,9 +30,9 @@ public static class TypeExtensions
         var @interface = type.GetInterfaces().FirstOrDefault(IsInterfaceDefinition);
         return @interface?.GetGenericArguments()[0];
 
-        bool IsInterfaceDefinition(Type type)
-        {
-            return type.IsInterface && type.IsGenericTypeDefinition && type == interfaceDefinition;
-        }
+        bool IsInterfaceDefinition(Type nestedType) =>
+            nestedType.IsInterface &&
+            nestedType.IsGenericType &&
+            nestedType.GetGenericTypeDefinition() == interfaceDefinition;
     }
 }

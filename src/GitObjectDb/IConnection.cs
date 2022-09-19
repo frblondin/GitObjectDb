@@ -16,6 +16,9 @@ public delegate IConnection ConnectionFactory(string path, IDataModel model, str
 /// <seealso cref="IDisposable" />
 public interface IConnection : IQueryAccessor, IDisposable
 {
+    /// <summary>Gets the underlying Git repository.</summary>
+    IRepository Repository { get; }
+
     /// <summary>Initiates a series of node transformations.</summary>
     /// <param name="transformations">The transformations to be applied.</param>
     /// <returns>The collection of transformations.</returns>

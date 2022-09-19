@@ -46,19 +46,19 @@ public class DtoTypeEmitter<TTypeDescription>
                 t => dtoTypes.FirstOrDefault(i => i.Type.Type == t).Dto ??
                 throw new NotSupportedException("Could not find dto type."));
 
-            result.Add((TTypeDescription)ProcessType(type, dto));
+            result.Add((TTypeDescription)ProcessType(type, dto.CreateTypeInfo()!));
         }
         return result.AsReadOnly();
     }
 
-    protected virtual TypeDescription ProcessType(NodeTypeDescription type, TypeBuilder dto)
+    protected virtual TypeDescription ProcessType(NodeTypeDescription type, TypeInfo dto)
     {
-        return new TypeDescription(type, dto.CreateTypeInfo()!);
+        return new TypeDescription(type, dto);
     }
 
     private (NodeTypeDescription Type, TypeBuilder Dto) EmitDto(NodeTypeDescription type)
     {
-        var result = ModuleBuilder.DefineType($"{type.Name}DTO",
+        var result = ModuleBuilder.DefineType($"{GetTypeName(type.Type)}DTO",
                                               TypeAttributes.Public |
                                               TypeAttributes.Class |
                                               TypeAttributes.AutoClass |
@@ -70,12 +70,17 @@ public class DtoTypeEmitter<TTypeDescription>
         return (type, result);
     }
 
+    protected static string GetTypeName(Type type) =>
+        type.IsGenericType ?
+        $"{type.Name}`{string.Join(",", type.GetGenericArguments().Select(GetTypeName))}" :
+        type.Name;
+
     private static void AddDtoDescription(NodeTypeDescription type, TypeBuilder result)
     {
         result.SetCustomAttribute(
             new CustomAttributeBuilder(
                 typeof(DtoDescriptionAttribute).GetConstructors().Single(),
-                new object[] { type.Name }));
+                new object[] { type.Type, type.Name }));
     }
 
     private static void EmitDtoConstructor(TypeBuilder result)
