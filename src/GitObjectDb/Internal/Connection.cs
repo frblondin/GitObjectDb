@@ -2,6 +2,7 @@ using GitObjectDb.Comparison;
 using GitObjectDb.Injection;
 using GitObjectDb.Internal.Queries;
 using GitObjectDb.Model;
+using GitObjectDb.Tools;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -60,10 +61,20 @@ internal sealed partial class Connection : IConnectionInternal
     {
         LibGit2Sharp.Repository.Init(path, isBare: true);
 
-        var head = Path.Combine(path, "HEAD");
-        var content = File.ReadAllText(head);
-        var newContent = content.Replace("refs/heads/master", $"refs/heads/{initialBranch}");
-        File.WriteAllText(head, newContent);
+        if (!initialBranch.Equals("master", StringComparison.Ordinal))
+        {
+            if (GitCliCommand.IsGitInstalled)
+            {
+                GitCliCommand.Execute(path, $"symbolic-ref HEAD refs/heads/{initialBranch}");
+            }
+            else
+            {
+                var head = Path.Combine(path, "HEAD");
+                var content = File.ReadAllText(head);
+                var newContent = content.Replace("refs/heads/master", $"refs/heads/{initialBranch}");
+                File.WriteAllText(head, newContent);
+            }
+        }
     }
 
     public ITransformationComposer Update(Action<ITransformationComposer>? transformations = null)
