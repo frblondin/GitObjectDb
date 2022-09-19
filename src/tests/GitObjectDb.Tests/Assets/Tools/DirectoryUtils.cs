@@ -9,7 +9,7 @@ namespace GitObjectDb.Tests.Assets.Tools;
 /// <summary>
 /// Set of tools for managing directories.
 /// </summary>
-internal static class DirectoryUtils
+public static class DirectoryUtils
 {
     /// <summary>
     /// Deletes the specified target dir and all its children recursively.
@@ -18,7 +18,7 @@ internal static class DirectoryUtils
     /// <param name="continueOnError">if set to <c>true</c> ignore errors.</param>
     /// <param name="exclusionList">File/directory exclusion list.</param>
     /// <returns><code>true</code> if all files and directories could be deleted. <code>false</code> otherwise.</returns>
-    internal static bool Delete(string targetDir, bool continueOnError, params string[] exclusionList)
+    public static bool Delete(string targetDir, bool continueOnError, params string[] exclusionList)
     {
         var fixedExclusionList = exclusionList.Select(p => System.IO.Path.GetFullPath(p)).ToArray();
         return DeleteImpl(targetDir, continueOnError, fixedExclusionList);

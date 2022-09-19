@@ -13,7 +13,7 @@ public class AutoMapperProfile : Profile
         var baseMapping = CreateMap<Node, NodeDto>()
             .ForMember(
                 n => n.Path,
-                m => m.MapFrom((source, _) => source.Path?.FolderPath))
+                m => m.MapFrom((source, _) => source.Path?.FilePath))
             .ForMember(
                 n => n.ChildResolver,
                 m => m.MapFrom(GetChildResolver));

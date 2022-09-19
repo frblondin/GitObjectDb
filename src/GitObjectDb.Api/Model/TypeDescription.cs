@@ -1,7 +1,9 @@
 using GitObjectDb.Model;
+using System.Diagnostics.CodeAnalysis;
 
 namespace GitObjectDb.Api.Model;
 
+[ExcludeFromCodeCoverage]
 public class TypeDescription : IEquatable<TypeDescription>
 {
     public TypeDescription(NodeTypeDescription nodeType, Type dtoType)
