@@ -1,4 +1,5 @@
 using AutoFixture;
+using GitObjectDb.Model;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using Models.Software;
@@ -56,7 +57,8 @@ namespace GitObjectDb.Tests.Assets.Data.Software
             IConnectionInternal CreateConnection()
             {
                 var alreadyExists = Directory.Exists(path);
-                var result = (IConnectionInternal)repositoryFactory(path, "main");
+                var model = serviceProvider.GetRequiredService<IDataModel>();
+                var result = (IConnectionInternal)repositoryFactory(path, model);
                 if (!alreadyExists)
                 {
                     var software = new DataGenerator(result, ApplicationCount, TablePerApplicationCount, FieldPerTableCount, ResourcePerTableCount);

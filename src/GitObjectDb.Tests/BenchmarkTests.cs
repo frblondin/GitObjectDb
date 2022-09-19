@@ -5,7 +5,6 @@ using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
 using NUnit.Framework;
 using System;
-using System.Linq;
 
 namespace GitObjectDb.Tests
 {

@@ -34,8 +34,9 @@ namespace GitObjectDb
             source.AddFactoryDelegate<ConnectionFactory, Connection>();
             var internalFactories = typeof(Factories)
                 .GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
-                .Where(t => typeof(Delegate).IsAssignableFrom(t));
-            source.AddFactoryDelegates(internalFactories);
+                .Where(t => typeof(Delegate).IsAssignableFrom(t))
+                .ToArray();
+            source.AddFactoryDelegates(Assembly.GetExecutingAssembly(), internalFactories);
             source.AddSingleton<INodeSerializer, DefaultSerializer>();
             source.AddSingleton<NodeSerializerCache>();
             source.AddSingleton<Comparer>();

@@ -1,4 +1,5 @@
 using LibGit2Sharp;
+using System;
 using System.Collections.Generic;
 
 namespace GitObjectDb
@@ -38,7 +39,8 @@ namespace GitObjectDb
         /// <param name="author">The author of the commit.</param>
         /// <param name="committer">The committer of the commit.</param>
         /// <param name="amendPreviousCommit">If set to <c>true</c>, previous commit will be amended.</param>
+        /// <param name="beforeProcessing">Callback that gets invoked before processing each transformation.</param>
         /// <returns>The resulting commit.</returns>
-        Commit Commit(string message, Signature author, Signature committer, bool amendPreviousCommit = false);
+        Commit Commit(string message, Signature author, Signature committer, bool amendPreviousCommit = false, Action<ITransformation>? beforeProcessing = null);
     }
 }

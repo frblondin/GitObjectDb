@@ -14,13 +14,14 @@ namespace GitObjectDb.Internal.Commands
             _treeValidation = treeValidation;
         }
 
-        internal Commit Commit(Repository repository, IEnumerable<ApplyUpdateTreeDefinition> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, Commit? mergeParent = null)
+        internal Commit Commit(Repository repository, IEnumerable<ITransformation> transformations, string message, Signature author, Signature committer, bool amendPreviousCommit = false, Commit? mergeParent = null, Action<ITransformation>? beforeProcessing = null)
         {
             var tip = repository.Info.IsHeadUnborn ? null : repository.Head.Tip;
             var definition = tip != null ? TreeDefinition.From(tip) : new TreeDefinition();
             foreach (var transformation in transformations)
             {
-                transformation(repository.ObjectDatabase, definition, tip?.Tree);
+                beforeProcessing?.Invoke(transformation);
+                transformation.TreeTransformation(repository.ObjectDatabase, definition, tip?.Tree);
             }
             var parents = RetrieveParentsOfTheCommitBeingCreated(repository, amendPreviousCommit, mergeParent).ToList();
             return Commit(repository, definition, message, author, committer, parents, amendPreviousCommit, true);

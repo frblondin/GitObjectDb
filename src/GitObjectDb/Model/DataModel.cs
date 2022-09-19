@@ -1,20 +1,23 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 namespace GitObjectDb.Model
 {
     /// <summary>Semantic representation of a model.</summary>
     internal class DataModel : IDataModel
     {
-        /// <summary>Initializes a new instance of the <see cref="DataModel"/> class.</summary>
-        /// <param name="nodeTypes">Collection of node types that are contained in this model.</param>
+        private readonly ILookup<string, NodeTypeDescription> _folderNames;
+
         internal DataModel(IEnumerable<NodeTypeDescription> nodeTypes)
         {
             NodeTypes = nodeTypes;
+            _folderNames = NodeTypes.ToLookup(n => n.Name);
         }
 
-        /// <inheritdoc/>
         public IEnumerable<NodeTypeDescription> NodeTypes { get; }
+
+        public IEnumerable<NodeTypeDescription> GetTypesMatchingFolderName(string folderName) =>
+            _folderNames[folderName];
     }
 }

@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// Extension methods for adding services to an <see cref="IServiceCollection" />.
     /// </summary>
-    internal static class FactoryDelegateProviderExtensions
+    public static class FactoryDelegateProviderExtensions
     {
         private static readonly MethodInfo _getRequiredServiceDefinition = ExpressionReflector.GetMethod(
             (IServiceProvider provider) => ServiceProviderServiceExtensions.GetRequiredService<object>(provider), true);
@@ -37,22 +37,41 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Adds a factory delegate that returns a new instance of the type specified by the delegate.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection" /> to add the service to.</param>
+        /// <param name="assembly">The assembly to scan.</param>
         /// <param name="delegateTypes">The delegate types to look for factory for.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        internal static IServiceCollection AddFactoryDelegates(this IServiceCollection services, IEnumerable<Type> delegateTypes)
+        public static IServiceCollection AddFactoryDelegates(this IServiceCollection services, Assembly assembly, IEnumerable<Type> delegateTypes)
         {
             foreach (var delegateType in delegateTypes)
             {
-                var implementationType = Assembly.GetExecutingAssembly().GetTypes().FirstOrDefault(IsTypeCompatible) ??
-                    throw new EntryPointNotFoundException($"No implementation found for factory '{delegateType}'. Make sure the constructor is decorated with the {nameof(FactoryDelegateConstructorAttribute)} attribute and that the constructor is public.");
-                var invoker = CreateInvoker(implementationType, delegateType);
-                services.AddSingleton(delegateType, (Func<IServiceProvider, object>)invoker.Compile());
-
-                bool IsTypeCompatible(Type type) =>
-                    delegateType.GetMethod("Invoke").ReturnType.IsAssignableFrom(type) &&
-                    type.GetTypeInfo().DeclaredConstructors.Any(c => c.GetCustomAttribute<FactoryDelegateConstructorAttribute>()?.DelegateType == delegateType);
+                services.AddFactoryDelegate(delegateType, assembly);
             }
             return services;
+        }
+
+        /// <summary>
+        /// Adds a factory delegate that returns a new instance of the type specified by the <typeparamref name="TDelegate"/> delegate.
+        /// </summary>
+        /// <typeparam name="TDelegate">The type of the delegate.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection" /> to add the service to.</param>
+        /// <param name="assembly">The assembly to scan.</param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
+        public static IServiceCollection AddFactoryDelegate<TDelegate>(this IServiceCollection services, Assembly assembly)
+            where TDelegate : Delegate
+        {
+            return services.AddFactoryDelegate(typeof(TDelegate), assembly);
+        }
+
+        private static IServiceCollection AddFactoryDelegate(this IServiceCollection services, Type delegateType, Assembly assembly)
+        {
+            var implementationType = assembly.GetTypes().FirstOrDefault(IsTypeCompatible) ??
+                throw new EntryPointNotFoundException($"No implementation found for factory '{delegateType}'. Make sure the constructor is decorated with the {nameof(FactoryDelegateConstructorAttribute)} attribute and that the constructor is public.");
+            var invoker = CreateInvoker(implementationType, delegateType);
+            return services.AddSingleton(delegateType, (Func<IServiceProvider, object>)invoker.Compile());
+
+            bool IsTypeCompatible(Type type) =>
+                delegateType.GetMethod("Invoke").ReturnType.IsAssignableFrom(type) &&
+                type.GetTypeInfo().DeclaredConstructors.Any(c => c.GetCustomAttribute<FactoryDelegateConstructorAttribute>()?.DelegateType == delegateType);
         }
 
         /// <summary>
@@ -62,26 +81,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TImplementation">The type of the implementation.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection" /> to add the service to.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        internal static IServiceCollection AddFactoryDelegate<TDelegate, TImplementation>(this IServiceCollection services)
+        public static IServiceCollection AddFactoryDelegate<TDelegate, TImplementation>(this IServiceCollection services)
             where TDelegate : Delegate
             where TImplementation : class
         {
             var invoker = CreateInvoker(typeof(TImplementation), typeof(TDelegate));
             return services.AddSingleton(typeof(TDelegate), (Func<IServiceProvider, object>)invoker.Compile());
-        }
-
-        /// <summary>
-        /// Adds a factory delegate that returns a new instance of the type specified by the nested delegate type named &quot;Factory&quot;.
-        /// </summary>
-        /// <typeparam name="TImplementation">The type of the implementation.</typeparam>
-        /// <param name="services">The <see cref="IServiceCollection" /> to add the service to.</param>
-        /// <returns>A reference to this instance after the operation has completed.</returns>
-        internal static IServiceCollection AddFactoryDelegate<TImplementation>(this IServiceCollection services)
-            where TImplementation : class
-        {
-            var delegateType = typeof(TImplementation).Assembly.GetType($"{typeof(TImplementation).FullName}+Factory", true);
-            var invoker = CreateInvoker(typeof(TImplementation), delegateType);
-            return services.AddSingleton(delegateType, (Func<IServiceProvider, object>)invoker.Compile());
         }
 
         private static LambdaExpression CreateInvoker(Type implementationType, Type delegateType)
