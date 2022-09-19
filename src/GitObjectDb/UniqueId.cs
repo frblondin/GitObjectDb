@@ -16,11 +16,6 @@ public struct UniqueId : IComparable<UniqueId>, IEquatable<UniqueId>
 {
     private static readonly RNGCryptoServiceProvider _rngCryptoServiceProvider = new();
 
-    /// <summary>
-    /// The sha length used by <see cref="UniqueId"/>.
-    /// </summary>
-    public const int ShaDefaultLength = 12;
-
 #pragma warning disable IDE1006 // Naming Styles
 
     /// <summary>
@@ -45,7 +40,11 @@ public struct UniqueId : IComparable<UniqueId>, IEquatable<UniqueId>
         }
     }
 
-    internal static ConstructorInfo Constructor { get; } = ExpressionReflector.GetConstructor(() => new UniqueId(string.Empty));
+    /// <summary>Gets the sha length used by <see cref="UniqueId"/>.</summary>
+    public static int ShaDefaultLength { get; } = 12;
+
+    internal static ConstructorInfo Constructor { get; } =
+        ExpressionReflector.GetConstructor(() => new UniqueId(string.Empty));
 
     /// <summary>
     /// Indicates whether the values of two specified <see cref="UniqueId" /> objects are equal.

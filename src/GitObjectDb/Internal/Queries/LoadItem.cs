@@ -14,7 +14,7 @@ internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
         _serializer = serializer;
     }
 
-    public ITreeItem Execute(IConnectionInternal connection, Parameters parms)
+    public ITreeItem Execute(IConnection connection, Parameters parms)
     {
         return parms.ReferenceCache?.GetOrAdd(parms.Path, Load) ?? Load(parms.Path);
 
@@ -24,7 +24,7 @@ internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
             LoadResource(parms);
     }
 
-    private ITreeItem LoadNode(IConnectionInternal connection, Parameters parms)
+    private ITreeItem LoadNode(IConnection connection, Parameters parms)
     {
         using var stream = GetStream(parms);
         return _serializer.Deserialize(stream,

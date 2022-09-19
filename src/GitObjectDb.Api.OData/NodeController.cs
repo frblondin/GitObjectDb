@@ -5,9 +5,9 @@ using Microsoft.AspNetCore.OData.Routing.Controllers;
 
 namespace GitObjectDb.Api.OData;
 
-public abstract class NodeController<TNode, TNodeDTO> : ODataController
+public class NodeController<TNode, TNodeDTO> : ODataController
     where TNode : Node
-    where TNodeDTO : NodeDTO
+    where TNodeDTO : NodeDto
 {
     private readonly DataProvider _dataProvider;
 
@@ -17,7 +17,9 @@ public abstract class NodeController<TNode, TNodeDTO> : ODataController
     }
 
     [EnableQuery]
-    public IEnumerable<TNodeDTO> Get([FromODataUri] string? parentPath = null, [FromODataUri] string? committish = null, [FromODataUri] bool isRecursive = false)
+    public IEnumerable<TNodeDTO> Get([FromODataUri] string? parentPath = null,
+                                     [FromODataUri] string? committish = null,
+                                     [FromODataUri] bool isRecursive = false)
     {
         return _dataProvider.GetNodes<TNode, TNodeDTO>(parentPath, committish, isRecursive);
     }

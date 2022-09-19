@@ -19,9 +19,14 @@ internal sealed class Rebase : IRebase
     private readonly IConnectionInternal _connection;
 
     [FactoryDelegateConstructor(typeof(Factories.RebaseFactory))]
-    public Rebase(
-        IComparerInternal comparer, IMergeComparer mergeComparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand,
-        IConnectionInternal connection, Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null)
+    public Rebase(IComparerInternal comparer,
+                  IMergeComparer mergeComparer,
+                  UpdateTreeCommand updateCommand,
+                  CommitCommand commitCommand,
+                  IConnectionInternal connection,
+                  Branch? branch = null,
+                  string? upstreamCommittish = null,
+                  ComparisonPolicy? policy = null)
     {
         _comparer = comparer;
         _mergeComparer = mergeComparer;
@@ -80,7 +85,7 @@ internal sealed class Rebase : IRebase
             Policy);
 
         CurrentChanges = _mergeComparer.Compare(upstreamChanges, branchChanges, Policy).ToList();
-        if (!CurrentChanges.Any(c => c.Status == ItemMergeStatus.EditConflict || c.Status == ItemMergeStatus.TreeConflict))
+        if (!CurrentChanges.HasAnyConflict())
         {
             Continue();
         }
@@ -106,38 +111,44 @@ internal sealed class Rebase : IRebase
 
     private void CommitChanges()
     {
-        if (CurrentChanges.Any(c => c.Status == ItemMergeStatus.EditConflict || c.Status == ItemMergeStatus.TreeConflict))
+        if (CurrentChanges.HasAnyConflict())
         {
             throw new GitObjectDbException("Remaining conflicts were not resolved.");
         }
 
         if (CurrentChanges.Any())
         {
-            var tip = CompletedCommits.Count > 0 ?
-                CompletedCommits[CompletedCommits.Count - 1] :
-                UpstreamCommit;
-            var replayedCommit = ReplayedCommits[CurrentStep];
-
-            // If last commit, update head so it points to the new commit
-            var commit = _commitCommand.Commit(
-                _connection,
-                tip,
-                CurrentChanges.Select(c =>
-                    (ApplyUpdateTreeDefinition)((ObjectDatabase db, TreeDefinition t, Tree? @ref) =>
-                    c.Transform(_updateCommand, db, t, @ref))),
-                replayedCommit.Message, replayedCommit.Author, replayedCommit.Committer,
-                updateHead: false);
-
-            // Update tip if last commit
-            if (CurrentStep == ReplayedCommits.Count - 1)
-            {
-                var logMessage = commit.BuildCommitLogMessage(false, false, false);
-                _connection.Repository.UpdateTerminalReference(Branch.Reference, commit, logMessage);
-            }
-
+            var commit = CommitChangesImpl();
             CompletedCommits = CompletedCommits.Add(commit);
         }
         UpdateCurrentStep();
+    }
+
+    private Commit CommitChangesImpl()
+    {
+        var tip = CompletedCommits.Count > 0 ?
+            CompletedCommits[CompletedCommits.Count - 1] :
+            UpstreamCommit;
+        var replayedCommit = ReplayedCommits[CurrentStep];
+
+        // If last commit, update head so it points to the new commit
+        var commit = _commitCommand.Commit(
+            _connection,
+            tip,
+            CurrentChanges.Select(c =>
+                (ApplyUpdateTreeDefinition)((database, treeDefinition, refTree) =>
+                c.Transform(_updateCommand, database, treeDefinition, refTree))),
+            replayedCommit.Message, replayedCommit.Author, replayedCommit.Committer,
+            updateHead: false);
+
+        // Update tip if last commit
+        if (CurrentStep == ReplayedCommits.Count - 1)
+        {
+            var logMessage = commit.BuildCommitLogMessage(false, false, false);
+            _connection.Repository.UpdateTerminalReference(Branch.Reference, commit, logMessage);
+        }
+
+        return commit;
     }
 
     private void UpdateCurrentStep()

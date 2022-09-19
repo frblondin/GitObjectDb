@@ -30,7 +30,8 @@ public static class ModelBuilderExtensions
     /// <param name="builder">The source model builder.</param>
     /// <param name="updater">The <see cref="UpdateDeprecatedNode"/>.</param>
     /// <returns>The model builder.</returns>
-    public static TModelBuilder AddDeprecatedNodeUpdater<TModelBuilder>(this TModelBuilder builder, UpdateDeprecatedNode updater)
+    public static TModelBuilder AddDeprecatedNodeUpdater<TModelBuilder>(this TModelBuilder builder,
+                                                                        UpdateDeprecatedNode updater)
         where TModelBuilder : ModelBuilder
     {
         return (TModelBuilder)builder.AddDeprecatedNodeUpdaterInternal(updater);

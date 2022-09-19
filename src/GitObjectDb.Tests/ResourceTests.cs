@@ -69,8 +69,8 @@ public class ResourceTests
         stream.Position = 0L;
 
         // Assert
-        Assert.Throws<NotImplementedException>(() => stream.Position = 1L);
-        Assert.Throws<NotImplementedException>(() => stream.Seek(0L, SeekOrigin.Current));
-        Assert.Throws<NotImplementedException>(() => stream.Seek(0L, SeekOrigin.End));
+        Assert.Throws<NotSupportedException>(() => stream.Position = 1L);
+        Assert.Throws<NotSupportedException>(() => stream.Seek(0L, SeekOrigin.Current));
+        Assert.Throws<NotSupportedException>(() => stream.Seek(0L, SeekOrigin.End));
     }
 }

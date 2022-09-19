@@ -46,7 +46,11 @@ public abstract partial class Change
     [ExcludeFromCodeCoverage]
     public override string ToString() => Message;
 
-    internal static Change? Create(ContentChanges changes, ITreeItem? old, ITreeItem? @new, ChangeStatus status, ComparisonPolicy policy)
+    internal static Change? Create(ContentChanges changes,
+                                   ITreeItem? old,
+                                   ITreeItem? @new,
+                                   ChangeStatus status,
+                                   ComparisonPolicy policy)
     {
         var oldNode = old as Node;
         var newNode = @new as Node;
@@ -65,6 +69,6 @@ public abstract partial class Change
             return new ResourceChange(changes, oldResource, newResource, status);
         }
 
-        throw new NotImplementedException();
+        throw new NotSupportedException();
     }
 }

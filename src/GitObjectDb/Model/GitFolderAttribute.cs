@@ -7,12 +7,12 @@ namespace GitObjectDb.Model;
 /// <summary>Instructs the engine in which folder name to store nodes.</summary>
 /// <seealso cref="Attribute" />
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
-public class GitFolderAttribute : Attribute
+public sealed class GitFolderAttribute : Attribute
 {
-    /// <summary>Gets the default value of <see cref="UseNodeFolders"/>.</summary>
-    public const bool DefaultUseNodeFoldersValue = true;
-
     private static readonly ConcurrentDictionary<Type, GitFolderAttribute> _cache = new();
+
+    /// <summary>Gets a value indicating whether the default value of <see cref="UseNodeFolders"/> should be true.</summary>
+    public static bool DefaultUseNodeFoldersValue { get; } = true;
 
     /// <summary>Gets the name of the folder.</summary>
     public string? FolderName { get; init; }

@@ -18,7 +18,10 @@ public record ComparisonPolicy
     /// <summary>Gets ignored class, property or field when decorated with attributes.</summary>
     public IImmutableList<Type> AttributesToIgnore { get; init; } = ImmutableList.Create<Type>();
 
-    /// <summary>Creates the default policy for a given model, ignoring properties decorated with <see cref="JsonIgnoreAttribute"/>.</summary>
+    /// <summary>
+    /// Creates the default policy for a given model, ignoring properties decorated
+    /// with <see cref="JsonIgnoreAttribute"/>.
+    /// </summary>
     /// <param name="model">The data model to extract properties from.</param>
     /// <returns>The comparison policy.</returns>
     public static ComparisonPolicy CreateDefault(IDataModel model)
@@ -46,24 +49,33 @@ public static class ComparisonPolicyExtensions
         };
     }
 
-    /// <summary>Makes a copy of the list, and adds the specified property to the end of the copied.</summary>
+    /// <summary>
+    /// Makes a copy of the list, and adds the specified property to the end of the copied.
+    /// </summary>
     /// <typeparam name="TNode">The type of the node whose property must be added to the list.</typeparam>
     /// <param name="source">The list.</param>
     /// <param name="propertyExpression">The expression describing the property to add to the list.</param>
     /// <returns>A new list with the property added.</returns>
-    public static IImmutableList<PropertyInfo> Add<TNode>(this IImmutableList<PropertyInfo> source, Expression<Func<TNode, object?>> propertyExpression)
+    public static IImmutableList<PropertyInfo> Add<TNode>(this IImmutableList<PropertyInfo> source,
+                                                          Expression<Func<TNode, object?>> propertyExpression)
         where TNode : Node
     {
         var property = ExpressionReflector.GetProperty(propertyExpression);
         return source.Add(property);
     }
 
-    /// <summary>Makes a copy of the list, and adds the properties that are approved by <paramref name="propertyPredicate"/>.</summary>
+    /// <summary>
+    /// Makes a copy of the list, and adds the properties that are approved
+    /// by <paramref name="propertyPredicate"/>.
+    /// </summary>
     /// <param name="source">The list.</param>
     /// <param name="dataModel">The data model to extract properties from.</param>
-    /// <param name="propertyPredicate">The method that returns true if a <see cref="PropertyInfo"/> should be added to the list.</param>
+    /// <param name="propertyPredicate">The method that returns true if a <see cref="PropertyInfo"/>
+    /// should be added to the list.</param>
     /// <returns>A new list with the property added.</returns>
-    public static IImmutableList<PropertyInfo> AddRange(this IImmutableList<PropertyInfo> source, IDataModel dataModel, Predicate<PropertyInfo> propertyPredicate)
+    public static IImmutableList<PropertyInfo> AddRange(this IImmutableList<PropertyInfo> source,
+                                                        IDataModel dataModel,
+                                                        Predicate<PropertyInfo> propertyPredicate)
     {
         var builder = ImmutableList.CreateBuilder<PropertyInfo>();
         builder.AddRange(source);

@@ -4,7 +4,7 @@ using System;
 namespace GitObjectDb;
 
 /// <summary>A set of methods for instances of <see cref="IRepository"/>.</summary>
-internal static partial class IRepositoryExtensions
+internal static class IRepositoryExtensions
 {
     /// <summary>Builds the commit log message.</summary>
     /// <param name="commit">The commit.</param>
@@ -12,9 +12,12 @@ internal static partial class IRepositoryExtensions
     /// <param name="isHeadOrphaned">if set to <c>true</c> [is head orphaned].</param>
     /// <param name="isMergeCommit">if set to <c>true</c> [is merge commit].</param>
     /// <returns>The commit log message.</returns>
-    internal static string BuildCommitLogMessage(this Commit commit, bool amendPreviousCommit, bool isHeadOrphaned, bool isMergeCommit)
+    internal static string BuildCommitLogMessage(this Commit commit,
+                                                 bool amendPreviousCommit,
+                                                 bool isHeadOrphaned,
+                                                 bool isMergeCommit)
     {
-        var kind = string.Empty;
+        string kind;
         if (isHeadOrphaned)
         {
             kind = " (initial)";
@@ -27,37 +30,48 @@ internal static partial class IRepositoryExtensions
         {
             kind = " (merge)";
         }
+        else
+        {
+            kind = string.Empty;
+        }
 
         return $"commit{kind}: {commit.MessageShort}";
     }
 
 #pragma warning disable SA1611 // Element parameters should be documented
     /// <summary>Updates the head and terminal reference.</summary>
-    internal static void UpdateHeadAndTerminalReference(this IRepository repository, Commit commit, string reflogMessage)
+    internal static void UpdateHeadAndTerminalReference(this IRepository repository,
+                                                        Commit commit,
+                                                        string reflogMessage)
     {
         repository.UpdateTerminalReference(repository.Refs.Head, commit, reflogMessage);
     }
 
     /// <summary>Updates the reference.</summary>
-    internal static void UpdateTerminalReference(this IRepository repository, Reference reference, Commit commit, string reflogMessage)
+    internal static void UpdateTerminalReference(this IRepository repository,
+                                                 Reference reference,
+                                                 Commit commit,
+                                                 string reflogMessage)
     {
+        var localReference = reference;
         while (true)
         {
-            switch (reference)
+            switch (localReference)
             {
                 case DirectReference direct:
                     repository.Refs.UpdateTarget(direct, commit.Id, reflogMessage);
                     return;
                 case SymbolicReference symRef:
-                    reference = symRef.Target;
-                    if (reference == null)
+                    localReference = symRef.Target;
+                    if (localReference == null)
                     {
                         repository.Refs.Add(symRef.TargetIdentifier, commit.Id, reflogMessage);
                         return;
                     }
                     break;
                 default:
-                    throw new NotSupportedException($"The reference type {reference?.GetType().ToString() ?? "null"} is not supported.");
+                    var message = $"The reference type {localReference?.GetType().ToString() ?? "null"} is not supported.";
+                    throw new NotSupportedException(message);
             }
         }
     }

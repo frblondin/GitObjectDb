@@ -12,8 +12,8 @@ public static class EdmModelConverter
     {
         var builder = new ODataConventionModelBuilder();
 
-        var node = builder.AddEntityType(typeof(NodeDTO));
-        node.HasKey(typeof(NodeDTO).GetProperty(nameof(NodeDTO.Id)));
+        var node = builder.AddEntityType(typeof(NodeDto));
+        node.HasKey(typeof(NodeDto).GetProperty(nameof(NodeDto.Id)));
 
         foreach (var type in dtoTypes)
         {

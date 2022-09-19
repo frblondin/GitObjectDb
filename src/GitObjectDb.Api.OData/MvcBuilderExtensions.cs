@@ -16,7 +16,8 @@ public static class MvcBuilderExtensions
     /// <param name="setupAction">The OData options to configure the services with, including access
     /// to a service provider which you can resolve services from.</param>
     /// <returns>The source <see cref="IMvcBuilder"/>.</returns>
-    public static IMvcBuilder AddGitObjectDbOData(this IMvcBuilder source, string routePrefix, IDataModel model, Action<ODataOptions> setupAction)
+    public static IMvcBuilder AddGitObjectDbOData(this IMvcBuilder source,
+        string routePrefix, IDataModel model, Action<ODataOptions> setupAction)
     {
         var applicationPart = new GeneratedTypesApplicationPart(model);
         source.Services
@@ -29,7 +30,9 @@ public static class MvcBuilderExtensions
             })
             .AddOData(options =>
             {
-                options.AddRouteComponents(routePrefix, EdmModelConverter.ConvertToEdm(model, applicationPart.TypeDescriptions.Select(d => d.DtoType)));
+                var dtoTypes = applicationPart.TypeDescriptions.Select(d => d.DtoType);
+                var edmModel = EdmModelConverter.ConvertToEdm(model, dtoTypes);
+                options.AddRouteComponents(routePrefix, edmModel);
                 setupAction(options);
             });
     }

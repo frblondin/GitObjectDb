@@ -14,9 +14,12 @@ public static class FactoryDelegateProviderExtensions
     private static readonly MethodInfo _getRequiredServiceDefinition = ExpressionReflector.GetMethod(
         (IServiceProvider provider) => ServiceProviderServiceExtensions.GetRequiredService<object>(provider), true);
 
-    internal static IServiceCollection AddServicesImplementing(this IServiceCollection services, Type interfaceType, ServiceLifetime lifetime)
+    internal static IServiceCollection AddServicesImplementing(this IServiceCollection services,
+                                                               Assembly assembly,
+                                                               Type interfaceType,
+                                                               ServiceLifetime lifetime)
     {
-        var query = from implementationType in Assembly.GetExecutingAssembly().GetTypes()
+        var query = from implementationType in assembly.GetTypes()
                     where implementationType.IsClass
                     from serviceType in implementationType.GetInterfaces()
                     where interfaceType.IsGenericTypeDefinition && serviceType.IsGenericType ?
@@ -38,7 +41,9 @@ public static class FactoryDelegateProviderExtensions
     /// <param name="assembly">The assembly to scan.</param>
     /// <param name="delegateTypes">The delegate types to look for factory for.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    public static IServiceCollection AddFactoryDelegates(this IServiceCollection services, Assembly assembly, IEnumerable<Type> delegateTypes)
+    public static IServiceCollection AddFactoryDelegates(this IServiceCollection services,
+                                                         Assembly assembly,
+                                                         IEnumerable<Type> delegateTypes)
     {
         foreach (var delegateType in delegateTypes)
         {
@@ -48,32 +53,42 @@ public static class FactoryDelegateProviderExtensions
     }
 
     /// <summary>
-    /// Adds a factory delegate that returns a new instance of the type specified by the <typeparamref name="TDelegate"/> delegate.
+    /// Adds a factory delegate that returns a new instance of the type specified by the <typeparamref name="TDelegate"/>
+    /// delegate.
     /// </summary>
     /// <typeparam name="TDelegate">The type of the delegate.</typeparam>
     /// <param name="services">The <see cref="IServiceCollection" /> to add the service to.</param>
     /// <param name="assembly">The assembly to scan.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    public static IServiceCollection AddFactoryDelegate<TDelegate>(this IServiceCollection services, Assembly assembly)
+    public static IServiceCollection AddFactoryDelegate<TDelegate>(this IServiceCollection services,
+                                                                   Assembly assembly)
         where TDelegate : Delegate
     {
         return services.AddFactoryDelegate(typeof(TDelegate), assembly);
     }
 
-    private static IServiceCollection AddFactoryDelegate(this IServiceCollection services, Type delegateType, Assembly assembly)
+    private static IServiceCollection AddFactoryDelegate(this IServiceCollection services,
+                                                         Type delegateType,
+                                                         Assembly assembly)
     {
         var implementationType = assembly.GetTypes().FirstOrDefault(IsTypeCompatible) ??
-            throw new EntryPointNotFoundException($"No implementation found for factory '{delegateType}'. Make sure the constructor is decorated with the {nameof(FactoryDelegateConstructorAttribute)} attribute and that the constructor is public.");
+            throw new EntryPointNotFoundException($"No implementation found for factory '{delegateType}'. " +
+            $"Make sure the constructor is decorated with the {nameof(FactoryDelegateConstructorAttribute)} attribute" +
+            $" and that the constructor is public.");
         var invoker = CreateInvoker(implementationType, delegateType);
         return services.AddSingleton(delegateType, (Func<IServiceProvider, object>)invoker.Compile());
 
         bool IsTypeCompatible(Type type) =>
             delegateType.GetMethod("Invoke").ReturnType.IsAssignableFrom(type) &&
-            type.GetTypeInfo().DeclaredConstructors.Any(c => c.GetCustomAttribute<FactoryDelegateConstructorAttribute>()?.DelegateType == delegateType);
+            type.GetTypeInfo().DeclaredConstructors.Any(IsDecoratedWithFactoryDelegateConstructorAttribute);
+
+        bool IsDecoratedWithFactoryDelegateConstructorAttribute(ConstructorInfo constructor) =>
+            constructor.GetCustomAttribute<FactoryDelegateConstructorAttribute>()?.DelegateType == delegateType;
     }
 
     /// <summary>
-    /// Adds a factory delegate that returns a new instance of the type specified by the <typeparamref name="TDelegate"/> delegate.
+    /// Adds a factory delegate that returns a new instance of the type specified by the <typeparamref name="TDelegate"/>
+    /// delegate.
     /// </summary>
     /// <typeparam name="TDelegate">The type of the delegate.</typeparam>
     /// <typeparam name="TImplementation">The type of the implementation.</typeparam>
@@ -87,7 +102,8 @@ public static class FactoryDelegateProviderExtensions
         return services.AddSingleton(typeof(TDelegate), (Func<IServiceProvider, object>)invoker.Compile());
     }
 
-    private static LambdaExpression CreateInvoker(Type implementationType, Type delegateType)
+    private static LambdaExpression CreateInvoker(Type implementationType,
+                                                  Type delegateType)
     {
         var capturedServiceProvider = Expression.Parameter(typeof(IServiceProvider), "capturedServiceProvider");
         var factory = CreateFactory(capturedServiceProvider, implementationType, delegateType);
@@ -102,7 +118,9 @@ public static class FactoryDelegateProviderExtensions
         return Expression.Lambda(invokerType, factory, capturedServiceProvider);
     }
 
-    private static LambdaExpression CreateFactory(ParameterExpression capturedServiceProvider, Type implementationType, Type delegateType)
+    private static LambdaExpression CreateFactory(Expression capturedServiceProvider,
+                                                  Type implementationType,
+                                                  Type delegateType)
     {
         var (parameters, argumentTypes, returnType) = GetDelegateData(delegateType);
         var constructor = ActivatorTools.FindPreferredConstructor(implementationType, argumentTypes, out var map);
@@ -123,7 +141,10 @@ public static class FactoryDelegateProviderExtensions
                 invokeMethod.ReturnType);
     }
 
-    private static Expression MapParameter(ParameterInfo p, int?[] map, IList<ParameterExpression> delegateArgs, Expression serviceProvider)
+    private static Expression MapParameter(ParameterInfo p,
+                                           int?[] map,
+                                           IList<ParameterExpression> delegateArgs,
+                                           Expression serviceProvider)
     {
         var mapped = map[p.Position];
         if (mapped.HasValue)

@@ -9,7 +9,7 @@ public sealed partial class Resource
 {
     /// <summary>Single resource linked to a <see cref="Node"/>.</summary>
 #pragma warning disable CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode()
-    public sealed partial class Data
+    public sealed class Data
     {
         private readonly Func<Stream> _stream;
 

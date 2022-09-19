@@ -18,52 +18,75 @@ internal class Comparer : IComparer, IComparerInternal
         _nodeLoader = nodeLoader;
     }
 
+    internal static IEnumerable<PropertyInfo> GetProperties(Type type, ComparisonPolicy policy) =>
+        type.GetTypeInfo().GetProperties(BindingFlags.Instance | BindingFlags.Public)
+        .Where(p => p.CanRead && p.CanWrite && !policy.IgnoredProperties.Contains(p));
+
     public ComparisonResult Compare(ITreeItem? expectedObject, ITreeItem? actualObject, ComparisonPolicy policy)
     {
         return CompareInternal(expectedObject, actualObject, policy);
     }
 
-    internal static IEnumerable<PropertyInfo> GetProperties(Type type, ComparisonPolicy policy) =>
-        type.GetTypeInfo().GetProperties(BindingFlags.Instance | BindingFlags.Public)
-        .Where(p => p.CanRead && p.CanWrite && !policy.IgnoredProperties.Contains(p));
-
-    internal static ComparisonResult CompareInternal(object? expectedObject, object? actualObject, ComparisonPolicy policy)
+    internal static ComparisonResult CompareInternal(object? expectedObject,
+                                                     object? actualObject,
+                                                     ComparisonPolicy policy)
     {
         var logic = Cache.Get(policy);
         return logic.Compare(expectedObject, actualObject);
     }
 
-    public ChangeCollection Compare(IConnectionInternal connection, Tree oldTree, Tree newTree, ComparisonPolicy? policy = null)
+    public ChangeCollection Compare(IConnection connection,
+                                    Tree oldTree,
+                                    Tree newTree,
+                                    ComparisonPolicy? policy = null)
     {
-        if (newTree == null)
-        {
-            newTree = connection.Repository.Head.Tip.Tree;
-        }
         using var changes = connection.Repository.Diff.Compare<Patch>(oldTree, newTree);
         var result = new ChangeCollection();
         foreach (var change in changes)
         {
-            var oldPath = new Lazy<DataPath>(() => DataPath.Parse(change.OldPath));
-            var old = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
-                connection,
-                new LoadItem.Parameters(oldTree, oldPath.Value, null)));
-            var newPath = new Lazy<DataPath>(() => DataPath.Parse(change.Path));
-            var @new = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
-                connection,
-                new LoadItem.Parameters(newTree, newPath.Value, null)));
-            var treeChange = change.Status switch
-            {
-                ChangeKind.Modified => Change.Create(change, old.Value, @new.Value, ChangeStatus.Edit, policy ?? connection.Model.DefaultComparisonPolicy),
-                ChangeKind.Added => Change.Create(change, default, @new.Value, ChangeStatus.Add, policy ?? connection.Model.DefaultComparisonPolicy),
-                ChangeKind.Deleted => Change.Create(change, old.Value, default, ChangeStatus.Delete, policy ?? connection.Model.DefaultComparisonPolicy),
-                _ => throw new NotImplementedException(change.Status.ToString()),
-            };
+            var treeChange = Compare(connection, oldTree, newTree, change, policy);
             if (treeChange != null)
             {
                 result.Add(treeChange);
             }
         }
         return result;
+    }
+
+    private Change? Compare(IConnection connection,
+                            Tree oldTree,
+                            Tree newTree,
+                            PatchEntryChanges change,
+                            ComparisonPolicy? policy)
+    {
+        var oldPath = new Lazy<DataPath>(() => DataPath.Parse(change.OldPath));
+        var old = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
+            connection,
+            new LoadItem.Parameters(oldTree, oldPath.Value, null)));
+        var newPath = new Lazy<DataPath>(() => DataPath.Parse(change.Path));
+        var @new = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
+            connection,
+            new LoadItem.Parameters(newTree, newPath.Value, null)));
+        var treeChange = change.Status switch
+        {
+            ChangeKind.Modified => Change.Create(change,
+                                                 old.Value,
+                                                 @new.Value,
+                                                 ChangeStatus.Edit,
+                                                 policy ?? connection.Model.DefaultComparisonPolicy),
+            ChangeKind.Added => Change.Create(change,
+                                              default,
+                                              @new.Value,
+                                              ChangeStatus.Add,
+                                              policy ?? connection.Model.DefaultComparisonPolicy),
+            ChangeKind.Deleted => Change.Create(change,
+                                                old.Value,
+                                                default,
+                                                ChangeStatus.Delete,
+                                                policy ?? connection.Model.DefaultComparisonPolicy),
+            _ => throw new NotSupportedException(change.Status.ToString()),
+        };
+        return treeChange;
     }
 
     internal static class Cache

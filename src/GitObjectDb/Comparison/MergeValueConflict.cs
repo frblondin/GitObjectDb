@@ -8,7 +8,11 @@ public sealed class MergeValueConflict
 {
     private readonly Action<object> _resolveCallback;
 
-    internal MergeValueConflict(PropertyInfo property, object? ancestorValue, object? ourValue, object? theirValue, Action<object> resolveCallback)
+    internal MergeValueConflict(PropertyInfo property,
+                                object? ancestorValue,
+                                object? ourValue,
+                                object? theirValue,
+                                Action<object> resolveCallback)
     {
         Property = property;
         AncestorValue = ancestorValue;

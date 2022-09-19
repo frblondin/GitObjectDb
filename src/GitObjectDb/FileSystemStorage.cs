@@ -8,12 +8,17 @@ namespace GitObjectDb;
 /// <summary>Provides details about special folders.</summary>
 public static class FileSystemStorage
 {
-    /// <summary>The data file name used to store information in Git.</summary>
-    public const string ResourceFolder = "Resources";
+    private static readonly Regex _resourcePath;
 
-    private static readonly Regex _resourcePath = new(
-        $"(^|/)({ResourceFolder})($|/)",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    static FileSystemStorage()
+    {
+        ResourceFolder = "Resources";
+        _resourcePath = new($"(^|/)({ResourceFolder})($|/)",
+                            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    }
+
+    /// <summary>Gets the data file name used to store information in Git.</summary>
+    public static string ResourceFolder { get; }
 
     internal static void ThrowIfAnyReservedName(string path)
     {

@@ -1,8 +1,8 @@
 namespace GitObjectDb.Api.Model;
 
-public abstract class NodeDTO
+public class NodeDto
 {
-    protected NodeDTO(Node node)
+    protected NodeDto(Node node)
     {
         Node = node;
     }
@@ -13,8 +13,8 @@ public abstract class NodeDTO
 
     public string? Path { get; set; }
 
-    public IEnumerable<NodeDTO> Children =>
-        ChildResolver?.Invoke() ?? Enumerable.Empty<NodeDTO>();
+    public IEnumerable<NodeDto> Children =>
+        ChildResolver?.Invoke() ?? Enumerable.Empty<NodeDto>();
 
-    internal Func<IEnumerable<NodeDTO>>? ChildResolver { get; set; }
+    internal Func<IEnumerable<NodeDto>>? ChildResolver { get; set; }
 }

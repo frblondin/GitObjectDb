@@ -19,17 +19,34 @@ internal class FastImportCommitCommand : ICommitCommand
         GitCliCommand.ThrowIfGitNotInstalled();
     }
 
-    public Commit Commit(IConnectionInternal connection, TransformationComposer transformationComposer, string message, Signature author, Signature committer, bool amendPreviousCommit = false, Commit? mergeParent = null, Action<ITransformation>? beforeProcessing = null)
+    public Commit Commit(IConnection connection,
+                         TransformationComposer transformationComposer,
+                         string message,
+                         Signature author,
+                         Signature committer,
+                         bool amendPreviousCommit = false,
+                         Commit? mergeParent = null,
+                         Action<ITransformation>? beforeProcessing = null)
     {
         var importFile = Path.GetTempFileName();
         try
         {
-            var parents = CommitCommand.RetrieveParentsOfTheCommitBeingCreated(connection.Repository, amendPreviousCommit, mergeParent).ToList();
+            var parents = CommitCommand.RetrieveParentsOfTheCommitBeingCreated(connection.Repository,
+                                                                               amendPreviousCommit,
+                                                                               mergeParent).ToList();
             int commitMarkId;
             using (var writer = new StreamWriter(File.OpenWrite(importFile)))
             {
                 var index = new List<string>(transformationComposer.Transformations.Count);
-                commitMarkId = WriteFastInsertImportFile(connection, transformationComposer, parents, writer, index, message, author, committer, beforeProcessing);
+                commitMarkId = WriteFastInsertImportFile(connection,
+                                                         transformationComposer,
+                                                         parents,
+                                                         writer,
+                                                         index,
+                                                         message,
+                                                         author,
+                                                         committer,
+                                                         beforeProcessing);
             }
             var commit = SendCommandThroughCli(connection, importFile, commitMarkId);
             _treeValidation.Validate(commit.Tree, connection.Model);
@@ -41,7 +58,15 @@ internal class FastImportCommitCommand : ICommitCommand
         }
     }
 
-    private static int WriteFastInsertImportFile(IConnectionInternal connection, TransformationComposer transformationComposer, List<Commit> parents, StreamWriter writer, List<string> index, string message, Signature author, Signature committer, Action<ITransformation>? beforeProcessing)
+    private static int WriteFastInsertImportFile(IConnection connection,
+                                                 TransformationComposer transformationComposer,
+                                                 List<Commit> parents,
+                                                 StreamWriter writer,
+                                                 List<string> index,
+                                                 string message,
+                                                 Signature author,
+                                                 Signature committer,
+                                                 Action<ITransformation>? beforeProcessing)
     {
         var tip = connection.Repository.Info.IsHeadUnborn ? null : connection.Repository.Head.Tip;
         transformationComposer.ApplyTransformations(tip, writer, index, beforeProcessing);
@@ -53,7 +78,13 @@ internal class FastImportCommitCommand : ICommitCommand
         return commitMarkId;
     }
 
-    private static void WriteFastInsertCommit(IConnectionInternal connection, List<Commit> parents, StreamWriter writer, string message, Signature author, Signature committer, int commitMarkId)
+    private static void WriteFastInsertCommit(IConnection connection,
+                                              List<Commit> parents,
+                                              TextWriter writer,
+                                              string message,
+                                              Signature author,
+                                              Signature committer,
+                                              int commitMarkId)
     {
         var branch = connection.Repository.Refs.Head.TargetIdentifier;
         if (parents.Count == 0)
@@ -67,6 +98,16 @@ internal class FastImportCommitCommand : ICommitCommand
         writer.Write($"data {Encoding.UTF8.GetByteCount(message)}\n");
         writer.Write(message);
         writer.Write('\n');
+        WriteParentCommits(writer, parents);
+    }
+
+    private static void WriteSignature(TextWriter writer, string type, Signature signature)
+    {
+        writer.Write($"{type} {signature.Name} <{signature.Email}> {signature.When.ToUnixTimeSeconds()} {signature.When.Offset.Minutes:+0000;-0000}\n");
+    }
+
+    private static void WriteParentCommits(TextWriter writer, List<Commit> parents)
+    {
         if (parents.Count >= 1)
         {
             writer.Write($"from {parents[0].Id}\n");
@@ -75,14 +116,9 @@ internal class FastImportCommitCommand : ICommitCommand
                 writer.Write($"merge {parents[1].Id}\n");
             }
         }
-
-        static void WriteSignature(StreamWriter writer, string type, Signature signature)
-        {
-            writer.Write($"{type} {signature.Name} <{signature.Email}> {signature.When.ToUnixTimeSeconds()} {signature.When.Offset.Minutes:+0000;-0000}\n");
-        }
     }
 
-    private static void WriteFastInsertCommitIndex(StreamWriter writer, List<string> index)
+    private static void WriteFastInsertCommitIndex(TextWriter writer, List<string> index)
     {
         foreach (var item in index)
         {
@@ -91,15 +127,17 @@ internal class FastImportCommitCommand : ICommitCommand
         }
     }
 
-    private static Commit SendCommandThroughCli(IConnectionInternal connection, string importFile, int commitMarkId)
+    private static Commit SendCommandThroughCli(IConnection connection, string importFile, int commitMarkId)
     {
         var markFile = Path.GetTempFileName();
         try
         {
             using var stream = File.OpenRead(importFile);
-            GitCliCommand.Execute(connection.Repository.Info.WorkingDirectory, @$"fast-import --export-marks=""{markFile}""", stream);
+            GitCliCommand.Execute(connection.Repository.Info.WorkingDirectory,
+                                  @$"fast-import --export-marks=""{markFile}""",
+                                  stream);
             var linePrefix = $":{commitMarkId} ";
-            var line = File.ReadLines(markFile).FirstOrDefault(l => l.StartsWith(linePrefix)) ??
+            var line = File.ReadLines(markFile).FirstOrDefault(l => l.StartsWith(linePrefix, StringComparison.Ordinal)) ??
                 throw new GitObjectDbException("Could not locate commit id in fast-import mark file.");
             var commitId = line.Substring(linePrefix.Length).Trim();
             return connection.Repository.Lookup(commitId).Peel<Commit>() ??

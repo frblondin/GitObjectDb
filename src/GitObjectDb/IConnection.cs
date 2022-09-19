@@ -34,29 +34,40 @@ public interface IConnection : IDisposable
     /// <typeparam name="TItem">The type of the node.</typeparam>
     /// <param name="path">The path.</param>
     /// <param name="committish">The committish.</param>
-    /// <param name="referenceCache">Cache that can be used to reuse same shared node references between queries.</param>
+    /// <param name="referenceCache">Cache that can be used to reuse same shared
+    /// node references between queries.</param>
     /// <returns>The item being found, if any.</returns>
-    TItem Lookup<TItem>(DataPath path, string? committish = null, ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
+    TItem Lookup<TItem>(DataPath path,
+                        string? committish = null,
+                        ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
         where TItem : ITreeItem;
 
     /// <summary>Gets all items from repository.</summary>
     /// <param name="parent">The parent node.</param>
     /// <param name="committish">The committish.</param>
     /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
-    /// <param name="referenceCache">Cache that can be used to reuse same shared node references between queries.</param>
+    /// <param name="referenceCache">Cache that can be used to reuse same shared
+    /// node references between queries.</param>
     /// <typeparam name="TItem">The type of requested items.</typeparam>
     /// <returns>The <see cref="IQueryable{Node}"/> that represents the input sequence.</returns>
-    IEnumerable<TItem> GetItems<TItem>(Node? parent = null, string? committish = null, bool isRecursive = false, ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
+    IEnumerable<TItem> GetItems<TItem>(Node? parent = null,
+                                       string? committish = null,
+                                       bool isRecursive = false,
+                                       ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
         where TItem : ITreeItem;
 
     /// <summary>Gets nodes from repository.</summary>
     /// <param name="parent">The parent node.</param>
     /// <param name="committish">The committish.</param>
     /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
-    /// <param name="referenceCache">Cache that can be used to reuse same shared node references between queries.</param>
+    /// <param name="referenceCache">Cache that can be used to reuse same shared
+    /// node references between queries.</param>
     /// <typeparam name="TNode">The type of requested nodes.</typeparam>
     /// <returns>The <see cref="IEnumerable{TNode}"/> that represents the input sequence.</returns>
-    IEnumerable<TNode> GetNodes<TNode>(Node? parent = null, string? committish = null, bool isRecursive = false, ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
+    IEnumerable<TNode> GetNodes<TNode>(Node? parent = null,
+                                       string? committish = null,
+                                       bool isRecursive = false,
+                                       ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
         where TNode : Node;
 
     /// <summary>Gets data paths from repository.</summary>
@@ -64,7 +75,9 @@ public interface IConnection : IDisposable
     /// <param name="committish">The committish.</param>
     /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
     /// <returns>The <see cref="IEnumerable{Node}"/> that represents the input sequence.</returns>
-    IEnumerable<DataPath> GetPaths(DataPath? parentPath = null, string? committish = null, bool isRecursive = false);
+    IEnumerable<DataPath> GetPaths(DataPath? parentPath = null,
+                                   string? committish = null,
+                                   bool isRecursive = false);
 
     /// <summary>Gets data paths from repository.</summary>
     /// <param name="parentPath">The parent node path.</param>
@@ -72,7 +85,9 @@ public interface IConnection : IDisposable
     /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
     /// <typeparam name="TItem">The type of requested item paths nodes.</typeparam>
     /// <returns>The <see cref="IEnumerable{Node}"/> that represents the input sequence.</returns>
-    IEnumerable<DataPath> GetPaths<TItem>(DataPath? parentPath = null, string? committish = null, bool isRecursive = false)
+    IEnumerable<DataPath> GetPaths<TItem>(DataPath? parentPath = null,
+                                          string? committish = null,
+                                          bool isRecursive = false)
         where TItem : ITreeItem;
 
     /// <summary>Compares two commits (additions, deletions, editions, conflicts).</summary>
@@ -80,36 +95,46 @@ public interface IConnection : IDisposable
     /// <param name="committish">End point of comparison.</param>
     /// <param name="policy">The merge policy to use.</param>
     /// <returns>Details about the comparison.</returns>
-    ChangeCollection Compare(string startCommittish, string? committish = null, ComparisonPolicy? policy = null);
+    ChangeCollection Compare(string startCommittish,
+                             string? committish = null,
+                             ComparisonPolicy? policy = null);
 
     /// <summary>
     /// Gets the resources associated to the node.
     /// </summary>
     /// <param name="node">The parent node.</param>
     /// <param name="committish">The committish.</param>
-    /// <param name="referenceCache">Cache that can be used to reuse same shared node references between queries.</param>
+    /// <param name="referenceCache">Cache that can be used to reuse same shared
+    /// node references between queries.</param>
     /// <returns>All nested resources.</returns>
-    public IEnumerable<Resource> GetResources(Node node, string? committish = null, ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null);
+    public IEnumerable<Resource> GetResources(Node node,
+                                              string? committish = null,
+                                              ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null);
 
     /// <summary>Checkouts the specified branch name.</summary>
     /// <param name="branchName">Name of the branch.</param>
     /// <param name="committish">The committish.</param>
     /// <returns>The branch being checked out.</returns>
-    Branch Checkout(string branchName, string? committish = null);
+    Branch Checkout(string branchName,
+                    string? committish = null);
 
     /// <summary>Rebases changes from upstream into the branch.</summary>
     /// <param name="branch">The branch to merge changes into.</param>
     /// <param name="upstreamCommittish">The upstream committish.</param>
     /// <param name="policy">The merge policy.</param>
     /// <returns>The resut of the rebase operation.</returns>
-    IRebase Rebase(Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null);
+    IRebase Rebase(Branch? branch = null,
+                   string? upstreamCommittish = null,
+                   ComparisonPolicy? policy = null);
 
     /// <summary>Merges changes from upstream into the branch.</summary>
     /// <param name="branch">The branch to merge changes into.</param>
     /// <param name="upstreamCommittish">The upstream committish.</param>
     /// <param name="policy">The merge policy.</param>
     /// <returns>The resut of the rebase operation.</returns>
-    IMerge Merge(Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null);
+    IMerge Merge(Branch? branch = null,
+                 string? upstreamCommittish = null,
+                 ComparisonPolicy? policy = null);
 
     /// <summary>
     /// Cherry-picks the specified commit.
@@ -119,7 +144,10 @@ public interface IConnection : IDisposable
     /// <param name="branch">The branch to cherry-pick into.</param>
     /// <param name="policy">The cherry-pick policy.</param>
     /// <returns>The result of the cherry-pick operation.</returns>
-    ICherryPick CherryPick(string committish, Signature? committer = null, Branch? branch = null, CherryPickPolicy? policy = null);
+    ICherryPick CherryPick(string committish,
+                           Signature? committer = null,
+                           Branch? branch = null,
+                           CherryPickPolicy? policy = null);
 }
 
 internal interface IConnectionInternal : IConnection

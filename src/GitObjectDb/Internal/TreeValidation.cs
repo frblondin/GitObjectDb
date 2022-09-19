@@ -53,9 +53,13 @@ internal class TreeValidation : ITreeValidation
                     ValidateNodeId(nodeId);
                     break;
                 case TreeEntryTargetType.Blob:
-                    throw new GitObjectDbException($"A node collection with {nameof(GitFolderAttribute.UseNodeFolders)} = false should only contain nodes of type '<ParentNodeId>.json'. Blob entry {item.Name}' was not expected.");
+                    throw new GitObjectDbException($"A node collection with {nameof(GitFolderAttribute.UseNodeFolders)} = false " +
+                        $"should only contain nodes of type '<ParentNodeId>.json'. Blob entry {item.Name}' was not expected.");
                 case TreeEntryTargetType.Tree:
-                    throw new GitObjectDbException($"A tree was not expected in a node collection that does not use {nameof(GitFolderAttribute.UseNodeFolders)}.");
+                    throw new GitObjectDbException($"A tree was not expected in a node collection that does " +
+                        $"not use {nameof(GitFolderAttribute.UseNodeFolders)}.");
+                default:
+                    throw new NotSupportedException(item.TargetType.ToString());
             }
         }
     }
@@ -70,9 +74,12 @@ internal class TreeValidation : ITreeValidation
                     ValidateNodeFolder(item, model);
                     break;
                 case TreeEntryTargetType.Blob:
-                    throw new NotSupportedException($"A blob was not expected to be found in a node collection using {nameof(GitFolderAttribute.UseNodeFolders)}.");
+                    throw new NotSupportedException($"A blob was not expected to be found in a node collection " +
+                        $"using {nameof(GitFolderAttribute.UseNodeFolders)}.");
                 case TreeEntryTargetType.Tree when item.Name == FileSystemStorage.ResourceFolder:
                     throw new NotSupportedException($"A resource folder was not expected to be found in a node collection.");
+                default:
+                    throw new NotSupportedException(item.TargetType.ToString());
             }
         }
     }
@@ -111,7 +118,8 @@ internal class TreeValidation : ITreeValidation
                 case TreeEntryTargetType.Blob when item.Name.Equals($"{id}.json", StringComparison.Ordinal):
                     return true;
                 case TreeEntryTargetType.Blob:
-                    throw new GitObjectDbException($"A node folder should only contain a file named '<ParentNodeId>.json'. Blob entry '{item.Name}' was not expected.");
+                    throw new GitObjectDbException($"A node folder should only contain a file named '<ParentNodeId>.json'. " +
+                        $"Blob entry '{item.Name}' was not expected.");
             }
         }
         return false;
@@ -122,7 +130,8 @@ internal class TreeValidation : ITreeValidation
     {
         if (useNodeFolder.Count() > 1)
         {
-            throw new NotSupportedException($"A model containing several types with different values for {nameof(GitFolderAttribute.UseNodeFolders)} is not supported.");
+            throw new NotSupportedException($"A model containing several types with different values " +
+                $"for {nameof(GitFolderAttribute.UseNodeFolders)} is not supported.");
         }
     }
 

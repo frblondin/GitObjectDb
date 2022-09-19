@@ -31,7 +31,9 @@ internal static class ActivatorTools
                 return declaredConstructor;
             }
         }
-        throw new InvalidOperationException($"A suitable constructor for type '{instanceType.Name}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor decorated with {nameof(FactoryDelegateConstructorAttribute)}.");
+        throw new InvalidOperationException($"A suitable constructor for type '{instanceType.Name}' could not be located. " +
+            $"Ensure the type is concrete and services are registered for all parameters of a public constructor decorated " +
+            $"with {nameof(FactoryDelegateConstructorAttribute)}.");
     }
 
     private static bool TryCreateParameterMap(ParameterInfo[] constructorParameters, Type[] argumentTypes, out int?[] parameterMap)
@@ -61,6 +63,7 @@ internal static class ActivatorTools
     [ExcludeFromCodeCoverage]
     private static void ThrowMarkedCtorDoesNotTakeAllProvidedArguments()
     {
-        throw new InvalidOperationException($"Constructor marked with {nameof(FactoryDelegateConstructorAttribute)} does not accept all given argument types.");
+        var message = $"Constructor marked with {nameof(FactoryDelegateConstructorAttribute)} does not accept all given argument types.";
+        throw new InvalidOperationException(message);
     }
 }

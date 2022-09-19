@@ -40,7 +40,7 @@ internal partial class NodeSerializer : INodeSerializer
             ReadCommentHandling = JsonCommentHandling.Skip,
         };
 
-        result.Converters.Add(new NonScalarConverter(this));
+        result.Converters.Add(new NonScalarConverter());
         result.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 
         return result;
@@ -58,7 +58,10 @@ internal partial class NodeSerializer : INodeSerializer
         return result;
     }
 
-    public Node Deserialize(Stream stream, DataPath? path, IDataModel model, Func<DataPath, ITreeItem> referenceResolver)
+    public Node Deserialize(Stream stream,
+                            DataPath? path,
+                            IDataModel model,
+                            Func<DataPath, ITreeItem> referenceResolver)
     {
         NodeReferenceHandler.NodeAccessor.Value = referenceResolver;
         try
@@ -100,7 +103,7 @@ internal partial class NodeSerializer : INodeSerializer
         }
         var updated = model.DeprecatedNodeUpdater(deprecated, newType) ??
             throw new GitObjectDbException("Deprecated node updater did not return any value.");
-        if (!newType.IsAssignableFrom(updated.GetType()))
+        if (!newType.IsInstanceOfType(updated))
         {
             throw new GitObjectDbException($"Deprecated node updater did not return a value of type '{newType}'.");
         }

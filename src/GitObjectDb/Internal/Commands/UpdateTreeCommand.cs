@@ -14,7 +14,7 @@ internal class UpdateTreeCommand
         _serializer = serializer;
     }
 
-    internal ApplyUpdateTreeDefinition CreateOrUpdate(ITreeItem item) => (database, definition, reference) =>
+    internal ApplyUpdateTreeDefinition CreateOrUpdate(ITreeItem item) => (database, definition, _) =>
     {
         switch (item)
         {
@@ -25,11 +25,11 @@ internal class UpdateTreeCommand
                 CreateOrUpdateResource(resource, database, definition);
                 break;
             default:
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
     };
 
-    internal static ApplyUpdateTreeDefinition Delete(ITreeItem item) => (_, definition, __) =>
+    internal static ApplyUpdateTreeDefinition Delete(ITreeItem item) => (_, definition, _) =>
     {
         var path = item.ThrowIfNoPath();
 
@@ -38,7 +38,7 @@ internal class UpdateTreeCommand
         definition.Remove(item is Node && item.Path!.UseNodeFolders ? path.FolderPath : path.FilePath);
     };
 
-    internal static ApplyUpdateTreeDefinition Delete(DataPath path) => (_, definition, __) =>
+    internal static ApplyUpdateTreeDefinition Delete(DataPath path) => (_, definition, _) =>
     {
         // For nodes, delete whole folder containing node and nested entries
         // For resources, only deleted resource
