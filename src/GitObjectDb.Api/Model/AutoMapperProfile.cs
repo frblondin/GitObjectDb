@@ -6,7 +6,8 @@ namespace GitObjectDb.Api.Model;
 
 public class AutoMapperProfile : Profile
 {
-    internal const string ChildResolverName = "ChildResolver";
+    internal const string ChildResolver = nameof(ChildResolver);
+    internal const string CommitId = nameof(CommitId);
 
     public AutoMapperProfile(IEnumerable<TypeDescription> types)
     {
@@ -34,7 +35,12 @@ public class AutoMapperProfile : Profile
         foreach (var description in types)
         {
             var mapping = CreateMap(description.NodeType.Type, description.DtoType)
-                .ConstructUsing(src => Reflect.Constructor(description.DtoType, typeof(Node)).Invoke(src));
+                .ConstructUsing((src, context) =>
+                {
+                    var commitId = context.GetCommitId();
+                    var factory = Reflect.Constructor(description.DtoType, typeof(Node), typeof(ObjectId));
+                    return factory.Invoke(src, commitId);
+                });
 
             MapReferenceProperties(description, mapping);
 
@@ -93,8 +99,11 @@ public class AutoMapperProfile : Profile
 }
 
 #pragma warning disable SA1402 // File may only contain a single type
-public static class ResolutionContextExtensions
+internal static class ResolutionContextExtensions
 {
     internal static Func<Node, IEnumerable<Node>> GetChildResolver(this ResolutionContext context) =>
-        (Func<Node, IEnumerable<Node>>)context.Items[AutoMapperProfile.ChildResolverName];
+        (Func<Node, IEnumerable<Node>>)context.Items[AutoMapperProfile.ChildResolver];
+
+    internal static ObjectId GetCommitId(this ResolutionContext context) =>
+        (ObjectId)context.Items[AutoMapperProfile.CommitId];
 }

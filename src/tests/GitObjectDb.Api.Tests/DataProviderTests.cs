@@ -6,6 +6,7 @@ using Fasterflect;
 using GitObjectDb.Api.Model;
 using GitObjectDb.Api.Tests.Model;
 using GitObjectDb.Tests.Assets.Tools;
+using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
 using NUnit.Framework;
 using System;
@@ -73,7 +74,8 @@ public class DataProviderTests
         var simpleNodeDto =
             typeEmitter.TypeDescriptions.Single(d => d.NodeType.Type == typeof(SimpleNode));
         var accessor = sut.QueryAccessor;
-        A.CallTo(() => accessor.GetNodes<Node>(node, default, default)).Returns(children);
+        A.CallTo(() => accessor.GetNodes<Node>(node, default, default))
+            .Returns(children.ToCommitEnumerable(ObjectId.Zero));
 
         // Act
         var result = ((IEnumerable<NodeDto>)typeof(DataProvider).GetMethod(nameof(DataProvider.GetNodes))!
@@ -96,7 +98,8 @@ public class DataProviderTests
             new MapperConfiguration(
                 c => c.AddProfile(new AutoMapperProfile(emitter.TypeDescriptions))));
         var queryAccessor = A.Fake<IQueryAccessor>();
-        A.CallTo(() => queryAccessor.GetNodes<TNode>(default, default, default)).Returns(nodes);
+        A.CallTo(() => queryAccessor.GetNodes<TNode>(default, default, default))
+            .Returns(nodes.ToCommitEnumerable(ObjectId.Zero));
         return new DataProvider(queryAccessor, mapper);
     }
 

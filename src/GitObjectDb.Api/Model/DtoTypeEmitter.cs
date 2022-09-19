@@ -93,14 +93,15 @@ public class DtoTypeEmitter<TTypeDescription>
     {
         var baseConstructor = typeof(NodeDto).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance,
                                                              null,
-                                                             new[] { typeof(Node) },
+                                                             new[] { typeof(Node), typeof(ObjectId) },
                                                              null)!;
         var constructor = result.DefineConstructor(MethodAttributes.Public,
                                                    CallingConventions.Standard | CallingConventions.HasThis,
-                                                   new[] { typeof(Node) });
+                                                   new[] { typeof(Node), typeof(ObjectId) });
         var ilGenerator = constructor.GetILGenerator();
         ilGenerator.Emit(OpCodes.Ldarg_0);
         ilGenerator.Emit(OpCodes.Ldarg_1);
+        ilGenerator.Emit(OpCodes.Ldarg_2);
         ilGenerator.Emit(OpCodes.Call, baseConstructor);
         ilGenerator.Emit(OpCodes.Ret);
     }

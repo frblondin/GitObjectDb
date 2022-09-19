@@ -1,6 +1,6 @@
 using AutoMapper;
 using GitObjectDb.Api.Model;
-using Microsoft.Extensions.Caching.Memory;
+using LibGit2Sharp;
 
 namespace GitObjectDb.Api;
 
@@ -50,7 +50,7 @@ public sealed class DataProvider
             null;
         var result = QueryAccessor.GetNodes<TNode>(parent, committish, isRecursive);
 
-        return Map<IEnumerable<TNode>, IEnumerable<TNodeDto>>(result, committish);
+        return Map<IEnumerable<TNode>, IEnumerable<TNodeDto>>(result, result.CommitId)!;
     }
 
     /// <summary>
@@ -71,19 +71,28 @@ public sealed class DataProvider
         var changes = connection.Compare(startCommittish, endCommittish);
         return from change in changes
                where change.New is TNode || change.Old is TNode
-               let old = change.Old is not null ? Map<TNode, TNodeDto>((TNode)change.Old, changes.End.Sha) : null
-               let @new = change.New is not null ? Map<TNode, TNodeDto>((TNode)change.New!, changes.End.Sha) : null
-               select new DeltaDto<TNodeDto>(old, @new, changes.End, change.New is null);
+               let old = Map<TNode, TNodeDto>((TNode?)change.Old, changes.Start.Id)
+               let @new = Map<TNode, TNodeDto>((TNode?)change.New!, changes.End.Id)
+               select new DeltaDto<TNodeDto>(old, @new, changes.End.Id, change.New is null);
     }
 
-    private TDestination Map<TSource, TDestination>(TSource source, string? committish)
+    private TDestination? Map<TSource, TDestination>(TSource? source, ObjectId commitId)
     {
+        if (source is null)
+        {
+            return default;
+        }
+
 #pragma warning disable CS8974 // Converting method group to non-delegate type
         return _mapper.Map<TSource, TDestination>(
             source,
-            opt => opt.Items[AutoMapperProfile.ChildResolverName] = ResolveChildren);
+            opt =>
+            {
+                opt.Items[AutoMapperProfile.CommitId] = commitId;
+                opt.Items[AutoMapperProfile.ChildResolver] = ResolveChildren;
+            });
 
         IEnumerable<Node> ResolveChildren(Node p) =>
-            QueryAccessor.GetNodes<Node>(p, committish, isRecursive: false);
+            QueryAccessor.GetNodes<Node>(p, commitId.Sha, isRecursive: false);
     }
 }
