@@ -1,5 +1,6 @@
 using LibGit2Sharp;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace GitObjectDb.Internal.Queries
@@ -36,7 +37,7 @@ namespace GitObjectDb.Internal.Queries
 
         internal class Parameters
         {
-            public Parameters(Tree tree, Tree relativeTree, DataPath path, IDictionary<DataPath, ITreeItem>? referenceCache)
+            public Parameters(Tree tree, Tree relativeTree, DataPath path, ConcurrentDictionary<DataPath, ITreeItem>? referenceCache)
             {
                 Tree = tree;
                 RelativeTree = relativeTree;
@@ -50,7 +51,7 @@ namespace GitObjectDb.Internal.Queries
 
             public DataPath Path { get; }
 
-            public IDictionary<DataPath, ITreeItem>? ReferenceCache { get; }
+            public ConcurrentDictionary<DataPath, ITreeItem>? ReferenceCache { get; }
         }
     }
 }

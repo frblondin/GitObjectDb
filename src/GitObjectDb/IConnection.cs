@@ -2,6 +2,7 @@ using GitObjectDb.Comparison;
 using GitObjectDb.Model;
 using LibGit2Sharp;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -50,7 +51,7 @@ namespace GitObjectDb
         /// <param name="committish">The committish.</param>
         /// <param name="referenceCache">Cache that can be used to reuse same shared node references between queries.</param>
         /// <returns>The item being found, if any.</returns>
-        TItem Lookup<TItem>(DataPath path, string? committish = null, IDictionary<DataPath, ITreeItem>? referenceCache = null)
+        TItem Lookup<TItem>(DataPath path, string? committish = null, ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
             where TItem : ITreeItem;
 
         /// <summary>Gets all items from repository.</summary>
@@ -60,7 +61,7 @@ namespace GitObjectDb
         /// <param name="referenceCache">Cache that can be used to reuse same shared node references between queries.</param>
         /// <typeparam name="TItem">The type of requested items.</typeparam>
         /// <returns>The <see cref="IQueryable{Node}"/> that represents the input sequence.</returns>
-        IEnumerable<TItem> GetItems<TItem>(Node? parent = null, string? committish = null, bool isRecursive = false, IDictionary<DataPath, ITreeItem>? referenceCache = null)
+        IEnumerable<TItem> GetItems<TItem>(Node? parent = null, string? committish = null, bool isRecursive = false, ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
             where TItem : ITreeItem;
 
         /// <summary>Gets nodes from repository.</summary>
@@ -70,7 +71,7 @@ namespace GitObjectDb
         /// <param name="referenceCache">Cache that can be used to reuse same shared node references between queries.</param>
         /// <typeparam name="TNode">The type of requested nodes.</typeparam>
         /// <returns>The <see cref="IEnumerable{TNode}"/> that represents the input sequence.</returns>
-        IEnumerable<TNode> GetNodes<TNode>(Node? parent = null, string? committish = null, bool isRecursive = false, IDictionary<DataPath, ITreeItem>? referenceCache = null)
+        IEnumerable<TNode> GetNodes<TNode>(Node? parent = null, string? committish = null, bool isRecursive = false, ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null)
             where TNode : Node;
 
         /// <summary>Gets data paths from repository.</summary>
@@ -103,7 +104,7 @@ namespace GitObjectDb
         /// <param name="committish">The committish.</param>
         /// <param name="referenceCache">Cache that can be used to reuse same shared node references between queries.</param>
         /// <returns>All nested resources.</returns>
-        public IEnumerable<Resource> GetResources(Node node, string? committish = null, IDictionary<DataPath, ITreeItem>? referenceCache = null);
+        public IEnumerable<Resource> GetResources(Node node, string? committish = null, ConcurrentDictionary<DataPath, ITreeItem>? referenceCache = null);
 
         /// <summary>Checkouts the specified branch name.</summary>
         /// <param name="branchName">Name of the branch.</param>

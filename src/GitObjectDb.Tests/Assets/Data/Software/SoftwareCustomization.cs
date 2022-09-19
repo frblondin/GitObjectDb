@@ -48,38 +48,33 @@ namespace GitObjectDb.Tests.Assets.Data.Software
         {
             var serviceProvider = fixture.Create<IServiceProvider>();
 
-            var path = RepositoryPath ?? GitObjectDbFixture.GetAvailableFolderPath();
-            var repositoryFactory = serviceProvider.GetRequiredService<ConnectionFactory>();
             var model = serviceProvider.GetRequiredService<IDataModel>();
-            var connection = new Lazy<IConnectionInternal>(CreateConnection);
+            var connection = new Lazy<IConnectionInternal>(() => CreateConnection(fixture, serviceProvider, model));
+
             fixture.Inject(model);
             fixture.Register(() => connection.Value);
             fixture.Register<IConnection>(() => connection.Value);
             fixture.Register(() => connection.Value.Repository);
 
-            IConnectionInternal CreateConnection()
+            fixture.LazyRegister(() => connection.Value.GetApplications().Last());
+            fixture.LazyRegister(() => connection.Value.GetTables(fixture.Create<Application>()).Last());
+            fixture.LazyRegister(() => connection.Value.GetFields(fixture.Create<Table>()).Last());
+            fixture.LazyRegister(() => connection.Value.GetConstants(fixture.Create<Table>()).Last());
+            fixture.LazyRegister(() => connection.Value.GetResources(fixture.Create<Table>()).Last());
+        }
+
+        private IConnectionInternal CreateConnection(IFixture fixture, IServiceProvider serviceProvider, IDataModel model)
+        {
+            var path = RepositoryPath ?? GitObjectDbFixture.GetAvailableFolderPath();
+            var alreadyExists = Directory.Exists(path);
+            var repositoryFactory = serviceProvider.GetRequiredService<ConnectionFactory>();
+            var result = (IConnectionInternal)repositoryFactory(path, model);
+            if (!alreadyExists)
             {
-                var alreadyExists = Directory.Exists(path);
-                var result = (IConnectionInternal)repositoryFactory(path, model);
-                if (!alreadyExists)
-                {
-                    var software = new DataGenerator(result, ApplicationCount, TablePerApplicationCount, FieldPerTableCount, ConstantPerTableCount, ResourcePerTableCount);
-                    software.CreateData(fixture.Create<string>(), fixture.Create<Signature>());
-                }
-                return result;
+                var software = new DataGenerator(result, ApplicationCount, TablePerApplicationCount, FieldPerTableCount, ConstantPerTableCount, ResourcePerTableCount);
+                software.CreateData(fixture.Create<string>(), fixture.Create<Signature>());
             }
-
-            fixture.Register(PickFirstApplication);
-            fixture.Register(PickRandomTable);
-            fixture.Register(PickRandomField);
-            fixture.Register(PickRandomConstant);
-            fixture.Register(PickRandomResource);
-
-            Application PickFirstApplication() => fixture.Create<IConnection>().GetApplications().Last();
-            Table PickRandomTable() => fixture.Create<IConnection>().GetTables(PickFirstApplication()).Last();
-            Field PickRandomField() => fixture.Create<IConnection>().GetFields(PickRandomTable()).Last();
-            Constant PickRandomConstant() => fixture.Create<IConnection>().GetConstants(PickRandomTable()).Last();
-            Resource PickRandomResource() => fixture.Create<IConnection>().GetResources(PickRandomTable()).Last();
+            return result;
         }
     }
 }

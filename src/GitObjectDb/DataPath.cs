@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 namespace GitObjectDb
 {
     /// <summary>Represents a data path.</summary>
-    public sealed class DataPath : IEquatable<DataPath>
+    public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
     {
         private static readonly Regex _isInResourceFolderRegex = new Regex($"/{FileSystemStorage.ResourceFolder}[/$]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -171,6 +171,10 @@ namespace GitObjectDb
         /// <inheritdoc/>
         public bool Equals(DataPath? other) =>
             string.Equals(FilePath, other?.FilePath, StringComparison.Ordinal);
+
+        /// <inheritdoc/>
+        public int CompareTo(DataPath other) =>
+            StringComparer.Ordinal.Compare(FilePath, other.FilePath);
 
         /// <summary>Gets the parent node path.</summary>
         /// <returns>The parent node path.</returns>

@@ -11,6 +11,14 @@ namespace GitObjectDb.Internal.Commands
 
         internal static bool IsGitInstalled => _isGitInstalled.Value;
 
+        internal static void ThrowIfGitNotInstalled()
+        {
+            if (!IsGitInstalled)
+            {
+                throw new GitObjectDbException("Git doesn't seem to be installed or is not accesssible.");
+            }
+        }
+
         internal static int Execute(string repository, string arguments, Stream? stream = null, bool throwOnError = true)
         {
             var process = Process.Start(new ProcessStartInfo
@@ -35,6 +43,7 @@ namespace GitObjectDb.Internal.Commands
             {
                 ThrowIfError(process);
             }
+
             return process.ExitCode;
         }
 

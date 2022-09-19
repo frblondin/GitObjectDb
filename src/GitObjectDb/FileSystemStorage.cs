@@ -11,16 +11,18 @@ namespace GitObjectDb
         /// <summary>The data file name used to store information in Git.</summary>
         public const string ResourceFolder = "Resources";
 
-        private static Regex _reservedNames = new(
+        private static Regex _resourcePath = new(
             $"(^|/)({ResourceFolder})($|/)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         internal static void ThrowIfAnyReservedName(string path)
         {
-            if (_reservedNames.IsMatch(path))
+            if (IsResourcePath(path))
             {
                 throw new GitObjectDbException("The path contains reserved folder names;");
             }
         }
+
+        internal static bool IsResourcePath(string path) => _resourcePath.IsMatch(path);
     }
 }

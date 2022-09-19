@@ -15,10 +15,7 @@ namespace GitObjectDb.Internal.Commands
         {
             _treeValidation = treeValidation;
 
-            if (!GitCliCommand.IsGitInstalled)
-            {
-                throw new GitObjectDbException("Git doesn't seem to be installed or is not accesssible.");
-            }
+            GitCliCommand.ThrowIfGitNotInstalled();
         }
 
         public Commit Commit(IConnectionInternal connection, TransformationComposer transformationComposer, string message, Signature author, Signature committer, bool amendPreviousCommit = false, Commit? mergeParent = null, Action<ITransformation>? beforeProcessing = null)
@@ -99,7 +96,7 @@ namespace GitObjectDb.Internal.Commands
             try
             {
                 using var stream = File.OpenRead(importFile);
-                GitCliCommand.Execute(Path.GetDirectoryName(connection.Info.Path), @$"fast-import --export-marks=""{markFile}""", stream);
+                GitCliCommand.Execute(connection.Info.WorkingDirectory, @$"fast-import --export-marks=""{markFile}""", stream);
                 var linePrefix = $":{commitMarkId} ";
                 var line = File.ReadLines(markFile).FirstOrDefault(l => l.StartsWith(linePrefix)) ??
                     throw new GitObjectDbException("Could not locate commit id in fast-import mark file.");

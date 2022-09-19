@@ -1,6 +1,7 @@
 using GitObjectDb.Serialization;
 using LibGit2Sharp;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.IO;
 
 namespace GitObjectDb.Internal.Queries
 {
@@ -15,37 +16,32 @@ namespace GitObjectDb.Internal.Queries
 
         public ITreeItem Execute(IConnectionInternal connection, Parameters parms)
         {
-            if (parms.ReferenceCache == null || !parms.ReferenceCache.TryGetValue(parms.Path, out var result))
-            {
-                result = parms.Path.IsNode ?
-                    LoadNode(connection, parms) :
-                    LoadResource(parms);
-                if (parms.ReferenceCache != null)
-                {
-                    parms.ReferenceCache[parms.Path] = result;
-                }
-            }
-            return result;
+            return parms.ReferenceCache?.GetOrAdd(parms.Path, Load) ?? Load(parms.Path);
+
+            ITreeItem Load(DataPath path) =>
+                parms.Path.IsNode ?
+                LoadNode(connection, parms) :
+                LoadResource(parms);
         }
 
         private ITreeItem LoadNode(IConnectionInternal connection, Parameters parms)
         {
-            var blob = parms.Tree[parms.Path.FilePath].Target.Peel<Blob>();
-            return _serializer.Deserialize(blob.GetContentStream(),
+            using var stream = GetStream(parms);
+            return _serializer.Deserialize(stream,
                                            parms.Path,
                                            connection.Model,
                                            p => LoadNode(connection, parms with { Path = p }));
         }
 
-        private static ITreeItem LoadResource(Parameters parms)
-        {
-            return new Resource(parms.Path,
-                                new Resource.Data(() => parms.Tree[parms.Path.FilePath].Target.Peel<Blob>().GetContentStream()));
-        }
+        private static ITreeItem LoadResource(Parameters parms) =>
+            new Resource(parms.Path, new Resource.Data(() => GetStream(parms)));
+
+        private static Stream GetStream(Parameters parms) =>
+            parms.Tree[parms.Path.FilePath].Target.Peel<Blob>().GetContentStream();
 
         internal record Parameters
         {
-            public Parameters(Tree tree, DataPath path, IDictionary<DataPath, ITreeItem>? referenceCache)
+            public Parameters(Tree tree, DataPath path, ConcurrentDictionary<DataPath, ITreeItem>? referenceCache)
             {
                 Tree = tree;
                 Path = path;
@@ -54,9 +50,9 @@ namespace GitObjectDb.Internal.Queries
 
             public Tree Tree { get; }
 
-            public DataPath Path { get; set; }
+            public DataPath Path { get; init; }
 
-            public IDictionary<DataPath, ITreeItem>? ReferenceCache { get; }
+            public ConcurrentDictionary<DataPath, ITreeItem>? ReferenceCache { get; }
         }
     }
 }
