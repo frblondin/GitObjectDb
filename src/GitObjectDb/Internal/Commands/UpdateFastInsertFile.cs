@@ -94,10 +94,12 @@ internal class UpdateFastInsertFile
     private static void AddBlob(DataPath path, Stream stream, StreamWriter writer, IList<string> commitIndex)
     {
         var mark = commitIndex.Count + 1;
-        writer.Write($"blob\nmark :{mark}\ndata {stream.Length}\n");
+        writer.WriteLine($"blob");
+        writer.WriteLine($"mark :{mark}");
+        writer.WriteLine($"data {stream.Length}");
         writer.Flush();
         stream.CopyTo(writer.BaseStream);
-        writer.Write("\n");
+        writer.WriteLine();
         commitIndex.Add($"M 100644 :{mark} {path.FilePath}");
     }
 }
