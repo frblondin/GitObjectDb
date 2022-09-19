@@ -179,7 +179,7 @@ class Build : NukeBuild
                     .SetProjectKey(SonarqubeProjectKey)
                     .SetVersion($"{gitVersion}.build-{BuildNumber}")
                     .AddOpenCoverPaths(CoverageResult / "coverage.opencover.xml")
-                    .AddCoverageExclusions("**/*.Tests/**/*.*, **/GitObjectDb.Api*/**/*.*, **/GitObjectDb.Web/**/*.*, **/MetadataStorageConverter*/**/*.*, **/Models.Software/**/*.*")
+                    .AddCoverageExclusions("**/*.Tests/**/*.*, **/GitObjectDb.Web/**/*.*, **/MetadataStorageConverter*/**/*.*, **/Models.Software/**/*.*")
                     .AddSourceExclusions("**/MetadataStorageConverter*/**, **/Models.Software/**")
                     .SetVSTestReports(TestDirectory);
 

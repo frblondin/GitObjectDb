@@ -47,7 +47,7 @@ public class DtoTypeEmitter<TTypeDescription>
             EmitDtoConstructor(dto);
             EmitDtoProperties(type, dto,
                 t => dtoTypes.FirstOrDefault(i => i.Type.Type == t).Dto ??
-                throw new NotSupportedException("Could not find dto type."));
+                throw new NotSupportedException($"Could not find dto type for type {t}."));
 
             result.Add((TTypeDescription)ProcessType(type, dto.CreateTypeInfo()!));
         }
