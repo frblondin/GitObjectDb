@@ -5,7 +5,7 @@ VisualStudioVersion = 17.2.32210.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb", "src\GitObjectDb\GitObjectDb.csproj", "{5A22B9EF-1751-4B3D-835F-0624FA53CAC3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb.Tests", "src\GitObjectDb.Tests\GitObjectDb.Tests.csproj", "{D1D6EC57-E265-4B5E-A600-B262CFFAC63E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb.Tests", "src\tests\GitObjectDb.Tests\GitObjectDb.Tests.csproj", "{D1D6EC57-E265-4B5E-A600-B262CFFAC63E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{67988695-E80F-41D8-AD10-1E978CE1BA12}"
 	ProjectSection(SolutionItems) = preProject
