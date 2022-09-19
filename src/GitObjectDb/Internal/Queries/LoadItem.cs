@@ -9,7 +9,7 @@ internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
     public ITreeItem Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
         var loadParameters = new DataLoadParameters(parms.Path, parms.Tree.Id);
-        return queryAccessor.ReferenceCache?.GetOrCreate(loadParameters, Load) ??
+        return queryAccessor.Cache?.GetOrCreate(loadParameters, Load) ??
                Load(default);
 
         ITreeItem Load(ICacheEntry? entry) =>
@@ -22,9 +22,9 @@ internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
     {
         using var stream = GetStream(parms);
         return queryAccessor.Serializer.Deserialize(stream,
-                                       parms.Tree.Id,
-                                       parms.Path,
-                                       p => Execute(queryAccessor, parms with { Path = p }));
+                                                    parms.Tree.Id,
+                                                    parms.Path,
+                                                    p => Execute(queryAccessor, parms with { Path = p }));
     }
 
     private static ITreeItem LoadResource(Parameters parms) =>

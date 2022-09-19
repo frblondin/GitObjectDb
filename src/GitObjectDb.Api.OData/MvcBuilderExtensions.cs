@@ -1,6 +1,5 @@
 using GitObjectDb.Api.Model;
 using GitObjectDb.Api.OData.Model;
-using GitObjectDb.Model;
 using Microsoft.AspNetCore.OData;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,13 +11,18 @@ public static class MvcBuilderExtensions
     /// <summary>Adds support of OData queries.</summary>
     /// <param name="source">The source.</param>
     /// <param name="routePrefix">The route prefix.</param>
-    /// <param name="emitter">The dto type emitter.</param>
     /// <param name="setupAction">The OData options to configure the services with, including access
     /// to a service provider which you can resolve services from.</param>
+    /// 
     /// <returns>The source <see cref="IMvcBuilder"/>.</returns>
     public static IMvcBuilder AddGitObjectDbODataControllers(this IMvcBuilder source,
-        string routePrefix, DtoTypeEmitter emitter, Action<ODataOptions> setupAction)
+        string routePrefix, Action<ODataOptions> setupAction)
     {
+        var emitter = source.Services.FirstOrDefault(s => s.ServiceType == typeof(DtoTypeEmitter) &&
+            s.Lifetime == ServiceLifetime.Singleton &&
+            s.ImplementationInstance is not null)?.ImplementationInstance as DtoTypeEmitter ??
+            throw new NotSupportedException($"GitObjectDbApi has not bee registered.");
+
         return source
             .ConfigureApplicationPartManager(m =>
             {

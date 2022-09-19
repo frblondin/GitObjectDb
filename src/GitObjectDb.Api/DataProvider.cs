@@ -1,32 +1,29 @@
 using AutoMapper;
 using GitObjectDb.Api.Model;
 using LibGit2Sharp;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace GitObjectDb.Api;
 
-/// <summary>
-/// Returns data transfer objects from collection of items returned by <see cref="IQueryAccessor"/>.
-/// </summary>
+/// <summary>Returns data transfer objects from collection of items returned by <see cref="IQueryAccessor"/>.</summary>
 public sealed class DataProvider
 {
     private readonly IMapper _mapper;
+    private readonly IMemoryCache _cache;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="DataProvider"/> class.
-    /// </summary>
+    /// <summary>Initializes a new instance of the <see cref="DataProvider"/> class.</summary>
     /// <param name="queryAccessor">The query accessor.</param>
-    /// <param name="mapper">
-    /// The <see cref="IMapper"/> used to project items to their data transfer type equivalent.
-    /// </param>
-    public DataProvider(IQueryAccessor queryAccessor, IMapper mapper)
+    /// <param name="mapper">The <see cref="IMapper"/> used to project items to their data transfer type equivalent.</param>
+    /// <param name="cache">The cache to be used.</param>
+    public DataProvider(IQueryAccessor queryAccessor, IMapper mapper, IMemoryCache cache)
     {
         QueryAccessor = queryAccessor;
         _mapper = mapper;
+        _cache = cache;
     }
 
-    /// <summary>
-    /// Gets the query accessor used to access GitObjectDb items.
-    /// </summary>
+    /// <summary>Gets the query accessor used to access GitObjectDb items.</summary>
     public IQueryAccessor QueryAccessor { get; }
 
     /// <summary>
@@ -50,41 +47,64 @@ public sealed class DataProvider
             null;
         var result = QueryAccessor.GetNodes<TNode>(parent, committish, isRecursive);
 
-        return Map<IEnumerable<TNode>, IEnumerable<TNodeDto>>(result, result.CommitId)!;
+        return MapItemsCached<TNode, TNodeDto>((IEnumerable<TNode>?)result, result.CommitId)!;
     }
 
     /// <summary>
-    /// Returns all changes that occurred between <paramref name="startCommittish"/> and
-    /// <paramref name="endCommittish"/>.
+    /// Returns all changes that occurred between <paramref name="start"/> and
+    /// <paramref name="end"/>.
     /// </summary>
     /// <typeparam name="TNode">The type of node to be queried.</typeparam>
     /// <typeparam name="TNodeDto">The type of the data transfer object of the result collection.</typeparam>
-    /// <param name="startCommittish">The start commit of comparison.</param>
-    /// <param name="endCommittish">The optional end commit of comparison.</param>
+    /// <param name="start">The start commit of comparison.</param>
+    /// <param name="end">The optional end commit of comparison.</param>
     /// <returns>The item being found, if any.</returns>
-    public IEnumerable<DeltaDto<TNodeDto>> GetNodeDeltas<TNode, TNodeDto>(string startCommittish, string? endCommittish)
+    public IEnumerable<DeltaDto<TNodeDto>> GetNodeDeltas<TNode, TNodeDto>(ObjectId start, ObjectId end)
         where TNode : Node
         where TNodeDto : NodeDto
     {
         var connection = QueryAccessor as IConnection ??
             throw new GitObjectDbException("Delta can only be retrieved when the query accessor is a GitObjectDb connection.");
-        var changes = connection.Compare(startCommittish, endCommittish);
+        var changes = connection.Compare(start.Sha, end.Sha);
         return from change in changes
                where change.New is TNode || change.Old is TNode
-               let old = Map<TNode, TNodeDto>((TNode?)change.Old, changes.Start.Id)
-               let @new = Map<TNode, TNodeDto>((TNode?)change.New!, changes.End.Id)
+               let old = MapCached<TNode, TNodeDto>((TNode?)change.Old, changes.Start.Id)
+               let @new = MapCached<TNode, TNodeDto>((TNode?)change.New!, changes.End.Id)
                select new DeltaDto<TNodeDto>(old, @new, changes.End.Id, change.New is null);
     }
 
-    /// <summary>
-    /// Executes a mapping from the source to a new destination object.
-    /// </summary>
-    /// <typeparam name="TSource">Source type to use.</typeparam>
-    /// <typeparam name="TDestination">Destination type to create.</typeparam>
+    /// <summary>Executes a mapping from the source to a new destination object.</summary>
+    /// <typeparam name="TNode">Source type to use.</typeparam>
+    /// <typeparam name="TNodeDto">Destination type to create.</typeparam>
     /// <param name="source">Source object to map from.</param>
     /// <param name="commitId">Commit containing the object.</param>
     /// <returns>Mapped destination object.</returns>
-    public TDestination? Map<TSource, TDestination>(TSource? source, ObjectId commitId)
+    public TNodeDto? MapCached<TNode, TNodeDto>(TNode? source, ObjectId commitId)
+        where TNode : Node
+        where TNodeDto : NodeDto
+    {
+        if (source is null)
+        {
+            return default;
+        }
+
+        return _cache.GetOrCreate(CreateCacheKey(source, commitId), cacheEntry =>
+        {
+            UpdateExpiration(cacheEntry);
+
+            return Map<TNode, TNodeDto>(source, commitId);
+        });
+    }
+
+    private static object CreateCacheKey<TNode>(TNode source, ObjectId commitId)
+        where TNode : Node
+    {
+        return (source.Path!, commitId);
+    }
+
+    private TNodeDto? Map<TNode, TNodeDto>(TNode? source, ObjectId commitId)
+        where TNode : Node
+        where TNodeDto : NodeDto
     {
         if (source is null)
         {
@@ -92,7 +112,7 @@ public sealed class DataProvider
         }
 
 #pragma warning disable CS8974 // Converting method group to non-delegate type
-        return _mapper.Map<TSource, TDestination>(
+        return _mapper.Map<TNode, TNodeDto>(
             source,
             opt =>
             {
@@ -102,5 +122,24 @@ public sealed class DataProvider
 
         IEnumerable<Node> ResolveChildren(Node p) =>
             QueryAccessor.GetNodes<Node>(p, commitId.Sha, isRecursive: false);
+    }
+
+    /// <summary>Executes a mapping from the source to a new destination object.</summary>
+    /// <typeparam name="TNode">Source type to use.</typeparam>
+    /// <typeparam name="TNodeDto">Destination type to create.</typeparam>
+    /// <param name="source">Source object to map from.</param>
+    /// <param name="commitId">Commit containing the object.</param>
+    /// <returns>Mapped destination object.</returns>
+    public IEnumerable<TNodeDto>? MapItemsCached<TNode, TNodeDto>(IEnumerable<TNode>? source, ObjectId commitId)
+        where TNode : Node
+        where TNodeDto : NodeDto
+    {
+        return source?.Select(i => Map<TNode, TNodeDto>(i, commitId)!);
+    }
+
+    private static void UpdateExpiration(ICacheEntry entry)
+    {
+        // TODO: make it configurable
+        entry.SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1));
     }
 }

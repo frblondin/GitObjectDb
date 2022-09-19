@@ -1,9 +1,10 @@
 using GraphQL.Types;
 using GraphQLParser.AST;
+using System;
 
-namespace GitObjectDb.Api.GraphQL.GraphModel;
+namespace Models.Organization;
 
-internal class TimeZoneInfoGraphType : ScalarGraphType
+public class TimeZoneInfoGraphType : ScalarGraphType
 {
     public TimeZoneInfoGraphType()
     {

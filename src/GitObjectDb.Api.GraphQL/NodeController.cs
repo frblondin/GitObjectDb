@@ -1,13 +1,11 @@
 using GraphQL;
+using GraphQL.DataLoader;
 using GraphQL.Execution;
 using GraphQL.SystemTextJson;
 using GraphQL.Transport;
 using GraphQL.Types;
-using GraphQL.Validation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using System.Text.Json.Nodes;
 
 namespace GitObjectDb.Api.GraphQL;
 
@@ -18,12 +16,14 @@ public class NodeController : Controller
     private readonly IDocumentExecuter _documentExecuter;
     private readonly ISchema _schema;
     private readonly IGraphQLTextSerializer _serializer;
+    private readonly DataLoaderDocumentListener _listener;
 
-    public NodeController(IDocumentExecuter documentExecuter, ISchema schema, IGraphQLTextSerializer serializer)
+    public NodeController(IDocumentExecuter documentExecuter, ISchema schema, IGraphQLTextSerializer serializer, DataLoaderDocumentListener listener)
     {
         _documentExecuter = documentExecuter;
         _schema = schema;
         _serializer = serializer;
+        _listener = listener;
     }
 
     [HttpGet]
@@ -90,6 +90,7 @@ public class NodeController : Controller
                 };
                 s.UnhandledExceptionDelegate = WaitHandleCannotBeOpenedException;
                 s.CancellationToken = HttpContext.RequestAborted;
+                s.Listeners.Add(_listener);
             });
 
             return new ExecutionResultActionResult(result);
@@ -102,7 +103,9 @@ public class NodeController : Controller
 
     private static Task WaitHandleCannotBeOpenedException(UnhandledExceptionContext context)
     {
+#if !DEBUG
         if (context.Exception is GitObjectDbException)
+#endif
         {
             context.ErrorMessage = context.Exception.Message;
         }

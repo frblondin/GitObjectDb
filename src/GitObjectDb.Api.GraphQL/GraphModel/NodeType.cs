@@ -1,7 +1,11 @@
-using GitObjectDb.Api.GraphQL.Queries;
+using Fasterflect;
 using GitObjectDb.Api.Model;
 using GraphQL;
+using GraphQL.Execution;
+using GraphQL.Resolvers;
 using GraphQL.Types;
+using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
 using Namotion.Reflection;
 using System.Reflection;
 
@@ -23,13 +27,22 @@ public class NodeType<TNode, TNodeDto> : ObjectGraphType<TNodeDto>, INodeType
         Interface<NodeInterface>();
     }
 
-    private void AddHistoryField()
-    {
-        var historyField = AddField(NodeInterface.CreateHistoryField());
-        historyField.Arguments = new(
-                new QueryArgument<StringGraphType> { Name = GitObjectDbQuery.BranchArgument });
-        historyField.Resolver = GraphQLHelper.CreateFieldResolver<object>(LogQuery.Execute);
-    }
+    private void AddHistoryField() =>
+        NodeInterface.CreateHistoryField(this)
+        .Arguments(
+            new QueryArgument<StringGraphType> { Name = GitObjectDbQuery.BranchArgument })
+        .Resolve(context =>
+        {
+            var branch = context.GetArgument(GitObjectDbQuery.BranchArgument, default(string?));
+            var provider = context.RequestServices?.GetRequiredService<DataProvider>() ??
+                throw new RequestError("No request context set.");
+
+            return context.Source.Path is null ?
+                Enumerable.Empty<Commit>() :
+                provider.QueryAccessor
+                    .GetCommits(context.Source.Node!, branch)
+                    .Select(e => e.Commit);
+        });
 
     private void AddScalarProperties()
     {
@@ -70,31 +83,33 @@ public class NodeType<TNode, TNodeDto> : ObjectGraphType<TNodeDto>, INodeType
     private void AddSingleReference(GitObjectDbQuery query, PropertyInfo property)
     {
         var type = query.GetOrCreateGraphType(property.PropertyType, out var nodeType);
+        var getter = Reflect.PropertyGetter(property);
 
-        AddField(new()
-        {
-            Name = property.Name,
-            Description = typeof(TNode).GetProperty(property.Name)?.GetXmlDocsSummary(false) ??
-                property.GetXmlDocsSummary(false),
-            Type = type.GetType(),
-            ResolvedType = type,
-            Resolver = NodeReferenceQuery.CreateSingleReferenceResolver(nodeType, property),
-        });
+        Field(property.Name, type)
+            .Description(typeof(TNode).GetProperty(property.Name)?.GetXmlDocsSummary(false) ??
+                property.GetXmlDocsSummary(false))
+            .Resolve(new FuncFieldResolver<object?, object?>(context =>
+            {
+                var parentNode = context.Source as NodeDto ??
+                    throw new RequestError("Could not get parent node.");
+                return getter.Invoke(parentNode);
+            }));
     }
 
-    private void AddMultiReference(GitObjectDbQuery query, MemberInfo member, Type dtoType)
+    private void AddMultiReference(GitObjectDbQuery query, PropertyInfo property, Type dtoType)
     {
         var type = query.GetOrCreateGraphType(dtoType, out var nodeType);
+        var getter = Reflect.PropertyGetter(property);
 
-        AddField(new()
-        {
-            Name = member.Name,
-            Description = typeof(TNode).GetProperty(member.Name)?.GetXmlDocsSummary(false) ??
-                member.GetXmlDocsSummary(false),
-            Type = type.GetType(),
-            ResolvedType = type,
-            Resolver = NodeReferenceQuery.CreateMultiReferenceResolver(dtoType, nodeType, member),
-        });
+        Field(property.Name, type)
+            .Description(typeof(TNode).GetProperty(property.Name)?.GetXmlDocsSummary(false) ??
+                property.GetXmlDocsSummary(false))
+            .Resolve(new FuncFieldResolver<object?, object?>(context =>
+            {
+                var parentNode = context.Source as NodeDto ??
+                    throw new RequestError("Could not get parent node.");
+                return getter.Invoke(parentNode);
+            }));
     }
 
     void INodeType.AddChildren(GitObjectDbQuery query)

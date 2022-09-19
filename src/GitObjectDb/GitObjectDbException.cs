@@ -28,3 +28,15 @@ public class GitObjectDbValidationException : GitObjectDbException
     {
     }
 }
+
+/// <summary>The exception that is thrown when commit id is invalid.</summary>
+public class GitObjectDbInvalidCommitException : GitObjectDbException
+{
+    /// <summary>Initializes a new instance of the <see cref="GitObjectDbInvalidCommitException"/> class.</summary>
+    /// <param name="innerException">The exception that is the cause of the current exception,
+    /// or a null reference (Nothing in Visual Basic) if no inner exception is specified.</param>
+    public GitObjectDbInvalidCommitException(Exception? innerException = null)
+        : base("No valid commit could be found.", innerException)
+    {
+    }
+}

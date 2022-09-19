@@ -26,7 +26,7 @@ public class TreeValidationTests
 
         // Assert
         var sut = fixture.Create<TreeValidation>();
-        Assert.Throws<GitObjectDbException>(() => sut.Validate(tree, connection.Model, connection.Serializer));
+        Assert.Throws<GitObjectDbValidationException>(() => sut.Validate(tree, connection.Model, connection.Serializer));
     }
 
     [Test]
@@ -40,7 +40,7 @@ public class TreeValidationTests
 
         // Assert
         var sut = fixture.Create<TreeValidation>();
-        Assert.Throws<GitObjectDbException>(() => sut.Validate(tree, connection.Model, connection.Serializer));
+        Assert.Throws<GitObjectDbValidationException>(() => sut.Validate(tree, connection.Model, connection.Serializer));
     }
 
     [Test]
@@ -59,7 +59,7 @@ public class TreeValidationTests
 
         // Assert
         var sut = fixture.Create<TreeValidation>();
-        Assert.Throws<GitObjectDbException>(() => sut.Validate(tree, connection.Model, connection.Serializer));
+        Assert.Throws<GitObjectDbValidationException>(() => sut.Validate(tree, connection.Model, connection.Serializer));
     }
 
     [Test]
@@ -73,7 +73,7 @@ public class TreeValidationTests
 
         // Assert
         var sut = fixture.Create<TreeValidation>();
-        Assert.Throws<GitObjectDbException>(() => sut.Validate(tree, connection.Model, connection.Serializer));
+        Assert.Throws<GitObjectDbValidationException>(() => sut.Validate(tree, connection.Model, connection.Serializer));
     }
 
     private static Tree UpdateTree(IConnection connection, TransformationComposer composer)

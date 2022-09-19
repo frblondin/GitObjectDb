@@ -1,8 +1,11 @@
 using Fasterflect;
-using GitObjectDb.Api.GraphQL.Queries;
+using GitObjectDb.Api.GraphQL.Loaders;
 using GitObjectDb.Api.Model;
-using GitObjectDb.Model;
+using GraphQL;
+using GraphQL.DataLoader;
+using GraphQL.Resolvers;
 using GraphQL.Types;
+using Microsoft.Extensions.DependencyInjection;
 using Namotion.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
@@ -81,7 +84,6 @@ public partial class GitObjectDbQuery : ObjectGraphType
     internal FieldType AddCollectionField(IComplexGraphType graphType, DataTransferTypeDescription description)
     {
         var childGraphType = GetOrCreateNodeGraphType(description);
-
         return graphType.AddField(new()
         {
             Name = description.NodeType.Name,
@@ -93,7 +95,13 @@ public partial class GitObjectDbQuery : ObjectGraphType
                 new QueryArgument<StringGraphType> { Name = ParentPathArgument, Description = "Parent of the nodes." },
                 new QueryArgument<StringGraphType> { Name = CommittishArgument, Description = "Optional committish (head tip is used otherwise)." },
                 new QueryArgument<BooleanGraphType> { Name = IsRecursiveArgument, Description = "Whether all nested nodes should be flattened." }),
-            Resolver = NodeQuery.CreateResolver(description),
+            Resolver = new FuncFieldResolver<object?, object?>(context =>
+            {
+                var loaderType = typeof(NodeDataLoader<,>).MakeGenericType(description.NodeType.Type, description.DtoType);
+                var loader = context.RequestServices?.GetRequiredService(loaderType) as DataLoaderBase<NodeDataLoaderKey, IEnumerable<object?>> ??
+                    throw new ExecutionError("No request context set.");
+                return loader.LoadAsync(new NodeDataLoaderKey(context));
+            }),
         });
     }
 
@@ -110,7 +118,13 @@ public partial class GitObjectDbQuery : ObjectGraphType
             Arguments = new(
                 new QueryArgument<NonNullGraphType<StringGraphType>> { Name = DeltaStartCommit, Description = "Start committish of comparison." },
                 new QueryArgument<StringGraphType> { Name = DeltaEndCommit, Description = "Optional end committish (head tip is used otherwise)." }),
-            Resolver = NodeDeltaQuery.CreateResolver(description),
+            Resolver = new FuncFieldResolver<object?, object?>(context =>
+            {
+                var loaderType = typeof(NodeDeltaDataLoader<,>).MakeGenericType(description.NodeType.Type, description.DtoType);
+                var loader = context.RequestServices?.GetRequiredService(loaderType) as DataLoaderBase<NodeDeltaDataLoaderKey, IEnumerable<object?>> ??
+                    throw new ExecutionError("No request context set.");
+                return loader.LoadAsync(new NodeDeltaDataLoaderKey(context));
+            }),
         });
     }
 }

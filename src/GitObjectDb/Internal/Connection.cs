@@ -36,7 +36,7 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
     {
         Repository = GetOrCreateRepository(path, initialBranch);
         Model = model;
-        ReferenceCache = serviceProvider.GetRequiredService<IMemoryCache>();
+        Cache = serviceProvider.GetService<IMemoryCache>();
         Serializer = serviceProvider.GetRequiredService<INodeSerializer.Factory>().Invoke(model);
         _transformationComposerFactory = serviceProvider.GetRequiredService<TransformationComposerFactory>();
         _rebaseFactory = serviceProvider.GetRequiredService<RebaseFactory>();
@@ -51,7 +51,7 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
 
     public IRepository Repository { get; }
 
-    public IMemoryCache? ReferenceCache { get; }
+    public IMemoryCache? Cache { get; }
 
     public INodeSerializer Serializer { get; }
 
