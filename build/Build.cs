@@ -48,9 +48,6 @@ class Build : NukeBuild
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server).")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
-    [Parameter("Coverage threshold. Default is 90%.")]
-    readonly int CoverageThreshold = 90;
-
     [Parameter(".Net Framework version.")]
     readonly string NetFramework = "net6.0";
 
@@ -140,11 +137,9 @@ class Build : NukeBuild
                 .SetLoggers("trx")
                 .SetProcessArgumentConfigurator(arguments => arguments
                     .Add("/p:CollectCoverage=true")
-                    .Add("/p:Exclude=\\\"{0}\\\"", "[Models.Software]*,[MetadataStorageConverter]*")
+                    .Add("/p:Exclude=\\\"{0}\\\"", "[*Tests]*,[Models.Software]*,[MetadataStorageConverter]*")
                     .Add("/p:CoverletOutput={0}/", CoverageResult)
                     .Add("/p:CoverletOutputFormat=\\\"{0}\\\"", "opencover,json")
-                    .Add("/p:Threshold={0}", CoverageThreshold)
-                    .Add("/p:ThresholdType={0}", "line")
                     .Add("/p:UseSourceLink={0}", "true")
                     .Add("/p:MergeWith={0}", CoverageResult / "coverage.json")
                     .Add("-m:1"))
