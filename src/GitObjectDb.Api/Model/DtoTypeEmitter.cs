@@ -1,42 +1,54 @@
 using GitObjectDb.Model;
+using LibGit2Sharp;
 using System.Reflection;
 using System.Reflection.Emit;
 
 namespace GitObjectDb.Api.Model;
 
+/// <summary>Emits data transfer types from a <see cref="IDataModel"/>.</summary>
 #pragma warning disable SA1402 // File may only contain a single type
-public sealed class DtoTypeEmitter : DtoTypeEmitter<TypeDescription>
+public sealed class DtoTypeEmitter : DtoTypeEmitter<DataTransferTypeDescription>
 {
+    /// <summary>Initializes a new instance of the <see cref="DtoTypeEmitter"/> class.</summary>
+    /// <param name="model">The model for which data transfer types must be emitted.</param>
     public DtoTypeEmitter(IDataModel model)
         : base(model)
     {
     }
 }
 
-public class DtoTypeEmitter<TTypeDescription>
-    where TTypeDescription : TypeDescription
+/// <summary>Emits data transfer types from a <see cref="IDataModel"/>.</summary>
+/// <typeparam name="TDtoTypeDescription">The type of <see cref="DataTransferTypeDescription"/> to be created.</typeparam>
+public class DtoTypeEmitter<TDtoTypeDescription>
+    where TDtoTypeDescription : DataTransferTypeDescription
 {
+    /// <summary>Initializes a new instance of the <see cref="DtoTypeEmitter{TTypeDescription}"/> class.</summary>
+    /// <param name="model">The model for which data transfer types must be emitted.</param>
     protected DtoTypeEmitter(IDataModel model)
     {
         Model = model;
 
-        var assemblyName = new AssemblyName($"{nameof(DtoTypeEmitter<TTypeDescription>)}{Guid.NewGuid()}");
+        var assemblyName = new AssemblyName($"{nameof(DtoTypeEmitter<TDtoTypeDescription>)}{Guid.NewGuid()}");
         AssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-        ModuleBuilder = AssemblyBuilder.DefineDynamicModule(nameof(Api.Model.DtoTypeEmitter<TTypeDescription>));
+        ModuleBuilder = AssemblyBuilder.DefineDynamicModule(nameof(Api.Model.DtoTypeEmitter<TDtoTypeDescription>));
         TypeDescriptions = EmitTypes();
     }
 
+    /// <summary>Gets the model for which data transfer types must be emitted.</summary>
     public IDataModel Model { get; }
 
-    public IList<TTypeDescription> TypeDescriptions { get; }
+    /// <summary>Gets the list of produced descriptions..</summary>
+    public IList<TDtoTypeDescription> TypeDescriptions { get; }
 
+    /// <summary>Gets the assembly builder used to emit types.</summary>
     public AssemblyBuilder AssemblyBuilder { get; }
 
+    /// <summary>Gets the module builder used to emit types.</summary>
     protected ModuleBuilder ModuleBuilder { get; }
 
-    private IList<TTypeDescription> EmitTypes()
+    private IList<TDtoTypeDescription> EmitTypes()
     {
-        var result = new List<TTypeDescription>();
+        var result = new List<TDtoTypeDescription>();
         var dtoTypes = Model.NodeTypes
             .Where(IsBrowsable)
             .Select(EmitDto)
@@ -49,17 +61,24 @@ public class DtoTypeEmitter<TTypeDescription>
                 t => dtoTypes.FirstOrDefault(i => i.Type.Type == t).Dto ??
                 throw new NotSupportedException($"Could not find dto type for type {t}."));
 
-            result.Add((TTypeDescription)ProcessType(type, dto.CreateTypeInfo()!));
+            result.Add((TDtoTypeDescription)ProcessType(type, dto.CreateTypeInfo()!));
         }
         return result.AsReadOnly();
     }
 
+    /// <summary>Gets whether the type description is API browsable.</summary>
+    /// <param name="description">The node type description.</param>
+    /// <returns><c>true</c> if the node is browsable, <c>false</c> otherwise.</returns>
     public static bool IsBrowsable(NodeTypeDescription description) =>
         description.Type.GetCustomAttribute<ApiBrowsableAttribute>()?.Browsable ?? true;
 
-    protected virtual TypeDescription ProcessType(NodeTypeDescription type, TypeInfo dto)
+    /// <summary>Creates a <typeparamref name="TDtoTypeDescription"/> instance.</summary>
+    /// <param name="type">The type description.</param>
+    /// <param name="dto">The emitted data transfer type.</param>
+    /// <returns>The <typeparamref name="TDtoTypeDescription"/> instance.</returns>
+    protected virtual DataTransferTypeDescription ProcessType(NodeTypeDescription type, TypeInfo dto)
     {
-        return new TypeDescription(type, dto);
+        return new DataTransferTypeDescription(type, dto);
     }
 
     private (NodeTypeDescription Type, TypeBuilder Dto) EmitDto(NodeTypeDescription type)
@@ -76,6 +95,9 @@ public class DtoTypeEmitter<TTypeDescription>
         return (type, result);
     }
 
+    /// <summary>Converts the <see cref="Type"/> to its corresponding string representation.</summary>
+    /// <param name="type">The type to be converted.</param>
+    /// <returns>The string representation.</returns>
     protected static string GetTypeName(Type type) =>
         type.IsGenericType ?
         $"{type.Name}`{string.Join(",", type.GetGenericArguments().Select(GetTypeName))}" :
