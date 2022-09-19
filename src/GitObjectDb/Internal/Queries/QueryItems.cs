@@ -35,7 +35,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
             }
         }
 
-        FetchDirectChildren(parms, entries);
+        FetchDirectChildren(queryAccessor, parms, entries);
 
         while (entries.Count > 0)
         {
@@ -57,7 +57,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
 
             if (parms.IsRecursive)
             {
-                FetchDirectChildren(entryParams, entries);
+                FetchDirectChildren(queryAccessor, entryParams, entries);
             }
         }
     }
@@ -92,13 +92,13 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
         }
     }
 
-    private static void FetchDirectChildren(Parameters parameters, Stack<Parameters> entries)
+    private static void FetchDirectChildren(IQueryAccessor queryAccessor, Parameters parameters, Stack<Parameters> entries)
     {
-        FetchDirectChildrenStoredInNestedFolder(parameters, entries);
-        FetchDirectChildrenStoredWithoutNestedFolder(parameters, entries);
+        FetchDirectChildrenStoredInNestedFolder(queryAccessor, parameters, entries);
+        FetchDirectChildrenStoredWithoutNestedFolder(queryAccessor, parameters, entries);
     }
 
-    private static void FetchDirectChildrenStoredWithoutNestedFolder(Parameters parameters, Stack<Parameters> entries)
+    private static void FetchDirectChildrenStoredWithoutNestedFolder(IQueryAccessor queryAccessor, Parameters parameters, Stack<Parameters> entries)
     {
         UniqueId id = default;
         foreach (var info in from folderChildTree in parameters.RelativeTree.Where(e => e.TargetType == TreeEntryTargetType.Tree)
@@ -107,15 +107,15 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
                              from childFile in nestedTree.Where(e => e.TargetType == TreeEntryTargetType.Blob)
                              where UniqueId.TryParse(Path.GetFileNameWithoutExtension(childFile.Name), out id)
                              let childPath =
-                                 parameters.ParentPath?.AddChild(folderChildTree.Name, id, false) ??
-                                 DataPath.Root(folderChildTree.Name, id, false)
+                                 parameters.ParentPath?.AddChild(folderChildTree.Name, id, false, queryAccessor.Serializer.FileExtension) ??
+                                 DataPath.Root(folderChildTree.Name, id, false, queryAccessor.Serializer.FileExtension)
                              select parameters with { RelativeTree = nestedTree, ParentPath = childPath })
         {
             entries.Push(info);
         }
     }
 
-    private static void FetchDirectChildrenStoredInNestedFolder(Parameters parameters, Stack<Parameters> entries)
+    private static void FetchDirectChildrenStoredInNestedFolder(IQueryAccessor queryAccessor, Parameters parameters, Stack<Parameters> entries)
     {
         UniqueId id = default;
         foreach (var info in from folderChildTree in parameters.RelativeTree.Where(e => e.TargetType == TreeEntryTargetType.Tree)
@@ -123,10 +123,10 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
                              from childFolder in folderChildTree.Target.Peel<Tree>().Where(e => e.TargetType == TreeEntryTargetType.Tree)
                              where UniqueId.TryParse(childFolder.Name, out id)
                              let nestedTree = childFolder.Target.Peel<Tree>()
-                             where nestedTree.Any(e => e.Name == $"{id}.json")
+                             where nestedTree.Any(e => e.Name == $"{id}.{queryAccessor.Serializer.FileExtension}")
                              let childPath =
-                                 parameters.ParentPath?.AddChild(folderChildTree.Name, id, true) ??
-                                 DataPath.Root(folderChildTree.Name, id, true)
+                                 parameters.ParentPath?.AddChild(folderChildTree.Name, id, true, queryAccessor.Serializer.FileExtension) ??
+                                 DataPath.Root(folderChildTree.Name, id, true, queryAccessor.Serializer.FileExtension)
                              select parameters with { RelativeTree = nestedTree, ParentPath = childPath })
         {
             entries.Push(info);

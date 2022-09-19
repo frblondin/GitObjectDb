@@ -70,7 +70,7 @@ internal class CommitCommand : ICommitCommand
     {
         var tree = connection.Repository.ObjectDatabase.CreateTree(definition);
         var validation = _treeValidation.Invoke();
-        validation.Validate(tree, connection.Model);
+        validation.Validate(tree, connection.Model, connection.Serializer);
         var result = connection.Repository.ObjectDatabase.CreateCommit(
             description.Author, description.Committer, description.Message,
             tree,

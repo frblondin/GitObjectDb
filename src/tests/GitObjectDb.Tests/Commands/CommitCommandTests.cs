@@ -5,7 +5,6 @@ using GitObjectDb.Injection;
 using GitObjectDb.Internal;
 using GitObjectDb.Internal.Commands;
 using GitObjectDb.Model;
-using GitObjectDb.Serialization;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
@@ -191,7 +190,7 @@ public class CommitCommandTests
             var connection = A.Fake<IConnectionInternal>(x => x.Strict());
             A.CallTo(() => connection.Repository).Returns(fixture.Create<IRepository>());
             A.CallTo(() => connection.Model).Returns(fixture.Create<IDataModel>());
-            A.CallTo(() => connection.Serializer).Returns(fixture.Create<NodeSerializerFactory>().Invoke(fixture.Create<IDataModel>()));
+            A.CallTo(() => connection.Serializer).Returns(fixture.Create<INodeSerializer.Factory>().Invoke(fixture.Create<IDataModel>()));
             A.CallTo(() => connection.ReferenceCache).Returns(fixture.Create<IMemoryCache>());
             fixture.Inject(connection);
 

@@ -5,5 +5,5 @@ namespace GitObjectDb;
 
 internal interface ITreeValidation
 {
-    void Validate(Tree tree, IDataModel model);
+    void Validate(Tree tree, IDataModel model, INodeSerializer serializer);
 }

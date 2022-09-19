@@ -1,6 +1,5 @@
 using Fasterflect;
 using GitObjectDb.Internal.Commands;
-using GitObjectDb.Serialization;
 using GitObjectDb.Tools;
 using LibGit2Sharp;
 using System;

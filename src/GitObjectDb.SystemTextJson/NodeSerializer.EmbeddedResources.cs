@@ -2,7 +2,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
-namespace GitObjectDb.Serialization.Json;
+namespace GitObjectDb.SystemTextJson;
 
 internal partial class NodeSerializer : INodeSerializer
 {

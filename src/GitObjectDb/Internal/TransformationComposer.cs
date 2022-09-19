@@ -94,11 +94,11 @@ internal class TransformationComposer : ITransformationComposer
         {
             ThrowIfWrongParentPath(parent);
 
-            var newPath = parent.AddChild(node, Connection.Model);
+            var newPath = parent.AddChild(node, Connection.Model, Connection.Serializer.FileExtension);
             ThrowIfWrongExistingPath(node, newPath);
             node.Path = newPath;
         }
-        return node.Path ??= DataPath.Root(node, Connection.Model);
+        return node.Path ??= DataPath.Root(node, Connection.Model, Connection.Serializer.FileExtension);
     }
 
     Commit ITransformationComposer.Commit(CommitDescription description,

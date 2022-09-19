@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text.Json.Serialization;
+using System.Runtime.Serialization;
 
 namespace GitObjectDb.Comparison;
 
@@ -24,7 +24,7 @@ public record ComparisonPolicy
 
     /// <summary>
     /// Creates the default policy for a given model, ignoring properties decorated
-    /// with <see cref="JsonIgnoreAttribute"/>.
+    /// with <see cref="IgnoreDataMemberAttribute"/>.
     /// </summary>
     /// <param name="model">The data model to extract properties from.</param>
     /// <returns>The comparison policy.</returns>
@@ -35,8 +35,8 @@ public record ComparisonPolicy
 
         bool IgnoreProperty(PropertyInfo property)
         {
-            var isJsonIgnored = property.GetCustomAttribute<JsonIgnoreAttribute>() is not null;
-            return isJsonIgnored && property.Name != nameof(Node.EmbeddedResource);
+            var isIgnored = property.GetCustomAttribute<IgnoreDataMemberAttribute>() is not null;
+            return isIgnored && property.Name != nameof(Node.EmbeddedResource);
         }
     }
 }

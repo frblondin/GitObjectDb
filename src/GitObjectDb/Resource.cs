@@ -5,8 +5,6 @@ namespace GitObjectDb;
 /// <summary>Resource used by a <see cref="Node"/>.</summary>
 public sealed partial class Resource : ITreeItem
 {
-    private readonly Lazy<DataPath> _nodePath;
-
     /// <summary>Initializes a new instance of the <see cref="Resource"/> class.</summary>
     /// <param name="node">The node this resources will belong to.</param>
     /// <param name="folderPath">The path within the resource folder.</param>
@@ -23,7 +21,6 @@ public sealed partial class Resource : ITreeItem
     internal Resource(DataPath path, Data embedded)
     {
         Path = path;
-        _nodePath = new Lazy<DataPath>(Path.GetParentNode);
         Embedded = embedded;
     }
 
@@ -38,7 +35,4 @@ public sealed partial class Resource : ITreeItem
         get => Path;
         set => Path = value ?? throw new ArgumentNullException(nameof(value));
     }
-
-    /// <summary>Gets the path of the node this resource belongs to.</summary>
-    public DataPath NodePath => _nodePath.Value;
 }

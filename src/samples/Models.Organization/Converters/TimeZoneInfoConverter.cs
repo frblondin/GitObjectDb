@@ -2,9 +2,9 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace GitObjectDb.Serialization.Json.Converters;
+namespace Models.Organization.Converters;
 
-internal class TimeZoneInfoConverter : JsonConverter<TimeZoneInfo>
+public class TimeZoneInfoConverter : JsonConverter<TimeZoneInfo>
 {
     public override TimeZoneInfo? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
         TimeZoneInfo.FromSerializedString(reader.GetString() ?? throw new JsonException("Reader did not return any string value."));

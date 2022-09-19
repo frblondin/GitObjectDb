@@ -1,5 +1,6 @@
 using GitObjectDb.Api.GraphQL.Assets;
 using GitObjectDb.Api.GraphQL.GraphModel;
+using GitObjectDb.Tests.Assets.Tools;
 using GraphQL;
 using GraphQL.Conversion;
 using GraphQL.Execution;
@@ -9,6 +10,7 @@ using GraphQL.Validation;
 using GraphQLParser.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Models.Organization;
+using Models.Organization.Converters;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -51,11 +53,19 @@ public class QueryTestBase<TDocumentBuilder>
         Executer = new DocumentExecuter(new TDocumentBuilder(), new DocumentValidator());
         ServiceProvider = new ServiceCollection()
             .AddOrganizationModel(out var model)
-            .AddGitObjectDbGraphQL(model, out var emitter)
+            .AddGitObjectDbGraphQL(model,
+                                   c => c.AddSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter())),
+                                   out var emitter)
             .AddGitObjectDbConnection(model, UniqueId.CreateNew().ToString())
             .BuildServiceProvider();
         Schema = (GitObjectDbSchema)ServiceProvider.GetRequiredService<ISchema>();
         Connection = ServiceProvider.GetRequiredService<IConnection>();
+    }
+
+    [OneTimeSetUp]
+    public void CleanUpPastExecutions()
+    {
+        DirectoryUtils.Delete(ConnectionProvider.ReposPath, continueOnError: true);
     }
 
     [TearDown]
@@ -63,7 +73,8 @@ public class QueryTestBase<TDocumentBuilder>
     {
         var path = Connection.Repository.Info.Path;
         Connection.Dispose();
-        DeleteDirectory(new DirectoryInfo(path));
+
+        DirectoryUtils.Delete(path, continueOnError: true);
     }
 
     protected async Task<ExecutionResult> AssertQuerySuccessAsync(
@@ -181,22 +192,4 @@ public class QueryTestBase<TDocumentBuilder>
                                                      ExecutionErrors? errors = null,
                                                      bool executed = true) =>
         result.ToExecutionResult(errors, executed);
-
-    private static void DeleteDirectory(DirectoryInfo info)
-    {
-        try
-        {
-            foreach (var file in info.EnumerateFiles())
-            {
-                file.Delete();
-            }
-            foreach (var dir in info.EnumerateDirectories())
-            {
-                dir.Delete(true);
-            }
-        }
-        catch
-        {
-        }
-    }
 }

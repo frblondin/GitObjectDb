@@ -1,10 +1,7 @@
 using GitObjectDb.Comparison;
 using GitObjectDb.Model;
-using GitObjectDb.Serialization;
 using LibGit2Sharp;
-using Microsoft.Extensions.Caching.Memory;
 using System;
-using System.Text.Json;
 
 namespace GitObjectDb;
 

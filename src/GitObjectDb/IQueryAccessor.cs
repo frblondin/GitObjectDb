@@ -1,5 +1,4 @@
 using GitObjectDb.Model;
-using GitObjectDb.Serialization;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Generic;

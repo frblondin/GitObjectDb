@@ -30,7 +30,8 @@ internal static partial class NodeMutation
         try
         {
             var node = GetNodeArgument<TNode, TNodeDto>(context, mutationContext);
-            var parentPath = node.Path!.IsRootNode ? default : node.Path!.GetParentNode();
+            var fileExtension = mutationContext.DataProvider.QueryAccessor.Serializer.FileExtension;
+            var parentPath = node.Path!.IsRootNode ? default : node.Path!.GetParentNode(fileExtension);
             var result = mutationContext.Transformations.CreateOrUpdate(node, parentPath);
 
             mutationContext.ModifiedNodesByPath[result.Path!] = result;
@@ -121,19 +122,20 @@ internal static partial class NodeMutation
         {
             return node.Path;
         }
+        var fileExtension = mutationContext.DataProvider.QueryAccessor.Serializer.FileExtension;
         var parentPath = context.GetArgument<string?>(GitObjectDbMutation.ParentPathArgument, default);
         if (parentPath is not null)
         {
-            return DataPath.Parse(parentPath).AddChild(node.Id, typeof(TNode), model);
+            return DataPath.Parse(parentPath).AddChild(node.Id, typeof(TNode), model, fileExtension);
         }
         var parentId = context.GetArgument<string?>(GitObjectDbMutation.ParentIdArgument, default);
         if (parentId is not null)
         {
             var parent = mutationContext.TryResolve(new UniqueId(parentId))?.Path ??
                 throw new NotSupportedException($"Parent {parentId} could not be found from its identifier.");
-            return parent!.AddChild(node.Id, typeof(TNode), model);
+            return parent!.AddChild(node.Id, typeof(TNode), model, fileExtension);
         }
-        return DataPath.Root(node, model);
+        return DataPath.Root(node, model, fileExtension);
     }
 
     private static IEnumerable<GraphQLObjectField> GetModifiedMembers(IResolveFieldContext context)

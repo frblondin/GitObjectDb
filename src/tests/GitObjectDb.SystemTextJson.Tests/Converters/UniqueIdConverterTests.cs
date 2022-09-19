@@ -1,19 +1,14 @@
 using GitObjectDb.Model;
-using GitObjectDb.Serialization;
-using GitObjectDb.Serialization.Json;
-using GitObjectDb.Serialization.Json.Converters;
+using GitObjectDb.SystemTextJson.Converters;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
-using GitObjectDb.Tools;
 using NUnit.Framework;
 using System;
 using System.IO;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Xml;
 
-namespace GitObjectDb.Tests.Serialization.Json.Converters;
+namespace GitObjectDb.SystemTextJson.Tests.Converters;
 
 public class UniqueIdConverterTests
 {
@@ -23,7 +18,7 @@ public class UniqueIdConverterTests
     {
         // Arrange
         var model = new ConventionBaseModelBuilder().Build();
-        var serializer = new NodeSerializer(model, new Microsoft.IO.RecyclableMemoryStreamManager());
+        var serializer = new NodeSerializer(model);
 
         // Act
         var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes($@"""{id}""").AsSpan());
@@ -40,7 +35,7 @@ public class UniqueIdConverterTests
     {
         // Arrange
         var model = new ConventionBaseModelBuilder().Build();
-        var serializer = new NodeSerializer(model, new Microsoft.IO.RecyclableMemoryStreamManager());
+        var serializer = new NodeSerializer(model);
 
         // Act
         using var stream = new MemoryStream();

@@ -1,7 +1,6 @@
 using GitObjectDb.Injection;
-using GitObjectDb.Internal;
 using GitObjectDb.Model;
-using GitObjectDb.Serialization.Json.Converters;
+using GitObjectDb.SystemTextJson.Converters;
 using LibGit2Sharp;
 using Microsoft.IO;
 using System;
@@ -11,7 +10,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
-namespace GitObjectDb.Serialization.Json;
+namespace GitObjectDb.SystemTextJson;
 
 internal partial class NodeSerializer : INodeSerializer
 {
@@ -24,20 +23,21 @@ internal partial class NodeSerializer : INodeSerializer
         Indented = true,
     };
 
-    [FactoryDelegateConstructor(typeof(ConnectionFactory))]
-    public NodeSerializer(IDataModel model, RecyclableMemoryStreamManager streamManager)
+    public NodeSerializer(IDataModel model, Action<JsonSerializerOptions>? configure = null)
     {
         Model = model;
-        _streamManager = streamManager;
+        _streamManager = new();
 
-        Options = CreateSerializerOptions(model);
+        Options = CreateSerializerOptions(model, configure);
     }
 
     public IDataModel Model { get; }
 
     public JsonSerializerOptions Options { get; set; }
 
-    private static JsonSerializerOptions CreateSerializerOptions(IDataModel model)
+    public string FileExtension => "json";
+
+    private static JsonSerializerOptions CreateSerializerOptions(IDataModel model, Action<JsonSerializerOptions>? configure)
     {
         var result = new JsonSerializerOptions
         {
@@ -51,7 +51,9 @@ internal partial class NodeSerializer : INodeSerializer
         };
 
         result.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
-        result.Converters.Add(new TimeZoneInfoConverter());
+        result.Converters.Add(new UniqueIdConverter());
+
+        configure?.Invoke(result);
 
         return result;
     }
@@ -71,7 +73,7 @@ internal partial class NodeSerializer : INodeSerializer
     public Node Deserialize(Stream stream,
                             ObjectId treeId,
                             DataPath? path,
-                            ItemLoader referenceResolver)
+                            INodeSerializer.ItemLoader referenceResolver)
     {
         var isRootContext = NodeReferenceHandler.CurrentContext.Value == null;
         NodeReferenceHandler.CurrentContext.Value ??= new NodeReferenceHandler.DataContext(referenceResolver, treeId);
