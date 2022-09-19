@@ -5,6 +5,7 @@ using GitObjectDb.Internal.Commands;
 using GitObjectDb.Internal.Queries;
 using GitObjectDb.Model;
 using GitObjectDb.Tools;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
@@ -22,9 +23,9 @@ public static class ServiceConfiguration
     public static IServiceCollection AddGitObjectDb(this IServiceCollection source, Action<IGitObjectDbBuilder> configure)
     {
         // Avoid double-registrations
-        if (source.Any(sd => sd.ServiceType == typeof(ConnectionFactory)))
+        if (source.IsGitObjectDbRegistered())
         {
-            return source;
+            throw new NotSupportedException("GitObjectDb has already been registered.");
         }
 
         configure(new GitObjectDbBuilder(source));
@@ -36,13 +37,18 @@ public static class ServiceConfiguration
                 $"c => c.{nameof(GitObjectDbBuilderExtensions.AddSerializer)}(...).");
         }
 
-        source.AddMemoryCache();
         ConfigureMain(source);
         ConfigureQueries(source);
         ConfigureCommands(source);
 
         return source;
     }
+
+    /// <summary>Gets whether GitObjectDb has already been registered.</summary>
+    /// <param name="source">The source.</param>
+    /// <returns><c>true</c> if the service has already been registered, <c>false</c> otherwise.</returns>
+    private static bool IsGitObjectDbRegistered(this IServiceCollection source) =>
+        source.Any(sd => sd.ServiceType == typeof(ConnectionFactory));
 
     private static void ConfigureMain(IServiceCollection source)
     {

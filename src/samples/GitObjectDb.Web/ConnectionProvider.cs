@@ -5,9 +5,17 @@ namespace GitObjectDb.Web;
 
 internal static class ConnectionProvider
 {
-    internal static IServiceCollection AddGitObjectDbConnection(this IServiceCollection services, IDataModel model, string folder, Action<IConnection>? populateData = null) => services
-        .AddSingleton(p => GetOrCreateConnection(p, model, folder, populateData))
-        .AddSingleton<IQueryAccessor>(s => s.GetRequiredService<IConnection>());
+    internal static IServiceCollection AddGitObjectDbConnection(this IServiceCollection services, string folder, Action<IConnection>? populateData = null)
+    {
+        var model = services.FirstOrDefault(s => s.ServiceType == typeof(IDataModel) &&
+            s.Lifetime == ServiceLifetime.Singleton &&
+            s.ImplementationInstance is not null)?.ImplementationInstance as IDataModel ??
+            throw new NotSupportedException($"{nameof(IDataModel)} has not bee registered.");
+
+        return services
+            .AddSingleton(p => GetOrCreateConnection(p, model, folder, populateData))
+            .AddSingleton<IQueryAccessor>(s => s.GetRequiredService<IConnection>());
+    }
 
     internal static IConnection GetOrCreateConnection(IServiceProvider provider, IDataModel model, string folder, Action<IConnection>? populateData = null)
     {

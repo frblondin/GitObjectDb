@@ -8,13 +8,13 @@ using GraphQL.SystemTextJson;
 using GraphQL.Types;
 using GraphQL.Validation;
 using GraphQLParser.Exceptions;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Models.Organization;
 using Models.Organization.Converters;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -52,11 +52,16 @@ public class QueryTestBase<TDocumentBuilder>
     {
         Executer = CreateExecuter();
         ServiceProvider = new ServiceCollection()
-            .AddOrganizationModel(out var model)
-            .AddGitObjectDbGraphQL(model,
-                                   c => c.AddSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter())),
-                                   out var emitter)
-            .AddGitObjectDbConnection(model, UniqueId.CreateNew().ToString())
+            .AddOrganizationModel()
+            .AddMemoryCache()
+            .AddGitObjectDb(c => c.AddSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter())))
+            .AddGitObjectDbApi()
+            .AddGitObjectDbGraphQL(builder =>
+            {
+                builder.Schema.RegisterTypeMapping<TimeZoneInfo, TimeZoneInfoGraphType>();
+                builder.CacheEntryStrategy = e => e.SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1));
+            })
+            .AddGitObjectDbConnection(UniqueId.CreateNew().ToString())
             .BuildServiceProvider();
         Schema = (GitObjectDbSchema)ServiceProvider.GetRequiredService<ISchema>();
         Connection = ServiceProvider.GetRequiredService<IConnection>();
@@ -127,6 +132,11 @@ public class QueryTestBase<TDocumentBuilder>
             options.UnhandledExceptionDelegate = unhandledExceptionDelegate ?? (_ => Task.CompletedTask);
             options.UserContext = new Dictionary<string, object?>();
             options.RequestServices = ServiceProvider;
+            options.UnhandledExceptionDelegate = context =>
+            {
+                context.ErrorMessage = context.Exception.Message;
+                return Task.CompletedTask;
+            };
         }).ConfigureAwait(false);
 
         if (expectedExecutionResultOrJson is not null)

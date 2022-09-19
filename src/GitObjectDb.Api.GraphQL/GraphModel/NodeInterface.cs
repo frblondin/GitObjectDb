@@ -1,5 +1,6 @@
 using GitObjectDb.Api.Model;
 using GraphQL;
+using GraphQL.Builders;
 using GraphQL.Types;
 using Namotion.Reflection;
 using System.Reflection;
@@ -25,13 +26,10 @@ internal sealed class NodeInterface : InterfaceGraphType<NodeDto>
             Field(property.Name, type).Description(summary);
         }
 
-        AddField(CreateHistoryField());
+        CreateHistoryField(this);
     }
 
-    internal static FieldType CreateHistoryField() => new()
-    {
-        Name = "History",
-        Type = typeof(ListGraphType<CommitType>),
-        Description = "Gets the history of node changes.",
-    };
+    internal static FieldBuilder<TSource, object> CreateHistoryField<TSource>(ComplexGraphType<TSource> graph) =>
+        graph.Field<ListGraphType<CommitType>>("History")
+        .Description("Gets the history of node changes.");
 }

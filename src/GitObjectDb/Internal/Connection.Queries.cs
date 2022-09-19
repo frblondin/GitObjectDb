@@ -1,15 +1,10 @@
 using GitObjectDb.Comparison;
-using GitObjectDb.Internal.Queries;
-using GitObjectDb.Tools;
 using LibGit2Sharp;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace GitObjectDb.Internal;
 
@@ -146,9 +141,9 @@ internal sealed partial class Connection
         var commit = committish != null ?
             (Commit)Repository.Lookup(committish) :
             Repository.Head.Tip;
-        if (commit == null)
+        if (commit is null)
         {
-            throw new GitObjectDbException("No valid commit could be found.");
+            throw new GitObjectDbInvalidCommitException();
         }
         if (path is null || string.IsNullOrEmpty(path.FolderPath))
         {
@@ -167,9 +162,9 @@ internal sealed partial class Connection
         var commit = committish != null ?
             (Commit)Repository.Lookup(committish) :
             Repository.Head.Tip;
-        if (commit == null)
+        if (commit is null)
         {
-            throw new GitObjectDbException("No valid commit could be found.");
+            throw new GitObjectDbInvalidCommitException();
         }
 
         var stack = new Stack<string>();

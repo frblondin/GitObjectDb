@@ -1,6 +1,7 @@
 using GitObjectDb.Api.Model;
 using GitObjectDb.Injection;
 using GitObjectDb.Model;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GitObjectDb.Api;
@@ -12,26 +13,37 @@ public static class ServiceConfiguration
 
     /// <summary>Adds access to GitObjectDb repositories.</summary>
     /// <param name="source">The source.</param>
-    /// <param name="model">The <see cref="IDataModel"/> to be exposed.</param>
-    /// <param name="configure">The configuration callback.</param>
-    /// <param name="emitter">The dto type emitter.</param>
     /// <returns>The source <see cref="IServiceCollection"/>.</returns>
-    public static IServiceCollection AddGitObjectDbApi(this IServiceCollection source, IDataModel model, Action<IGitObjectDbBuilder> configure, out DtoTypeEmitter emitter)
+    public static IServiceCollection AddGitObjectDbApi(this IServiceCollection source)
     {
-        source.AddGitObjectDb(configure);
-
         // Avoid double-registrations
-        if (source.Any(sd => sd.ServiceType == typeof(DataProvider)))
+        if (source.IsGitObjectDbApiRegistered())
         {
-            emitter = _emitter ?? throw new NotSupportedException("Emitter should have been created.");
-            return source;
+            throw new NotSupportedException("GitObjectDbApi has already been registered.");
         }
 
+        if (!source.Any(sd => sd.ServiceType == typeof(IMemoryCache)))
+        {
+            throw new NotSupportedException($"No {nameof(IMemoryCache)} service registered.");
+        }
+
+        var model = source.FirstOrDefault(s => s.ServiceType == typeof(IDataModel) &&
+            s.Lifetime == ServiceLifetime.Singleton &&
+            s.ImplementationInstance is not null)?.ImplementationInstance as IDataModel ??
+            throw new NotSupportedException($"{nameof(IDataModel)} has not bee registered.");
+
         source
-            .AddScoped<DataProvider>()
-            .AddSingleton(_emitter = emitter = new DtoTypeEmitter(model))
+            .AddSingleton<DataProvider>()
+            .AddSingleton(_emitter = new DtoTypeEmitter(model))
             .AddAutoMapper(c => c.AddProfile(new AutoMapperProfile(_emitter.TypeDescriptions)));
 
         return source;
     }
+
+    /// <summary>Gets whether GitObjectDbApi has already been registered.</summary>
+    /// <param name="source">The source.</param>
+    /// <returns><c>true</c> if the service has already been registered, <c>false</c> otherwise.</returns>
+    private static bool IsGitObjectDbApiRegistered(this IServiceCollection source) =>
+        source.Any(sd => sd.ServiceType == typeof(DataProvider)) ||
+        source.Any(sd => sd.ServiceType == typeof(DtoTypeEmitter));
 }

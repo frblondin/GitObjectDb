@@ -84,7 +84,7 @@ public class RemoteResourceTests
         });
 
         // Assert
-        Assert.Throws<NotSupportedException>(() => changes.Commit(new(message, committer, committer)));
+        Assert.Throws<GitObjectDbValidationException>(() => changes.Commit(new(message, committer, committer)));
     }
 
     private static (string Path, string Tip) CreateResourceRepository(string content, string message, Signature committer)

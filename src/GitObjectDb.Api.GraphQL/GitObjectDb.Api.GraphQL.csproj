@@ -13,6 +13,7 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" />
+    <PackageReference Include="GraphQL.DataLoader" />
     <PackageReference Include="GraphQL.MicrosoftDI" />
     <PackageReference Include="GraphQL.SystemTextJson" />
     <PackageReference Include="Namotion.Reflection" />

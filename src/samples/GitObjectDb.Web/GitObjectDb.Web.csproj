@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="GraphQL.MemoryCache" />
     <PackageReference Include="GraphQL.Server.Ui.Altair" />
     <PackageReference Include="Microsoft.AspNetCore.OData" />
     <PackageReference Include="Swashbuckle.AspNetCore" />

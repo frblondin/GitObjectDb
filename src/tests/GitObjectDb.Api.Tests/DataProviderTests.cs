@@ -8,6 +8,7 @@ using GitObjectDb.Api.Tests.Model;
 using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -100,7 +101,7 @@ public class DataProviderTests
         var queryAccessor = A.Fake<IQueryAccessor>();
         A.CallTo(() => queryAccessor.GetNodes<TNode>(default, default, default))
             .Returns(nodes.ToCommitEnumerable(ObjectId.Zero));
-        return new DataProvider(queryAccessor, mapper);
+        return new DataProvider(queryAccessor, mapper, new MemoryCache(Options.Create(new MemoryCacheOptions())));
     }
 
     private class Customization : ICustomization, ISpecimenBuilder

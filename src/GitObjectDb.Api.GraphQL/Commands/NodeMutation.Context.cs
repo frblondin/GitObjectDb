@@ -45,7 +45,7 @@ internal static partial class NodeMutation
             var node = TryResolve(path) ??
                 throw new GitObjectDbException($"The node '{path}' could not be found.");
             var commitId = Connection.Repository.Info.IsHeadUnborn ? ObjectId.Zero : Connection.Repository.Head.Tip.Id;
-            return DataProvider.Map<Node, NodeDto>(node, commitId)!;
+            return DataProvider.MapCached<Node, NodeDto>(node, commitId)!;
         }
 
         internal Node? TryResolve(DataPath path)
