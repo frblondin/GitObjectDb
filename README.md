@@ -1,11 +1,8 @@
-# GitObjectDb
-
-[![NuGet Badge](https://buildstats.info/nuget/GitObjectDb)](https://www.nuget.org/packages/GitObjectDb/)
-[![Build Status](https://dev.azure.com/thomas0449/GitObjectDb/_apis/build/status/frblondin.GitObjectDb?branchName=master)](https://dev.azure.com/thomas0449/GitObjectDb/_build/latest?definitionId=1&branchName=master)
-[![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=alert_status)](https://sonarcloud.io/dashboard/index/GitObjectDb)
-[![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=bugs)](https://sonarcloud.io/project/issues?id=GitObjectDb&resolved=false&types=BUG)
-[![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=coverage)](https://sonarcloud.io/component_measures?id=GitObjectDb&metric=Coverage)
-[![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=code_smells)](https://sonarcloud.io/project/issues?id=GitObjectDb&resolved=false&types=CODE_SMELL)
+![Build Status](https://github.com/eVisionSoftware/ApplicationServer.GitForInno/actions/workflows/.github/workflows/Release.yml/badge.svg)
+[![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=alert_status)](https://sonarqube.dev.enablon.io/dashboard/index/ApplicationServer_ApplicationServer.GitForInno)
+[![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=bugs)](https://sonarqube.dev.enablon.io/project/issues?id=ApplicationServer_ApplicationServer.GitForInno&resolved=false&types=BUG)
+[![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=coverage)](https://sonarqube.dev.enablon.io/component_measures?id=ApplicationServer_ApplicationServer.GitForInno&metric=Coverage)
+[![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=code_smells)](https://sonarqube.dev.enablon.io/project/issues?id=ApplicationServer_ApplicationServer.GitForInno&resolved=false&types=CODE_SMELL)
 
 **GitObjectDb simplifies the configuration management versioning by backing it in Git.**
 

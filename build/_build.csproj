@@ -17,6 +17,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageDownload Include="dotnet-sonarscanner" Version="[5.5.3]" />
+		<PackageDownload Include="nbgv" Version="[3.4.255]" />
 		<PackageDownload Include="ReportGenerator" Version="[5.1.3]" />
 	</ItemGroup>
 
