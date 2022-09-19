@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -28,14 +29,19 @@ namespace GitObjectDb
                 _maxBytesPerChar = encoding == Encoding.ASCII ? 1 : encoding.GetMaxByteCount(1);
             }
 
+            [ExcludeFromCodeCoverage]
             public override bool CanRead => true;
 
+            [ExcludeFromCodeCoverage]
             public override bool CanSeek => false;
 
+            [ExcludeFromCodeCoverage]
             public override bool CanWrite => false;
 
+            [ExcludeFromCodeCoverage]
             public override long Length { get; }
 
+            [ExcludeFromCodeCoverage]
             public override long Position
             {
                 get => _position;
@@ -44,11 +50,13 @@ namespace GitObjectDb
                     if (value == 0)
                     {
                         Reset();
+                        return;
                     }
                     throw new NotImplementedException();
                 }
             }
 
+            [ExcludeFromCodeCoverage]
             public override void Flush()
             {
             }
@@ -77,6 +85,7 @@ namespace GitObjectDb
                 if (offset == 0 && origin == SeekOrigin.Begin)
                 {
                     Reset();
+                    return 0L;
                 }
                 throw new NotImplementedException();
             }
@@ -87,9 +96,13 @@ namespace GitObjectDb
                 _position = 0;
             }
 
-            public override void SetLength(long value) => throw new NotImplementedException();
+            [ExcludeFromCodeCoverage]
+            public override void SetLength(long value) =>
+                throw new NotImplementedException();
 
-            public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
+            [ExcludeFromCodeCoverage]
+            public override void Write(byte[] buffer, int offset, int count) =>
+                throw new NotImplementedException();
         }
     }
 }

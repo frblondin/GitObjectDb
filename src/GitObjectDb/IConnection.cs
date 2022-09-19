@@ -25,7 +25,7 @@ namespace GitObjectDb
         /// <summary>Gets the branch pointed to by HEAD.</summary>
         Branch Head { get; }
 
-        /// <summary>Lookup and enumerate commits in the repository. Iterating this collection directly
+        /// <summary>Lookups and enumerates commits in the repository. Iterating this collection directly
         /// starts walking from the HEAD.</summary>
 #pragma warning disable SA1623 // Property summary documentation should match accessors
         IQueryableCommitLog Commits { get; }
@@ -69,6 +69,15 @@ namespace GitObjectDb
         /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
         /// <returns>The <see cref="IQueryable{Node}"/> that represents the input sequence.</returns>
         IEnumerable<DataPath> GetPaths(DataPath? parentPath = null, string? committish = null, bool isRecursive = false);
+
+        /// <summary>Gets data paths from repository.</summary>
+        /// <param name="parentPath">The parent node path.</param>
+        /// <param name="committish">The committish.</param>
+        /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
+        /// <typeparam name="TItem">The type of requested item paths nodes.</typeparam>
+        /// <returns>The <see cref="IQueryable{Node}"/> that represents the input sequence.</returns>
+        IEnumerable<DataPath> GetPaths<TItem>(DataPath? parentPath = null, string? committish = null, bool isRecursive = false)
+            where TItem : ITreeItem;
 
         /// <summary>Compares two commits (additions, deletions, editions, conflicts).</summary>
         /// <param name="startCommittish">Starting points of comparison.</param>

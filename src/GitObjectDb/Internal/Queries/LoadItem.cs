@@ -17,7 +17,7 @@ namespace GitObjectDb.Internal.Queries
         {
             if (parms.ReferenceCache == null || !parms.ReferenceCache.TryGetValue(parms.Path, out var result))
             {
-                result = parms.Path.FileName == FileSystemStorage.DataFile ?
+                result = parms.Path.IsNode ?
                     LoadNode(parms) :
                     LoadResource(parms);
                 if (parms.ReferenceCache != null)

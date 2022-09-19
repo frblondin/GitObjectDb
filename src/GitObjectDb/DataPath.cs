@@ -37,6 +37,9 @@ namespace GitObjectDb
         /// <summary>Gets the parts of the path.</summary>
         public string[] FolderParts { get; }
 
+        /// <summary>Gets a value indicating whether the path represents a path to a node (e.g. not a resource).</summary>
+        public bool IsNode => StringComparer.OrdinalIgnoreCase.Equals(FileName, FileSystemStorage.DataFile);
+
         /// <summary>
         /// Indicates whether the values of two specified <see cref="DataPath" /> objects are equal.
         /// </summary>
@@ -123,7 +126,7 @@ namespace GitObjectDb
 
         internal static string GetFolderName(Type type)
         {
-            var attribute = GitPathAttribute.Get(type);
+            var attribute = GitFolderAttribute.Get(type);
             return attribute?.FolderName ?? $"{type.Name}s";
         }
 

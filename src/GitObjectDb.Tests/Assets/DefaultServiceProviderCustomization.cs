@@ -3,10 +3,8 @@ using AutoFixture.Kernel;
 using GitObjectDb.Tests.Assets.Loggers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Models.Software;
 using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
 
 namespace GitObjectDb.Tests.Assets
 {
@@ -18,6 +16,7 @@ namespace GitObjectDb.Tests.Assets
         {
             _serviceProvider = new ServiceCollection()
                 .AddGitObjectDb()
+                .AddSoftwareModel()
                 .AddLogging(builder =>
                     builder.SetMinimumLevel(LogLevel.Trace)
                            .AddProvider(new ConsoleProvider()))

@@ -48,7 +48,7 @@ namespace GitObjectDb.Internal.Commands
             {
                 // For nodes, delete whole folder containing node and nested entries
                 // For resources, only deleted resource
-                definition.Remove(path.FileName == FileSystemStorage.DataFile ? path.FolderPath : path.FilePath);
+                definition.Remove(path.IsNode ? path.FolderPath : path.FilePath);
             };
 
         private void CreateOrUpdateJsonBlob(Node node, ObjectDatabase database, TreeDefinition definition)

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Models.Software
 {
-    [GitPath("Applications")]
+    [GitFolder("Applications")]
     [HasChild(typeof(Table))]
     public record Application : Node
     {

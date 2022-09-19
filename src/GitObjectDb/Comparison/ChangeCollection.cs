@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace GitObjectDb.Comparison
@@ -27,12 +28,15 @@ namespace GitObjectDb.Comparison
         public IEnumerable<Change> Deleted => _changes.Where(c => c.Status == ChangeStatus.Delete);
 
         /// <inheritdoc/>
+        [ExcludeFromCodeCoverage]
         public bool IsReadOnly => _changes.IsReadOnly;
 
         /// <inheritdoc/>
+        [ExcludeFromCodeCoverage]
         public int Count => _changes.Count;
 
         /// <inheritdoc/>
+        [ExcludeFromCodeCoverage]
         public Change this[int index]
         {
             get => _changes[index];
@@ -40,32 +44,42 @@ namespace GitObjectDb.Comparison
         }
 
         /// <inheritdoc/>
+        [ExcludeFromCodeCoverage]
         public void Add(Change item) => _changes.Add(item);
 
         /// <inheritdoc/>
+        [ExcludeFromCodeCoverage]
         public void Clear() => _changes.Clear();
 
         /// <inheritdoc/>
+        [ExcludeFromCodeCoverage]
         public bool Contains(Change item) => _changes.Contains(item);
 
         /// <inheritdoc/>
+        [ExcludeFromCodeCoverage]
         public void CopyTo(Change[] array, int arrayIndex) => _changes.CopyTo(array, arrayIndex);
 
         /// <inheritdoc/>
+        [ExcludeFromCodeCoverage]
         public IEnumerator<Change> GetEnumerator() => _changes.GetEnumerator();
 
         /// <inheritdoc/>
+        [ExcludeFromCodeCoverage]
         public int IndexOf(Change item) => _changes.IndexOf(item);
 
         /// <inheritdoc/>
+        [ExcludeFromCodeCoverage]
         public void Insert(int index, Change item) => _changes.Insert(index, item);
 
         /// <inheritdoc/>
+        [ExcludeFromCodeCoverage]
         public bool Remove(Change item) => _changes.Remove(item);
 
         /// <inheritdoc/>
+        [ExcludeFromCodeCoverage]
         public void RemoveAt(int index) => _changes.RemoveAt(index);
 
+        [ExcludeFromCodeCoverage]
         IEnumerator IEnumerable.GetEnumerator() => _changes.GetEnumerator();
     }
 }
