@@ -13,10 +13,10 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
     private readonly IQuery<LoadItem.Parameters, ITreeItem> _loader;
     private readonly IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> _queryResources;
 
-    public QueryItems(IQuery<LoadItem.Parameters, ITreeItem> loaderFromLibGit2,
+    public QueryItems(IQuery<LoadItem.Parameters, ITreeItem> loader,
                       IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> queryResources)
     {
-        _loader = loaderFromLibGit2;
+        _loader = loader;
         _queryResources = queryResources;
     }
 

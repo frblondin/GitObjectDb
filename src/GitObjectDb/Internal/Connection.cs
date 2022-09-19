@@ -27,6 +27,7 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
     private readonly IQuery<LoadItem.Parameters, ITreeItem> _loader;
     private readonly IQuery<QueryItems.Parameters, IEnumerable<(DataPath Path, Lazy<ITreeItem> Item)>> _queryItems;
     private readonly IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> _queryResources;
+    private readonly IQuery<SearchItems.Parameters, IEnumerable<(DataPath Path, ITreeItem Item)>> _searchItems;
     private readonly IComparerInternal _comparer;
 
     [FactoryDelegateConstructor(typeof(ConnectionFactory))]
@@ -45,6 +46,7 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
         _loader = serviceProvider.GetRequiredService<IQuery<LoadItem.Parameters, ITreeItem>>();
         _queryItems = serviceProvider.GetRequiredService<IQuery<QueryItems.Parameters, IEnumerable<(DataPath Path, Lazy<ITreeItem> Item)>>>();
         _queryResources = serviceProvider.GetRequiredService<IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>>>();
+        _searchItems = serviceProvider.GetRequiredService<IQuery<SearchItems.Parameters, IEnumerable<(DataPath Path, ITreeItem Item)>>>();
         _comparer = serviceProvider.GetRequiredService<IComparerInternal>();
     }
 

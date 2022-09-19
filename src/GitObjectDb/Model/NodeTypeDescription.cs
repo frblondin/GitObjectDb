@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 
 namespace GitObjectDb.Model;
 
@@ -23,6 +26,7 @@ public class NodeTypeDescription : IEquatable<NodeTypeDescription>
         Type = type;
         Name = name;
 
+        SearchableProperties = GetSearchableProperties(type).ToImmutableList();
         UseNodeFolders = useNodeFolders ??
                          GitFolderAttribute.Get(type)?.UseNodeFolders ??
                          GitFolderAttribute.DefaultUseNodeFoldersValue;
@@ -34,8 +38,11 @@ public class NodeTypeDescription : IEquatable<NodeTypeDescription>
     /// <summary>Gets the name of the node type.</summary>
     public string Name { get; }
 
+    /// <summary>Gets the list of searchable properties.</summary>
+    public IList<PropertyInfo> SearchableProperties { get; }
+
     /// <summary>Gets the children that this node can contain.</summary>
-    public IEnumerable<NodeTypeDescription> Children => _children.AsReadOnly();
+    public IList<NodeTypeDescription> Children => _children.AsReadOnly();
 
     /// <summary>Gets a value indicating whether node should be stored in a nested folder (FolderName/NodeId/data.json) or not (FolderName/NodeId.json).</summary>
     public bool UseNodeFolders { get; }
@@ -56,6 +63,15 @@ public class NodeTypeDescription : IEquatable<NodeTypeDescription>
         }
     }
 
+    private static IEnumerable<PropertyInfo> GetSearchableProperties(Type type)
+    {
+        return type.GetProperties().Where(IsSearchable);
+
+        static bool IsSearchable(PropertyInfo property) =>
+            property.GetCustomAttribute<IsSearchableAttribute>()?.Searchable ??
+            property.PropertyType == typeof(string);
+    }
+
     internal void AddChild(NodeTypeDescription nodeType)
     {
         if (!_children.Contains(nodeType))
@@ -67,7 +83,7 @@ public class NodeTypeDescription : IEquatable<NodeTypeDescription>
     /// <inheritdoc />
     public bool Equals(NodeTypeDescription? other)
     {
-        if (ReferenceEquals(null, other))
+        if (other is null)
         {
             return false;
         }
@@ -77,14 +93,10 @@ public class NodeTypeDescription : IEquatable<NodeTypeDescription>
     }
 
     /// <inheritdoc />
-    public override bool Equals(object? obj)
-    {
-        return obj is NodeTypeDescription description && Equals(description);
-    }
+    public override bool Equals(object? obj) =>
+        obj is NodeTypeDescription description && Equals(description);
 
     /// <inheritdoc />
-    public override int GetHashCode()
-    {
-        return Type.GetHashCode();
-    }
+    public override int GetHashCode() =>
+        Type.GetHashCode();
 }

@@ -31,7 +31,7 @@ public interface IQueryAccessor
     /// <param name="referenceCache">Cache that can be used to reuse same shared
     /// node references between queries.</param>
     /// <typeparam name="TItem">The type of requested items.</typeparam>
-    /// <returns>The <see cref="IQueryable{Node}"/> that represents the input sequence.</returns>
+    /// <returns>The items being found, if any.</returns>
     IEnumerable<TItem> GetItems<TItem>(Node? parent = null,
                                        string? committish = null,
                                        bool isRecursive = false,
@@ -45,7 +45,7 @@ public interface IQueryAccessor
     /// <param name="referenceCache">Cache that can be used to reuse same shared
     /// node references between queries.</param>
     /// <typeparam name="TNode">The type of requested nodes.</typeparam>
-    /// <returns>The <see cref="IEnumerable{TNode}"/> that represents the input sequence.</returns>
+    /// <returns>The items being found, if any.</returns>
     IEnumerable<TNode> GetNodes<TNode>(Node? parent = null,
                                        string? committish = null,
                                        bool isRecursive = false,
@@ -56,7 +56,7 @@ public interface IQueryAccessor
     /// <param name="parentPath">The parent node path.</param>
     /// <param name="committish">The committish.</param>
     /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
-    /// <returns>The <see cref="IEnumerable{Node}"/> that represents the input sequence.</returns>
+    /// <returns>The paths being found, if any.</returns>
     IEnumerable<DataPath> GetPaths(DataPath? parentPath = null,
                                    string? committish = null,
                                    bool isRecursive = false);
@@ -66,15 +66,29 @@ public interface IQueryAccessor
     /// <param name="committish">The committish.</param>
     /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
     /// <typeparam name="TItem">The type of requested item paths nodes.</typeparam>
-    /// <returns>The <see cref="IEnumerable{Node}"/> that represents the input sequence.</returns>
+    /// <returns>The paths being found, if any.</returns>
     IEnumerable<DataPath> GetPaths<TItem>(DataPath? parentPath = null,
                                           string? committish = null,
                                           bool isRecursive = false)
         where TItem : ITreeItem;
 
-    /// <summary>
-    /// Gets the resources associated to the node.
-    /// </summary>
+    /// <summary>Looks for specified pattern from repository.</summary>
+    /// <param name="pattern">The search expression.</param>
+    /// <param name="parentPath">The parent node path.</param>
+    /// <param name="committish">The committish.</param>
+    /// <param name="ignoreCase">Ignore case differences between the patterns and the files.</param>
+    /// <param name="recurseSubModules">Recursively search in each submodule that is active and checked out in the repository.</param>
+    /// <param name="referenceCache">Cache that can be used to reuse same shared
+    /// node references between queries.</param>
+    /// <returns>The items being found, if any.</returns>
+    public IEnumerable<ITreeItem> Search(string pattern,
+                                        DataPath? parentPath = null,
+                                        string? committish = null,
+                                        bool ignoreCase = false,
+                                        bool recurseSubModules = false,
+                                        IMemoryCache? referenceCache = null);
+
+    /// <summary>Gets the resources associated to the node.</summary>
     /// <param name="node">The parent node.</param>
     /// <param name="committish">The committish.</param>
     /// <param name="referenceCache">Cache that can be used to reuse same shared
@@ -84,9 +98,7 @@ public interface IQueryAccessor
                                               string? committish = null,
                                               IMemoryCache? referenceCache = null);
 
-    /// <summary>
-    /// Gets the history of a node.
-    /// </summary>
+    /// <summary>Gets the history of a node.</summary>
     /// <param name="node">The node whose commits should be returned.</param>
     /// <param name="branch">The branch to get log from.</param>
     /// <returns>The node history.</returns>
