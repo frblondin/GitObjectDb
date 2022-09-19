@@ -14,17 +14,16 @@ namespace GitObjectDb.Tests.Comparison
     {
         [Test]
         [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-        public void CompareFieldEdit(IFixture fixture)
+        public void CompareFieldEdit(IConnection connection, Repository repository, Field field, string message, Signature signature)
         {
             // Arrange
-            var (sut, repository, comparer, field, message, signature) = Arrange(fixture);
             field.A[0].B.IsVisible = !field.A[0].B.IsVisible;
-            sut
+            connection
                 .Update(c => c.CreateOrUpdate(field))
                 .Commit(message, signature, signature);
 
             // Act
-            var comparison = sut.Compare("HEAD~1", repository.Head.Tip.Sha);
+            var comparison = connection.Compare("HEAD~1", repository.Head.Tip.Sha);
 
             // Assert
             Assert.That(comparison, Has.Count.EqualTo(1));
@@ -32,15 +31,5 @@ namespace GitObjectDb.Tests.Comparison
             Assert.That(comparison.Added, Is.Empty);
             Assert.That(comparison.Deleted, Is.Empty);
         }
-
-        private static (IConnectionInternal Connection, Repository Repository, Comparer Comparer, Field Field, string StringValue, Signature Signature) Arrange(IFixture fixture) =>
-        (
-            fixture.Create<IConnectionInternal>(),
-            fixture.Create<Repository>(),
-            fixture.Create<Comparer>(),
-            fixture.Create<Field>(),
-            fixture.Create<string>(),
-            fixture.Create<Signature>()
-        );
     }
 }

@@ -1,4 +1,5 @@
 using LibGit2Sharp;
+using System.Diagnostics.CodeAnalysis;
 
 namespace GitObjectDb.Comparison
 {
@@ -18,15 +19,19 @@ namespace GitObjectDb.Comparison
             }
 
             /// <summary>Gets the old resource.</summary>
+            [ExcludeFromCodeCoverage]
             public new Resource? Old => base.Old as Resource;
 
             /// <summary>Gets the new resource.</summary>
+            [ExcludeFromCodeCoverage]
             public new Resource? New => base.New as Resource;
 
             /// <summary>Gets the changes between the two resources.</summary>
+            [ExcludeFromCodeCoverage]
             public ContentChanges Changes { get; }
 
             /// <inheritdoc/>
+            [ExcludeFromCodeCoverage]
             public override string Message =>
                 Changes != null ?
                 $@"{{+{Changes.LinesAdded}, -{Changes.LinesDeleted}}}" :

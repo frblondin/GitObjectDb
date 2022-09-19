@@ -41,6 +41,7 @@ namespace GitObjectDb
             source.AddSingleton<Comparer>();
             source.AddSingleton<IComparer>(s => s.GetRequiredService<Comparer>());
             source.AddSingleton<IComparerInternal>(s => s.GetRequiredService<Comparer>());
+            source.AddSingleton<IMergeComparer, MergeComparer>();
             source.AddSingleton<ITreeValidation, TreeValidation>();
         }
 

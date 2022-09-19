@@ -13,14 +13,18 @@ namespace GitObjectDb.Internal
     internal sealed class Rebase : IRebase
     {
         private readonly IComparerInternal _comparer;
+        private readonly IMergeComparer _mergeComparer;
         private readonly UpdateTreeCommand _updateCommand;
         private readonly CommitCommand _commitCommand;
         private readonly IConnectionInternal _connection;
 
         [FactoryDelegateConstructor(typeof(Factories.RebaseFactory))]
-        public Rebase(IComparerInternal comparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand, IConnectionInternal connection, Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null)
+        public Rebase(
+            IComparerInternal comparer, IMergeComparer mergeComparer, UpdateTreeCommand updateCommand, CommitCommand commitCommand,
+            IConnectionInternal connection, Branch? branch = null, string? upstreamCommittish = null, ComparisonPolicy? policy = null)
         {
             _comparer = comparer;
+            _mergeComparer = mergeComparer;
             _updateCommand = updateCommand;
             _commitCommand = commitCommand;
             _connection = connection;
@@ -75,7 +79,7 @@ namespace GitObjectDb.Internal
                 UpstreamCommit.Tree,
                 Policy);
 
-            CurrentChanges = Comparer.Compare(upstreamChanges, branchChanges, Policy).ToList();
+            CurrentChanges = _mergeComparer.Compare(upstreamChanges, branchChanges, Policy).ToList();
             if (!CurrentChanges.Any(c => c.Status == ItemMergeStatus.EditConflict || c.Status == ItemMergeStatus.TreeConflict))
             {
                 Continue();

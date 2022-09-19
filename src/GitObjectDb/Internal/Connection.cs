@@ -39,16 +39,7 @@ namespace GitObjectDb.Internal
             IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> queryResources,
             IComparerInternal comparer)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                throw new ArgumentException($"'{nameof(path)}' cannot be null or empty.", nameof(path));
-            }
-
-            if (!Repository.IsValid(path))
-            {
-                InitializeRepository(path, initialBranch);
-            }
-            Repository = new Repository(path);
+            Repository = GetOrCreateRepository(path, initialBranch);
             Model = model;
             _transformationComposerFactory = transformationComposerFactory;
             _rebaseFactory = rebaseFactory;
@@ -78,6 +69,16 @@ namespace GitObjectDb.Internal
         public IQueryableCommitLog Commits => Repository.Commits;
 
         public IDataModel Model { get; }
+
+        private Repository GetOrCreateRepository(string path, string initialBranch)
+        {
+            var absolute = Path.GetFullPath(path);
+            if (!Repository.IsValid(absolute))
+            {
+                InitializeRepository(absolute, initialBranch);
+            }
+            return new Repository(absolute);
+        }
 
         private static void InitializeRepository(string path, string initialBranch)
         {

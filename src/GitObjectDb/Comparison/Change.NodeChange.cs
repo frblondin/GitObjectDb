@@ -1,5 +1,6 @@
 using KellermanSoftware.CompareNetObjects;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace GitObjectDb.Comparison
 {
@@ -18,15 +19,19 @@ namespace GitObjectDb.Comparison
             }
 
             /// <summary>Gets the old node.</summary>
+            [ExcludeFromCodeCoverage]
             public new Node? Old => base.Old as Node;
 
             /// <summary>Gets the new node.</summary>
+            [ExcludeFromCodeCoverage]
             public new Node? New => base.New as Node;
 
             /// <summary>Gets the differences.</summary>
+            [ExcludeFromCodeCoverage]
             public IImmutableList<Difference> Differences { get; }
 
             /// <inheritdoc/>
+            [ExcludeFromCodeCoverage]
             public override string Message { get; }
         }
     }

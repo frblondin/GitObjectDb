@@ -1,6 +1,7 @@
 using LibGit2Sharp;
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace GitObjectDb.Comparison
 {
@@ -22,23 +23,28 @@ namespace GitObjectDb.Comparison
         }
 
         /// <summary>Gets the old item.</summary>
+        [ExcludeFromCodeCoverage]
         public ITreeItem? Old { get; }
 
         /// <summary>Gets the new item.</summary>
+        [ExcludeFromCodeCoverage]
         public ITreeItem? New { get; }
 
         /// <summary>Gets the change status.</summary>
+        [ExcludeFromCodeCoverage]
         public ChangeStatus Status { get; }
 
         /// <summary>Gets the message.</summary>
+        [ExcludeFromCodeCoverage]
         public abstract string Message { get; }
 
         /// <summary>Gets the item path.</summary>
+        [ExcludeFromCodeCoverage]
         public DataPath Path => (New ?? Old)?.Path ?? throw new InvalidOperationException();
 
         /// <inheritdoc/>
-        public override string ToString() =>
-            Message;
+        [ExcludeFromCodeCoverage]
+        public override string ToString() => Message;
 
         internal static Change? Create(ContentChanges changes, ITreeItem? old, ITreeItem? @new, ChangeStatus status, ComparisonPolicy policy)
         {
