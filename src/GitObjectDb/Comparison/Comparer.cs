@@ -109,6 +109,7 @@ internal class Comparer : IComparer, IComparerInternal
                 MembersToIgnore = policy.IgnoredProperties.Select(p => $"{p.DeclaringType.Name}.{p.Name}").ToList(),
                 AttributesToIgnore = policy.AttributesToIgnore.ToList(),
             };
+            config.CustomComparers.AddRange(policy.CustomComparers);
             return new CompareLogic(config);
         }
     }

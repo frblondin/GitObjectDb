@@ -1,5 +1,6 @@
 using GitObjectDb.Model;
 using GitObjectDb.Tools;
+using KellermanSoftware.CompareNetObjects.TypeComparers;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
@@ -17,6 +18,9 @@ public record ComparisonPolicy
 
     /// <summary>Gets ignored class, property or field when decorated with attributes.</summary>
     public IImmutableList<Type> AttributesToIgnore { get; init; } = ImmutableList.Create<Type>();
+
+    /// <summary>Gets a list of custom comparers that take priority over the built in comparers.</summary>
+    public IImmutableList<BaseTypeComparer> CustomComparers { get; init; } = ImmutableList.Create<BaseTypeComparer>();
 
     /// <summary>
     /// Creates the default policy for a given model, ignoring properties decorated
@@ -46,6 +50,18 @@ public static class ComparisonPolicyExtensions
         return source with
         {
             IgnoredProperties = source.IgnoredProperties.Add((Node n) => n.Path),
+        };
+    }
+
+    /// <summary>Adds custom comparers that take priority over the built in comparers.</summary>
+    /// <param name="source">The comparison policy to update.</param>
+    /// <param name="comparers">The custom comparers to add.</param>
+    /// <returns>A new comparison policy with added comparer.</returns>
+    public static ComparisonPolicy UpdateWithCustomComparer(this ComparisonPolicy source, params BaseTypeComparer[] comparers)
+    {
+        return source with
+        {
+            CustomComparers = source.CustomComparers.AddRange(comparers),
         };
     }
 
