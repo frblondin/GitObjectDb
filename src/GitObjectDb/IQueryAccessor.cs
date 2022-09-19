@@ -23,8 +23,17 @@ public interface IQueryAccessor
     /// <param name="path">The path.</param>
     /// <param name="committish">The optional committish (head tip is used otherwise).</param>
     /// <returns>The item being found, if any.</returns>
-    TItem Lookup<TItem>(DataPath path,
+    TItem? Lookup<TItem>(DataPath path,
                         string? committish = null)
+        where TItem : ITreeItem;
+
+    /// <summary>Lookups for the item defined by its unique identifier.</summary>
+    /// <typeparam name="TItem">The type of the node.</typeparam>
+    /// <param name="id">The unique identifier.</param>
+    /// <param name="committish">The optional committish (head tip is used otherwise).</param>
+    /// <returns>The item being found, if any.</returns>
+    TItem? Lookup<TItem>(UniqueId id,
+                           string? committish = null)
         where TItem : ITreeItem;
 
     /// <summary>Gets all items from repository.</summary>
@@ -77,10 +86,10 @@ public interface IQueryAccessor
     /// <param name="recurseSubModules">Recursively search in each submodule that is active and checked out in the repository.</param>
     /// <returns>The items being found, if any.</returns>
     public IEnumerable<ITreeItem> Search(string pattern,
-                                        DataPath? parentPath = null,
-                                        string? committish = null,
-                                        bool ignoreCase = false,
-                                        bool recurseSubModules = false);
+                                         DataPath? parentPath = null,
+                                         string? committish = null,
+                                         bool ignoreCase = false,
+                                         bool recurseSubModules = false);
 
     /// <summary>Gets the resources associated to the node.</summary>
     /// <param name="node">The parent node.</param>
