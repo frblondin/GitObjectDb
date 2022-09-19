@@ -85,7 +85,7 @@ class Build : NukeBuild
                 .SetLoggers("trx")
                 .SetProcessArgumentConfigurator(arguments => arguments
                     .Add("/p:CollectCoverage=true")
-                    .Add("/p:Exclude={0}", "[Models.Software]*")
+                    .Add("/p:Exclude=\\\"{0}\\\"", "[Models.Software]*,[MetadataStorageConverter]*")
                     .Add("/p:CoverletOutput={0}/", CoverageResult)
                     .Add("/p:Threshold={0}", CoverageThreshold)
                     .Add("/p:ThresholdType={0}", "line")
