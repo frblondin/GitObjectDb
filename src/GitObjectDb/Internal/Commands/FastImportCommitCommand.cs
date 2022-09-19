@@ -125,7 +125,8 @@ internal class FastImportCommitCommand : ICommitCommand
                                   @$"fast-import --export-marks=""{markFile}""",
                                   stream);
             var linePrefix = $":{commitMarkId} ";
-            var line = File.ReadLines(markFile).FirstOrDefault(l => l.StartsWith(linePrefix, StringComparison.Ordinal)) ??
+            var line = File.ReadLines(markFile)
+                .FirstOrDefault(l => l.StartsWith(linePrefix, StringComparison.Ordinal)) ??
                 throw new GitObjectDbException("Could not locate commit id in fast-import mark file.");
             var commitId = line.Substring(linePrefix.Length).Trim();
             return connection.Repository.Lookup(commitId).Peel<Commit>() ??

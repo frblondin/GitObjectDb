@@ -53,7 +53,7 @@ internal class Comparer : IComparer, IComparerInternal
         return result;
     }
 
-    private Change? Compare(IConnection connection,
+    private Change? Compare(IQueryAccessor queryAccessor,
                             Tree oldTree,
                             Tree newTree,
                             PatchEntryChanges change,
@@ -61,13 +61,13 @@ internal class Comparer : IComparer, IComparerInternal
     {
         var oldPath = new Lazy<DataPath>(() => DataPath.Parse(change.OldPath));
         var old = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
-            connection,
+            queryAccessor,
             new LoadItem.Parameters(oldTree,
                                     oldPath.Value,
                                     Internal.Connection.CreateEphemeralCache())));
         var newPath = new Lazy<DataPath>(() => DataPath.Parse(change.Path));
         var @new = new Lazy<ITreeItem>(() => _nodeLoader.Execute(
-            connection,
+            queryAccessor,
             new LoadItem.Parameters(newTree,
                                     newPath.Value,
                                     Internal.Connection.CreateEphemeralCache())));
@@ -77,17 +77,17 @@ internal class Comparer : IComparer, IComparerInternal
                                                  old.Value,
                                                  @new.Value,
                                                  ChangeStatus.Edit,
-                                                 policy ?? connection.Model.DefaultComparisonPolicy),
+                                                 policy ?? queryAccessor.Model.DefaultComparisonPolicy),
             ChangeKind.Added => Change.Create(change,
                                               default,
                                               @new.Value,
                                               ChangeStatus.Add,
-                                              policy ?? connection.Model.DefaultComparisonPolicy),
+                                              policy ?? queryAccessor.Model.DefaultComparisonPolicy),
             ChangeKind.Deleted => Change.Create(change,
                                                 old.Value,
                                                 default,
                                                 ChangeStatus.Delete,
-                                                policy ?? connection.Model.DefaultComparisonPolicy),
+                                                policy ?? queryAccessor.Model.DefaultComparisonPolicy),
             _ => throw new NotSupportedException(change.Status.ToString()),
         };
         return treeChange;

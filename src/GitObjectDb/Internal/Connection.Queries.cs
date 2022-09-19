@@ -128,7 +128,8 @@ internal sealed partial class Connection
         }
         else
         {
-            var tree = commit.Tree[path.FolderPath] ?? throw new GitObjectDbException("Requested path could not be found.");
+            var tree = commit.Tree[path.FolderPath] ??
+                       throw new GitObjectDbException("Requested path could not be found.");
             return (commit.Tree, tree.Target.Peel<Tree>());
         }
     }

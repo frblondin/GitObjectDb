@@ -23,7 +23,6 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
     public IEnumerable<(DataPath Path, Lazy<ITreeItem> Item)> Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
         var entries = new Stack<Parameters>();
-        var includeResources = IncludeResources(parms);
 
         // Fetch direct resources
         if (IncludeResources(parms))

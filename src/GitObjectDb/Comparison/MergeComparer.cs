@@ -10,14 +10,14 @@ internal class MergeComparer : IMergeComparer
                                             ChangeCollection toBeMergedIntoLocal,
                                             ComparisonPolicy policy)
     {
-        return CompareImpl(localChanges, toBeMergedIntoLocal, policy)
+        return MergeComparer.CompareImpl(localChanges, toBeMergedIntoLocal, policy)
             .Where(c => c.Status != ItemMergeStatus.NoChange)
             .Distinct(MergeChangeEqualityComparer.Instance);
     }
 
-    private IEnumerable<MergeChange> CompareImpl(ChangeCollection localChanges,
-                                                 ChangeCollection toBeMergedIntoLocal,
-                                                 ComparisonPolicy policy)
+    private static IEnumerable<MergeChange> CompareImpl(ChangeCollection localChanges,
+                                                        ChangeCollection toBeMergedIntoLocal,
+                                                        ComparisonPolicy policy)
     {
         foreach (var their in toBeMergedIntoLocal)
         {

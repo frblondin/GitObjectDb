@@ -153,6 +153,8 @@ internal class TreeValidation : ITreeValidation
                 case TreeEntryTargetType.GitLink:
                     throw new GitObjectDbException($"A link folder is only valid as a resource. " +
                         $"Git link '{item.Name}' was not expected.");
+                default:
+                    throw new NotSupportedException($"{item.TargetType} is not supported.");
             }
             path.Pop();
         }

@@ -63,7 +63,9 @@ internal static class ActivatorTools
     [ExcludeFromCodeCoverage]
     private static void ThrowMarkedCtorDoesNotTakeAllProvidedArguments()
     {
-        var message = $"Constructor marked with {nameof(FactoryDelegateConstructorAttribute)} does not accept all given argument types.";
+        const string message =
+            $"Constructor marked with {nameof(FactoryDelegateConstructorAttribute)} does not " +
+            $"accept all given argument types.";
         throw new InvalidOperationException(message);
     }
 }

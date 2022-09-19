@@ -17,17 +17,10 @@ internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
     public ITreeItem Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
         var loadParameters = new DataLoadParameters(parms.Path, parms.Tree.Id);
-        if (parms.ReferenceCache is not null)
-        {
-            return parms.ReferenceCache.GetOrCreate(loadParameters,
-                                                    _ => Load(loadParameters));
-        }
-        else
-        {
-            return Load(loadParameters);
-        }
+        return parms.ReferenceCache?.GetOrCreate(loadParameters, Load) ??
+               Load(default);
 
-        ITreeItem Load(DataLoadParameters p) =>
+        ITreeItem Load(ICacheEntry? entry) =>
             parms.Path.IsNode ?
             LoadNode(queryAccessor, parms) :
             LoadResource(parms);
