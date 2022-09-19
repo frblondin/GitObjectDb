@@ -50,6 +50,7 @@ internal partial class NodeSerializer : INodeSerializer
         };
 
         result.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+        result.Converters.Add(new TimeZoneInfoConverter());
 
         return result;
     }
