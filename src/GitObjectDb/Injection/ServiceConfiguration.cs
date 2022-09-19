@@ -5,6 +5,7 @@ using GitObjectDb.Internal.Commands;
 using GitObjectDb.Internal.Queries;
 using GitObjectDb.Serialization;
 using GitObjectDb.Serialization.Json;
+using GitObjectDb.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
