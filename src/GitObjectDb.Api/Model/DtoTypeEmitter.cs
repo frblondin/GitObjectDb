@@ -37,7 +37,10 @@ public class DtoTypeEmitter<TTypeDescription>
     private IList<TTypeDescription> EmitTypes()
     {
         var result = new List<TTypeDescription>();
-        var dtoTypes = Model.NodeTypes.Select(EmitDto).ToList();
+        var dtoTypes = Model.NodeTypes
+            .Where(IsBrowsable)
+            .Select(EmitDto)
+            .ToList();
         foreach (var (type, dto) in dtoTypes)
         {
             AddDtoDescription(type, dto);
@@ -50,6 +53,9 @@ public class DtoTypeEmitter<TTypeDescription>
         }
         return result.AsReadOnly();
     }
+
+    public static bool IsBrowsable(NodeTypeDescription description) =>
+        description.Type.GetCustomAttribute<ApiBrowsableAttribute>()?.Browsable ?? true;
 
     protected virtual TypeDescription ProcessType(NodeTypeDescription type, TypeInfo dto)
     {
