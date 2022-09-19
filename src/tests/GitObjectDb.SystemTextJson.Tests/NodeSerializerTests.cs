@@ -1,6 +1,5 @@
 using AutoFixture;
 using GitObjectDb.Model;
-using GitObjectDb.Serialization;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
@@ -8,7 +7,7 @@ using LibGit2Sharp;
 using NUnit.Framework;
 using System;
 
-namespace GitObjectDb.Tests.Serialization.Json;
+namespace GitObjectDb.SystemTextJson.Tests;
 
 public partial class NodeSerializerTests
 {
@@ -29,7 +28,7 @@ public partial class NodeSerializerTests
         };
 
         // Act
-        var nodeSerializer = fixture.Create<NodeSerializerFactory>().Invoke(model);
+        var nodeSerializer = fixture.Create<INodeSerializer.Factory>().Invoke(model);
         var serialized = nodeSerializer.Serialize(value);
         var deserialized = nodeSerializer.Deserialize(serialized, ObjectId.Zero, null, _ => throw new NotImplementedException());
 

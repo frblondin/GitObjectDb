@@ -12,6 +12,6 @@ public class DataPathTests : DisposeArguments
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
     public void GetParentNode(IConnection sut, Application application, Table table)
     {
-        Assert.That(table.Path.GetParentNode(), Is.EqualTo(application.Path));
+        Assert.That(table.Path.GetParentNode(sut.Serializer.FileExtension), Is.EqualTo(application.Path));
     }
 }

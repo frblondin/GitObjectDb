@@ -2,7 +2,6 @@ using GitObjectDb.Comparison;
 using GitObjectDb.Injection;
 using GitObjectDb.Internal.Queries;
 using GitObjectDb.Model;
-using GitObjectDb.Serialization;
 using GitObjectDb.Tools;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
@@ -12,7 +11,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using static GitObjectDb.Internal.Factories;
 
 namespace GitObjectDb.Internal;
@@ -39,7 +37,7 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
         Repository = GetOrCreateRepository(path, initialBranch);
         Model = model;
         ReferenceCache = serviceProvider.GetRequiredService<IMemoryCache>();
-        Serializer = serviceProvider.GetRequiredService<NodeSerializerFactory>().Invoke(model);
+        Serializer = serviceProvider.GetRequiredService<INodeSerializer.Factory>().Invoke(model);
         _transformationComposerFactory = serviceProvider.GetRequiredService<TransformationComposerFactory>();
         _rebaseFactory = serviceProvider.GetRequiredService<RebaseFactory>();
         _mergeFactory = serviceProvider.GetRequiredService<MergeFactory>();

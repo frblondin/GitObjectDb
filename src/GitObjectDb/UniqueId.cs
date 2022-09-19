@@ -1,17 +1,14 @@
-using GitObjectDb.Serialization.Json.Converters;
 using GitObjectDb.Tools;
 using System;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
-using System.Text.Json.Serialization;
 
 namespace GitObjectDb;
 
 /// <summary>
 /// Represents a unique identifier.
 /// </summary>
-[JsonConverter(typeof(UniqueIdConverter))]
 public struct UniqueId : IComparable<UniqueId>, IEquatable<UniqueId>
 {
     private static readonly RNGCryptoServiceProvider _rngCryptoServiceProvider = new();

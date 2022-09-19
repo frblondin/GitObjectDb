@@ -2,11 +2,13 @@ using GitObjectDb.Model;
 using GitObjectDb.Tools;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
-namespace GitObjectDb.Serialization.Json;
+namespace GitObjectDb.SystemTextJson;
 
 internal class NodeTypeInfoResolver : DefaultJsonTypeInfoResolver
 {
@@ -23,10 +25,24 @@ internal class NodeTypeInfoResolver : DefaultJsonTypeInfoResolver
 
         if (typeof(Node).IsAssignableFrom(type))
         {
+            ExcludeIgnoreDataMemberDecoratedProperties(type, result);
             AddPolymorphismOptions(type, result);
         }
 
         return result;
+    }
+
+    private static void ExcludeIgnoreDataMemberDecoratedProperties(Type type, JsonTypeInfo jsonTypeInfo)
+    {
+        foreach (var property in jsonTypeInfo.Properties)
+        {
+            var propertyInfo = type.GetProperty(property.Name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+            var attribute = propertyInfo?.GetCustomAttribute<IgnoreDataMemberAttribute>(true);
+            if (attribute is not null)
+            {
+                property.ShouldSerialize = (_, _) => false;
+            }
+        }
     }
 
     private void AddPolymorphismOptions(Type type, JsonTypeInfo jsonTypeInfo)
@@ -44,7 +60,7 @@ internal class NodeTypeInfoResolver : DefaultJsonTypeInfoResolver
         {
             if (nodeType.IsAssignableFrom(description.Type))
             {
-                derivedTypes.Add(new(description.Type, TypeHelper.BindToName(description.Type)));
+                derivedTypes.Add(new(description.Type, description.Type.FullName));
             }
         }
     }

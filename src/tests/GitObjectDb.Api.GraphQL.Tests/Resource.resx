@@ -138,7 +138,7 @@
   
   na: createOrganization(node: {
     id: "northAmerica"
-    label: "NorthAmerica"
+    label: "North America"
     type: "Types/region.json"
   })
   usa: createOrganization(node: {

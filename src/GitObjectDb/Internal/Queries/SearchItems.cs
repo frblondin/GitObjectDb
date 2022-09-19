@@ -2,27 +2,19 @@ using Fasterflect;
 using GitObjectDb.Model;
 using GitObjectDb.Tools;
 using LibGit2Sharp;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.IO;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace GitObjectDb.Internal.Queries;
 
 internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPath Path, ITreeItem Item)>>
 {
     private readonly IQuery<LoadItem.Parameters, ITreeItem> _loader;
-    private readonly RecyclableMemoryStreamManager _streamManager;
 
-    public SearchItems(IQuery<LoadItem.Parameters, ITreeItem> loader, RecyclableMemoryStreamManager streamManager)
+    public SearchItems(IQuery<LoadItem.Parameters, ITreeItem> loader)
     {
         _loader = loader;
-        _streamManager = streamManager;
     }
 
     public IEnumerable<(DataPath Path, ITreeItem Item)> Execute(IQueryAccessor queryAccessor, Parameters parms)

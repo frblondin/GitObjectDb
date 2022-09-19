@@ -1,4 +1,5 @@
 using GitObjectDb.Model;
+using GitObjectDb.Tests;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
@@ -7,7 +8,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 
-namespace GitObjectDb.Tests.Serialization.Json;
+namespace GitObjectDb.SystemTextJson.Tests;
 
 public partial class NodeSerializerTests
 {
@@ -90,7 +91,7 @@ public partial class NodeSerializerTests
             .RegisterType<NodeWithReference>()
             .RegisterType<NodeWithMultipleReference>()
             .Build();
-        var result = (IConnectionInternal)repositoryFactory(path, model);
+        var result = repositoryFactory(path, model);
         return result;
     }
 

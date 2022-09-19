@@ -1,5 +1,5 @@
-using AutoMapper;
 using GitObjectDb.Api.Model;
+using GitObjectDb.Injection;
 using GitObjectDb.Model;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,11 +13,12 @@ public static class ServiceConfiguration
     /// <summary>Adds access to GitObjectDb repositories.</summary>
     /// <param name="source">The source.</param>
     /// <param name="model">The <see cref="IDataModel"/> to be exposed.</param>
+    /// <param name="configure">The configuration callback.</param>
     /// <param name="emitter">The dto type emitter.</param>
     /// <returns>The source <see cref="IServiceCollection"/>.</returns>
-    public static IServiceCollection AddGitObjectDbApi(this IServiceCollection source, IDataModel model, out DtoTypeEmitter emitter)
+    public static IServiceCollection AddGitObjectDbApi(this IServiceCollection source, IDataModel model, Action<IGitObjectDbBuilder> configure, out DtoTypeEmitter emitter)
     {
-        source.AddGitObjectDb();
+        source.AddGitObjectDb(configure);
 
         // Avoid double-registrations
         if (source.Any(sd => sd.ServiceType == typeof(DataProvider)))

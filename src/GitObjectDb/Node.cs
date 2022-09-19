@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using System.Text.Json.Serialization;
+using System.Runtime.Serialization;
 
 namespace GitObjectDb;
 
@@ -16,11 +16,11 @@ public record Node : ITreeItem
     public UniqueId Id { get; init; } = UniqueId.CreateNew();
 
     /// <summary>Gets or sets the node path.</summary>
-    [JsonIgnore]
+    [IgnoreDataMember]
     public DataPath? Path { get; set; }
 
     /// <summary>Gets the embedded resource.</summary>
-    [JsonIgnore]
+    [IgnoreDataMember]
     public string? EmbeddedResource { get; init; }
 
     /// <summary>

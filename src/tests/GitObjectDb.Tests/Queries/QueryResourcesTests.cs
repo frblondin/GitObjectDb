@@ -20,7 +20,6 @@ public class QueryResourcesTests : DisposeArguments
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(SoftwareBenchmarkCustomization.DefaultResourcePerTableCount));
-        Assert.That(result[0].NodePath, Is.EqualTo(table.Path));
         Assert.That(result[0].Path, Is.Not.Null);
     }
 

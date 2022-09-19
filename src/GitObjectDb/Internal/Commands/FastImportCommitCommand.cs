@@ -162,7 +162,7 @@ internal class FastImportCommitCommand : ICommitCommand
         }
 
         var validation = _treeValidation.Invoke();
-        validation.Validate(commit.Tree, connection.Model);
+        validation.Validate(commit.Tree, connection.Model, connection.Serializer);
 
         var logMessage = commit.BuildCommitLogMessage(description.AmendPreviousCommit,
                                                       connection.Repository.Info.IsHeadUnborn,

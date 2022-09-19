@@ -173,7 +173,7 @@ internal sealed partial class Connection
         }
 
         var stack = new Stack<string>();
-        var tree = Search(commit.Tree, $"{id}.json", stack);
+        var tree = Search(commit.Tree, $"{id}.{Serializer.FileExtension}", stack);
         var path = DataPath.Parse(string.Join("/", stack.Reverse()));
         return (commit, tree, path);
 

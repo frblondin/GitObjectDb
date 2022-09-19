@@ -115,15 +115,16 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
     /// <summary>Gets the root path of the specified node.</summary>
     /// <param name="node">The node.</param>
     /// <param name="model">The model.</param>
+    /// <param name="fileExtension">The extension of serialized files (json, yaml...).</param>
     /// <returns>The root path.</returns>
-    public static DataPath Root(Node node, IDataModel model)
+    public static DataPath Root(Node node, IDataModel model, string fileExtension)
     {
         var useNodeFolders = GetSuffix(node.Id, node.GetType(), model, out var suffix);
-        return new DataPath(suffix, $"{node.Id}.json", useNodeFolders);
+        return new DataPath(suffix, $"{node.Id}.{fileExtension}", useNodeFolders);
     }
 
-    internal static DataPath Root(string folderName, UniqueId id, bool useNodeFolders) =>
-        new DataPath(useNodeFolders ? $"{folderName}/{id}" : folderName, $"{id}.json", useNodeFolders);
+    internal static DataPath Root(string folderName, UniqueId id, bool useNodeFolders, string fileExtension) =>
+        new DataPath(useNodeFolders ? $"{folderName}/{id}" : folderName, $"{id}.{fileExtension}", useNodeFolders);
 
     /// <summary>Converts the specified string representation to its <see cref="DataPath" /> equivalent.</summary>
     /// <param name="path">A string containing a sha to convert.</param>
@@ -180,12 +181,13 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
     /// </summary>
     /// <param name="node">The node to be added.</param>
     /// <param name="model">The model.</param>
+    /// <param name="fileExtension">The extension of serialized files (json, yaml...).</param>
     /// <returns>The new <see cref="DataPath"/> representing the child node path.</returns>
-    public DataPath AddChild(Node node, IDataModel model)
+    public DataPath AddChild(Node node, IDataModel model, string fileExtension)
     {
         var useNodeFolders = GetSuffix(node.Id, node.GetType(), model, out var suffix);
         var path = string.IsNullOrEmpty(FolderPath) ? suffix : $"{FolderPath}/{suffix}";
-        return new DataPath(path, $"{node.Id}.json", useNodeFolders);
+        return new DataPath(path, $"{node.Id}.{fileExtension}", useNodeFolders);
     }
 
     /// <summary>
@@ -194,18 +196,19 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
     /// <param name="id">The node id to be added.</param>
     /// <param name="nodeType">The node type to be added.</param>
     /// <param name="model">The model.</param>
+    /// <param name="fileExtension">The extension of serialized files (json, yaml...).</param>
     /// <returns>The new <see cref="DataPath"/> representing the child node path.</returns>
-    public DataPath AddChild(UniqueId id, Type nodeType, IDataModel model)
+    public DataPath AddChild(UniqueId id, Type nodeType, IDataModel model, string fileExtension)
     {
         var useNodeFolders = GetSuffix(id, nodeType, model, out var suffix);
         var path = string.IsNullOrEmpty(FolderPath) ? suffix : $"{FolderPath}/{suffix}";
-        return new DataPath(path, $"{id}.json", useNodeFolders);
+        return new DataPath(path, $"{id}.{fileExtension}", useNodeFolders);
     }
 
-    internal DataPath AddChild(string folderName, UniqueId id, bool useNodeFolders)
+    internal DataPath AddChild(string folderName, UniqueId id, bool useNodeFolders, string fileExtension)
     {
         var folder = useNodeFolders ? $"{FolderPath}/{folderName}/{id}" : $"{FolderPath}/{folderName}";
-        return new DataPath(folder, $"{id}.json", useNodeFolders);
+        return new DataPath(folder, $"{id}.{fileExtension}", useNodeFolders);
     }
 
     private static bool GetSuffix(UniqueId id, Type type, IDataModel model, out string suffix)
@@ -235,8 +238,9 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
         StringComparer.Ordinal.Compare(FilePath, other.FilePath);
 
     /// <summary>Gets the parent node path.</summary>
+    /// <param name="fileExtension">The extension of serialized files (json, yaml...).</param>
     /// <returns>The parent node path.</returns>
-    public DataPath GetParentNode()
+    public DataPath GetParentNode(string fileExtension)
     {
         int position = IsNode ?
                        FolderParts.Length - 2 :
@@ -246,7 +250,7 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
         {
             throw new InvalidOperationException($"Path doesn't refer to a resource.");
         }
-        return new DataPath(string.Join("/", FolderParts.Take(position)), $"{FolderParts[position - 1]}.json", true);
+        return new DataPath(string.Join("/", FolderParts.Take(position)), $"{FolderParts[position - 1]}.{fileExtension}", true);
     }
 
     internal DataPath CreateResourcePath(string folderPath, string file)

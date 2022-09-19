@@ -1,6 +1,7 @@
 using GitObjectDb.Api.Model;
 using GitObjectDb.Model;
 using GraphQL;
+using Models.Organization.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,8 +16,8 @@ switch (repositoryType)
     case "Software":
         builder.Services
             .AddSoftwareModel(out model)
-            .AddGitObjectDbOData(model, out emitter)
-            .AddGitObjectDbGraphQL(model, out _)
+            .AddGitObjectDbOData(model, c => c.AddSystemTextJson(), out emitter)
+            .AddGitObjectDbGraphQL(model, c => c.AddSystemTextJson(), out _)
             .AddGitObjectDbConnection(model, "Software", connection =>
             {
                 var software = new DataGenerator(connection);
@@ -33,8 +34,8 @@ switch (repositoryType)
     case "Organization":
         builder.Services
             .AddOrganizationModel(out model)
-            .AddGitObjectDbOData(model, out emitter)
-            .AddGitObjectDbGraphQL(model, out _)
+            .AddGitObjectDbOData(model, c => c.AddSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter())), out emitter)
+            .AddGitObjectDbGraphQL(model, c => c.AddSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter())), out _)
             .AddGitObjectDbConnection(model, "Organization");
         break;
     default:
@@ -44,7 +45,10 @@ switch (repositoryType)
 builder.Services
     .AddControllers()
     .AddGitObjectDbODataControllers("v1", emitter, o => o.Select().Filter().OrderBy().Expand())
-    .AddGitObjectDbGraphQLControllers(emitter, b => b.UseApolloTracing(true));
+    .AddGitObjectDbGraphQLControllers(emitter,
+                                      builder => builder
+                                          .AddSystemTextJson()
+                                          .UseApolloTracing(true));
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

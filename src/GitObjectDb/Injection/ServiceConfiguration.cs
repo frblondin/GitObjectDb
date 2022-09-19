@@ -4,8 +4,6 @@ using GitObjectDb.Internal;
 using GitObjectDb.Internal.Commands;
 using GitObjectDb.Internal.Queries;
 using GitObjectDb.Model;
-using GitObjectDb.Serialization;
-using GitObjectDb.Serialization.Json;
 using GitObjectDb.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -19,13 +17,23 @@ public static class ServiceConfiguration
 {
     /// <summary>Adds access to GitObjectDb repositories.</summary>
     /// <param name="source">The source.</param>
+    /// <param name="configure">The configuration callback.</param>
     /// <returns>The source <see cref="IServiceCollection"/>.</returns>
-    public static IServiceCollection AddGitObjectDb(this IServiceCollection source)
+    public static IServiceCollection AddGitObjectDb(this IServiceCollection source, Action<IGitObjectDbBuilder> configure)
     {
         // Avoid double-registrations
         if (source.Any(sd => sd.ServiceType == typeof(ConnectionFactory)))
         {
             return source;
+        }
+
+        configure(new GitObjectDbBuilder(source));
+        if (!source.Any(sd => sd.ServiceType == typeof(INodeSerializer.Factory)))
+        {
+            throw new GitObjectDbException(
+                $"The {nameof(INodeSerializer)}.{nameof(INodeSerializer.Factory)} " +
+                $"has not been configured. Consider using {nameof(AddGitObjectDb)}(" +
+                $"c => c.{nameof(GitObjectDbBuilderExtensions.AddSerializer)}(...).");
         }
 
         source.AddMemoryCache();
@@ -44,13 +52,11 @@ public static class ServiceConfiguration
             .Where(t => typeof(Delegate).IsAssignableFrom(t))
             .ToArray();
         source.AddFactoryDelegates(typeof(Connection).Assembly, internalFactories);
-        source.AddFactoryDelegate<NodeSerializerFactory, NodeSerializer>();
         source.AddSingleton<Comparer>();
         source.AddSingleton<IComparer>(s => s.GetRequiredService<Comparer>());
         source.AddSingleton<IComparerInternal>(s => s.GetRequiredService<Comparer>());
         source.AddSingleton<IMergeComparer, MergeComparer>();
         source.AddSingleton<Func<ITreeValidation>>(() => new TreeValidation());
-        source.AddSingleton<Microsoft.IO.RecyclableMemoryStreamManager>();
     }
 
     private static void ConfigureQueries(IServiceCollection source)

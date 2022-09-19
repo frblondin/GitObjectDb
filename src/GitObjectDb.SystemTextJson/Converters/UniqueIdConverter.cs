@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace GitObjectDb.Serialization.Json.Converters;
+namespace GitObjectDb.SystemTextJson.Converters;
 
 internal class UniqueIdConverter : JsonConverter<UniqueId>
 {

@@ -17,6 +17,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="FakeItEasy" />
+    <PackageReference Include="Z.Expressions.Eval" />
   </ItemGroup>
 
   <ItemGroup>

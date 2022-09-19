@@ -31,9 +31,7 @@ public static class MvcBuilderExtensions
             .AddSingleton<ISchema>(schema)
             .AddGraphQL(builder =>
             {
-                builder
-                    .AddSystemTextJson()
-                    .AddGraphTypes(query.DtoEmitter.AssemblyBuilder);
+                builder.AddGraphTypes(query.DtoEmitter.AssemblyBuilder);
                 configure?.Invoke(builder);
             });
 

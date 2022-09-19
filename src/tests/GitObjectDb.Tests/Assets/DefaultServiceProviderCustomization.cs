@@ -16,7 +16,7 @@ public class DefaultServiceProviderCustomization : ICustomization, ISpecimenBuil
     {
         _serviceProvider = new ServiceCollection()
             .AddSoftwareModel()
-            .AddGitObjectDb()
+            .AddGitObjectDb(c => c.AddSystemTextJson())
             .AddLogging(builder =>
                 builder.SetMinimumLevel(LogLevel.Trace)
                        .AddProvider(new ConsoleProvider()))

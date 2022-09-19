@@ -1,5 +1,4 @@
 using GitObjectDb.Internal.Commands;
-using GitObjectDb.Serialization;
 using LibGit2Sharp;
 using System.Collections.Generic;
 using System.IO;
