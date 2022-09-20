@@ -11,10 +11,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		src\.dockerignore = src\.dockerignore
 		src\.editorconfig = src\.editorconfig
+		CHANGELOG.md = CHANGELOG.md
 		src\Directory.Build.targets = src\Directory.Build.targets
+		src\Directory.Packages.props = src\Directory.Packages.props
 		nuget.config = nuget.config
 		src\stylecop.json = src\stylecop.json
-		src\Directory.Packages.props = src\Directory.Packages.props
 		src\StyleCop.ruleset = src\StyleCop.ruleset
 		src\version.json = src\version.json
 	EndProjectSection

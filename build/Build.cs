@@ -20,21 +20,32 @@ using static Nuke.Common.Tools.ReportGenerator.ReportGeneratorTasks;
 using System.Linq;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using static System.Net.WebRequestMethods;
+using Nuke.Common.Tools.GitHub;
+using Octokit;
+using Nuke.Common.Tools.GitVersion;
+using Nuke.Common.ChangeLog;
+using System;
+using System.Threading.Tasks;
+using Nuke.Common.Tools.NerdbankGitVersioning;
 
 [ShutdownDotNetAfterServerBuild]
 [GitHubActions(
-    "Release",
+    "CI",
     GitHubActionsImage.UbuntuLatest,
-    OnPushBranches = new[] { "main" },
-    InvokedTargets = new[] { nameof(Default) },
-    ImportSecrets = new[] { "SONAR_TOKEN" },
-    FetchDepth = 0)]
-[GitHubActions(
-    "PullRequestValidation",
-    GitHubActionsImage.UbuntuLatest,
-    OnPullRequestBranches = new[] { "main" },
-    InvokedTargets = new[] { nameof(Run) },
-    ImportSecrets = new[] { "SONAR_TOKEN" },
+    OnPushBranches = new[]
+    {
+        "main",
+        "dev",
+        "releases/**",
+    },
+    OnPullRequestBranches = new[]
+    {
+        "main",
+        "releases/**",
+    },
+    InvokedTargets = new[] { nameof(Pack) },
+    ImportSecrets = new[] { "GITHUB_TOKEN", "SONAR_TOKEN", nameof(NuGetApiKey) },
     FetchDepth = 0)]
 class Build : NukeBuild
 {
@@ -44,23 +55,27 @@ class Build : NukeBuild
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode
 
-    public static int Main() => Execute<Build>(x => x.Default);
+    public static int Main() => Execute<Build>(x => x.Pack);
+
+    const string NetFramework = "net6.0";
+
+    [NerdbankGitVersioning(UpdateBuildNumber = true)] readonly NerdbankGitVersioning GitVersion;
+    [GitRepository] readonly GitRepository Repository;
+    [Solution(SuppressBuildProjectCheck = true)] readonly Solution Solution;
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server).")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
-    [Parameter(".Net Framework version.")]
-    readonly string NetFramework = "net6.0";
-
-    [Solution] readonly Solution Solution;
-
     static AbsolutePath SourceDirectory => RootDirectory / "src";
-
     static AbsolutePath OutputDirectory => RootDirectory / "output";
     static AbsolutePath NerdbankGitVersioningDirectory => OutputDirectory / "NerdbankGitVersioning";
     static AbsolutePath TestDirectory => OutputDirectory / "tests";
     static AbsolutePath CoverageResult => OutputDirectory / "coverage";
     static AbsolutePath NugetDirectory => OutputDirectory / "nuget";
+    static AbsolutePath ChangeLogFile => RootDirectory / "CHANGELOG.md";
+
+    [Parameter] string ArtifactsType { get; } = "*.nupkg";
+    [Parameter] string ExcludedArtifactsType { get; } = "symbols.nupkg";
 
     [Parameter] readonly string PrNumber;
     [Parameter] readonly string PrTargetBranch;
@@ -74,21 +89,12 @@ class Build : NukeBuild
     [Parameter] string SonarqubeProjectKey { get; } = "GitObjectDb";
     [Parameter(Name = "SONAR_TOKEN")] readonly string SonarLogin;
 
-    string gitVersion;
-
-    Target Run => _ => _
-        .DependsOn(Clean)
-        .DependsOn(GitVersion)
-        .DependsOn(StartSonarqube)
-        .DependsOn(Restore)
-        .DependsOn(Compile)
-        .DependsOn(Test)
-        .DependsOn(Coverage)
-        .DependsOn(EndSonarqube);
-
-    Target Default => _ => _
-        .DependsOn(Run)
-        .DependsOn(Pack);
+    readonly string[] _nugetProjects = new[] { "GitObjectDb", "GitObjectDb.SystemTextJson", "GitObjectDb.Api", "GitObjectDb.Api.GraphQL", "GitObjectDb.Api.OData" };
+    string GitHubNugetFeed => GitHubActions.Instance != null
+        ? $"https://nuget.pkg.github.com/{GitHubActions.Instance.RepositoryOwner}/index.json"
+        : null;
+    [Parameter] string NuGetFeed { get; } = "https://api.nuget.org/v3/index.json";
+    [Parameter, Secret] readonly string NuGetApiKey;
 
     Target Clean => _ => _
         .Executes(() =>
@@ -97,19 +103,38 @@ class Build : NukeBuild
             EnsureCleanDirectory(OutputDirectory);
         });
 
-    Target GitVersion => _ => _
-        .After(Clean)
+    Target StartSonarqube => _ => _
+        .DependsOn(Clean)
+        .OnlyWhenStatic(() => !string.IsNullOrWhiteSpace(SonarLogin))
+        .WhenSkipped(DependencyBehavior.Execute)
+        .AssuredAfterFailure()
         .Executes(() =>
         {
-            var toolPath = ToolPathResolver.GetPackageExecutable("nbgv", "nbgv.dll");
-            var process = StartProcess(toolPath, "get-version", SourceDirectory)
-                .AssertZeroExitCode();
-            var rawVersion = process.Output.First().Text;
-            gitVersion = Regex.Replace(rawVersion, @"Version:\s+(.*)", "$1");
+            SonarScannerTasks.SonarScannerBegin(settings =>
+            {
+                settings = settings
+                    .SetServer(SonarHostUrl)
+                    .SetOrganization(SonarOrganization)
+                    .SetLogin(SonarLogin)
+                    .SetFramework("net5.0")
+                    .SetName(SonarqubeProjectKey)
+                    .SetProjectKey(SonarqubeProjectKey)
+                    .SetVersion(GitVersion.AssemblyVersion)
+                    .AddOpenCoverPaths(CoverageResult / "coverage.opencover.xml")
+                    .AddCoverageExclusions("**/*.Tests/**/*.*, **/GitObjectDb.Web/**/*.*, **/MetadataStorageConverter*/**/*.*, **/Models.Software/**/*.*")
+                    .AddSourceExclusions("**/MetadataStorageConverter*/**, **/Models.Software/**")
+                    .SetVSTestReports(TestDirectory);
+
+                return IsPR ?
+                    settings.SetPullRequestBase(PrTargetBranch)
+                            .SetPullRequestBranch(BuildBranch)
+                            .SetPullRequestKey(PrNumber) :
+                    settings.SetBranchName(BuildBranch);
+            });
         });
 
     Target Restore => _ => _
-        .After(GitVersion)
+        .DependsOn(StartSonarqube)
         .Executes(() =>
         {
             DotNetRestore(s => s
@@ -117,7 +142,7 @@ class Build : NukeBuild
         });
 
     Target Compile => _ => _
-        .After(Restore)
+        .DependsOn(Restore)
         .Executes(() =>
         {
             DotNetBuild(s => s
@@ -127,7 +152,7 @@ class Build : NukeBuild
         });
 
     Target Test => _ => _
-        .After(Compile)
+        .DependsOn(Compile)
         .Executes(() =>
         {
             DotNetTest(s => s
@@ -148,7 +173,7 @@ class Build : NukeBuild
         });
 
     Target Coverage => _ => _
-        .After(Test)
+        .DependsOn(Test)
         .AssuredAfterFailure()
         .Executes(() =>
         {
@@ -158,38 +183,10 @@ class Build : NukeBuild
                 .SetTargetDirectory(CoverageResult));
         });
 
-    Target StartSonarqube => _ => _
-        .Before(Compile)
-        .OnlyWhenStatic(() => !string.IsNullOrWhiteSpace(SonarLogin))
-        .AssuredAfterFailure()
-        .Executes(() =>
-        {
-            SonarScannerTasks.SonarScannerBegin(settings =>
-            {
-                settings = settings
-                    .SetServer(SonarHostUrl)
-                    .SetOrganization(SonarOrganization)
-                    .SetLogin(SonarLogin)
-                    .SetFramework("net5.0")
-                    .SetName(SonarqubeProjectKey)
-                    .SetProjectKey(SonarqubeProjectKey)
-                    .SetVersion($"{gitVersion}.build-{BuildNumber}")
-                    .AddOpenCoverPaths(CoverageResult / "coverage.opencover.xml")
-                    .AddCoverageExclusions("**/*.Tests/**/*.*, **/GitObjectDb.Web/**/*.*, **/MetadataStorageConverter*/**/*.*, **/Models.Software/**/*.*")
-                    .AddSourceExclusions("**/MetadataStorageConverter*/**, **/Models.Software/**")
-                    .SetVSTestReports(TestDirectory);
-
-                return IsPR ?
-                    settings.SetPullRequestBase(PrTargetBranch)
-                            .SetPullRequestBranch(BuildBranch)
-                            .SetPullRequestKey(PrNumber):
-                    settings.SetBranchName(BuildBranch);
-            });
-        });
-
     Target EndSonarqube => _ => _
-        .After(Test)
+        .DependsOn(Coverage)
         .OnlyWhenStatic(() => !string.IsNullOrWhiteSpace(SonarLogin))
+        .WhenSkipped(DependencyBehavior.Execute)
         .Executes(() =>
         {
             SonarScannerTasks.SonarScannerEnd(c => c
@@ -198,18 +195,113 @@ class Build : NukeBuild
         });
 
     Target Pack => _ => _
-        .After(EndSonarqube)
-        .Produces(NugetDirectory / "*.nupkg")
+        .DependsOn(EndSonarqube)
+        .Produces(NugetDirectory / ArtifactsType)
+        .Triggers(PublishToGithub, PublishToNuGet)
         .Executes(() =>
         {
-            foreach (var project in new[] { "GitObjectDb", "GitObjectDb.Api", "GitObjectDb.Api.GraphQL", "GitObjectDb.Api.OData" })
-            {
-                DotNetPack(s => s
-                    .SetProject(Solution.GetProject(project))
-                    .SetConfiguration(Configuration)
-                    .EnableNoBuild()
-                    .EnableNoRestore()
-                    .SetOutputDirectory(OutputDirectory / "nuget"));
-            }
+            Solution.AllProjects
+                .Where(p => _nugetProjects.Contains(p.Name))
+                .ForEach(project =>
+                    DotNetPack(s => s
+                        .SetProject(Solution.GetProject(project))
+                        .SetConfiguration(Configuration)
+                        .SetVersion(GitVersion.NuGetPackageVersion)
+                        .EnableNoBuild()
+                        .EnableNoRestore()
+                        .SetOutputDirectory(NugetDirectory)));
         });
+
+    Target PublishToGithub => _ => _
+       .Description($"Publishing to Github for Development only.")
+       .Triggers(CreateRelease)
+       .Requires(() => Configuration.Equals(Configuration.Release))
+       .OnlyWhenStatic(() => GitHubActions.Instance != null && (Repository.IsOnDevelopBranch() || GitHubActions.Instance.IsPullRequest))
+       .Executes(() =>
+       {
+           GlobFiles(NugetDirectory, ArtifactsType)
+               .Where(x => !x.EndsWith(ExcludedArtifactsType))
+               .ForEach(x =>
+               {
+                   DotNetNuGetPush(s => s
+                       .SetTargetPath(x)
+                       .SetSource(GitHubNugetFeed)
+                       .SetApiKey(GitHubActions.Instance.Token)
+                       .EnableSkipDuplicate()
+                   );
+               });
+       });
+    
+    Target PublishToNuGet => _ => _
+       .Description($"Publishing to NuGet with the version.")
+       .Requires(() => Configuration.Equals(Configuration.Release))
+       .OnlyWhenStatic(() => Repository.IsOnMainOrMasterBranch())
+       .Executes(() =>
+       {
+           GlobFiles(NugetDirectory, ArtifactsType)
+               .Where(x => !x.EndsWith(ExcludedArtifactsType))
+               .ForEach(x =>
+               {
+                   DotNetNuGetPush(s => s
+                       .SetTargetPath(x)
+                       .SetSource(NuGetFeed)
+                       .SetApiKey(NuGetApiKey)
+                       .EnableSkipDuplicate()
+                   );
+               });
+       });
+
+    Target CreateRelease => _ => _
+       .Description($"Creating release for the publishable version.")
+       .Requires(() => Configuration.Equals(Configuration.Release))
+       .OnlyWhenStatic(() => GitHubActions.Instance != null && (Repository.IsOnMainOrMasterBranch() || Repository.IsOnReleaseBranch()))
+       .Executes(async () =>
+       {
+           GitHubTasks.GitHubClient = new GitHubClient(
+               new ProductHeaderValue(nameof(NukeBuild)),
+               new Octokit.Internal.InMemoryCredentialStore(
+                   new Credentials(GitHubActions.Instance.Token)));
+
+           var (owner, name) = (Repository.GetGitHubOwner(), Repository.GetGitHubName());
+
+           var releaseTag = GitVersion.NuGetPackageVersion;
+           var changeLogSectionEntries = ChangelogTasks.ExtractChangelogSectionNotes(ChangeLogFile);
+           var latestChangeLog = changeLogSectionEntries
+               .Aggregate((c, n) => c + Environment.NewLine + n);
+
+           var newRelease = new NewRelease(releaseTag)
+           {
+               TargetCommitish = Repository.Commit,
+               Draft = true,
+               Name = $"v{releaseTag}",
+               Prerelease = !(Repository.IsOnMainOrMasterBranch() || Repository.IsOnReleaseBranch()),
+               Body = latestChangeLog
+           };
+
+           var createdRelease = await GitHubTasks.GitHubClient
+              .Repository
+              .Release.Create(owner, name, newRelease);
+
+           GlobFiles(NugetDirectory, ArtifactsType)
+              .Where(x => !x.EndsWith(ExcludedArtifactsType))
+              .ForEach(async x => await UploadReleaseAssetToGithub(createdRelease, x));
+
+           await GitHubTasks.GitHubClient
+              .Repository.Release
+              .Edit(owner, name, createdRelease.Id, new ReleaseUpdate { Draft = false });
+       });
+
+
+    private static async Task UploadReleaseAssetToGithub(Release release, string asset)
+    {
+        await using var artifactStream = System.IO.File.OpenRead(asset);
+        var fileName = System.IO.Path.GetFileName(asset);
+        var assetUpload = new ReleaseAssetUpload
+        {
+            FileName = fileName,
+            ContentType = "application/octet-stream",
+            RawData = artifactStream,
+        };
+        await GitHubTasks.GitHubClient.Repository.Release.UploadAsset(release, assetUpload);
+    }
 }

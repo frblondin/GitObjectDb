@@ -9,17 +9,23 @@
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_PullRequestValidation --host GitHubActions
+#         nuke --generate-configuration GitHubActions_CI --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: PullRequestValidation
+name: CI
 
 on:
+  push:
+    branches:
+      - main
+      - dev
+      - 'releases/**'
   pull_request:
     branches:
       - main
+      - 'releases/**'
 
 jobs:
   ubuntu-latest:
@@ -36,7 +42,13 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Run'
-        run: ./build.cmd Run
+      - name: Run './build.cmd Pack'
+        run: ./build.cmd Pack
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          NuGetApiKey: ${{ secrets.NUGET_API_KEY }}
+      - uses: actions/upload-artifact@v1
+        with:
+          name: nuget
+          path: output/nuget
