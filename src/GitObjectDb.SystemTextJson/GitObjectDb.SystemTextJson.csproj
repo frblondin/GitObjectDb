@@ -8,11 +8,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WarningsAsErrors />
-    <Description>GitObjectDb is designed to simplify the configuration management versioning. It does so by removing the need for hand-coding the commands needed to interact with Git. The Git repository is used as a pure database as the files containing the serialized copy of the objects are never fetched in the filesystem. GitObjectDb only uses the blob storage provided by Git.</Description>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/frblondin/GitObjectDb</PackageProjectUrl>
-    <PackageIcon>GitObjectDb.png</PackageIcon>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Description>Provides a Json serialization based on System.Text.Json for GitObjectDb nodes.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +22,11 @@
 
   <ItemGroup>
     <Folder Include="Tools\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\GitObjectDb.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

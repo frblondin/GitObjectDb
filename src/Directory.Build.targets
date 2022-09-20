@@ -4,6 +4,11 @@
   <PropertyGroup>
     <CodeAnalysisRuleSet>$(SolutionDir)src\StyleCop.ruleset</CodeAnalysisRuleSet>
     <LangVersion>10.0</LangVersion>
+    <PackageIcon>GitObjectDb.png</PackageIcon>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/frblondin/GitObjectDb</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/frblondin/GitObjectDb.git</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="StyleCop.Analyzers">

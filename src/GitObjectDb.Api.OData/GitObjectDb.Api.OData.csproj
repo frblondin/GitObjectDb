@@ -4,9 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/frblondin/GitObjectDb</PackageProjectUrl>
-    <PackageIcon>GitObjectDb.png</PackageIcon>
+    <Description>Provides OData endpoints for querying GitObjectDb repository.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +24,7 @@
 
   <ItemGroup>
     <None Include="..\..\GitObjectDb.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

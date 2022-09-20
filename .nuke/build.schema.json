@@ -6,6 +6,9 @@
     "build": {
       "type": "object",
       "properties": {
+        "ArtifactsType": {
+          "type": "string"
+        },
         "BuildBranch": {
           "type": "string"
         },
@@ -23,6 +26,9 @@
         "Continue": {
           "type": "boolean",
           "description": "Indicates to continue a previously failed build attempt"
+        },
+        "ExcludedArtifactsType": {
+          "type": "string"
         },
         "Help": {
           "type": "boolean",
@@ -49,13 +55,16 @@
             "VSCode"
           ]
         },
-        "NetFramework": {
-          "type": "string",
-          "description": ".Net Framework version"
-        },
         "NoLogo": {
           "type": "boolean",
           "description": "Disables displaying the NUKE logo"
+        },
+        "NuGetApiKey": {
+          "type": "string",
+          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
+        },
+        "NuGetFeed": {
+          "type": "string"
         },
         "Partition": {
           "type": "string",
@@ -91,12 +100,12 @@
               "Clean",
               "Compile",
               "Coverage",
-              "Default",
+              "CreateRelease",
               "EndSonarqube",
-              "GitVersion",
               "Pack",
+              "PublishToGithub",
+              "PublishToNuGet",
               "Restore",
-              "Run",
               "StartSonarqube",
               "Test"
             ]
@@ -127,12 +136,12 @@
               "Clean",
               "Compile",
               "Coverage",
-              "Default",
+              "CreateRelease",
               "EndSonarqube",
-              "GitVersion",
               "Pack",
+              "PublishToGithub",
+              "PublishToNuGet",
               "Restore",
-              "Run",
               "StartSonarqube",
               "Test"
             ]
