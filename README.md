@@ -2,12 +2,12 @@
 
 | Name | Badge |
 | --- | --- |
-| GitObjectDb  | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb)](https://www.nuget.org/packages/GitObjectDb/) |
-| GitObjectDb.Api | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb.Api)](https://www.nuget.org/packages/GitObjectDb.Api/) |
-| GitObjectDb.OData | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb.OData)](https://www.nuget.org/packages/GitObjectDb.OData/) |
-| GitObjectDb.GraphQL | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb.GraphQL)](https://www.nuget.org/packages/GitObjectDb.GraphQL/) |
+| GitObjectDb  | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb?includePreReleases=true)](https://www.nuget.org/packages/GitObjectDb/) |
+| GitObjectDb.Api | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb.Api?includePreReleases=true)](https://www.nuget.org/packages/GitObjectDb.Api/) |
+| GitObjectDb.Api.OData | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb.Api.OData?includePreReleases=true)](https://www.nuget.org/packages/GitObjectDb.Api.OData/) |
+| GitObjectDb.Api.GraphQL | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb.Api.GraphQL?includePreReleases=true)](https://www.nuget.org/packages/GitObjectDb.Api.GraphQL/) |
 
-[![Build Status](https://github.com/frblondin/GitObjectDb/actions/workflows/Release.yml/badge.svg)](https://github.com/frblondin/GitObjectDb/actions/workflows/Release.yml)
+[![Build Status](https://github.com/frblondin/GitObjectDb/actions/workflows/CI.yml/badge.svg)](https://github.com/frblondin/GitObjectDb/actions/workflows/Release.yml)
 [![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=alert_status)](https://sonarcloud.io/dashboard/index/GitObjectDb)
 [![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=bugs)](https://sonarcloud.io/project/issues?id=GitObjectDb&resolved=false&types=BUG)
 [![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=coverage)](https://sonarcloud.io/component_measures?id=GitObjectDb&metric=Coverage)
