@@ -45,7 +45,7 @@ using Nuke.Common.Tools.NerdbankGitVersioning;
         "releases/**",
     },
     InvokedTargets = new[] { nameof(Pack) },
-    ImportSecrets = new[] { "GITHUB_TOKEN", "SONAR_TOKEN", nameof(NuGetApiKey) },
+    ImportSecrets = new[] { "GITHUB_TOKEN", "SONAR_TOKEN", "NUGETAPIKEY" },
     FetchDepth = 0)]
 class Build : NukeBuild
 {
@@ -94,7 +94,7 @@ class Build : NukeBuild
         ? $"https://nuget.pkg.github.com/{GitHubActions.Instance.RepositoryOwner}/index.json"
         : null;
     [Parameter] string NuGetFeed { get; } = "https://api.nuget.org/v3/index.json";
-    [Parameter, Secret] readonly string NuGetApiKey;
+    [Parameter(Name = "NUGETAPIKEY")] readonly string NuGetApiKey;
 
     Target Clean => _ => _
         .Executes(() =>
@@ -235,7 +235,6 @@ class Build : NukeBuild
     Target PublishToNuGet => _ => _
        .Description($"Publishing to NuGet with the version.")
        .Requires(() => Configuration.Equals(Configuration.Release))
-       .OnlyWhenStatic(() => Repository.IsOnMainOrMasterBranch())
        .Executes(() =>
        {
            GlobFiles(NugetDirectory, ArtifactsType)
@@ -254,7 +253,7 @@ class Build : NukeBuild
     Target CreateRelease => _ => _
        .Description($"Creating release for the publishable version.")
        .Requires(() => Configuration.Equals(Configuration.Release))
-       .OnlyWhenStatic(() => GitHubActions.Instance != null && (Repository.IsOnMainOrMasterBranch() || Repository.IsOnReleaseBranch()))
+       .OnlyWhenStatic(() => GitHubActions.Instance != null)
        .Executes(async () =>
        {
            GitHubTasks.GitHubClient = new GitHubClient(
