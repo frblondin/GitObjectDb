@@ -242,8 +242,9 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
     /// <returns>The parent node path.</returns>
     public DataPath GetParentNode(string fileExtension)
     {
+        var levelCount = UseNodeFolders ? 2 : 1;
         int position = IsNode ?
-                       FolderParts.Length - 2 :
+                       FolderParts.Length - levelCount :
                        Array.FindIndex(FolderParts,
                                        p => StringComparer.Ordinal.Equals(p, FileSystemStorage.ResourceFolder));
         if (position == -1)
