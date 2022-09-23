@@ -22,17 +22,17 @@ public interface IQueryAccessor
     /// <param name="path">The path.</param>
     /// <param name="committish">The optional committish (head tip is used otherwise).</param>
     /// <returns>The item being found, if any.</returns>
-    TItem? Lookup<TItem>(DataPath path,
-                        string? committish = null)
+    TItem? Lookup<TItem>(DataPath path, string? committish = null)
         where TItem : ITreeItem;
 
-    /// <summary>Lookups for the item defined by its unique identifier.</summary>
+    /// <summary>Lookups for the item defined by its unique identifier.
+    /// If two nodes have the same id in two different hierarchy trees,
+    /// the first matching node will be returned.</summary>
     /// <typeparam name="TItem">The type of the node.</typeparam>
     /// <param name="id">The unique identifier.</param>
     /// <param name="committish">The optional committish (head tip is used otherwise).</param>
     /// <returns>The item being found, if any.</returns>
-    TItem? Lookup<TItem>(UniqueId id,
-                           string? committish = null)
+    TItem? Lookup<TItem>(UniqueId id, string? committish = null)
         where TItem : ITreeItem;
 
     /// <summary>Gets all items from repository.</summary>
