@@ -57,8 +57,10 @@ internal class NodeTypeInfoResolver : DefaultJsonTypeInfoResolver
     private void AddDerivedTypes(Type nodeType, ICollection<JsonDerivedType> derivedTypes)
     {
         foreach (var type in from description in Model.NodeTypes
-                             where nodeType.IsAssignableFrom(description.Type)
-                             select description.Type)
+                             let modelType = description.Type
+                             where nodeType.IsAssignableFrom(modelType)
+                             where !modelType.IsAbstract
+                             select modelType)
         {
             derivedTypes.Add(new(type, type.FullName));
         }
