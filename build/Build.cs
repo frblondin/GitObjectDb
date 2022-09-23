@@ -207,6 +207,8 @@ class Build : NukeBuild
                         .SetProject(Solution.GetProject(project))
                         .SetConfiguration(Configuration)
                         .SetVersion(GitVersion.NuGetPackageVersion)
+                        .SetIncludeSource(true)
+                        .SetIncludeSymbols(true)
                         .EnableNoBuild()
                         .EnableNoRestore()
                         .SetOutputDirectory(NugetDirectory)));
