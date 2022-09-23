@@ -23,8 +23,6 @@ internal class TreeValidation : ITreeValidation
         private readonly INodeSerializer _serializer;
         private readonly ModuleCommands _modules;
 
-        private readonly ISet<UniqueId> _identifiers = new HashSet<UniqueId>();
-
         public TreeValidationVisitor(Tree tree, IDataModel model, INodeSerializer serializer)
         {
             _tree = tree;
@@ -138,11 +136,6 @@ internal class TreeValidation : ITreeValidation
             {
                 throw new GitObjectDbValidationException($"Folder name '{nodeId}' could not be parsed as a valid {nameof(UniqueId)}.");
             }
-            if (_identifiers.Contains(id))
-            {
-                throw new GitObjectDbValidationException($"Node id '{nodeId}' exists for multiple nodes.");
-            }
-            _identifiers.Add(id);
         }
 
         private bool ValidateNodeFolderItems(string id,

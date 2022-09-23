@@ -64,7 +64,7 @@ public class TreeValidationTests
 
     [Test]
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void CannotCommitTwoNodesWithSameId(IFixture fixture, IConnection connection, Field field)
+    public void CanCommitTwoNodesWithSameId(IFixture fixture, IConnection connection, Field field)
     {
         // Act
         var composer = (TransformationComposer)connection
@@ -73,7 +73,7 @@ public class TreeValidationTests
 
         // Assert
         var sut = fixture.Create<TreeValidation>();
-        Assert.Throws<GitObjectDbValidationException>(() => sut.Validate(tree, connection.Model, connection.Serializer));
+        sut.Validate(tree, connection.Model, connection.Serializer);
     }
 
     private static Tree UpdateTree(IConnection connection, TransformationComposer composer)
