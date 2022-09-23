@@ -218,7 +218,8 @@ class Build : NukeBuild
        .Description($"Publishing to Github for Development only.")
        .Triggers(CreateRelease)
        .Requires(() => Configuration.Equals(Configuration.Release))
-       .OnlyWhenStatic(() => GitHubActions.Instance != null && (Repository.IsOnDevelopBranch() || GitHubActions.Instance.IsPullRequest))
+       .OnlyWhenStatic(() => GitHubActions.Instance != null && string.IsNullOrEmpty(GitHubActions.Instance.HeadRef) && // Not from a fork
+                             (Repository.IsOnDevelopBranch() || GitHubActions.Instance.IsPullRequest))
        .Executes(() =>
        {
            GlobFiles(NugetDirectory, ArtifactsType)
