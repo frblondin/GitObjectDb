@@ -89,7 +89,6 @@ class Build : NukeBuild
     [Parameter] string SonarqubeProjectKey { get; } = "GitObjectDb";
     [Parameter(Name = "SONAR_TOKEN")] readonly string SonarLogin;
 
-    readonly string[] _nugetProjects = new[] { "GitObjectDb", "GitObjectDb.SystemTextJson", "GitObjectDb.Api", "GitObjectDb.Api.GraphQL", "GitObjectDb.Api.OData" };
     string GitHubNugetFeed => GitHubActions.Instance != null
         ? $"https://nuget.pkg.github.com/{GitHubActions.Instance.RepositoryOwner}/index.json"
         : null;
@@ -201,7 +200,7 @@ class Build : NukeBuild
         .Executes(() =>
         {
             Solution.AllProjects
-                .Where(p => _nugetProjects.Contains(p.Name))
+                .Where(p => p.GetProperty<string>("PackageType") == "Dependency")
                 .ForEach(project =>
                     DotNetPack(s => s
                         .SetProject(Solution.GetProject(project))

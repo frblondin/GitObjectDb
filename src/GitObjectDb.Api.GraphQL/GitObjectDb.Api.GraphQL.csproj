@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Description>Provides GraphQL endpoints for querying and mutating GitObjectDb repository.</Description>
+    <PackageType>Dependency</PackageType>
   </PropertyGroup>
 
   <ItemGroup>
