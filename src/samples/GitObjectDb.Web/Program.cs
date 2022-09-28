@@ -1,4 +1,3 @@
-using GitObjectDb.Api;
 using GraphQL;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
@@ -15,12 +14,20 @@ switch (repositoryType)
             .AddMemoryCache()
             .AddGitObjectDb(c => c.AddSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter())))
             .AddOrganizationModel()
-            .AddGitObjectDbApi()
-            .AddGitObjectDbGraphQL(builder =>
+            .AddGitObjectDbOData()
+            .AddGitObjectDbGraphQLSchema(builder =>
             {
                 builder.Schema.RegisterTypeMapping<TimeZoneInfo, TimeZoneInfoGraphType>();
                 builder.CacheEntryStrategy = CacheStrategy;
             })
+            .AddGraphQL(builder => builder
+                .UseApolloTracing(true)
+                .AddSystemTextJson()
+                .UseMemoryCache(options =>
+                {
+                    options.SizeLimit = 1_000_000;
+                    options.SlidingExpiration = null;
+                }))
             .AddGitObjectDbConnection("Organization");
         break;
     case "Software":
@@ -28,8 +35,16 @@ switch (repositoryType)
             .AddMemoryCache()
             .AddGitObjectDb(c => c.AddSystemTextJson())
             .AddSoftwareModel()
-            .AddGitObjectDbApi()
-            .AddGitObjectDbGraphQL(builder => builder.CacheEntryStrategy = CacheStrategy)
+            .AddGitObjectDbOData()
+            .AddGitObjectDbGraphQLSchema(builder => builder.CacheEntryStrategy = CacheStrategy)
+            .AddGraphQL(builder => builder
+                .UseApolloTracing(true)
+                .AddSystemTextJson()
+                .UseMemoryCache(options =>
+                {
+                    options.SizeLimit = 1_000_000;
+                    options.SlidingExpiration = null;
+                }))
             .AddGitObjectDbConnection("Software", connection =>
             {
                 var software = new Models.Software.DataGenerator(connection);
@@ -39,7 +54,7 @@ switch (repositoryType)
                 var application = software.Connection.GetApplications().First();
                 signature = new Signature("foo", "foo@acme.com", DateTimeOffset.Now);
                 software.Connection
-                    .Update(c => c.CreateOrUpdate(application with { Description = "New description" }))
+                    .Update("main", c => c.CreateOrUpdate(application with { Description = "New description" }))
                     .Commit(new("Update appication", signature, signature));
             });
         break;
@@ -52,14 +67,7 @@ static void CacheStrategy(ICacheEntry entry) => entry.SetAbsoluteExpiration(Date
 builder.Services
     .AddControllers()
     .AddGitObjectDbODataControllers("v1", o => o.Select().Filter().OrderBy().Expand())
-    .AddGitObjectDbGraphQLControllers(builder => builder
-                                          .AddSystemTextJson()
-        .UseApolloTracing(true)
-        .UseMemoryCache(options =>
-        {
-            options.SizeLimit = 1_000_000;
-            options.SlidingExpiration = null;
-        }));
+    .AddGitObjectDbGraphQLControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

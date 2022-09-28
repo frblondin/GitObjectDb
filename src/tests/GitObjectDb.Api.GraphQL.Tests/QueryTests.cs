@@ -15,9 +15,10 @@ public class QueryTests : QueryTestBase
         // Arrange
         var query = @"
             {
-              organizations {
+              organizations(committish: ""main"") {
                 ...OrganizationFields
                 children {
+                  path
                   ... on Organization {
                     ...OrganizationFields
                     children {
@@ -61,7 +62,7 @@ public class QueryTests : QueryTestBase
         // Arrange
         var query = @"
             {
-              organizationsDelta(start: ""HEAD~1"") {
+              organizationsDelta(start: ""main~1"", end: ""main"") {
                 updatedAt
                 deleted
                 old {

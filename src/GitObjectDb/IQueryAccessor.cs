@@ -19,87 +19,87 @@ public interface IQueryAccessor
 
     /// <summary>Lookups for the item defined in the specified path.</summary>
     /// <typeparam name="TItem">The type of the node.</typeparam>
+    /// <param name="committish">The committish.</param>
     /// <param name="path">The path.</param>
-    /// <param name="committish">The optional committish (head tip is used otherwise).</param>
     /// <returns>The item being found, if any.</returns>
-    TItem? Lookup<TItem>(DataPath path, string? committish = null)
+    TItem? Lookup<TItem>(string committish, DataPath path)
         where TItem : ITreeItem;
 
     /// <summary>Lookups for the item defined by its unique identifier.
     /// If two nodes have the same id in two different hierarchy trees,
     /// the first matching node will be returned.</summary>
     /// <typeparam name="TItem">The type of the node.</typeparam>
+    /// <param name="committish">The committish.</param>
     /// <param name="id">The unique identifier.</param>
-    /// <param name="committish">The optional committish (head tip is used otherwise).</param>
     /// <returns>The item being found, if any.</returns>
-    TItem? Lookup<TItem>(UniqueId id, string? committish = null)
+    TItem? Lookup<TItem>(string committish, UniqueId id)
         where TItem : ITreeItem;
 
     /// <summary>Gets all items from repository.</summary>
+    /// <param name="committish">The committish.</param>
     /// <param name="parent">The parent node.</param>
-    /// <param name="committish">The optional committish (head tip is used otherwise).</param>
     /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
     /// <typeparam name="TItem">The type of requested items.</typeparam>
     /// <returns>The items being found, if any.</returns>
-    ICommitEnumerable<TItem> GetItems<TItem>(Node? parent = null,
-                                             string? committish = null,
+    ICommitEnumerable<TItem> GetItems<TItem>(string committish,
+                                             Node? parent = null,
                                              bool isRecursive = false)
         where TItem : ITreeItem;
 
     /// <summary>Gets nodes from repository.</summary>
-    /// <param name="parent">The parent node.</param>
     /// <param name="committish">The committish.</param>
+    /// <param name="parent">The parent node.</param>
     /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
     /// <typeparam name="TNode">The type of requested nodes.</typeparam>
     /// <returns>The items being found, if any.</returns>
-    ICommitEnumerable<TNode> GetNodes<TNode>(Node? parent = null,
-                                             string? committish = null,
+    ICommitEnumerable<TNode> GetNodes<TNode>(string committish,
+                                             Node? parent = null,
                                              bool isRecursive = false)
         where TNode : Node;
 
     /// <summary>Gets data paths from repository.</summary>
+    /// <param name="committish">The committish.</param>
     /// <param name="parentPath">The parent node path.</param>
-    /// <param name="committish">The optional committish (head tip is used otherwise).</param>
     /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
     /// <returns>The paths being found, if any.</returns>
-    IEnumerable<DataPath> GetPaths(DataPath? parentPath = null,
-                                   string? committish = null,
+    IEnumerable<DataPath> GetPaths(string committish,
+                                   DataPath? parentPath = null,
                                    bool isRecursive = false);
 
     /// <summary>Gets data paths from repository.</summary>
+    /// <param name="committish">The committish.</param>
     /// <param name="parentPath">The parent node path.</param>
-    /// <param name="committish">The optional committish (head tip is used otherwise).</param>
     /// <param name="isRecursive"><c>true</c> to query all nodes recursively, <c>false</c> otherwise.</param>
     /// <typeparam name="TItem">The type of requested item paths nodes.</typeparam>
     /// <returns>The paths being found, if any.</returns>
-    IEnumerable<DataPath> GetPaths<TItem>(DataPath? parentPath = null,
-                                          string? committish = null,
+    IEnumerable<DataPath> GetPaths<TItem>(string committish,
+                                          DataPath? parentPath = null,
                                           bool isRecursive = false)
         where TItem : ITreeItem;
 
     /// <summary>Looks for specified pattern from repository.</summary>
+    /// <param name="committish">The committish.</param>
     /// <param name="pattern">The search expression.</param>
     /// <param name="parentPath">The parent node path.</param>
-    /// <param name="committish">The optional committish (head tip is used otherwise).</param>
     /// <param name="ignoreCase">Ignore case differences between the patterns and the files.</param>
     /// <param name="recurseSubModules">Recursively search in each submodule that is active and checked out in the repository.</param>
     /// <returns>The items being found, if any.</returns>
-    public IEnumerable<ITreeItem> Search(string pattern,
+    public IEnumerable<ITreeItem> Search(string committish,
+                                         string pattern,
                                          DataPath? parentPath = null,
-                                         string? committish = null,
                                          bool ignoreCase = false,
                                          bool recurseSubModules = false);
 
     /// <summary>Gets the resources associated to the node.</summary>
+    /// <param name="committish">The committish.</param>
     /// <param name="node">The parent node.</param>
-    /// <param name="committish">The optional committish (head tip is used otherwise).</param>
     /// <returns>All nested resources.</returns>
-    public ICommitEnumerable<Resource> GetResources(Node node,
-                                                    string? committish = null);
+    public ICommitEnumerable<Resource> GetResources(string committish,
+                                                    Node node);
 
     /// <summary>Gets the history of a node.</summary>
-    /// <param name="node">The node whose commits should be returned.</param>
     /// <param name="branch">The branch to get log from.</param>
+    /// <param name="node">The node whose commits should be returned.</param>
     /// <returns>The node history.</returns>
-    public IEnumerable<LogEntry> GetCommits(Node node, string? branch = null);
+    public IEnumerable<LogEntry> GetCommits(string branch, Node node);
 }

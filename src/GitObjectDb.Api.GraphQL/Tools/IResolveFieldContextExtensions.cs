@@ -62,7 +62,7 @@ internal static class IResolveFieldContextExtensions
         }
         else
         {
-            var connection = context.RequestServices?.GetRequiredService<DataProvider>().QueryAccessor as IConnection ??
+            var connection = context.RequestServices?.GetRequiredService<IQueryAccessor>() as IConnection ??
                 throw new ExecutionError("No connection found to resolve commit for key.");
             if (connection.Repository.Info.IsHeadUnborn)
             {

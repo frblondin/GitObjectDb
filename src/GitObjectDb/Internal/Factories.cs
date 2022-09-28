@@ -5,21 +5,21 @@ namespace GitObjectDb.Internal;
 
 internal class Factories
 {
-    internal delegate ITransformationComposer TransformationComposerFactory(IConnectionInternal connection);
+    internal delegate ITransformationComposer TransformationComposerFactory(IConnectionInternal connection, string branchName);
 
     internal delegate IRebase RebaseFactory(IConnectionInternal connection,
-                                            Branch? branch = null,
-                                            string? upstreamCommittish = null,
+                                            string branchName,
+                                            string upstreamCommittish,
                                             ComparisonPolicy? policy = null);
 
     internal delegate IMerge MergeFactory(IConnectionInternal connection,
-                                          Branch? branch = null,
-                                          string? upstreamCommittish = null,
+                                          string branchName,
+                                          string upstreamCommittish,
                                           ComparisonPolicy? policy = null);
 
     internal delegate ICherryPick CherryPickFactory(IConnectionInternal connection,
+                                                    string branchName,
                                                     string committish,
                                                     Signature? committer,
-                                                    Branch? branch = null,
                                                     CherryPickPolicy? policy = null);
 }

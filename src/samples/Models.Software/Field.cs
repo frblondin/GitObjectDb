@@ -29,6 +29,6 @@ public record NestedB
 
 public static class IConnectionFieldExtensions
 {
-    public static IEnumerable<Field> GetFields(this IConnection connection, Table table, string? committish = null) =>
-        connection.GetNodes<Field>(table, committish);
+    public static IEnumerable<Field> GetFields(this IConnection connection, Table table, string committish = "main") =>
+        connection.GetNodes<Field>(committish, table);
 }

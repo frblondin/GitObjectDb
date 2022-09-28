@@ -1,7 +1,7 @@
 using GitObjectDb.Model;
 using System.Diagnostics.CodeAnalysis;
 
-namespace GitObjectDb.Api.Model;
+namespace GitObjectDb.Api.OData.Model;
 
 /// <summary>Describes the data transfer type information.</summary>
 [ExcludeFromCodeCoverage]

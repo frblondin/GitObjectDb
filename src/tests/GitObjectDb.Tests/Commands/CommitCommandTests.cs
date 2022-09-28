@@ -35,7 +35,7 @@ public class CommitCommandTests
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(commitCommandFactory: sut, connection: connection);
+        var composer = new TransformationComposer(connection, "main", sut);
         composer.CreateOrUpdate(new Table { Id = newTableId }, application);
         sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
@@ -64,7 +64,7 @@ public class CommitCommandTests
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(commitCommandFactory: sut, connection: connection);
+        var composer = new TransformationComposer(connection, "main", sut);
         composer.CreateOrUpdate(new Field { Id = newFieldId }, table);
         sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
@@ -94,7 +94,7 @@ public class CommitCommandTests
         var resource = new Resource(table, "Some/Folder", "File.txt", new Resource.Data(fileContent));
 
         // Act
-        var composer = new TransformationComposer(commitCommandFactory: sut, connection: connection);
+        var composer = new TransformationComposer(connection, "main", sut);
         composer.CreateOrUpdate(resource);
         sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
@@ -125,7 +125,7 @@ public class CommitCommandTests
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(commitCommandFactory: sut, connection: connection);
+        var composer = new TransformationComposer(connection, "main", sut);
         composer.Delete(table);
         sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
 
@@ -152,7 +152,7 @@ public class CommitCommandTests
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(commitCommandFactory: sut, connection: connection);
+        var composer = new TransformationComposer(connection, "main", sut);
         composer.CreateOrUpdate(field with
         {
             SomeValue = new()

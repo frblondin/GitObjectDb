@@ -22,15 +22,15 @@ internal sealed class Rebase : IRebase
                   IMergeComparer mergeComparer,
                   CommitCommand commitCommand,
                   IConnectionInternal connection,
-                  Branch? branch = null,
-                  string? upstreamCommittish = null,
+                  string branchName,
+                  string upstreamCommittish,
                   ComparisonPolicy? policy = null)
     {
         _comparer = comparer;
         _mergeComparer = mergeComparer;
         _commitCommand = commitCommand;
         _connection = connection;
-        Branch = branch ?? connection.Repository.Head;
+        Branch = connection.Repository.Branches[branchName] ?? throw new GitObjectDbNonExistingBranchException();
         UpstreamCommit = connection.FindUpstreamCommit(upstreamCommittish, Branch);
         Policy = policy ?? connection.Model.DefaultComparisonPolicy;
         (MergeBaseCommit, ReplayedCommits) = Initialize();
@@ -128,21 +128,22 @@ internal sealed class Rebase : IRebase
             UpstreamCommit;
         var replayedCommit = ReplayedCommits[CurrentStep];
 
-        // If last commit, update head so it points to the new commit
+        // If last commit, update branch so it points to the new commit
         var commit = _commitCommand.Commit(
             _connection,
+            Branch.FriendlyName,
             tip,
             CurrentChanges.Select(c =>
                 (ApplyUpdateTreeDefinition)((refTree, modules, serializer, database, treeDefinition) =>
                 c.Transform(database, treeDefinition, refTree, modules, serializer))),
             new CommitDescription(replayedCommit.Message, replayedCommit.Author, replayedCommit.Committer),
-            updateHead: false);
+            updateBranchTip: false);
 
         // Update tip if last commit
         if (CurrentStep == ReplayedCommits.Count - 1)
         {
-            var logMessage = commit.BuildCommitLogMessage(false, false, false);
-            _connection.Repository.UpdateTerminalReference(Branch.Reference, commit, logMessage);
+            var logMessage = commit.BuildCommitLogMessage(false, false);
+            _connection.Repository.UpdateBranchTip(Branch.Reference, commit, logMessage);
         }
 
         return commit;

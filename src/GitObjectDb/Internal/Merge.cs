@@ -16,23 +16,21 @@ internal sealed class Merge : IMerge
     private readonly IMergeComparer _mergeComparer;
     private readonly CommitCommand _commitCommand;
     private readonly IConnectionInternal _connection;
-    private readonly string? _upstreamCommittish;
 
     [FactoryDelegateConstructor(typeof(Factories.MergeFactory))]
     public Merge(IComparerInternal comparer,
                  IMergeComparer mergeComparer,
                  CommitCommand commitCommand,
                  IConnectionInternal connection,
-                 Branch? branch = null,
-                 string? upstreamCommittish = null,
+                 string branchName,
+                 string upstreamCommittish,
                  ComparisonPolicy? policy = null)
     {
         _comparer = comparer;
         _mergeComparer = mergeComparer;
         _commitCommand = commitCommand;
         _connection = connection;
-        Branch = branch ?? connection.Repository.Head;
-        _upstreamCommittish = upstreamCommittish;
+        Branch = connection.Repository.Branches[branchName] ?? throw new GitObjectDbNonExistingBranchException();
         UpstreamCommit = connection.FindUpstreamCommit(upstreamCommittish, Branch);
         Policy = policy ?? connection.Model.DefaultComparisonPolicy;
         (MergeBaseCommit, Commits, RequiresMergeCommit) = Initialize();
@@ -109,7 +107,7 @@ internal sealed class Merge : IMerge
             throw new GitObjectDbException("Remaining conflicts were not resolved.");
         }
 
-        // If last commit, update head so it points to the new commit
+        // If last commit, update branch so it points to the new commit
         return RequiresMergeCommit && CurrentChanges.Any() ?
                CommitMerge(author, committer) :
                CommitFastForward();
@@ -117,18 +115,19 @@ internal sealed class Merge : IMerge
 
     private Commit CommitMerge(Signature author, Signature committer)
     {
-        var message = $"Merge {_upstreamCommittish ?? UpstreamCommit.Sha} into {Branch.FriendlyName}";
+        var message = $"Merge {UpstreamCommit.Sha} into {Branch.FriendlyName}";
         MergeCommit = _commitCommand.Commit(
             _connection,
+            Branch.FriendlyName,
             Branch.Tip,
             CurrentChanges.Select(c =>
                 (ApplyUpdateTreeDefinition)((refTree, modules, serializer, database, treeDefinition) =>
                 c.Transform(database, treeDefinition, refTree, modules, serializer))),
             new CommitDescription(message, author, committer),
-            updateHead: false,
+            updateBranchTip: false,
             mergeParent: UpstreamCommit);
-        var logMessage = MergeCommit.BuildCommitLogMessage(false, false, isMergeCommit: true);
-        _connection.Repository.UpdateTerminalReference(Branch.Reference, MergeCommit, logMessage);
+        var logMessage = MergeCommit.BuildCommitLogMessage(false, isMergeCommit: true);
+        _connection.Repository.UpdateBranchTip(Branch.Reference, MergeCommit, logMessage);
         Status = MergeStatus.NonFastForward;
         return MergeCommit;
     }
@@ -136,8 +135,8 @@ internal sealed class Merge : IMerge
     private Commit CommitFastForward()
     {
         MergeCommit = UpstreamCommit;
-        var logMessage = MergeCommit.BuildCommitLogMessage(false, false, false);
-        _connection.Repository.UpdateTerminalReference(Branch.Reference, UpstreamCommit, logMessage);
+        var logMessage = MergeCommit.BuildCommitLogMessage(false, false);
+        _connection.Repository.UpdateBranchTip(Branch.Reference, UpstreamCommit, logMessage);
         Status = MergeStatus.FastForward;
         return UpstreamCommit;
     }

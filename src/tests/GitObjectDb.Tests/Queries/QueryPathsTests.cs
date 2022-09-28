@@ -15,7 +15,7 @@ public class QueryPathsTests : DisposeArguments
     public void RootNodes(IConnection connection)
     {
         // Act
-        var result = connection.GetPaths().ToList();
+        var result = connection.GetPaths("main").ToList();
 
         // Assert
         Assert.That(result, Has.Exactly(SoftwareBenchmarkCustomization.DefaultApplicationCount).Items);
@@ -26,7 +26,7 @@ public class QueryPathsTests : DisposeArguments
     public void TablesInApplication(IConnection connection, Application application)
     {
         // Act
-        var result = connection.GetPaths(application.Path).ToList();
+        var result = connection.GetPaths("main", parentPath: application.Path).ToList();
 
         // Assert
         Assert.That(result, Has.Exactly(SoftwareBenchmarkCustomization.DefaultTablePerApplicationCount).Items);
@@ -37,7 +37,7 @@ public class QueryPathsTests : DisposeArguments
     public void FieldsInApplicationRecursively(IConnection connection, Application application)
     {
         // Act
-        var result = connection.GetPaths<Field>(application.Path, isRecursive: true).ToList();
+        var result = connection.GetPaths<Field>("main", parentPath: application.Path, isRecursive: true).ToList();
 
         // Assert
         Assert.That(result, Has.Exactly(SoftwareBenchmarkCustomization.DefaultTablePerApplicationCount * SoftwareBenchmarkCustomization.DefaultFieldPerTableCount).Items);
@@ -48,7 +48,7 @@ public class QueryPathsTests : DisposeArguments
     public void ResourcesInTable(IConnection connection, Table table)
     {
         // Act
-        var result = connection.GetPaths<Resource>(table.Path, isRecursive: true).ToList();
+        var result = connection.GetPaths<Resource>("main", parentPath: table.Path, isRecursive: true).ToList();
 
         // Assert
         Assert.That(result, Has.Exactly(SoftwareBenchmarkCustomization.DefaultResourcePerTableCount).Items);

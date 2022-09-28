@@ -11,6 +11,6 @@ public record Constant : Node
 
 public static class IConnectionConstantExtensions
 {
-    public static IEnumerable<Constant> GetConstants(this IConnection connection, Table table, string? committish = null) =>
-        connection.GetNodes<Constant>(table, committish);
+    public static IEnumerable<Constant> GetConstants(this IConnection connection, Table table, string committish = "main") =>
+        connection.GetNodes<Constant>(committish, table);
 }

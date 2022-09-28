@@ -18,7 +18,7 @@ public class SearchItemsTests : DisposeArguments
     public void SearchStringPropertiesByDefault(IConnection connection, SomeNode node)
     {
         // Act
-        var result = connection.Search(node.SearchableByDefault).ToList();
+        var result = connection.Search("main", pattern: node.SearchableByDefault).ToList();
 
         // Assert
         Assert.That(result, Has.Exactly(1).Items);
@@ -30,7 +30,7 @@ public class SearchItemsTests : DisposeArguments
     public void SearchExplicitelySearchableProperties(IConnection connection, SomeNode node)
     {
         // Act
-        var result = connection.Search(node.SearchableExplicitely.ToString(), ignoreCase: true).ToList();
+        var result = connection.Search("main", pattern: node.SearchableExplicitely.ToString(), ignoreCase: true).ToList();
 
         // Assert
         Assert.That(result, Has.Some.Not.Null);
@@ -41,7 +41,7 @@ public class SearchItemsTests : DisposeArguments
     public void SkipExcludedProperties(IConnection connection, SomeNode node)
     {
         // Act
-        var result = connection.Search(node.NonSearchable).ToList();
+        var result = connection.Search("main", pattern: node.NonSearchable).ToList();
 
         // Assert
         Assert.That(result, Has.Exactly(0).Items);
@@ -61,7 +61,7 @@ public class SearchItemsTests : DisposeArguments
             fixture.Register<IConnection>(() => connection.Value);
             fixture.Register(() => connection.Value.Repository);
 
-            fixture.LazyRegister(() => connection.Value.GetNodes<SomeNode>().Last());
+            fixture.LazyRegister(() => connection.Value.GetNodes<SomeNode>("main").Last());
         }
 
         private static IConnectionInternal CreateConnection(IFixture fixture, IServiceProvider serviceProvider, IDataModel model)
@@ -69,7 +69,7 @@ public class SearchItemsTests : DisposeArguments
             var path = GitObjectDbFixture.GetAvailableFolderPath();
             var repositoryFactory = serviceProvider.GetRequiredService<ConnectionFactory>();
             var result = (IConnectionInternal)repositoryFactory(path, model);
-            var transformations = result.Update(c =>
+            var transformations = result.Update("main", c =>
             {
                 for (int i = 0; i < 10; i++)
                 {

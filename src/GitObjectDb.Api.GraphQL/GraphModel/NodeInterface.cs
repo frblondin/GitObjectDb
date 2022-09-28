@@ -1,4 +1,4 @@
-using GitObjectDb.Api.Model;
+using GitObjectDb.Api.GraphQL.Tools;
 using GraphQL;
 using GraphQL.Builders;
 using GraphQL.Types;
@@ -7,17 +7,22 @@ using System.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
 
-internal sealed class NodeInterface : InterfaceGraphType<NodeDto>
+internal sealed class NodeInterface : InterfaceGraphType<Node>
 {
     public NodeInterface()
     {
         Name = nameof(Node);
 
-        Field(n => n.Children).Description("Gets the node children.");
+        AddScalarProperties();
+        CreateChildrenField(this);
+        CreateHistoryField(this);
+    }
 
-        foreach (var property in typeof(NodeDto).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+    private void AddScalarProperties()
+    {
+        foreach (var property in typeof(Node).GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
-            if (!SchemaTypes.BuiltInScalarMappings.ContainsKey(property.PropertyType))
+            if (!property.PropertyType.IsValidClrTypeForGraph())
             {
                 continue;
             }
@@ -25,9 +30,11 @@ internal sealed class NodeInterface : InterfaceGraphType<NodeDto>
             var summary = typeof(Node).GetProperty(property.Name)?.GetXmlDocsSummary(false);
             Field(property.Name, type).Description(summary);
         }
-
-        CreateHistoryField(this);
     }
+
+    internal static FieldBuilder<TSource, object> CreateChildrenField<TSource>(ComplexGraphType<TSource> graph) =>
+        graph.Field<ListGraphType<NodeInterface>>("Children")
+        .Description("Gets the node children.");
 
     internal static FieldBuilder<TSource, object> CreateHistoryField<TSource>(ComplexGraphType<TSource> graph) =>
         graph.Field<ListGraphType<CommitType>>("History")

@@ -1,4 +1,4 @@
-using GitObjectDb.Api.Model;
+using GitObjectDb.Api.OData.Model;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
@@ -17,10 +17,10 @@ public class NodeController<TNode, TNodeDTO> : ODataController
     }
 
     [EnableQuery]
-    public IEnumerable<TNodeDTO> Get([FromODataUri] string? parentPath = null,
-                                     [FromODataUri] string? committish = null,
+    public IEnumerable<TNodeDTO> Get([FromODataUri] string committish,
+                                     [FromODataUri] string? parentPath = null,
                                      [FromODataUri] bool isRecursive = false)
     {
-        return _dataProvider.GetNodes<TNode, TNodeDTO>(parentPath, committish, isRecursive);
+        return _dataProvider.GetNodes<TNode, TNodeDTO>(committish, parentPath, isRecursive);
     }
 }

@@ -40,3 +40,15 @@ public class GitObjectDbInvalidCommitException : GitObjectDbException
     {
     }
 }
+
+/// <summary>The exception that is thrown when trying to use a branch which doesn't exist.</summary>
+public class GitObjectDbNonExistingBranchException : GitObjectDbException
+{
+    /// <summary>Initializes a new instance of the <see cref="GitObjectDbNonExistingBranchException"/> class.</summary>
+    /// <param name="innerException">The exception that is the cause of the current exception,
+    /// or a null reference (Nothing in Visual Basic) if no inner exception is specified.</param>
+    public GitObjectDbNonExistingBranchException(Exception? innerException = null)
+        : base($"Branch does not exist.", innerException)
+    {
+    }
+}

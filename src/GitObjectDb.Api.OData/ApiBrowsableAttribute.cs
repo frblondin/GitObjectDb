@@ -1,6 +1,4 @@
-﻿using System.Reflection;
-
-namespace GitObjectDb.Api;
+namespace GitObjectDb.Api.OData;
 
 /// <summary>Specifies whether a node type should be displayed in Api browsing.</summary>
 [AttributeUsage(AttributeTargets.Class)]

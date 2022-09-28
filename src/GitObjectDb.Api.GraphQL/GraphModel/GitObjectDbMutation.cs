@@ -1,14 +1,16 @@
 using Fasterflect;
 using GitObjectDb.Api.GraphQL.Commands;
 using GitObjectDb.Api.GraphQL.Converters;
-using GitObjectDb.Api.Model;
+using GitObjectDb.Model;
 using GraphQL;
 using GraphQL.Types;
+using Models.Organization;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
 
 public class GitObjectDbMutation : ObjectGraphType
 {
+    internal const string BranchArgument = "branch";
     internal const string NodeArgument = "node";
     internal const string ParentPathArgument = "parentPath";
     internal const string ParentIdArgument = "parentId";
@@ -17,22 +19,29 @@ public class GitObjectDbMutation : ObjectGraphType
     internal const string EMailArgument = "email";
     internal const string MessageArgument = "message";
 
-    private readonly Dictionary<DataTransferTypeDescription, IInputObjectGraphType> _typeToGraphType = new();
+    private readonly Dictionary<NodeTypeDescription, INodeType<GitObjectDbMutation>> _typeToGraphType = new();
 
-    public GitObjectDbMutation(GitObjectDbQuery query)
+    public GitObjectDbMutation(GitObjectDbSchema schema)
     {
         Name = "Mutation";
         Description = "Mutates GitObjectDb data.";
-        foreach (var description in query.DtoEmitter.TypeDescriptions)
+        Schema = schema;
+
+        foreach (var description in schema.Model.NodeTypes)
         {
             AddNodeField(description);
         }
-        Field<StringGraphType>("DeleteNode")
+        Field<StringGraphType>("Checkout")
+            .Description("Checkout a branch.")
+            .Arguments(
+                new QueryArgument<NonNullGraphType<StringGraphType>> { Name = BranchArgument })
+            .Resolve(NodeMutation.Checkout);
+        Field<DataPathGraphType>("DeleteNode")
             .Description("Delete an existing node.")
             .Arguments(
-                new QueryArgument<NonNullGraphType<StringGraphType>> { Name = PathArgument })
+                new QueryArgument<NonNullGraphType<DataPathGraphType>> { Name = PathArgument })
             .Resolve(NodeMutation.Delete);
-        Field<StringGraphType>("Commit")
+        Field<ObjectIdGraphType>("Commit")
             .Description("Commit all previous changes.")
             .Arguments(
                 new QueryArgument<NonNullGraphType<StringGraphType>> { Name = MessageArgument },
@@ -41,32 +50,37 @@ public class GitObjectDbMutation : ObjectGraphType
             .Resolve(NodeMutation.Commit);
     }
 
-    internal void AddNodeField(DataTransferTypeDescription description)
+    public Schema Schema { get; }
+
+    internal void AddNodeField(NodeTypeDescription description)
     {
         var inputType = GetOrCreateNodeGraphType(description);
 
-        Field<StringGraphType>($"Create{description.NodeType.Type.Name}")
-            .Description($"Creates {description.NodeType.Name}.")
+        Field<DataPathGraphType>($"Create{description.Type.Name}")
+            .Description($"Creates {description.Name}.")
             .Arguments(
                 new QueryArgument(typeof(NonNullGraphType<>).MakeGenericType(inputType.GetType()))
                 {
                     Name = NodeArgument,
+                    ResolvedType = inputType,
                 },
-                new QueryArgument<StringGraphType> { Name = ParentPathArgument },
-                new QueryArgument<StringGraphType> { Name = ParentIdArgument })
+                new QueryArgument<DataPathGraphType> { Name = ParentPathArgument },
+                new QueryArgument<UniqueIdGraphType> { Name = ParentIdArgument })
             .Resolve(NodeMutation.CreateAddOrUpdate(description));
 
-        // Registers the transformation of a path to a dto
-        ValueConverter.Register(typeof(string), description.DtoType, PathToNodeConverter.Convert);
+        // Registers the transformation of a path to a node
+        ValueConverter.Register(typeof(string), description.Type, PathToNodeConverter.Convert);
     }
 
-    internal IInputObjectGraphType GetOrCreateNodeGraphType(DataTransferTypeDescription description)
+    internal INodeType<GitObjectDbMutation> GetOrCreateNodeGraphType(NodeTypeDescription description)
     {
         if (!_typeToGraphType.TryGetValue(description, out var result))
         {
-            var schemaType = typeof(NodeInputType<,>).MakeGenericType(description.NodeType.Type, description.DtoType);
+            var schemaType = typeof(NodeInputType<>).MakeGenericType(description.Type);
             var factory = Reflect.Constructor(schemaType);
-            _typeToGraphType[description] = result = (IInputObjectGraphType)factory.Invoke();
+            _typeToGraphType[description] = result = (INodeType<GitObjectDbMutation>)factory.Invoke();
+
+            result.AddFieldsThroughReflection(this);
         }
         return result;
     }

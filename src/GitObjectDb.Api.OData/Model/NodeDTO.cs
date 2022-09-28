@@ -1,6 +1,6 @@
 using LibGit2Sharp;
 
-namespace GitObjectDb.Api.Model;
+namespace GitObjectDb.Api.OData.Model;
 
 /// <summary>Data transfer objects used to provide information about <see cref="Node"/> instances.</summary>
 public class NodeDto

@@ -60,69 +60,41 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
     private static Repository GetOrCreateRepository(string path, string initialBranch)
     {
         var absolute = Path.GetFullPath(path);
-        if (!LibGit2Sharp.Repository.IsValid(absolute))
-        {
-            InitializeRepository(absolute, initialBranch);
-        }
-        return new Repository(absolute);
+        return !LibGit2Sharp.Repository.IsValid(absolute) ?
+            InitializeRepository(absolute, initialBranch) :
+            new Repository(absolute);
     }
 
-    private static void InitializeRepository(string path, string initialBranch)
+    private static Repository InitializeRepository(string path, string initialBranch)
     {
         LibGit2Sharp.Repository.Init(path, isBare: true);
-
-        if (!initialBranch.Equals("master", StringComparison.Ordinal))
-        {
-            if (GitCliCommand.IsGitInstalled)
-            {
-                GitCliCommand.Execute(path, $"symbolic-ref HEAD refs/heads/{initialBranch}");
-            }
-            else
-            {
-                var head = Path.Combine(path, "HEAD");
-                var content = File.ReadAllText(head);
-                var newContent = content.Replace("refs/heads/master", $"refs/heads/{initialBranch}");
-                File.WriteAllText(head, newContent);
-            }
-        }
+        var result = new Repository(path);
+        result.Refs.UpdateTarget("HEAD", $"refs/heads/{initialBranch}");
+        return result;
     }
 
-    public ITransformationComposer Update(Action<ITransformationComposer>? transformations = null)
+    public ITransformationComposer Update(string branchName, Action<ITransformationComposer>? transformations = null)
     {
-        var composer = _transformationComposerFactory(this);
+        var composer = _transformationComposerFactory(this, branchName);
         transformations?.Invoke(composer);
         return composer;
     }
 
-    public Branch Checkout(string branchName, string? committish = null)
-    {
-        var branch = Repository.Branches[branchName];
-        if (branch == null)
-        {
-            var reflogName =
-                committish ??
-                (Repository.Refs.Head is SymbolicReference ? Repository.Head.FriendlyName : Repository.Head.Tip.Sha);
-            branch = Repository.CreateBranch(branchName, reflogName);
-        }
-        Repository.Refs.MoveHeadTarget(branch.CanonicalName);
-        return branch;
-    }
-
-    public IRebase Rebase(Branch? branch = null,
-                          string? upstreamCommittish = null,
+    public IRebase Rebase(string branchName,
+                          string upstreamCommittish,
                           ComparisonPolicy? policy = null) =>
-        _rebaseFactory(this, branch, upstreamCommittish, policy);
+        _rebaseFactory(this, branchName, upstreamCommittish, policy);
 
-    public IMerge Merge(Branch? branch = null,
-                        string? upstreamCommittish = null,
+    public IMerge Merge(string branchName,
+                        string upstreamCommittish,
                         ComparisonPolicy? policy = null) =>
-        _mergeFactory(this, branch, upstreamCommittish, policy);
+        _mergeFactory(this, branchName, upstreamCommittish, policy);
 
-    public ICherryPick CherryPick(string committish,
+    public ICherryPick CherryPick(string branchName,
+                                  string committish,
                                   Signature? committer = null,
-                                  Branch? branch = null,
                                   CherryPickPolicy? policy = null) =>
-        _cherryPickFactory(this, committish, committer, branch, policy);
+        _cherryPickFactory(this, branchName, committish, committer, policy);
 
     public Commit FindUpstreamCommit(string? committish, Branch branch)
     {

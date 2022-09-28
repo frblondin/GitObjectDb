@@ -1,4 +1,4 @@
-using GitObjectDb.Api.Model;
+using GitObjectDb.Api.GraphQL.Tools;
 using GraphQL;
 using GraphQL.Types;
 using Namotion.Reflection;
@@ -6,48 +6,52 @@ using System.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
 
-public class NodeInputType<TNode, TNodeDto> : InputObjectGraphType<TNodeDto>
+public class NodeInputType<TNode> : InputObjectGraphType<TNode>, INodeType<GitObjectDbMutation>
     where TNode : Node
-    where TNodeDto : NodeDto
 {
     public NodeInputType()
     {
         Name = typeof(TNode).Name.Replace("`", string.Empty) + "Input";
         Description = typeof(TNode).GetXmlDocsSummary(false);
 
-        AddScalarProperties();
         AddReferences();
     }
 
-    private void AddScalarProperties()
+    void INodeType<GitObjectDbMutation>.AddFieldsThroughReflection(GitObjectDbMutation mutation)
     {
-        foreach (var property in typeof(TNodeDto).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        AddScalarProperties(mutation);
+    }
+
+    private void AddScalarProperties(GitObjectDbMutation mutation)
+    {
+        foreach (var property in typeof(TNode).GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
-            if (!AdditionalTypeMappings.IsScalarType(property.PropertyType))
+            if (property.PropertyType.IsNode() ||
+                property.PropertyType.IsNodeEnumerable(out var _) ||
+                !property.PropertyType.IsValidClrTypeForGraph(mutation.Schema))
             {
                 continue;
             }
             var type = property.PropertyType.GetGraphTypeFromType(isNullable: true, TypeMappingMode.InputType);
-            var summary = typeof(TNode).GetProperty(property.Name)?.GetXmlDocsSummary(false) ??
-                property.GetXmlDocsSummary(false);
+            var summary = property.GetXmlDocsSummary(false);
             Field(property.Name, type).Description(summary);
         }
     }
 
     private void AddReferences()
     {
-        foreach (var property in typeof(TNodeDto).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        foreach (var property in typeof(TNode).GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
-            if (Fields.Any(f => f.Name == property.Name))
+            if (Fields.Any(f => f.Name.Equals(property.Name, StringComparison.OrdinalIgnoreCase)))
             {
                 continue;
             }
 
-            if (property.PropertyType.IsAssignableTo(typeof(NodeDto)))
+            if (property.PropertyType.IsAssignableTo(typeof(Node)))
             {
                 AddSingleReference(property);
             }
-            if (property.IsEnumerable(t => t.IsAssignableTo(typeof(NodeDto)), out var dtoType))
+            if (property.PropertyType.IsNodeEnumerable(out var _))
             {
                 AddMultiReference(property);
             }

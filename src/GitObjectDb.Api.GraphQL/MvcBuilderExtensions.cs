@@ -1,9 +1,8 @@
-using GitObjectDb.Api.Model;
 using GraphQL;
 using GraphQL.DI;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceLifetime = Microsoft.Extensions.DependencyInjection.ServiceLifetime;
+using System.Reflection;
 
 namespace GitObjectDb.Api.GraphQL;
 
@@ -14,20 +13,8 @@ public static class MvcBuilderExtensions
     /// <param name="source">The source.</param>
     /// <param name="configure">The GraphQL configuration delegate.</param>
     /// <returns>The source <see cref="IMvcBuilder"/>.</returns>
-    public static IMvcBuilder AddGitObjectDbGraphQLControllers(this IMvcBuilder source, Action<IGraphQLBuilder>? configure = null)
+    public static IMvcBuilder AddGitObjectDbGraphQLControllers(this IMvcBuilder source)
     {
-        var emitter = source.Services.FirstOrDefault(s => s.ServiceType == typeof(DtoTypeEmitter) &&
-            s.Lifetime == ServiceLifetime.Singleton &&
-            s.ImplementationInstance is not null)?.ImplementationInstance as DtoTypeEmitter ??
-            throw new NotSupportedException($"GitObjectDbApi has not bee registered.");
-
-        source.Services
-            .AddGraphQL(builder =>
-            {
-                builder.AddGraphTypes(emitter.AssemblyBuilder);
-                configure?.Invoke(builder);
-            });
-
         source.ConfigureApplicationPartManager(m =>
             m.ApplicationParts.Add(new AssemblyPart(typeof(NodeController).Assembly)));
 

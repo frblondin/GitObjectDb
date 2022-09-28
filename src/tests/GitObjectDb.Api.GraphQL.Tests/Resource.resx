@@ -119,6 +119,7 @@
   </resheader>
   <data name="CreateData" xml:space="preserve">
     <value>mutation {
+  checkout(branch: "main")
   siteType: createOrganizationType(node: {
     id: "site", label: "Site"
   })

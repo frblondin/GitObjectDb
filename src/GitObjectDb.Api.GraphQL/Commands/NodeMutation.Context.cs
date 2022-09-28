@@ -1,6 +1,4 @@
-using AutoMapper;
-using GitObjectDb.Api.Model;
-using LibGit2Sharp;
+using GraphQL.Execution;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GitObjectDb.Api.GraphQL.Commands;
@@ -8,23 +6,35 @@ internal static partial class NodeMutation
 {
     internal sealed class Context
     {
+        private string? _branchName;
+        private ITransformationComposer? _transformationComposer;
+
         internal Context(IServiceProvider serviceProvider)
         {
             Connection = serviceProvider.GetRequiredService<IConnection>();
-            DataProvider = serviceProvider.GetRequiredService<DataProvider>();
-            Mapper = serviceProvider.GetRequiredService<IMapper>();
-            Transformations = Connection.Update();
+            QueryAccessor = serviceProvider.GetRequiredService<IQueryAccessor>();
         }
 
-        internal static AsyncLocal<NodeMutation.Context?> Current { get; } = new();
+        internal static AsyncLocal<Context?> Current { get; } = new();
 
         internal IConnection Connection { get; }
 
-        internal DataProvider DataProvider { get; }
+        internal IQueryAccessor QueryAccessor { get; }
 
-        internal IMapper Mapper { get; }
+        internal string BranchName
+        {
+            get => _branchName ?? throw new RequestError("No branch name has been set. Please checkout the target branch first using the checkout instruction.");
+            set
+            {
+                if (_branchName is not null)
+                {
+                    throw new RequestError("The branch cannot be changed before commits have been pushed.");
+                }
+                _branchName = value;
+            }
+        }
 
-        internal ITransformationComposer Transformations { get; }
+        internal ITransformationComposer Transformations => _transformationComposer ??= Connection.Update(BranchName);
 
         internal IDictionary<DataPath, Node> ModifiedNodesByPath { get; } = new Dictionary<DataPath, Node>();
 
@@ -40,13 +50,9 @@ internal static partial class NodeMutation
             }
         }
 
-        internal NodeDto Convert(DataPath path)
-        {
-            var node = TryResolve(path) ??
-                throw new GitObjectDbException($"The node '{path}' could not be found.");
-            var commitId = Connection.Repository.Info.IsHeadUnborn ? ObjectId.Zero : Connection.Repository.Head.Tip.Id;
-            return DataProvider.MapCached<Node, NodeDto>(node, commitId)!;
-        }
+        internal Node Convert(DataPath path) =>
+            TryResolve(path) ??
+            throw new GitObjectDbException($"The node '{path}' could not be found.");
 
         internal Node? TryResolve(DataPath path)
         {
@@ -56,7 +62,7 @@ internal static partial class NodeMutation
             }
             return Connection.Repository.Info.IsHeadUnborn ?
                 null :
-                Connection.Lookup<Node>(path);
+                Connection.Lookup<Node>(BranchName, path);
         }
 
         internal Node? TryResolve(UniqueId id)
@@ -67,7 +73,14 @@ internal static partial class NodeMutation
             }
             return Connection.Repository.Info.IsHeadUnborn ?
                 null :
-                Connection.Lookup<Node>(id);
+                Connection.Lookup<Node>(BranchName, id);
+        }
+
+        internal void Reset()
+        {
+            _transformationComposer = null;
+            ModifiedNodesByPath.Clear();
+            ModifiedNodesById.Clear();
         }
     }
 }

@@ -23,31 +23,31 @@ public class CherryPickTests : DisposeArguments
         // Arrange
         var a = sut.Repository.Head.Tip;
         var b = sut
-            .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
+            .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         var c = sut
-            .Update(c => c.CreateOrUpdate(table with { Name = newName }))
+            .Update("newBranch", c => c.CreateOrUpdate(table with { Name = newName }))
             .Commit(new("C", signature, signature));
 
         // Act
-        var cherryPick = sut.CherryPick(b.Sha, cherryPickCommitter);
+        var cherryPick = sut.CherryPick("newBranch", b.Sha, committer: cherryPickCommitter);
 
         // Assert
         Assert.That(cherryPick.Status, Is.EqualTo(CherryPickStatus.CherryPicked));
         var commitFilter = new CommitFilter
         {
-            IncludeReachableFrom = sut.Repository.Head.Tip,
+            IncludeReachableFrom = sut.Repository.Branches["newBranch"].Tip,
             SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
         };
         var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
-        var newTable = sut.Lookup<Table>(table.Path);
+        var newTable = sut.Lookup<Table>("newBranch", table.Path);
         Assert.Multiple(() =>
         {
             Assert.That(commits[0], Is.EqualTo(a));
             Assert.That(commits[1], Is.EqualTo(c));
             Assert.That(commits[2], Is.EqualTo(cherryPick.CompletedCommit));
-            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Branches["newBranch"].Tip));
             Assert.That(commits[2].Committer.Name, Is.EqualTo(cherryPickCommitter.Name));
             Assert.That(newTable.Name, Is.EqualTo(newName));
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
@@ -64,15 +64,15 @@ public class CherryPickTests : DisposeArguments
 
         // Arrange
         var b = sut
-            .Update(c => c.CreateOrUpdate(table with { Description = bValue }))
+            .Update("main", c => c.CreateOrUpdate(table with { Description = bValue }))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         sut
-            .Update(c => c.CreateOrUpdate(table with { Description = cValue }))
+            .Update("newBranch", c => c.CreateOrUpdate(table with { Description = cValue }))
             .Commit(new("C", signature, signature));
 
         // Act
-        var cherryPick = sut.CherryPick(b.Sha);
+        var cherryPick = sut.CherryPick("newBranch", b.Sha);
 
         // Assert
         Assert.That(cherryPick.Status, Is.EqualTo(CherryPickStatus.Conflicts));
@@ -101,7 +101,7 @@ public class CherryPickTests : DisposeArguments
         Assert.That(cherryPick.CommitChanges(), Is.EqualTo(CherryPickStatus.CherryPicked));
 
         // Assert
-        var newTable = sut.Lookup<Table>(table.Path);
+        var newTable = sut.Lookup<Table>("newBranch", table.Path);
         Assert.That(newTable.Description, Is.EqualTo("resolved"));
     }
 
@@ -115,19 +115,19 @@ public class CherryPickTests : DisposeArguments
 
         // Arrange
         var b = sut
-            .Update(c =>
+            .Update("main", c =>
             {
                 c.CreateOrUpdate(field with { Description = newDescription });
                 c.CreateOrUpdate(parentApplication with { Name = newName });
             })
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         sut
-            .Update(c => c.Delete(parentTable))
+            .Update("newBranch", c => c.Delete(parentTable))
             .Commit(new("C", signature, signature));
 
         // Act
-        var cherryPick = sut.CherryPick(b.Sha);
+        var cherryPick = sut.CherryPick("newBranch", b.Sha);
 
         // Assert
         Assert.That(cherryPick.Status, Is.EqualTo(CherryPickStatus.Conflicts));
@@ -149,7 +149,7 @@ public class CherryPickTests : DisposeArguments
         Assert.That(cherryPick.CommitChanges(), Is.EqualTo(CherryPickStatus.CherryPicked));
 
         // Assert
-        var newApplication = sut.Lookup<Application>(parentApplication.Path);
+        var newApplication = sut.Lookup<Application>("newBranch", parentApplication.Path);
         Assert.That(newApplication.Name, Is.EqualTo(newName));
     }
 
@@ -164,12 +164,12 @@ public class CherryPickTests : DisposeArguments
         // Arrange
         var a = sut.Repository.Head.Tip;
         var b = sut
-            .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
+            .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         var newFieldId = UniqueId.CreateNew();
         var c = sut
-            .Update(c => c.CreateOrUpdate(new Field
+            .Update("newBranch", c => c.CreateOrUpdate(new Field
             {
                 Id = newFieldId,
                 A = fixture.Create<NestedA[]>(),
@@ -178,24 +178,24 @@ public class CherryPickTests : DisposeArguments
             .Commit(new("C", signature, signature));
 
         // Act
-        var cherryPick = sut.CherryPick(b.Sha);
+        var cherryPick = sut.CherryPick("newBranch", b.Sha);
 
         // Assert
         Assert.That(cherryPick.Status, Is.EqualTo(CherryPickStatus.CherryPicked));
         var commitFilter = new CommitFilter
         {
-            IncludeReachableFrom = sut.Repository.Head.Tip,
+            IncludeReachableFrom = sut.Repository.Branches["newBranch"].Tip,
             SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
         };
         var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
-        var newTable = sut.Lookup<Table>(table.Path);
-        var newField = sut.GetNodes<Field>(newTable).FirstOrDefault(f => f.Id == newFieldId);
+        var newTable = sut.Lookup<Table>("newBranch", table.Path);
+        var newField = sut.GetNodes<Field>("newBranch", parent: newTable).FirstOrDefault(f => f.Id == newFieldId);
         Assert.Multiple(() =>
         {
             Assert.That(commits[0], Is.EqualTo(a));
             Assert.That(commits[1], Is.EqualTo(c));
             Assert.That(commits[2], Is.EqualTo(cherryPick.CompletedCommit));
-            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Branches["newBranch"].Tip));
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
             Assert.That(newField, Is.Not.Null);
         });
@@ -212,20 +212,20 @@ public class CherryPickTests : DisposeArguments
         // Arrange
         var newFieldId = UniqueId.CreateNew();
         var b = sut
-            .Update(c => c.CreateOrUpdate(new Field
+            .Update("main", c => c.CreateOrUpdate(new Field
             {
                 Id = newFieldId,
                 A = fixture.Create<NestedA[]>(),
                 SomeValue = fixture.Create<NestedA>(),
             }, parent: table))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         sut
-            .Update(c => c.Delete(table))
+            .Update("newBranch", c => c.Delete(table))
             .Commit(new("C", signature, signature));
 
         // Act
-        var cherryPick = sut.CherryPick(b.Sha);
+        var cherryPick = sut.CherryPick("newBranch", b.Sha);
 
         // Assert
         Assert.That(cherryPick.Status, Is.EqualTo(CherryPickStatus.Conflicts));
@@ -257,32 +257,32 @@ public class CherryPickTests : DisposeArguments
         // Arrange
         var a = sut.Repository.Head.Tip;
         var b = sut
-            .Update(c => c.Delete(field))
+            .Update("main", c => c.Delete(field))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         var c = sut
-            .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
+            .Update("newBranch", c => c.CreateOrUpdate(table with { Description = newDescription }))
             .Commit(new("C", signature, signature));
 
         // Act
-        var cherryPick = sut.CherryPick(b.Sha);
+        var cherryPick = sut.CherryPick("newBranch", b.Sha);
 
         // Assert
         Assert.That(cherryPick.Status, Is.EqualTo(CherryPickStatus.CherryPicked));
         var commitFilter = new CommitFilter
         {
-            IncludeReachableFrom = sut.Repository.Head.Tip,
+            IncludeReachableFrom = sut.Repository.Branches["newBranch"].Tip,
             SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
         };
         var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
-        var newTable = sut.Lookup<Table>(table.Path);
-        var missingField = sut.GetNodes<Field>(newTable).FirstOrDefault(f => f.Id == field.Id);
+        var newTable = sut.Lookup<Table>("newBranch", table.Path);
+        var missingField = sut.GetNodes<Field>("newBranch", parent: newTable).FirstOrDefault(f => f.Id == field.Id);
         Assert.Multiple(() =>
         {
             Assert.That(commits[0], Is.EqualTo(a));
             Assert.That(commits[1], Is.EqualTo(c));
             Assert.That(commits[2], Is.EqualTo(cherryPick.CompletedCommit));
-            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Branches["newBranch"].Tip));
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
             Assert.That(missingField, Is.Null);
         });
@@ -298,15 +298,15 @@ public class CherryPickTests : DisposeArguments
 
         // Arrange
         var b = sut
-            .Update(c => c.Delete(application))
+            .Update("main", c => c.Delete(application))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         sut
-            .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
+            .Update("newBranch", c => c.CreateOrUpdate(table with { Description = newDescription }))
             .Commit(new("C", signature, signature));
 
         // Act
-        var cherryPick = sut.CherryPick(b.Sha);
+        var cherryPick = sut.CherryPick("newBranch", b.Sha);
 
         // Assert
         Assert.That(cherryPick.Status, Is.EqualTo(CherryPickStatus.Conflicts));

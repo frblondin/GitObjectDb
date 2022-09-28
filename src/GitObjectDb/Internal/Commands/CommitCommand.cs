@@ -19,25 +19,28 @@ internal class CommitCommand : ICommitCommand
                          CommitDescription description,
                          Action<ITransformation>? beforeProcessing = null)
     {
-        var tip = connection.Repository.Info.IsHeadUnborn ? null : connection.Repository.Head.Tip;
+        var branch = connection.Repository.Branches[transformationComposer.BranchName];
         var definition = transformationComposer.ApplyTransformations(connection.Repository.ObjectDatabase,
-                                                                     tip,
+                                                                     branch?.Tip,
                                                                      beforeProcessing);
         var parents = RetrieveParentsOfTheCommitBeingCreated(connection.Repository,
+                                                             branch,
                                                              description.AmendPreviousCommit,
                                                              description.MergeParent).ToList();
         return Commit(connection,
+                      transformationComposer.BranchName,
                       definition,
                       description,
                       parents,
-                      updateHead: true);
+                      updateBranchTip: true);
     }
 
     internal Commit Commit(IConnection connection,
+                           string branchName,
                            Commit predecessor,
                            IEnumerable<ApplyUpdateTreeDefinition> transformations,
                            CommitDescription description,
-                           bool updateHead = true,
+                           bool updateBranchTip = true,
                            Commit? mergeParent = null)
     {
         var modules = new ModuleCommands(predecessor.Tree);
@@ -56,17 +59,19 @@ internal class CommitCommand : ICommitCommand
             parents.Add(mergeParent);
         }
         return Commit(connection,
+                      branchName,
                       definition,
                       description,
                       parents,
-                      updateHead);
+                      updateBranchTip);
     }
 
     private Commit Commit(IConnection connection,
+                          string branchName,
                           TreeDefinition definition,
                           CommitDescription description,
                           List<Commit> parents,
-                          bool updateHead)
+                          bool updateBranchTip)
     {
         var tree = connection.Repository.ObjectDatabase.CreateTree(definition);
         var validation = _treeValidation.Invoke();
@@ -75,32 +80,37 @@ internal class CommitCommand : ICommitCommand
             description.Author, description.Committer, description.Message,
             tree,
             parents, false);
-        if (updateHead)
+        if (updateBranchTip)
         {
             var logMessage = result.BuildCommitLogMessage(description.AmendPreviousCommit,
-                                                          connection.Repository.Info.IsHeadUnborn,
                                                           parents.Count > 1);
-            connection.Repository.UpdateHeadAndTerminalReference(result, logMessage);
+            var reference = connection.Repository.Branches[branchName]?.Reference ??
+                connection.Repository.Refs.UpdateTarget("HEAD", $"refs/heads/{branchName}");
+            connection.Repository.UpdateBranchTip(reference, result, logMessage);
         }
         return result;
     }
 
     internal static List<Commit> RetrieveParentsOfTheCommitBeingCreated(IRepository repository,
+                                                                        Branch? branch,
                                                                         bool amendPreviousCommit,
                                                                         Commit? mergeParent = null)
     {
         if (amendPreviousCommit)
         {
-            return repository.Head.Tip.Parents.ToList();
+            if (branch is null)
+            {
+                throw new GitObjectDbNonExistingBranchException();
+            }
+            return branch.Tip.Parents.ToList();
         }
 
         var parents = new List<Commit>();
-        if (repository.Info.IsHeadUnborn)
+        if (branch?.Tip is not null)
         {
-            return parents;
+            parents.Add(branch.Tip);
         }
 
-        parents.Add(repository.Head.Tip);
         if (mergeParent != null)
         {
             parents.Add(mergeParent);

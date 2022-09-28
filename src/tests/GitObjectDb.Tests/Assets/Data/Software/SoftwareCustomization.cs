@@ -59,7 +59,7 @@ public class SoftwareCustomization : ICustomization
         fixture.LazyRegister(() => connection.Value.GetTables(fixture.Create<Application>()).Last());
         fixture.LazyRegister(() => connection.Value.GetFields(fixture.Create<Table>()).Last());
         fixture.LazyRegister(() => connection.Value.GetConstants(fixture.Create<Table>()).Last());
-        fixture.LazyRegister(() => connection.Value.GetResources(fixture.Create<Table>()).Last());
+        fixture.LazyRegister(() => connection.Value.GetResources("main", fixture.Create<Table>()).Last());
     }
 
     private IConnectionInternal CreateConnection(IFixture fixture, IServiceProvider serviceProvider, IDataModel model)

@@ -18,6 +18,6 @@ public record Application : Node
 
 public static class IConnectionApplicationExtensions
 {
-    public static IEnumerable<Application> GetApplications(this IConnection connection, string? committish = null) =>
-        connection.GetNodes<Application>(committish: committish);
+    public static IEnumerable<Application> GetApplications(this IConnection connection, string committish = "main") =>
+        connection.GetNodes<Application>(committish);
 }
