@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
+## 2022-10-28
+- Fix abstract derived types being added to Json type info
+- Allow same id for nodes in different parent paths
+- Make branch mandatory in all calls
+- Generate GraphQL without DTOs
+
 ## 2022-09-20
 - Completely revisited architecture: the model is no longer an immutable tree (cost, complexity), but rather a DTO-based model where queries are made by level. A proper cache mechanism with DTO being immutable does the rest
 - Resources can be embedded within the serialization payload

@@ -39,11 +39,11 @@ Here's a simple example:
     ```
 2. Manipulate objects as follows:
     ```csharp
-	var existingApplication = connection.Lookup<Application>("applications", new UniqueId(id));
+	var existingApplication = connection.Lookup<Application>("main", "applications", new UniqueId(id));
 	var newTable = new Table { ... };
 	connection
-	    .Update(c => c.CreateOrUpdate(newTable, parent: existingApplication))
-		.Commit("Added new table.", author, committer);
+	    .Update("main", c => c.CreateOrUpdate(newTable, parent: existingApplication))
+		.Commit(new("Added new table.", author, committer));
     ```
 
 # Features
@@ -60,12 +60,9 @@ var node = new SomeNode
 ... gets stored in Git as follows:
 ```json
 {
-  "Type": "Sample.SomeNode, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
-  "Node": {
-    "$id": "SomeNodes/zerzrzrz.json",
-    "id": "zerzrzrz",
-    "someProperty": "Value stored as json"
-  }
+  "$type": "Sample.SomeNode",
+  "id": "zerzrzrz",
+  "someProperty": "Value stored as json"
 }
 /*
 Value stored as raw text in same Git blob
@@ -81,12 +78,12 @@ new Resource(node, "Some/Folder", "File.txt", new Resource.Data("Value stored in
 
 ```csharp
 connection
-    .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
-    .Commit("Some message", signature, signature);
-connection.Checkout("newBranch", "HEAD~1");
+    .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
+    .Commit(new("Some message", signature, signature));
+connection.Checkout("newBranch", "main~1");
 connection
-    .Update(c => c.CreateOrUpdate(table with { Name = newName }))
-    .Commit("Another message", signature, signature);
+    .Update("main", c => c.CreateOrUpdate(table with { Name = newName }))
+    .Commit(new("Another message", signature, signature));
 ```
 
 ## History
@@ -95,7 +92,7 @@ connection
 var commits = sut.Commits
     .QueryBy(new CommitFilter
     {
-        IncludeReachableFrom = sut.Head.Tip,
+        IncludeReachableFrom = "main~10",
         SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
     })
     .Take(5)
@@ -104,7 +101,7 @@ var commits = sut.Commits
 ## Compare commits
 
 ```csharp
-var comparison = connection.Compare("HEAD~1", repository.Head.Tip.Sha);
+var comparison = connection.Compare("main~5", "main");
 var nodeChanges = comparison.Modified.OfType<Change.NodeChange>();
 ```
 
@@ -124,7 +121,7 @@ public record Client : Node
 }
 // Nodes get loaded with their references (using a shared )
 var cache = new Dictionary<DataPath, ITreeItem>();
-var order = connection.GetNodes<Order>(referenceCache: cache).First();
+var order = connection.GetNodes<Order>("main", referenceCache: cache).First();
 Console.WriteLine(order.Client.Id);
 ```
 
@@ -136,12 +133,12 @@ Console.WriteLine(order.Client.Id);
 // newBranch:   C        C---x
 
 connection
-    .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
-    .Commit("B", signature, signature);
-connection.Checkout("newBranch", "HEAD~1");
+    .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
+    .Commit(new("B", signature, signature));
+connection.Repository.Branches.Add("newBranch", "main~1");
 connection
-    .Update(c => c.CreateOrUpdate(table with { Name = newName }))
-    .Commit("C", signature, signature);
+    .Update("newBranch", c => c.CreateOrUpdate(table with { Name = newName }))
+    .Commit(new("C", signature, signature));
 
 sut.Merge(upstreamCommittish: "main");
 ```
