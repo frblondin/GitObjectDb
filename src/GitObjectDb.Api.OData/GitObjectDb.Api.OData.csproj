@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Description>Provides OData endpoints for querying GitObjectDb repository.</Description>
+    <PackageType>Dependency</PackageType>
   </PropertyGroup>
 
   <ItemGroup>

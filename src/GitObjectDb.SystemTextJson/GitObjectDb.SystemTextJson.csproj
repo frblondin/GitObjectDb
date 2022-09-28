@@ -9,6 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WarningsAsErrors />
     <Description>Provides a Json serialization based on System.Text.Json for GitObjectDb nodes.</Description>
+    <PackageType>Dependency</PackageType>
   </PropertyGroup>
 
   <ItemGroup>
