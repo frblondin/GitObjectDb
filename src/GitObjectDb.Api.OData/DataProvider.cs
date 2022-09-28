@@ -1,10 +1,9 @@
 using AutoMapper;
-using GitObjectDb.Api.Model;
+using GitObjectDb.Api.OData.Model;
 using LibGit2Sharp;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace GitObjectDb.Api;
+namespace GitObjectDb.Api.OData;
 
 /// <summary>Returns data transfer objects from collection of items returned by <see cref="IQueryAccessor"/>.</summary>
 public sealed class DataProvider
@@ -32,45 +31,22 @@ public sealed class DataProvider
     /// </summary>
     /// <typeparam name="TNode">The type of node to be queried.</typeparam>
     /// <typeparam name="TNodeDto">The type of the data transfer object of the result collection.</typeparam>
-    /// <param name="parentPath">The optional node parent path when retriving node children.</param>
     /// <param name="committish">The optional committish (head tip is used otherwise).</param>
+    /// <param name="parentPath">The optional node parent path when retriving node children.</param>
     /// <param name="isRecursive">Gets whether all nested nodes should be returned.</param>
     /// <returns>The item being found, if any.</returns>
-    public IEnumerable<TNodeDto> GetNodes<TNode, TNodeDto>(string? parentPath = null,
-                                                           string? committish = null,
+    public IEnumerable<TNodeDto> GetNodes<TNode, TNodeDto>(string committish,
+                                                           string? parentPath = null,
                                                            bool isRecursive = false)
         where TNode : Node
         where TNodeDto : NodeDto
     {
         var parent = parentPath != null ?
-            QueryAccessor.Lookup<Node>(DataPath.Parse(parentPath), committish) :
+            QueryAccessor.Lookup<Node>(committish, DataPath.Parse(parentPath)) :
             null;
-        var result = QueryAccessor.GetNodes<TNode>(parent, committish, isRecursive);
+        var result = QueryAccessor.GetNodes<TNode>(committish, parent, isRecursive);
 
         return MapItemsCached<TNode, TNodeDto>((IEnumerable<TNode>?)result, result.CommitId)!;
-    }
-
-    /// <summary>
-    /// Returns all changes that occurred between <paramref name="start"/> and
-    /// <paramref name="end"/>.
-    /// </summary>
-    /// <typeparam name="TNode">The type of node to be queried.</typeparam>
-    /// <typeparam name="TNodeDto">The type of the data transfer object of the result collection.</typeparam>
-    /// <param name="start">The start commit of comparison.</param>
-    /// <param name="end">The optional end commit of comparison.</param>
-    /// <returns>The item being found, if any.</returns>
-    public IEnumerable<DeltaDto<TNodeDto>> GetNodeDeltas<TNode, TNodeDto>(ObjectId start, ObjectId end)
-        where TNode : Node
-        where TNodeDto : NodeDto
-    {
-        var connection = QueryAccessor as IConnection ??
-            throw new GitObjectDbException("Delta can only be retrieved when the query accessor is a GitObjectDb connection.");
-        var changes = connection.Compare(start.Sha, end.Sha);
-        return from change in changes
-               where change.New is TNode || change.Old is TNode
-               let old = MapCached<TNode, TNodeDto>((TNode?)change.Old, changes.Start.Id)
-               let @new = MapCached<TNode, TNodeDto>((TNode?)change.New!, changes.End.Id)
-               select new DeltaDto<TNodeDto>(old, @new, changes.End.Id, change.New is null);
     }
 
     /// <summary>Executes a mapping from the source to a new destination object.</summary>
@@ -121,7 +97,7 @@ public sealed class DataProvider
             });
 
         IEnumerable<Node> ResolveChildren(Node p) =>
-            QueryAccessor.GetNodes<Node>(p, commitId.Sha, isRecursive: false);
+            QueryAccessor.GetNodes<Node>(commitId.Sha, p, isRecursive: false);
     }
 
     /// <summary>Executes a mapping from the source to a new destination object.</summary>

@@ -64,6 +64,7 @@ public class GitObjectDbFixture
         }
     }
 
+    [OneTimeSetUp]
     [OneTimeTearDown]
     public void DeleteTempPath() => DeleteTempPathImpl();
 

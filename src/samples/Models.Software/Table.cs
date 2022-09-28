@@ -19,6 +19,6 @@ public record Table : Node
 
 public static class IConnectionTableExtensions
 {
-    public static IEnumerable<Table> GetTables(this IConnection connection, Application application, string? committish = null) =>
-        connection.GetNodes<Table>(application, committish);
+    public static IEnumerable<Table> GetTables(this IConnection connection, Application application, string committish = "main") =>
+        connection.GetNodes<Table>(committish, application);
 }

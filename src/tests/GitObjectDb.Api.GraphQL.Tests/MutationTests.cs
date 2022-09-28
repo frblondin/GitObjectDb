@@ -14,12 +14,14 @@ public class MutationTests : QueryTestBase
         // Arrange
         var query = @"
             mutation {
+              checkout(branch: ""main"")
               createOrganizationType(node: {
                 id: ""site"", label: ""Site""
               })
             }";
         var expected = @"
             {
+              ""checkout"": ""main"",
               ""createOrganizationType"": ""Types/site.json""
             }";
 
@@ -36,6 +38,7 @@ public class MutationTests : QueryTestBase
         // Arrange
         var query = @"
             mutation {
+              checkout(branch: ""main"")
               createSite: createOrganizationType(node: {
                 id: ""site"", label: ""Site""
               })
@@ -47,6 +50,7 @@ public class MutationTests : QueryTestBase
             }";
         var expected = @$"
             {{
+              ""checkout"": ""main"",
               ""createSite"": ""Types/site.json"",
               ""initialCommit"": ""{Commit}""
             }}";
@@ -64,6 +68,7 @@ public class MutationTests : QueryTestBase
         // Arrange
         var query = @"
             mutation {
+              checkout(branch: ""main"")
               createSite: createOrganizationType(node: {
                 id: ""site"", label: ""Site""
               })
@@ -81,6 +86,7 @@ public class MutationTests : QueryTestBase
             }";
         var expected = @$"
             {{
+              ""checkout"": ""main"",
               ""createSite"": ""Types/site.json"",
               ""siteX"": ""Organizations/siteX/siteX.json"",
               ""initialCommit"": ""{Commit}""
@@ -90,8 +96,8 @@ public class MutationTests : QueryTestBase
         await AssertQuerySuccessAsync(query, expected);
 
         // Assert
-        var type = Connection.GetNodes<OrganizationType>().Single();
-        var organization = Connection.GetNodes<Organization>().Single();
+        var type = Connection.GetNodes<OrganizationType>("main").Single();
+        var organization = Connection.GetNodes<Organization>("main").Single();
         Assert.That(organization, Has.Property(nameof(Organization.Type)).SameAs(type));
     }
 }

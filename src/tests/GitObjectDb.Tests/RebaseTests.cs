@@ -23,24 +23,24 @@ public class RebaseTests : DisposeArguments
         // Arrange
         var a = sut.Repository.Head.Tip;
         var b = sut
-            .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
+            .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         sut
-            .Update(c => c.CreateOrUpdate(table with { Name = newName }))
+            .Update("newBranch", c => c.CreateOrUpdate(table with { Name = newName }))
             .Commit(new("C", signature, signature));
 
         // Act
-        var rebase = sut.Rebase(upstreamCommittish: "main");
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         var commitFilter = new CommitFilter
         {
-            IncludeReachableFrom = sut.Repository.Head.Tip,
+            IncludeReachableFrom = sut.Repository.Branches["newBranch"].Tip,
             SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
         };
         var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
-        var newTable = sut.Lookup<Table>(table.Path);
+        var newTable = sut.Lookup<Table>("newBranch", table.Path);
         Assert.Multiple(() =>
         {
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
@@ -48,7 +48,7 @@ public class RebaseTests : DisposeArguments
             Assert.That(commits[0], Is.EqualTo(a));
             Assert.That(commits[1], Is.EqualTo(b));
             Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
-            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Branches["newBranch"].Tip));
             Assert.That(newTable.Name, Is.EqualTo(newName));
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
         });
@@ -64,15 +64,15 @@ public class RebaseTests : DisposeArguments
 
         // Arrange
         sut
-            .Update(c => c.CreateOrUpdate(table with { Description = bValue }))
+            .Update("main", c => c.CreateOrUpdate(table with { Description = bValue }))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         sut
-            .Update(c => c.CreateOrUpdate(table with { Description = cValue }))
+            .Update("newBranch", c => c.CreateOrUpdate(table with { Description = cValue }))
             .Commit(new("C", signature, signature));
 
         // Act
-        var rebase = sut.Rebase(upstreamCommittish: "main");
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
@@ -102,7 +102,7 @@ public class RebaseTests : DisposeArguments
         Assert.That(rebase.Continue(), Is.EqualTo(RebaseStatus.Complete));
 
         // Assert
-        var newTable = sut.Lookup<Table>(table.Path);
+        var newTable = sut.Lookup<Table>("newBranch", table.Path);
         Assert.That(newTable.Description, Is.EqualTo("resolved"));
     }
 
@@ -116,11 +116,11 @@ public class RebaseTests : DisposeArguments
 
         // Arrange
         sut
-            .Update(c => c.Delete(parentTable))
+            .Update("main", c => c.Delete(parentTable))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         sut
-            .Update(c =>
+            .Update("newBranch", c =>
             {
                 c.CreateOrUpdate(field with { Description = newDescription });
                 c.CreateOrUpdate(parentApplication with { Name = newName });
@@ -128,7 +128,7 @@ public class RebaseTests : DisposeArguments
             .Commit(new("C", signature, signature));
 
         // Act
-        var rebase = sut.Rebase(upstreamCommittish: "main");
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         var conflict = rebase.CurrentChanges.Single(c => c.Status == ItemMergeStatus.TreeConflict);
@@ -147,7 +147,7 @@ public class RebaseTests : DisposeArguments
         Assert.That(rebase.Continue(), Is.EqualTo(RebaseStatus.Complete));
 
         // Assert
-        var newApplication = sut.Lookup<Application>(parentApplication.Path);
+        var newApplication = sut.Lookup<Application>("newBranch", parentApplication.Path);
         Assert.That(newApplication.Name, Is.EqualTo(newName));
     }
 
@@ -162,12 +162,12 @@ public class RebaseTests : DisposeArguments
         // Arrange
         var a = sut.Repository.Head.Tip;
         var b = sut
-            .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
+            .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         var newFieldId = UniqueId.CreateNew();
         sut
-            .Update(c => c.CreateOrUpdate(new Field
+            .Update("newBranch", c => c.CreateOrUpdate(new Field
             {
                 Id = newFieldId,
                 A = fixture.Create<NestedA[]>(),
@@ -176,17 +176,17 @@ public class RebaseTests : DisposeArguments
             .Commit(new("C", signature, signature));
 
         // Act
-        var rebase = sut.Rebase(upstreamCommittish: "main");
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         var commitFilter = new CommitFilter
         {
-            IncludeReachableFrom = sut.Repository.Head.Tip,
+            IncludeReachableFrom = "newBranch",
             SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
         };
         var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
-        var newTable = sut.Lookup<Table>(table.Path);
-        var newField = sut.GetNodes<Field>(newTable).FirstOrDefault(f => f.Id == newFieldId);
+        var newTable = sut.Lookup<Table>("newBranch", table.Path);
+        var newField = sut.GetNodes<Field>("newBranch", parent: newTable).FirstOrDefault(f => f.Id == newFieldId);
         Assert.Multiple(() =>
         {
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
@@ -194,7 +194,7 @@ public class RebaseTests : DisposeArguments
             Assert.That(commits[0], Is.EqualTo(a));
             Assert.That(commits[1], Is.EqualTo(b));
             Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
-            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Branches["newBranch"].Tip));
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
             Assert.That(newField, Is.Not.Null);
         });
@@ -210,12 +210,12 @@ public class RebaseTests : DisposeArguments
 
         // Arrange
         sut
-            .Update(c => c.Delete(table))
+            .Update("main", c => c.Delete(table))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         var newFieldId = UniqueId.CreateNew();
         sut
-            .Update(c => c.CreateOrUpdate(new Field
+            .Update("newBranch", c => c.CreateOrUpdate(new Field
             {
                 Id = newFieldId,
                 A = fixture.Create<NestedA[]>(),
@@ -224,7 +224,7 @@ public class RebaseTests : DisposeArguments
             .Commit(new("C", signature, signature));
 
         // Act
-        var rebase = sut.Rebase(upstreamCommittish: "main");
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         Assert.Multiple(() =>
@@ -258,25 +258,25 @@ public class RebaseTests : DisposeArguments
         // Arrange
         var a = sut.Repository.Head.Tip;
         var b = sut
-            .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
+            .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         sut
-            .Update(c => c.Delete(field))
+            .Update("newBranch", c => c.Delete(field))
             .Commit(new("C", signature, signature));
 
         // Act
-        var rebase = sut.Rebase(upstreamCommittish: "main");
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         var commitFilter = new CommitFilter
         {
-            IncludeReachableFrom = sut.Repository.Head.Tip,
+            IncludeReachableFrom = sut.Repository.Branches["newBranch"].Tip,
             SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
         };
         var commits = sut.Repository.Commits.QueryBy(commitFilter).ToList();
-        var newTable = sut.Lookup<Table>(table.Path);
-        var missingField = sut.GetNodes<Field>(newTable).FirstOrDefault(f => f.Id == field.Id);
+        var newTable = sut.Lookup<Table>("newBranch", table.Path);
+        var missingField = sut.GetNodes<Field>("newBranch", parent: newTable).FirstOrDefault(f => f.Id == field.Id);
         Assert.Multiple(() =>
         {
             Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Complete));
@@ -284,7 +284,7 @@ public class RebaseTests : DisposeArguments
             Assert.That(commits[0], Is.EqualTo(a));
             Assert.That(commits[1], Is.EqualTo(b));
             Assert.That(commits[2], Is.EqualTo(rebase.CompletedCommits[0]));
-            Assert.That(commits[2], Is.EqualTo(sut.Repository.Head.Tip));
+            Assert.That(commits[2], Is.EqualTo(sut.Repository.Branches["newBranch"].Tip));
             Assert.That(newTable.Description, Is.EqualTo(newDescription));
             Assert.That(missingField, Is.Null);
         });
@@ -300,15 +300,15 @@ public class RebaseTests : DisposeArguments
 
         // Arrange
         sut
-            .Update(c => c.CreateOrUpdate(field with { Description = newDescription }))
+            .Update("main", c => c.CreateOrUpdate(field with { Description = newDescription }))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         sut
-            .Update(c => c.Delete(table))
+            .Update("newBranch", c => c.Delete(table))
             .Commit(new("C", signature, signature));
 
         // Act
-        var rebase = sut.Rebase(upstreamCommittish: "main");
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         var conflicts = rebase.CurrentChanges.Where(c => c.Status == ItemMergeStatus.TreeConflict).ToList();

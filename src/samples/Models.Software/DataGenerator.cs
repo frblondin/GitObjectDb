@@ -42,7 +42,7 @@ public class DataGenerator
     {
         Table? firstTable = default;
         var fixture = new Fixture();
-        var transformations = Connection.Update(CreateApplications);
+        var transformations = Connection.Update("main", CreateApplications);
         transformations.Commit(new(commitMessage, signature, signature));
 
         void CreateApplications(ITransformationComposer composer)
@@ -119,6 +119,6 @@ public class DataGenerator
         Application PickFirstApplication() => fixture.Create<IConnection>().GetApplications().Last();
         Table PickRandomTable() => fixture.Create<IConnection>().GetTables(PickFirstApplication()).Last();
         Field PickRandomField() => fixture.Create<IConnection>().GetFields(PickRandomTable()).Last();
-        Resource PickRandomResource() => fixture.Create<IConnection>().GetResources(PickRandomTable()).Last();
+        Resource PickRandomResource() => fixture.Create<IConnection>().GetResources("main", PickRandomTable()).Last();
     }
 }

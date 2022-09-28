@@ -62,6 +62,7 @@ namespace GitObjectDb.Api.GraphQL.Tests {
         
         /// <summary>
         ///   Looks up a localized string similar to mutation {
+        ///  checkout(branch: &quot;main&quot;)
         ///  siteType: createOrganizationType(node: {
         ///    id: &quot;site&quot;, label: &quot;Site&quot;
         ///  })
@@ -77,9 +78,7 @@ namespace GitObjectDb.Api.GraphQL.Tests {
         ///    label: &quot;Site X&quot;
         ///    type: &quot;Types/site.json&quot;
         ///    timeZone: &quot;UTC;0;(UTC) Coordinated Universal Time;Coordinated Universal Time;Coordinated Universal Time;;&quot;
-        ///  })
-        ///  
-        ///  na: createOrganizat [rest of string was truncated]&quot;;.
+        ///  } [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateData {
             get {

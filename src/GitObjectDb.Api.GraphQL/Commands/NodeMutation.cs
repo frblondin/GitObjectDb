@@ -1,12 +1,12 @@
 using Fasterflect;
 using GitObjectDb.Api.GraphQL.GraphModel;
 using GitObjectDb.Api.GraphQL.Tools;
-using GitObjectDb.Api.Model;
 using GitObjectDb.Model;
 using GraphQL;
 using GraphQL.Execution;
 using GraphQLParser.AST;
 using LibGit2Sharp;
+using Models.Organization;
 using System.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.Commands;
@@ -14,31 +14,37 @@ internal static partial class NodeMutation
 {
     private const string NodeMutationVariableName = $"${nameof(NodeMutation)}";
 
-    internal static Func<IResolveFieldContext<object?>, object?> CreateAddOrUpdate(DataTransferTypeDescription description)
+    internal static Func<IResolveFieldContext<object?>, object?> CreateAddOrUpdate(NodeTypeDescription description)
     {
-        var method = ExpressionReflector.GetMethod(() => AddOrUpdate<Node, NodeDto>(default!), returnGenericDefinition: true);
+        var method = ExpressionReflector.GetMethod(() => AddOrUpdate<Node>(default!), returnGenericDefinition: true);
         return new(
-            method.MakeGenericMethod(description.NodeType.Type, description.DtoType)
+            method.MakeGenericMethod(description.Type)
             .CreateDelegate<Func<IResolveFieldContext<object?>, object?>>());
     }
 
-    internal static string AddOrUpdate<TNode, TNodeDto>(IResolveFieldContext<object?> context)
+    internal static string Checkout(IResolveFieldContext<object?> context)
+    {
+        var branch = context.GetArgument<string>(GitObjectDbMutation.BranchArgument);
+        GetCurrentContext(context).BranchName = branch;
+        return branch;
+    }
+
+    internal static DataPath AddOrUpdate<TNode>(IResolveFieldContext<object?> context)
         where TNode : Node
-        where TNodeDto : NodeDto
     {
         var mutationContext = Context.Current.Value = GetCurrentContext(context);
 
         try
         {
-            var node = GetNodeArgument<TNode, TNodeDto>(context, mutationContext);
-            var fileExtension = mutationContext.DataProvider.QueryAccessor.Serializer.FileExtension;
+            var node = GetNodeArgument<TNode>(context, mutationContext);
+            var fileExtension = mutationContext.QueryAccessor.Serializer.FileExtension;
             var parentPath = node.Path!.IsRootNode ? default : node.Path!.GetParentNode(fileExtension);
             var result = mutationContext.Transformations.CreateOrUpdate(node, parentPath);
 
             mutationContext.ModifiedNodesByPath[result.Path!] = result;
             mutationContext.ModifiedNodesById[result.Id!] = result;
 
-            return result.Path!.FilePath;
+            return result.Path!;
         }
         catch
         {
@@ -51,14 +57,14 @@ internal static partial class NodeMutation
         }
     }
 
-    internal static string Delete(IResolveFieldContext<object?> context)
+    internal static DataPath Delete(IResolveFieldContext<object?> context)
     {
         var mutationContext = GetCurrentContext(context);
 
         try
         {
-            var path = context.GetArgument<string>(GitObjectDbMutation.PathArgument);
-            mutationContext.Transformations.Delete(DataPath.Parse(path));
+            var path = context.GetArgument<DataPath>(GitObjectDbMutation.PathArgument);
+            mutationContext.Transformations.Delete(path);
 
             return path;
         }
@@ -69,19 +75,19 @@ internal static partial class NodeMutation
         }
     }
 
-    internal static object? Commit(IResolveFieldContext<object?> context)
+    internal static ObjectId Commit(IResolveFieldContext<object?> context)
     {
         var mutationContext = GetCurrentContext(context);
         try
         {
-            var signature = CreateSignature(context);
             var message = context.GetArgument<string>(GitObjectDbMutation.MessageArgument);
+            var signature = CreateSignature(context);
             var commit = mutationContext.Transformations.Commit(new(message, signature, signature));
-            return commit.Id.Sha;
+            return commit.Id;
         }
         finally
         {
-            ResetCurrentContext(context);
+            mutationContext.Reset();
         }
     }
 
@@ -100,17 +106,10 @@ internal static partial class NodeMutation
         return result;
     }
 
-    private static void ResetCurrentContext(IResolveFieldContext context)
-    {
-        context.UserContext.Remove(NodeMutationVariableName);
-    }
-
-    private static TNode GetNodeArgument<TNode, TNodeDto>(IResolveFieldContext context, Context mutationContext)
+    private static TNode GetNodeArgument<TNode>(IResolveFieldContext context, Context mutationContext)
         where TNode : Node
-        where TNodeDto : NodeDto
     {
-        var dto = context.GetArgument<TNodeDto>(GitObjectDbMutation.NodeArgument);
-        var @new = mutationContext.Mapper.Map<TNode>(dto)!;
+        var @new = context.GetArgument<TNode>(GitObjectDbMutation.NodeArgument);
         @new.Path = GetPath(@new, mutationContext.Connection.Model, context, mutationContext);
         var existing = (TNode?)mutationContext.TryResolve(@new.Path);
         return Merge(existing, @new, GetModifiedMembers(context));
@@ -123,16 +122,16 @@ internal static partial class NodeMutation
         {
             return node.Path;
         }
-        var fileExtension = mutationContext.DataProvider.QueryAccessor.Serializer.FileExtension;
-        var parentPath = context.GetArgument<string?>(GitObjectDbMutation.ParentPathArgument, default);
+        var fileExtension = mutationContext.QueryAccessor.Serializer.FileExtension;
+        var parentPath = context.GetArgument<DataPath?>(GitObjectDbMutation.ParentPathArgument, default);
         if (parentPath is not null)
         {
-            return DataPath.Parse(parentPath).AddChild(node.Id, typeof(TNode), model, fileExtension);
+            return parentPath.AddChild(node.Id, typeof(TNode), model, fileExtension);
         }
-        var parentId = context.GetArgument<string?>(GitObjectDbMutation.ParentIdArgument, default);
-        if (parentId is not null)
+        var parentId = context.GetArgument<UniqueId?>(GitObjectDbMutation.ParentIdArgument, default);
+        if (parentId.HasValue)
         {
-            var parent = mutationContext.TryResolve(new UniqueId(parentId))?.Path ??
+            var parent = mutationContext.TryResolve(parentId.Value)?.Path ??
                 throw new RequestError($"Parent {parentId} could not be found from its identifier.");
             return parent!.AddChild(node.Id, typeof(TNode), model, fileExtension);
         }

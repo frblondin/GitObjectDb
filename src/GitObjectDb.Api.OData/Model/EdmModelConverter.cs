@@ -1,5 +1,3 @@
-using GitObjectDb.Api.Model;
-using GitObjectDb.Model;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
 using System.Reflection;

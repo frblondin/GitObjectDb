@@ -55,12 +55,12 @@ public class QueryTestBase<TDocumentBuilder>
             .AddOrganizationModel()
             .AddMemoryCache()
             .AddGitObjectDb(c => c.AddSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter())))
-            .AddGitObjectDbApi()
-            .AddGitObjectDbGraphQL(builder =>
+            .AddGitObjectDbGraphQLSchema(builder =>
             {
                 builder.Schema.RegisterTypeMapping<TimeZoneInfo, TimeZoneInfoGraphType>();
                 builder.CacheEntryStrategy = e => e.SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1));
             })
+            .AddGraphQL(builder => builder.AddSystemTextJson())
             .AddGitObjectDbConnection(UniqueId.CreateNew().ToString())
             .BuildServiceProvider();
         Schema = (GitObjectDbSchema)ServiceProvider.GetRequiredService<ISchema>();
@@ -101,10 +101,10 @@ public class QueryTestBase<TDocumentBuilder>
                                       variables,
                                       root,
                                       userContext,
-                                      cancellationToken,
                                       rules,
                                       null,
-                                      nameConverter);
+                                      nameConverter,
+                                      cancellationToken);
     }
 
     protected async Task<ExecutionResult> AssertQueryAsync(
@@ -113,10 +113,10 @@ public class QueryTestBase<TDocumentBuilder>
         Inputs? variables = null,
         object? root = null,
         IDictionary<string, object?>? userContext = null,
-        CancellationToken? cancellationToken = default,
         IEnumerable<IValidationRule>? rules = null,
         Func<UnhandledExceptionContext, Task>? unhandledExceptionDelegate = null,
-        INameConverter? nameConverter = null)
+        INameConverter? nameConverter = null,
+        CancellationToken? cancellationToken = default)
     {
         var schema = Schema;
         schema.NameConverter = nameConverter ?? CamelCaseNameConverter.Instance;
@@ -157,6 +157,10 @@ public class QueryTestBase<TDocumentBuilder>
             Assert.That(writtenResult,
                         Does.Match(expectedResult.Replace(Commit, @"\w+")),
                         () => additionalInfo);
+        }
+        else if (runResult.Errors?.Any() ?? false)
+        {
+            throw new ExecutionError(string.Join('\n', runResult.Errors!.Select(e => e.Message)));
         }
 
         return runResult;

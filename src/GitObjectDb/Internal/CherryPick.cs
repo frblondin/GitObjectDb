@@ -22,9 +22,9 @@ internal sealed class CherryPick : ICherryPick
                       IMergeComparer mergeComparer,
                       CommitCommand commitCommand,
                       IConnectionInternal connection,
+                      string branchName,
                       string committish,
                       Signature? committer,
-                      Branch? branch = null,
                       CherryPickPolicy? policy = null)
     {
         _comparer = comparer;
@@ -32,7 +32,7 @@ internal sealed class CherryPick : ICherryPick
         _commitCommand = commitCommand;
         _connection = connection;
         _committer = committer;
-        Branch = branch ?? connection.Repository.Head;
+        Branch = connection.Repository.Branches[branchName] ?? throw new GitObjectDbNonExistingBranchException();
         UpstreamCommit = connection.FindUpstreamCommit(committish, Branch);
         Policy = policy ?? new CherryPickPolicy(connection.Model.DefaultComparisonPolicy);
 
@@ -98,18 +98,19 @@ internal sealed class CherryPick : ICherryPick
 
     private void CommitChangesImpl()
     {
-        // If last commit, update head so it points to the new commit
+        // If last commit, update tip so it points to the new commit
         CompletedCommit = _commitCommand.Commit(
             _connection,
+            Branch.FriendlyName,
             Branch.Tip,
             CurrentChanges.Select(c =>
                 (ApplyUpdateTreeDefinition)((refTree, modules, serializer, database, treeDefinition) =>
                 c.Transform(database, treeDefinition, refTree, modules, serializer))),
             new(UpstreamCommit.Message, UpstreamCommit.Author, _committer ?? UpstreamCommit.Committer),
-            updateHead: false);
+            updateBranchTip: false);
 
         // Update tip
-        var logMessage = CompletedCommit.BuildCommitLogMessage(false, false, false);
-        _connection.Repository.UpdateTerminalReference(Branch.Reference, CompletedCommit, logMessage);
+        var logMessage = CompletedCommit.BuildCommitLogMessage(false, false);
+        _connection.Repository.UpdateBranchTip(Branch.Reference, CompletedCommit, logMessage);
     }
 }

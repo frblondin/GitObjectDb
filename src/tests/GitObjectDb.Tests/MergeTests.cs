@@ -21,20 +21,20 @@ public class MergeTests : DisposeArguments
 
         // Arrange
         var b = sut
-            .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
+            .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         var c = sut
-            .Update(c => c.CreateOrUpdate(table with { Name = newName }))
+            .Update("newBranch", c => c.CreateOrUpdate(table with { Name = newName }))
             .Commit(new("C", signature, signature));
 
         // Act
-        var merge = sut.Merge(upstreamCommittish: "main");
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
 
         // Assert
         var mergeCommit = merge.Commit(signature, signature);
         var parents = mergeCommit.Parents.ToList();
-        var newTable = sut.Lookup<Table>(table.Path);
+        var newTable = sut.Lookup<Table>("newBranch", table.Path);
         Assert.Multiple(() =>
         {
             Assert.That(merge.Status, Is.EqualTo(MergeStatus.NonFastForward));
@@ -57,12 +57,12 @@ public class MergeTests : DisposeArguments
 
         // Arrange
         var b = sut
-            .Update(c => c.CreateOrUpdate(table with { Description = newDescription }))
+            .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
 
         // Act
-        var merge = sut.Merge(upstreamCommittish: "main");
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
 
         // Assert
         Assert.Multiple(() =>
@@ -73,7 +73,7 @@ public class MergeTests : DisposeArguments
         var mergeCommit = merge.Commit(signature, signature);
         Assert.That(mergeCommit, Is.EqualTo(b));
 
-        var newTable = sut.Lookup<Table>(table.Path);
+        var newTable = sut.Lookup<Table>("newBranch", table.Path);
         Assert.That(newTable.Description, Is.EqualTo(newDescription));
     }
 
@@ -88,15 +88,15 @@ public class MergeTests : DisposeArguments
         // Arrange
         var oldValue = table.Description;
         sut
-            .Update(c => c.CreateOrUpdate(table with { Description = bValue }))
+            .Update("main", c => c.CreateOrUpdate(table with { Description = bValue }))
             .Commit(new("B", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         sut
-            .Update(c => c.CreateOrUpdate(table with { Description = cValue }))
+            .Update("newBranch", c => c.CreateOrUpdate(table with { Description = cValue }))
             .Commit(new("C", signature, signature));
 
         // Act
-        var merge = sut.Merge(upstreamCommittish: "main");
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
 
         // Assert
         Assert.That(merge.Status, Is.EqualTo(MergeStatus.Conflicts));
@@ -125,7 +125,7 @@ public class MergeTests : DisposeArguments
         merge.Commit(signature, signature);
 
         // Assert
-        var newTable = sut.Lookup<Table>(table.Path);
+        var newTable = sut.Lookup<Table>("newBranch", table.Path);
         Assert.That(newTable.Description, Is.EqualTo("resolved"));
     }
 
@@ -139,19 +139,19 @@ public class MergeTests : DisposeArguments
 
         // Arrange
         sut
-            .Update(c =>
+            .Update("main", c =>
             {
                 c.CreateOrUpdate(field with { Description = newDescription });
                 c.CreateOrUpdate(parentApplication);
             })
             .Commit(new("C", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         sut
-            .Update(c => c.Delete(parentTable.Path))
+            .Update("newBranch", c => c.Delete(parentTable.Path))
             .Commit(new("B", signature, signature));
 
         // Act
-        var merge = sut.Merge(upstreamCommittish: "main");
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
 
         // Assert
         var conflict = merge.CurrentChanges.Single(c => c.Status == ItemMergeStatus.TreeConflict);
@@ -184,15 +184,15 @@ public class MergeTests : DisposeArguments
 
         // Arrange
         sut
-            .Update(c => c.Delete(parentApplication.Path))
+            .Update("main", c => c.Delete(parentApplication.Path))
             .Commit(new("C", signature, signature));
-        sut.Checkout("newBranch", "HEAD~1");
+        sut.Repository.Branches.Add("newBranch", "main~1");
         sut
-            .Update(c => c.CreateOrUpdate(new Field { }, parentTable))
+            .Update("newBranch", c => c.CreateOrUpdate(new Field { }, parentTable))
             .Commit(new("B", signature, signature));
 
         // Act
-        var merge = sut.Merge(upstreamCommittish: "main");
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
 
         // Assert
         int expectedchangeCount =

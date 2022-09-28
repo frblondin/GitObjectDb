@@ -33,7 +33,7 @@ public class DataGenerator
         var random = new Random();
         var types = new List<OrganizationType>();
         var ids = new HashSet<UniqueId>();
-        var transformations = Connection.Update(CreateData);
+        var transformations = Connection.Update("main", CreateData);
         var signature = CreateSignature();
         transformations.Commit(new("Initial commit", signature, signature));
 
@@ -114,13 +114,13 @@ public class DataGenerator
 
     public void UpdateRandomNodes(int nodeCount, Func<Organization, Organization> update, string commitMessage)
     {
-        var transformations = Connection.Update(UpdateData);
+        var transformations = Connection.Update("main", UpdateData);
         var signature = CreateSignature();
         transformations.Commit(new(commitMessage, signature, signature));
 
         void UpdateData(ITransformationComposer composer)
         {
-            var nodes = Connection.GetNodes<Organization>(isRecursive: true).ToList();
+            var nodes = Connection.GetNodes<Organization>("main", isRecursive: true).ToList();
             var random = new Random();
             for (int i = 0; i < nodeCount; i++)
             {

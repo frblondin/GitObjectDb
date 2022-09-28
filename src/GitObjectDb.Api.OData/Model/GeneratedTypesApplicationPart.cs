@@ -1,4 +1,3 @@
-using GitObjectDb.Api.Model;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using System.Reflection;
 using System.Reflection.Emit;

@@ -19,7 +19,7 @@ public partial class NodeSerializerTests
         // Arrange
         var sut = CreateRepository(serviceProvider);
         DataPath path = default;
-        sut.Update(c =>
+        sut.Update("main", c =>
         {
             var node1 = c.CreateOrUpdate(new NodeWithReference { Name = name });
             var node2 = c.CreateOrUpdate(new NodeWithReference { Reference = node1 });
@@ -27,7 +27,7 @@ public partial class NodeSerializerTests
         }).Commit(new("foo", signature, signature));
 
         // Act
-        var result = sut.Lookup<NodeWithReference>(path);
+        var result = sut.Lookup<NodeWithReference>("main", path);
 
         // Act, Assert
         Assert.Multiple(() =>
@@ -44,7 +44,7 @@ public partial class NodeSerializerTests
         // Arrange
         var sut = CreateRepository(serviceProvider);
         DataPath path = default;
-        sut.Update(c =>
+        sut.Update("main", c =>
         {
             var node1 = c.CreateOrUpdate(new NodeWithReference { Name = name });
             var node2 = c.CreateOrUpdate(new NodeWithReference { Reference = node1 });
@@ -53,7 +53,7 @@ public partial class NodeSerializerTests
         }).Commit(new("foo", signature, signature));
 
         // Act
-        var result = sut.Lookup<NodeWithReference>(path);
+        var result = sut.Lookup<NodeWithReference>("main", path);
 
         // Act, Assert
         Assert.Multiple(() =>
@@ -70,7 +70,7 @@ public partial class NodeSerializerTests
         // Arrange
         var sut = CreateRepository(serviceProvider);
         DataPath path = default;
-        sut.Update(c =>
+        sut.Update("main", c =>
         {
             var node1 = c.CreateOrUpdate(new NodeWithMultipleReference { Name = name1 });
             var node2 = c.CreateOrUpdate(new NodeWithMultipleReference { Name = name2 });
@@ -82,7 +82,7 @@ public partial class NodeSerializerTests
         }).Commit(new("foo", signature, signature));
 
         // Act
-        var result = sut.Lookup<NodeWithMultipleReference>(path);
+        var result = sut.Lookup<NodeWithMultipleReference>("main", path);
 
         // Act, Assert
         Assert.Multiple(() =>

@@ -2,7 +2,7 @@ using NUnit.Framework;
 using System;
 using System.Linq;
 
-namespace GitObjectDb.Api.Tests;
+namespace GitObjectDb.Api.OData.Tests;
 
 public abstract class DisposeArguments
 {

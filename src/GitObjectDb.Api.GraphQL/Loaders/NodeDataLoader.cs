@@ -1,34 +1,38 @@
 using GitObjectDb.Api.GraphQL.GraphModel;
 using GitObjectDb.Api.GraphQL.Tools;
-using GitObjectDb.Api.Model;
 using GraphQL;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
+using Models.Organization;
 
 namespace GitObjectDb.Api.GraphQL.Loaders;
 
-internal class NodeDataLoader<TNode, TNodeDto> : GitObjectDbDataLoaderBase<NodeDataLoaderKey, IEnumerable<object?>>
+internal class NodeDataLoader<TNode> : GitObjectDbDataLoaderBase<NodeDataLoaderKey, IEnumerable<Node>>
     where TNode : Node
-    where TNodeDto : NodeDto
 {
-    private readonly DataProvider _dataProvider;
+    private readonly IQueryAccessor _queryAccessor;
 
-    public NodeDataLoader(DataProvider dataProvider, IMemoryCache memoryCache, CacheEntryStrategyProvider cacheStrategy)
+    public NodeDataLoader(IQueryAccessor queryAccessor, IMemoryCache memoryCache, CacheEntryStrategyProvider cacheStrategy)
         : base(memoryCache, cacheStrategy)
     {
-        _dataProvider = dataProvider;
+        _queryAccessor = queryAccessor;
     }
 
-    protected override IEnumerable<object?> Fetch(ICacheEntry cacheEntry, NodeDataLoaderKey key)
+    protected override IEnumerable<TNode> Fetch(ICacheEntry cacheEntry, NodeDataLoaderKey key)
     {
-        var result = _dataProvider.GetNodes<TNode, TNodeDto>(key.ParentPath, key.CommitId.Sha, key.IsRecursive);
-
-        if (key.Id is not null)
+        if (key.Id.HasValue)
         {
-            result = result.Where(x => x.Id == key.Id);
+            var node = _queryAccessor.Lookup<TNode>(key.CommitId.Sha, key.Id.Value);
+            return node is null ? Array.Empty<TNode>() : new[] { node };
         }
-
-        return result.ToList();
+        else
+        {
+            var parent = key.ParentPath is not null ?
+                _queryAccessor.Lookup<Node>(key.CommitId.Sha, key.ParentPath) :
+                null;
+            var result = _queryAccessor.GetNodes<TNode>(key.CommitId.Sha, parent, key.IsRecursive);
+            return result.ToList();
+        }
     }
 }
 
@@ -36,20 +40,20 @@ internal record NodeDataLoaderKey
 {
     internal NodeDataLoaderKey(IResolveFieldContext context)
     {
-        ParentNode = context.Source is NodeDto dto ? dto.Node : null;
-        ParentPath = ParentNode?.Path?.FilePath ?? context.GetArgument(GitObjectDbQuery.ParentPathArgument, default(string?));
+        ParentNode = context.Source as Node;
+        ParentPath = ParentNode?.Path ?? context.GetArgument(GitObjectDbQuery.ParentPathArgument, default(DataPath?));
         CommitId = context.GetCommitId();
         IsRecursive = context.GetArgumentFromParentContexts(GitObjectDbQuery.IsRecursiveArgument, false);
-        Id = context.GetArgument(GitObjectDbQuery.IdArgument, default(string?));
+        Id = context.GetArgument(GitObjectDbQuery.IdArgument, default(UniqueId?));
     }
 
     public Node? ParentNode { get; }
 
-    public string? ParentPath { get; }
+    public DataPath? ParentPath { get; }
 
     public ObjectId CommitId { get; }
 
     public bool IsRecursive { get; }
 
-    public string? Id { get; }
+    public UniqueId? Id { get; }
 }

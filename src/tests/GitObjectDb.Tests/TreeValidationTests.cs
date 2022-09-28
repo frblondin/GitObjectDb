@@ -17,7 +17,7 @@ public class TreeValidationTests
     {
         // Act
         var composer = (TransformationComposer)connection
-            .Update(c =>
+            .Update("main", c =>
             {
                 c.Delete(application);
                 c.CreateOrUpdate(new Field { }, table);
@@ -35,7 +35,8 @@ public class TreeValidationTests
     {
         // Act
         var composer = (TransformationComposer)connection
-            .Update(c => c.CreateOrUpdate(new Field { Path = new DataPath("InvalidFolder", "invalidfile.json", true) }));
+            .Update("main",
+                    c => c.CreateOrUpdate(new Field { Path = new DataPath("InvalidFolder", "invalidfile.json", true) }));
         var tree = UpdateTree(connection, composer);
 
         // Assert
@@ -49,12 +50,12 @@ public class TreeValidationTests
     {
         // Arrange, delete parent
         connection
-            .Update(c => c.Delete(application))
+            .Update("main", c => c.Delete(application))
             .Commit(new(message, signature, signature));
 
         // Act, edit child
         var composer = (TransformationComposer)connection
-            .Update(c => c.CreateOrUpdate(field));
+            .Update("main", c => c.CreateOrUpdate(field));
         var tree = UpdateTree(connection, composer);
 
         // Assert
@@ -68,7 +69,7 @@ public class TreeValidationTests
     {
         // Act
         var composer = (TransformationComposer)connection
-            .Update(c => c.CreateOrUpdate(new Application { Id = field.Id }));
+            .Update("main", c => c.CreateOrUpdate(new Application { Id = field.Id }));
         var tree = UpdateTree(connection, composer);
 
         // Assert

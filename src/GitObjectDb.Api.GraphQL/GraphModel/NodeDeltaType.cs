@@ -1,11 +1,13 @@
+using GitObjectDb.Api.GraphQL.Model;
 using GitObjectDb.Api.GraphQL.Tools;
-using GitObjectDb.Api.Model;
 using GraphQL.Types;
+using Models.Organization;
 using Namotion.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
 
-internal class NodeDeltaType<TNode, TNodeDto> : ObjectGraphType<DeltaDto<TNodeDto>>, INodeDeltaType
+internal class NodeDeltaType<TNode> : ObjectGraphType<DeltaDto<TNode>>, INodeDeltaType
+    where TNode : Node
 {
     public NodeDeltaType()
     {
@@ -13,20 +15,20 @@ internal class NodeDeltaType<TNode, TNodeDto> : ObjectGraphType<DeltaDto<TNodeDt
         Name = $"{typeName}Delta";
         Description = $"Represents changes for {typeName}.";
 
-        var updatedAtProperty = ExpressionReflector.GetProperty<DeltaDto<TNodeDto>>(d => d.UpdatedAt);
-        Field<StringGraphType>(updatedAtProperty.Name)
+        var updatedAtProperty = ExpressionReflector.GetProperty<DeltaDto<TNode>>(d => d.UpdatedAt);
+        Field<ObjectIdGraphType>(updatedAtProperty.Name)
             .Description(updatedAtProperty.GetXmlDocsSummary(false));
 
-        var deletedProperty = ExpressionReflector.GetProperty<DeltaDto<TNodeDto>>(d => d.Deleted);
+        var deletedProperty = ExpressionReflector.GetProperty<DeltaDto<TNode>>(d => d.Deleted);
         Field<BooleanGraphType>(deletedProperty.Name)
             .Description(deletedProperty.GetXmlDocsSummary(false));
     }
 
     void INodeDeltaType.AddNodeReference(GitObjectDbQuery query)
     {
-        var type = query.GetOrCreateGraphType(typeof(TNodeDto), out var _);
+        var type = query.GetOrCreateGraphType(typeof(TNode));
 
-        var oldProperty = ExpressionReflector.GetProperty<DeltaDto<TNodeDto>>(d => d.Old);
+        var oldProperty = ExpressionReflector.GetProperty<DeltaDto<TNode>>(d => d.Old);
         AddField(new()
         {
             Name = oldProperty.Name,
@@ -35,7 +37,7 @@ internal class NodeDeltaType<TNode, TNodeDto> : ObjectGraphType<DeltaDto<TNodeDt
             ResolvedType = type,
         });
 
-        var newProperty = ExpressionReflector.GetProperty<DeltaDto<TNodeDto>>(d => d.New);
+        var newProperty = ExpressionReflector.GetProperty<DeltaDto<TNode>>(d => d.New);
         AddField(new()
         {
             Name = newProperty.Name,

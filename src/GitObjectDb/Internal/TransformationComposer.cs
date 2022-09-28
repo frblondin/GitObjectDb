@@ -15,15 +15,19 @@ internal class TransformationComposer : ITransformationComposer
     private readonly ServiceResolver<CommitCommandType, ICommitCommand> _commitCommandFactory;
 
     [FactoryDelegateConstructor(typeof(Factories.TransformationComposerFactory))]
-    public TransformationComposer(ServiceResolver<CommitCommandType, ICommitCommand> commitCommandFactory,
-                                  IConnectionInternal connection)
+    public TransformationComposer(IConnectionInternal connection,
+                                  string branchName,
+                                  ServiceResolver<CommitCommandType, ICommitCommand> commitCommandFactory)
     {
-        _commitCommandFactory = commitCommandFactory;
         Connection = connection;
+        BranchName = branchName;
+        _commitCommandFactory = commitCommandFactory;
         Transformations = new List<ITransformation>();
     }
 
     public IConnectionInternal Connection { get; }
+
+    public string BranchName { get; }
 
     public IList<ITransformation> Transformations { get; }
 

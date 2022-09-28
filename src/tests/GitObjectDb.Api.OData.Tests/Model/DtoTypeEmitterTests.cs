@@ -1,11 +1,11 @@
-using GitObjectDb.Api.Model;
+using GitObjectDb.Api.OData.Model;
 using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Reflection;
-using static GitObjectDb.Api.Tests.Model.BasicModel;
+using static GitObjectDb.Api.OData.Tests.Model.BasicModel;
 
-namespace GitObjectDb.Api.Tests.Model;
+namespace GitObjectDb.Api.OData.Tests.Model;
 
 public class DtoTypeEmitterTests
 {

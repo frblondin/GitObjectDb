@@ -17,7 +17,7 @@ public class TreeComparerTests
     {
         // Arrange
         connection
-            .Update(c => c.CreateOrUpdate(
+            .Update("main", c => c.CreateOrUpdate(
                 field with
                 {
                     SomeValue = new NestedA

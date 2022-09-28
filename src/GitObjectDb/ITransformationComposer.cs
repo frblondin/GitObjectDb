@@ -7,6 +7,9 @@ namespace GitObjectDb;
 /// <summary>Represents a series of node transformations.</summary>
 public interface ITransformationComposer
 {
+    /// <summary>Gets the branch to apply the changes to.</summary>
+    string BranchName { get; }
+
     /// <summary>Gets the list of transformations.</summary>
     IList<ITransformation> Transformations { get; }
 

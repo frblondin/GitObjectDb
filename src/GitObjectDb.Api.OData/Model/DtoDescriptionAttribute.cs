@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace GitObjectDb.Api.Model;
+namespace GitObjectDb.Api.OData.Model;
 
 /// <summary>
 /// Provides a description of data transfer objects (original <see cref="Node"/> type...).

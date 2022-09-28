@@ -24,7 +24,7 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
             $"{(parms.IgnoreCase ? "--ignore-case " : string.Empty)}" +
             $"{(parms.RecurseSubModules ? "--recurse-submodules " : string.Empty)}" +
             $"--extended-regexp \"{regex.Replace("\"", "\"\"")}\" " +
-            $"{parms.Committish ?? "HEAD"} -- " +
+            $"{parms.Committish} -- " +
             $"{(parms.ParentPath is not null ? $"'{parms.ParentPath.FolderPath}'" : string.Empty)}";
 
         var result = new List<string?>();
@@ -90,7 +90,7 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
                           Tree tree,
                           string pattern,
                           DataPath? parentPath,
-                          string? committish,
+                          string committish,
                           bool ignoreCase,
                           bool recurseSubModules)
         {
@@ -111,7 +111,7 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
 
         public DataPath? ParentPath { get; }
 
-        public string? Committish { get; }
+        public string Committish { get; }
 
         public bool IgnoreCase { get; }
 

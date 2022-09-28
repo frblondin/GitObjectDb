@@ -1,9 +1,10 @@
+using GitObjectDb.Api.OData.Tools;
 using GitObjectDb.Model;
 using LibGit2Sharp;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace GitObjectDb.Api.Model;
+namespace GitObjectDb.Api.OData.Model;
 
 /// <summary>Emits data transfer types from a <see cref="IDataModel"/>.</summary>
 public sealed class DtoTypeEmitter

@@ -1,5 +1,6 @@
 using Fasterflect;
-using GitObjectDb.Api.Model;
+using GitObjectDb.Api.GraphQL.Loaders;
+using GitObjectDb.Api.GraphQL.Tools;
 using GraphQL;
 using GraphQL.Execution;
 using GraphQL.Resolvers;
@@ -11,44 +12,58 @@ using System.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
 
-public class NodeType<TNode, TNodeDto> : ObjectGraphType<TNodeDto>, INodeType
+public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<GitObjectDbQuery>
     where TNode : Node
-    where TNodeDto : NodeDto
 {
     public NodeType()
     {
         Name = typeof(TNode).Name.Replace("`", string.Empty);
         Description = typeof(TNode).GetXmlDocsSummary(false);
 
-        Field(n => n.Children);
-
-        AddScalarProperties();
-        AddHistoryField();
         Interface<NodeInterface>();
+
+        AddChildrenField();
+        AddHistoryField();
     }
+
+    private void AddChildrenField() =>
+        NodeInterface.CreateChildrenField(this)
+        .Resolve(context =>
+        {
+            var loader = context.RequestServices?.GetRequiredService<NodeDataLoader<Node>>() ??
+                throw new ExecutionError("No request context set.");
+            return loader.LoadAsync(new NodeDataLoaderKey(context));
+        });
 
     private void AddHistoryField() =>
         NodeInterface.CreateHistoryField(this)
-        .Arguments(
-            new QueryArgument<StringGraphType> { Name = GitObjectDbQuery.BranchArgument })
         .Resolve(context =>
         {
-            var branch = context.GetArgument(GitObjectDbQuery.BranchArgument, default(string?));
-            var provider = context.RequestServices?.GetRequiredService<DataProvider>() ??
+            var commitId = context.GetCommitId();
+            var queryAccessor = context.RequestServices?.GetRequiredService<IQueryAccessor>() ??
                 throw new RequestError("No request context set.");
 
             return context.Source.Path is null ?
                 Enumerable.Empty<Commit>() :
-                provider.QueryAccessor
-                    .GetCommits(context.Source.Node!, branch)
+                queryAccessor
+                    .GetCommits(commitId.Sha, context.Source!)
                     .Select(e => e.Commit);
         });
 
-    private void AddScalarProperties()
+    void INodeType<GitObjectDbQuery>.AddFieldsThroughReflection(GitObjectDbQuery query)
     {
-        foreach (var property in typeof(TNodeDto).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        AddScalarProperties(query);
+        AddReferences(query);
+        AddChildren(query);
+    }
+
+    private void AddScalarProperties(GitObjectDbQuery query)
+    {
+        foreach (var property in typeof(TNode).GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
-            if (!AdditionalTypeMappings.IsScalarType(property.PropertyType))
+            if (property.PropertyType.IsNode() ||
+                property.PropertyType.IsNodeEnumerable(out var _) ||
+                !property.PropertyType.IsValidClrTypeForGraph(query.Schema))
             {
                 continue;
             }
@@ -60,65 +75,64 @@ public class NodeType<TNode, TNodeDto> : ObjectGraphType<TNodeDto>, INodeType
         }
     }
 
-    void INodeType.AddReferences(GitObjectDbQuery query)
+    private void AddReferences(GitObjectDbQuery query)
     {
-        foreach (var property in typeof(TNodeDto).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        foreach (var property in typeof(TNode).GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
-            if (Fields.Any(f => f.Name == property.Name))
+            if (Fields.Any(f => f.Name.Equals(property.Name, StringComparison.OrdinalIgnoreCase)))
             {
                 continue;
             }
 
-            if (property.PropertyType.IsAssignableTo(typeof(NodeDto)))
+            if (property.PropertyType.IsNode())
             {
                 AddSingleReference(query, property);
             }
-            if (property.IsEnumerable(t => t.IsAssignableTo(typeof(NodeDto)), out var dtoType))
+            if (property.PropertyType.IsNodeEnumerable(out var nodeType))
             {
-                AddMultiReference(query, property, dtoType!);
+                AddMultiReference(query, property, nodeType!);
             }
         }
     }
 
     private void AddSingleReference(GitObjectDbQuery query, PropertyInfo property)
     {
-        var type = query.GetOrCreateGraphType(property.PropertyType, out var nodeType);
+        var type = query.GetOrCreateGraphType(property.PropertyType);
         var getter = Reflect.PropertyGetter(property);
 
         Field(property.Name, type)
-            .Description(typeof(TNode).GetProperty(property.Name)?.GetXmlDocsSummary(false) ??
+            .Description(property.GetXmlDocsSummary(false) ??
                 property.GetXmlDocsSummary(false))
             .Resolve(new FuncFieldResolver<object?, object?>(context =>
             {
-                var parentNode = context.Source as NodeDto ??
+                var parentNode = context.Source as Node ??
                     throw new RequestError("Could not get parent node.");
                 return getter.Invoke(parentNode);
             }));
     }
 
-    private void AddMultiReference(GitObjectDbQuery query, PropertyInfo property, Type dtoType)
+    private void AddMultiReference(GitObjectDbQuery query, PropertyInfo property, Type nodeType)
     {
-        var type = query.GetOrCreateGraphType(dtoType, out var nodeType);
+        var type = query.GetOrCreateGraphType(nodeType);
         var getter = Reflect.PropertyGetter(property);
 
         Field(property.Name, type)
-            .Description(typeof(TNode).GetProperty(property.Name)?.GetXmlDocsSummary(false) ??
+            .Description(property.GetXmlDocsSummary(false) ??
                 property.GetXmlDocsSummary(false))
             .Resolve(new FuncFieldResolver<object?, object?>(context =>
             {
-                var parentNode = context.Source as NodeDto ??
+                var parentNode = context.Source as Node ??
                     throw new RequestError("Could not get parent node.");
                 return getter.Invoke(parentNode);
             }));
     }
 
-    void INodeType.AddChildren(GitObjectDbQuery query)
+    private void AddChildren(GitObjectDbQuery query)
     {
-        var description = query.DtoEmitter.Model.GetDescription(typeof(TNode));
+        var description = query.Schema.Model.GetDescription(typeof(TNode));
         foreach (var childType in description.Children)
         {
-            var dtoEmitterInfo = query.DtoEmitter.TypeDescriptions.First(d => d.NodeType.Equals(childType));
-            query.AddCollectionField(this, dtoEmitterInfo);
+            query.AddCollectionField(this, childType.Type, childType.Name);
         }
     }
 }

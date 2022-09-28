@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\GitObjectDb.Api\GitObjectDb.Api.csproj" />
+    <ProjectReference Include="..\..\GitObjectDb.Api.OData\GitObjectDb.Api.OData.csproj" />
     <ProjectReference Include="..\..\samples\Models.Software\Models.Software.csproj" />
     <ProjectReference Include="..\GitObjectDb.Tests\GitObjectDb.Tests.csproj" />
   </ItemGroup>

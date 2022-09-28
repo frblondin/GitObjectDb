@@ -1,9 +1,10 @@
 using AutoMapper;
 using Fasterflect;
+using GitObjectDb.Api.OData.Tools;
 using LibGit2Sharp;
 using System.Reflection;
 
-namespace GitObjectDb.Api.Model;
+namespace GitObjectDb.Api.OData.Model;
 
 /// <summary>
 /// Gets the automapper profile for converting <see cref="Node"/> types to

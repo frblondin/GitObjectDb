@@ -13,32 +13,38 @@ internal sealed partial class Connection
     // Use lazy for concurrent dictionary thread safety
     private readonly ConcurrentDictionary<DataPath, Lazy<Repository>> _repositories = new();
 
-    public TItem? Lookup<TItem>(DataPath path,
-                               string? committish = null)
+    public TItem? Lookup<TItem>(string committish,
+                                DataPath path)
         where TItem : ITreeItem
     {
-        var (commit, _) = GetTree(path, committish);
+        var (commit, _) = TryGetTree(committish, path);
         return commit.Tree[path.FilePath] is null ?
             default :
             (TItem)_loader.Execute(this, new(commit.Tree, path));
     }
 
-    public TItem? Lookup<TItem>(UniqueId id,
-                               string? committish = null)
+    public TItem? Lookup<TItem>(string committish,
+                                UniqueId id)
         where TItem : ITreeItem
     {
-        var (commit, _, path) = TryGetTree(id, committish);
+        var (commit, _, path) = TryGetTree(committish, id);
         return path is null ?
             default :
             (TItem)_loader.Execute(this, new(commit.Tree, path));
     }
 
-    public ICommitEnumerable<TItem> GetItems<TItem>(Node? parent = null,
-                                                    string? committish = null,
+    public ICommitEnumerable<TItem> GetItems<TItem>(string committish,
+                                                    Node? parent = null,
                                                     bool isRecursive = false)
         where TItem : ITreeItem
     {
-        var (commit, relativeTree) = GetTree(parent?.Path, committish);
+        var (commit, relativeTree) = TryGetTree(committish, parent?.Path);
+
+        if (relativeTree is null)
+        {
+            return CommitEnumerable.Empty<TItem>(commit.Id);
+        }
+
         return _queryItems
             .Execute(this, new(commit.Tree,
                                relativeTree,
@@ -53,27 +59,33 @@ internal sealed partial class Connection
             .ToCommitEnumerable(commit.Id);
     }
 
-    public ICommitEnumerable<TNode> GetNodes<TNode>(Node? parent = null,
-                                                    string? committish = null,
+    public ICommitEnumerable<TNode> GetNodes<TNode>(string committish,
+                                                    Node? parent = null,
                                                     bool isRecursive = false)
         where TNode : Node
     {
-        return GetItems<TNode>(parent, committish, isRecursive);
+        return GetItems<TNode>(committish, parent, isRecursive);
     }
 
-    public IEnumerable<DataPath> GetPaths(DataPath? parentPath = null,
-                                          string? committish = null,
+    public IEnumerable<DataPath> GetPaths(string committish,
+                                          DataPath? parentPath = null,
                                           bool isRecursive = false)
     {
-        return GetPaths<ITreeItem>(parentPath, committish, isRecursive);
+        return GetPaths<ITreeItem>(committish, parentPath, isRecursive);
     }
 
-    public IEnumerable<DataPath> GetPaths<TItem>(DataPath? parentPath = null,
-                                                 string? committish = null,
+    public IEnumerable<DataPath> GetPaths<TItem>(string committish,
+                                                 DataPath? parentPath = null,
                                                  bool isRecursive = false)
         where TItem : ITreeItem
     {
-        var (commit, relativeTree) = GetTree(parentPath, committish);
+        var (commit, relativeTree) = TryGetTree(committish, parentPath);
+
+        if (relativeTree is null)
+        {
+            return Enumerable.Empty<DataPath>();
+        }
+
         return _queryItems.Execute(this,
                                    new(commit.Tree,
                                        relativeTree,
@@ -82,13 +94,13 @@ internal sealed partial class Connection
                                        isRecursive)).Select(i => i.Path);
     }
 
-    public IEnumerable<ITreeItem> Search(string pattern,
-                                        DataPath? parentPath = null,
-                                        string? committish = null,
-                                        bool ignoreCase = false,
-                                        bool recurseSubModules = false)
+    public IEnumerable<ITreeItem> Search(string committish,
+                                         string pattern,
+                                         DataPath? parentPath = null,
+                                         bool ignoreCase = false,
+                                         bool recurseSubModules = false)
     {
-        var (commit, _) = GetTree(parentPath, committish);
+        var (commit, _) = TryGetTree(committish, parentPath);
         return _searchItems
             .Execute(this, new(this,
                                commit.Tree,
@@ -100,14 +112,20 @@ internal sealed partial class Connection
             .Select(i => i.Item);
     }
 
-    public ICommitEnumerable<Resource> GetResources(Node node, string? committish = null)
+    public ICommitEnumerable<Resource> GetResources(string committish, Node node)
     {
         if (node.Path is null)
         {
             throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.");
         }
 
-        var (commit, relativeTree) = GetTree(node.Path, committish);
+        var (commit, relativeTree) = TryGetTree(committish, node.Path);
+
+        if (relativeTree is null)
+        {
+            return CommitEnumerable.Empty<Resource>(commit.Id);
+        }
+
         return _queryResources
             .Execute(this, new(commit.Tree, relativeTree, node))
             .AsParallel()
@@ -118,54 +136,43 @@ internal sealed partial class Connection
     }
 
     public ChangeCollection Compare(string startCommittish,
-                                    string? committish = null,
+                                    string committish,
                                     ComparisonPolicy? policy = null)
     {
-        var (old, _) = GetTree(committish: startCommittish);
-        var (@new, _) = GetTree(committish: committish);
+        var (old, _) = TryGetTree(committish: startCommittish);
+        var (@new, _) = TryGetTree(committish: committish);
         return _comparer.Compare(this, old, @new, policy ?? Model.DefaultComparisonPolicy);
     }
 
-    public IEnumerable<LogEntry> GetCommits(Node node, string? branch = null)
+    public IEnumerable<LogEntry> GetCommits(string branch, Node node)
     {
         var filePath = node.ThrowIfNoPath().FilePath;
         var filter = new CommitFilter
         {
-            IncludeReachableFrom = branch ?? "HEAD",
+            IncludeReachableFrom = branch,
         };
         return Repository.Commits.QueryBy(filePath, filter);
     }
 
-    private (Commit Commit, Tree RelativePath) GetTree(DataPath? path = null, string? committish = null)
+    private (Commit Commit, Tree? RelativePath) TryGetTree(string committish, DataPath? path = null)
     {
-        var commit = committish != null ?
-            (Commit)Repository.Lookup(committish) :
-            Repository.Head.Tip;
-        if (commit is null)
-        {
+        var commit = (Commit)Repository.Lookup(committish) ??
             throw new GitObjectDbInvalidCommitException();
-        }
         if (path is null || string.IsNullOrEmpty(path.FolderPath))
         {
             return (commit, commit.Tree);
         }
         else
         {
-            var tree = commit.Tree[path.FolderPath] ??
-                       throw new GitObjectDbException("Requested path could not be found.");
-            return (commit, tree.Target.Peel<Tree>());
+            var tree = commit.Tree[path.FolderPath];
+            return (commit, tree?.Target.Peel<Tree>());
         }
     }
 
-    private (Commit Commit, Tree? RelativePath, DataPath? Path) TryGetTree(UniqueId id, string? committish = null)
+    private (Commit Commit, Tree? RelativePath, DataPath? Path) TryGetTree(string committish, UniqueId id)
     {
-        var commit = committish != null ?
-            (Commit)Repository.Lookup(committish) :
-            Repository.Head.Tip;
-        if (commit is null)
-        {
+        var commit = (Commit)Repository.Lookup(committish) ??
             throw new GitObjectDbInvalidCommitException();
-        }
 
         var stack = new Stack<string>();
         var tree = Search(commit.Tree, $"{id}.{Serializer.FileExtension}", stack);

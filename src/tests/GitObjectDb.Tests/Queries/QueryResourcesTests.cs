@@ -16,7 +16,7 @@ public class QueryResourcesTests : DisposeArguments
     public void GetNodeResources(IConnection connection, Table table)
     {
         // Act
-        var result = connection.GetResources(table).ToList();
+        var result = connection.GetResources("main", table).ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(SoftwareBenchmarkCustomization.DefaultResourcePerTableCount));
@@ -31,6 +31,6 @@ public class QueryResourcesTests : DisposeArguments
         var unattachedTable = new Table();
 
         // Act, Assert
-        Assert.Throws<ArgumentNullException>(() => connection.GetResources(unattachedTable));
+        Assert.Throws<ArgumentNullException>(() => connection.GetResources("main", unattachedTable));
     }
 }

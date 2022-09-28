@@ -15,7 +15,7 @@ public class QueryNodesTests : DisposeArguments
     public void RootNodes(IConnection connection)
     {
         // Act
-        var result = connection.GetNodes<Application>().ToList();
+        var result = connection.GetNodes<Application>("main").ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(SoftwareBenchmarkCustomization.DefaultApplicationCount));
@@ -32,7 +32,7 @@ public class QueryNodesTests : DisposeArguments
     public void TablesInApplication(IConnection connection, Application application)
     {
         // Act
-        var result = connection.GetNodes<Table>(application).ToList();
+        var result = connection.GetNodes<Table>("main", parent: application).ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(SoftwareBenchmarkCustomization.DefaultTablePerApplicationCount));
@@ -49,7 +49,7 @@ public class QueryNodesTests : DisposeArguments
     public void OfType(IConnection connection)
     {
         // Act
-        var result = (from f in connection.GetNodes<Field>(isRecursive: true)
+        var result = (from f in connection.GetNodes<Field>("main", isRecursive: true)
                       select f.Id).ToList();
 
         // Assert
@@ -72,7 +72,7 @@ public class QueryNodesTests : DisposeArguments
     public void LookupByPass(IConnection connection, Table table)
     {
         // Act
-        var result = connection.Lookup<Table>(table.Path);
+        var result = connection.Lookup<Table>("main", table.Path);
 
         // Assert
         Assert.That(result, Is.EqualTo(table));
@@ -83,7 +83,7 @@ public class QueryNodesTests : DisposeArguments
     public void LookupById(IConnection connection, Table table)
     {
         // Act
-        var result = connection.Lookup<Table>(table.Id);
+        var result = connection.Lookup<Table>("main", table.Path);
 
         // Assert
         Assert.That(result, Is.EqualTo(table));

@@ -9,20 +9,14 @@ internal static class IRepositoryExtensions
     /// <summary>Builds the commit log message.</summary>
     /// <param name="commit">The commit.</param>
     /// <param name="amendPreviousCommit">if set to <c>true</c> [amend previous commit].</param>
-    /// <param name="isHeadOrphaned">if set to <c>true</c> [is head orphaned].</param>
     /// <param name="isMergeCommit">if set to <c>true</c> [is merge commit].</param>
     /// <returns>The commit log message.</returns>
     internal static string BuildCommitLogMessage(this Commit commit,
                                                  bool amendPreviousCommit,
-                                                 bool isHeadOrphaned,
                                                  bool isMergeCommit)
     {
         string kind;
-        if (isHeadOrphaned)
-        {
-            kind = " (initial)";
-        }
-        else if (amendPreviousCommit)
+        if (amendPreviousCommit)
         {
             kind = " (amend)";
         }
@@ -39,19 +33,11 @@ internal static class IRepositoryExtensions
     }
 
 #pragma warning disable SA1611 // Element parameters should be documented
-    /// <summary>Updates the head and terminal reference.</summary>
-    internal static void UpdateHeadAndTerminalReference(this IRepository repository,
-                                                        Commit commit,
-                                                        string reflogMessage)
-    {
-        repository.UpdateTerminalReference(repository.Refs.Head, commit, reflogMessage);
-    }
-
-    /// <summary>Updates the reference.</summary>
-    internal static void UpdateTerminalReference(this IRepository repository,
-                                                 Reference reference,
-                                                 Commit commit,
-                                                 string reflogMessage)
+    /// <summary>Updates the branch tip and terminal reference.</summary>
+    internal static void UpdateBranchTip(this IRepository repository,
+                                         Reference reference,
+                                         Commit commit,
+                                         string reflogMessage)
     {
         var localReference = reference;
         while (true)

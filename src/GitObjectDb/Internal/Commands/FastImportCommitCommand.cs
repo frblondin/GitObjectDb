@@ -24,18 +24,20 @@ internal class FastImportCommitCommand : ICommitCommand
                          CommitDescription description,
                          Action<ITransformation>? beforeProcessing = null)
     {
+        var branch = connection.Repository.Branches[transformationComposer.BranchName];
         var importFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         var tempBranch = $"refs/fastimport/{UniqueId.CreateNew()}";
         try
         {
             var parents = CommitCommand.RetrieveParentsOfTheCommitBeingCreated(connection.Repository,
+                                                                               branch,
                                                                                description.AmendPreviousCommit,
                                                                                description.MergeParent).ToList();
             int commitMarkId;
             using (var writer = new StreamWriter(File.OpenWrite(importFile)) { NewLine = "\n" })
             {
                 var index = new List<string>(transformationComposer.Transformations.Count);
-                commitMarkId = WriteFastInsertImportFile(connection,
+                commitMarkId = WriteFastInsertImportFile(branch,
                                                          transformationComposer,
                                                          parents,
                                                          writer,
@@ -44,7 +46,7 @@ internal class FastImportCommitCommand : ICommitCommand
                                                          tempBranch,
                                                          beforeProcessing);
             }
-            return ValidateAndUpdateHead(connection, description, importFile, parents, commitMarkId);
+            return ValidateAndupdateBranchTip(connection, transformationComposer.BranchName, description, importFile, parents, commitMarkId);
         }
         finally
         {
@@ -54,7 +56,7 @@ internal class FastImportCommitCommand : ICommitCommand
         }
     }
 
-    private static int WriteFastInsertImportFile(IConnection connection,
+    private static int WriteFastInsertImportFile(Branch? branch,
                                                  TransformationComposer transformationComposer,
                                                  List<Commit> parents,
                                                  StreamWriter writer,
@@ -63,8 +65,7 @@ internal class FastImportCommitCommand : ICommitCommand
                                                  string tempBranch,
                                                  Action<ITransformation>? beforeProcessing)
     {
-        var tip = connection.Repository.Info.IsHeadUnborn ? null : connection.Repository.Head.Tip;
-        transformationComposer.ApplyTransformations(tip, writer, index, beforeProcessing);
+        transformationComposer.ApplyTransformations(branch?.Tip, writer, index, beforeProcessing);
 
         var commitMarkId = index.Count + 1;
         WriteFastInsertCommit(tempBranch, parents, writer, description, commitMarkId);
@@ -152,7 +153,7 @@ internal class FastImportCommitCommand : ICommitCommand
         }
     }
 
-    private Commit ValidateAndUpdateHead(IConnection connection, CommitDescription description, string importFile, List<Commit> parents, int commitMarkId)
+    private Commit ValidateAndupdateBranchTip(IConnection connection, string branchName, CommitDescription description, string importFile, List<Commit> parents, int commitMarkId)
     {
         var commit = SendCommandThroughCli(connection, importFile, commitMarkId);
         if (parents.Count == 1 && commit.Tree == parents[0].Tree)
@@ -165,9 +166,10 @@ internal class FastImportCommitCommand : ICommitCommand
         validation.Validate(commit.Tree, connection.Model, connection.Serializer);
 
         var logMessage = commit.BuildCommitLogMessage(description.AmendPreviousCommit,
-                                                      connection.Repository.Info.IsHeadUnborn,
                                                       parents.Count > 1);
-        connection.Repository.UpdateHeadAndTerminalReference(commit, logMessage);
+        var reference = connection.Repository.Branches[branchName]?.Reference ??
+            connection.Repository.Refs.UpdateTarget("HEAD", $"refs/heads/{branchName}");
+        connection.Repository.UpdateBranchTip(reference, commit, logMessage);
 
         return commit;
     }

@@ -1,9 +1,9 @@
-﻿using FakeItEasy;
+using FakeItEasy;
 using GitObjectDb.Model;
 using System;
 using System.Linq;
 
-namespace GitObjectDb.Api.Tests.Model;
+namespace GitObjectDb.Api.OData.Tests.Model;
 
 public class BasicModel
 {

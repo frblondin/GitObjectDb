@@ -4,7 +4,6 @@ using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
 using Models.Software;
 using NUnit.Framework;
-using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -25,12 +24,12 @@ public class RemoteResourceTests
         {
             RemoteResource = new(path, tip),
         };
-        connection.Update(
-            c => c.CreateOrUpdate(applicationWithLinkedResources))
+        connection
+            .Update("main", c => c.CreateOrUpdate(applicationWithLinkedResources))
             .Commit(new(message, committer, committer));
 
         // Assert
-        var result = connection.GetResources(applicationWithLinkedResources).ToList();
+        var result = connection.GetResources("main", applicationWithLinkedResources).ToList();
         Assert.That(result, Has.Exactly(1).Items);
         Assert.Multiple(() =>
         {
@@ -51,12 +50,12 @@ public class RemoteResourceTests
         {
             RemoteResource = new(path, tip),
         };
-        var commit = connection.Update(
-            c => c.CreateOrUpdate(applicationWithLinkedResources))
+        var commit = connection
+            .Update("main", c => c.CreateOrUpdate(applicationWithLinkedResources))
             .Commit(new(message, committer, committer));
 
         // Assert
-        Assert.Throws<GitObjectDbException>(() => connection.GetResources(application with
+        Assert.Throws<GitObjectDbException>(() => connection.GetResources("main", application with
         {
             // Replace remote commit with irrelevant commit
             RemoteResource = new(path, commit.Id.Sha),
@@ -75,7 +74,7 @@ public class RemoteResourceTests
         {
             RemoteResource = new(path, tip),
         };
-        var changes = connection.Update(c =>
+        var changes = connection.Update("main", c =>
         {
             c.CreateOrUpdate(applicationWithLinkedResources);
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
@@ -87,7 +86,8 @@ public class RemoteResourceTests
         });
 
         // Assert
-        Assert.Throws<GitObjectDbValidationException>(() => changes.Commit(new(message, committer, committer)));
+        Assert.Throws<GitObjectDbValidationException>(
+            () => changes.Commit(new(message, committer, committer)));
     }
 
     private static (string Path, string Tip) CreateResourceRepository(string content, string message, Signature committer)

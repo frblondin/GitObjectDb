@@ -1,10 +1,9 @@
-using GitObjectDb.Api.Model;
-using GitObjectDb.Injection;
+using GitObjectDb.Api.OData.Model;
 using GitObjectDb.Model;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace GitObjectDb.Api;
+namespace GitObjectDb.Api.OData;
 
 /// <summary>A set of methods for instances of <see cref="IServiceCollection"/>.</summary>
 public static class ServiceConfiguration
@@ -14,12 +13,12 @@ public static class ServiceConfiguration
     /// <summary>Adds access to GitObjectDb repositories.</summary>
     /// <param name="source">The source.</param>
     /// <returns>The source <see cref="IServiceCollection"/>.</returns>
-    public static IServiceCollection AddGitObjectDbApi(this IServiceCollection source)
+    public static IServiceCollection AddGitObjectDbOData(this IServiceCollection source)
     {
         // Avoid double-registrations
-        if (source.IsGitObjectDbApiRegistered())
+        if (source.IsGitObjectDbODataRegistered())
         {
-            throw new NotSupportedException("GitObjectDbApi has already been registered.");
+            throw new NotSupportedException("GitObjectDbOData has already been registered.");
         }
 
         if (!source.Any(sd => sd.ServiceType == typeof(IMemoryCache)))
@@ -41,10 +40,10 @@ public static class ServiceConfiguration
         return source;
     }
 
-    /// <summary>Gets whether GitObjectDbApi has already been registered.</summary>
+    /// <summary>Gets whether GitObjectDbOData has already been registered.</summary>
     /// <param name="source">The source.</param>
     /// <returns><c>true</c> if the service has already been registered, <c>false</c> otherwise.</returns>
-    private static bool IsGitObjectDbApiRegistered(this IServiceCollection source) =>
+    private static bool IsGitObjectDbODataRegistered(this IServiceCollection source) =>
         source.Any(sd => sd.ServiceType == typeof(DataProvider)) ||
         source.Any(sd => sd.ServiceType == typeof(DtoTypeEmitter));
 }

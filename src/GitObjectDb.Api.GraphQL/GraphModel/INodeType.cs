@@ -2,9 +2,7 @@ using GraphQL.Types;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
 
-internal interface INodeType : IGraphType
+internal interface INodeType<in T> : IGraphType
 {
-    void AddReferences(GitObjectDbQuery query);
-
-    void AddChildren(GitObjectDbQuery query);
+    void AddFieldsThroughReflection(T graph);
 }

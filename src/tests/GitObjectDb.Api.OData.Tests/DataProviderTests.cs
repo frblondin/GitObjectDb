@@ -3,8 +3,8 @@ using AutoFixture.Kernel;
 using AutoMapper;
 using FakeItEasy;
 using Fasterflect;
-using GitObjectDb.Api.Model;
-using GitObjectDb.Api.Tests.Model;
+using GitObjectDb.Api.OData.Model;
+using GitObjectDb.Api.OData.Tests.Model;
 using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
@@ -13,9 +13,9 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static GitObjectDb.Api.Tests.Model.BasicModel;
+using static GitObjectDb.Api.OData.Tests.Model.BasicModel;
 
-namespace GitObjectDb.Api.Tests;
+namespace GitObjectDb.Api.OData.Tests;
 
 public class DataProviderTests
 {
@@ -81,7 +81,7 @@ public class DataProviderTests
         var simpleNodeDto =
             typeEmitter.TypeDescriptions.Single(d => d.NodeType.Type == typeof(SimpleNode));
         var accessor = sut.QueryAccessor;
-        A.CallTo(() => accessor.GetNodes<Node>(node, ObjectId.Zero.Sha.ToString(), false))
+        A.CallTo(() => accessor.GetNodes<Node>(ObjectId.Zero.Sha.ToString(), node, false))
             .Returns(children.ToCommitEnumerable(ObjectId.Zero));
 
         // Act
