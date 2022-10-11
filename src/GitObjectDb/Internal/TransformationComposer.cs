@@ -12,22 +12,29 @@ namespace GitObjectDb.Internal;
 [DebuggerDisplay("Transformations: {Transformations.Count}")]
 internal class TransformationComposer : ITransformationComposer
 {
-    private readonly ServiceResolver<CommitCommandType, ICommitCommand> _commitCommandFactory;
+    private readonly IGitUpdateCommand _gitUpdateFactory;
+    private readonly ICommitCommand _commitCommand;
 
     [FactoryDelegateConstructor(typeof(Factories.TransformationComposerFactory))]
     public TransformationComposer(IConnectionInternal connection,
                                   string branchName,
+                                  CommitCommandType type,
+                                  ServiceResolver<CommitCommandType, IGitUpdateCommand> gitUpdateFactory,
                                   ServiceResolver<CommitCommandType, ICommitCommand> commitCommandFactory)
     {
         Connection = connection;
         BranchName = branchName;
-        _commitCommandFactory = commitCommandFactory;
+        Type = type;
+        _gitUpdateFactory = gitUpdateFactory.Invoke(type);
+        _commitCommand = commitCommandFactory.Invoke(type);
         Transformations = new List<ITransformation>();
     }
 
     public IConnectionInternal Connection { get; }
 
     public string BranchName { get; }
+
+    public CommitCommandType Type { get; }
 
     public IList<ITransformation> Transformations { get; }
 
@@ -47,15 +54,14 @@ internal class TransformationComposer : ITransformationComposer
         CreateOrUpdateItem(resource, default);
 
     public TItem Delete<TItem>(TItem item)
-        where TItem : ITreeItem
+        where TItem : TreeItem
     {
         var path = item.ThrowIfNoPath();
 
         var transformation = new Transformation(
             path,
             default,
-            UpdateTreeCommand.Delete(item),
-            UpdateFastInsertFile.Delete(item),
+            _gitUpdateFactory.Delete(item.ThrowIfNoPath()),
             $"Removing {path}.");
         Transformations.Add(transformation);
         return item;
@@ -66,14 +72,23 @@ internal class TransformationComposer : ITransformationComposer
         var transformation = new Transformation(
             path,
             default,
-            UpdateTreeCommand.Delete(path),
-            UpdateFastInsertFile.Delete(path),
+            _gitUpdateFactory.Delete(path),
             $"Removing {path}.");
         Transformations.Add(transformation);
     }
 
+    public void Rename(TreeItem item, DataPath newPath)
+    {
+        var transformation = new Transformation(
+            newPath,
+            item,
+            _gitUpdateFactory.Rename(item, newPath),
+            $"Renaming {item.Path} to {newPath}.");
+        Transformations.Add(transformation);
+    }
+
     private TItem CreateOrUpdateItem<TItem>(TItem item, DataPath? parent = null)
-        where TItem : ITreeItem
+        where TItem : TreeItem
     {
         var path = item is Node node ?
             UpdateNodePathIfNeeded(node, parent) :
@@ -82,8 +97,7 @@ internal class TransformationComposer : ITransformationComposer
         var transformation = new Transformation(
             path,
             item,
-            UpdateTreeCommand.CreateOrUpdate(item),
-            UpdateFastInsertFile.CreateOrUpdate(item),
+            _gitUpdateFactory.CreateOrUpdate(item),
             $"Adding or updating {path}.");
         Transformations.Add(transformation);
         return item;
@@ -103,54 +117,11 @@ internal class TransformationComposer : ITransformationComposer
     }
 
     Commit ITransformationComposer.Commit(CommitDescription description,
-                                          Action<ITransformation>? beforeProcessing,
-                                          CommitCommandType type) =>
-        _commitCommandFactory.Invoke(type).Commit(
-            Connection,
+                                          Action<ITransformation>? beforeProcessing) =>
+        _commitCommand.Commit(
             this,
             description,
             beforeProcessing: beforeProcessing);
-
-    internal TreeDefinition ApplyTransformations(ObjectDatabase dataBase,
-                                                 Commit? commit,
-                                                 Action<ITransformation>? beforeProcessing = null)
-    {
-        var result = commit is not null ? TreeDefinition.From(commit) : new TreeDefinition();
-        var modules = new ModuleCommands(commit?.Tree);
-        foreach (var transformation in Transformations.OfType<ITransformationInternal>())
-        {
-            beforeProcessing?.Invoke(transformation);
-            transformation.TreeTransformation(commit?.Tree, modules, Connection.Serializer, dataBase, result);
-        }
-
-        if (modules.HasAnyChange)
-        {
-            using var stream = modules.CreateStream();
-            var blob = dataBase.CreateBlob(stream);
-            result.Add(ModuleCommands.ModuleFile, blob, Mode.NonExecutableFile);
-        }
-
-        return result;
-    }
-
-    internal void ApplyTransformations(Commit? commit,
-                                       System.IO.StreamWriter writer,
-                                       IList<string> commitIndex,
-                                       Action<ITransformation>? beforeProcessing = null)
-    {
-        var modules = new ModuleCommands(commit?.Tree);
-        foreach (var transformation in Transformations.OfType<ITransformationInternal>())
-        {
-            beforeProcessing?.Invoke(transformation);
-            transformation.FastInsertTransformation(commit?.Tree, modules, Connection.Serializer, writer, commitIndex);
-        }
-
-        if (modules.HasAnyChange)
-        {
-            using var stream = modules.CreateStream();
-            UpdateFastInsertFile.AddBlob(ModuleCommands.ModuleFile, stream, writer, commitIndex);
-        }
-    }
 
     [ExcludeFromCodeCoverage]
     private static void ThrowIfWrongParentPath(DataPath parent)

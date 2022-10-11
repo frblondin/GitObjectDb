@@ -1,5 +1,6 @@
 using GitObjectDb.Internal.Commands;
 using LibGit2Sharp;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -36,7 +37,7 @@ public interface ITransformation
     public DataPath Path { get; }
 
     /// <summary>Gets new value of item.</summary>
-    public ITreeItem? Item { get; }
+    public TreeItem? Item { get; }
 
     /// <summary>Gets the transformation description.</summary>
     public string Message { get; }
@@ -46,8 +47,5 @@ public interface ITransformation
 internal interface ITransformationInternal : ITransformation
 {
     /// <summary>Gets the transformation that can be applied in the git database.</summary>
-    ApplyUpdateTreeDefinition TreeTransformation { get; }
-
-    /// <summary>Gets the transformation that can be applied through a fast-insert operation.</summary>
-    ApplyUpdateFastInsert FastInsertTransformation { get; }
+    Delegate Action { get; }
 }

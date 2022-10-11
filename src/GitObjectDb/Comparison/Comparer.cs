@@ -12,18 +12,18 @@ namespace GitObjectDb.Comparison;
 
 internal class Comparer : IComparer, IComparerInternal
 {
-    private readonly IQuery<LoadItem.Parameters, ITreeItem> _nodeLoader;
+    private readonly IQuery<LoadItem.Parameters, TreeItem> _nodeLoader;
 
-    public Comparer(IQuery<LoadItem.Parameters, ITreeItem> nodeLoader)
+    public Comparer(IQuery<LoadItem.Parameters, TreeItem> nodeLoader)
     {
         _nodeLoader = nodeLoader;
     }
 
     internal static IEnumerable<PropertyInfo> GetProperties(Type type, ComparisonPolicy policy) =>
         type.GetTypeInfo().GetProperties(BindingFlags.Instance | BindingFlags.Public)
-        .Where(p => p.CanRead && p.CanWrite && !policy.IgnoredProperties.Contains(p));
+        .Where(p => p.CanRead && p.CanWrite && !policy.IgnoredProperties.Contains(p) && p.Name != nameof(TreeItem.Path));
 
-    public ComparisonResult Compare(ITreeItem? expectedObject, ITreeItem? actualObject, ComparisonPolicy policy)
+    public ComparisonResult Compare(TreeItem? expectedObject, TreeItem? actualObject, ComparisonPolicy policy)
     {
         return CompareInternal(expectedObject, actualObject, policy);
     }
@@ -37,45 +37,44 @@ internal class Comparer : IComparer, IComparerInternal
         var result = new ChangeCollection(old, @new);
         foreach (var change in changes)
         {
-            var treeChange = Compare(connection, old.Tree, @new.Tree, change, policy);
-            if (treeChange != null)
-            {
-                result.Add(treeChange);
-            }
+            var treeChanges = Compare(connection, old.Tree, @new.Tree, change, policy);
+            result.AddRange(treeChanges.Where(c => c is not null)!);
         }
         return result;
     }
 
-    private Change? Compare(IQueryAccessor queryAccessor,
-                            Tree oldTree,
-                            Tree newTree,
-                            PatchEntryChanges change,
-                            ComparisonPolicy? policy)
+    private IEnumerable<Change?> Compare(IQueryAccessor queryAccessor,
+                                         Tree oldTree,
+                                         Tree newTree,
+                                         PatchEntryChanges change,
+                                         ComparisonPolicy? policy)
     {
-        var treeChange = change.Status switch
+        if (change.Status == ChangeKind.Modified)
         {
-            ChangeKind.Modified => Change.Create(change,
-                                                 CreateNode(oldTree, change.OldPath),
-                                                 CreateNode(newTree, change.Path),
-                                                 ChangeStatus.Edit,
-                                                 policy ?? queryAccessor.Model.DefaultComparisonPolicy),
-            ChangeKind.Added => Change.Create(change,
-                                              default,
-                                              CreateNode(newTree, change.Path),
-                                              ChangeStatus.Add,
-                                              policy ?? queryAccessor.Model.DefaultComparisonPolicy),
-            ChangeKind.Deleted => Change.Create(change,
-                                                CreateNode(oldTree, change.OldPath),
-                                                default,
-                                                ChangeStatus.Delete,
-                                                policy ?? queryAccessor.Model.DefaultComparisonPolicy),
-            _ => throw new NotSupportedException(change.Status.ToString()),
-        };
-        ITreeItem CreateNode (Tree tree, string path) =>
+            yield return CreateChange(CreateNode(oldTree, change.OldPath),
+                                      CreateNode(newTree, change.Path),
+                                      ChangeStatus.Edit);
+        }
+        else if (change.Status == ChangeKind.Added)
+        {
+            yield return CreateChange(default, CreateNode(newTree, change.Path), ChangeStatus.Add);
+        }
+        else if (change.Status == ChangeKind.Deleted)
+        {
+            yield return CreateChange(CreateNode(oldTree, change.OldPath), default, ChangeStatus.Delete);
+        }
+        else if (change.Status == ChangeKind.Renamed)
+        {
+            yield return CreateChange(CreateNode(oldTree, change.OldPath),
+                                      CreateNode(newTree, change.Path),
+                                      ChangeStatus.Rename);
+        }
+        Change? CreateChange(TreeItem? old, TreeItem? @new, ChangeStatus status) => Change.Create(
+            change, old, @new, status, policy ?? queryAccessor.Model.DefaultComparisonPolicy);
+        TreeItem CreateNode(Tree tree, string path) =>
             _nodeLoader.Execute(
                 queryAccessor,
                 new(tree, DataPath.Parse(path)));
-        return treeChange;
     }
 
     internal static ComparisonResult CompareInternal(object? expectedObject,

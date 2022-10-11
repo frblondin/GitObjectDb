@@ -74,20 +74,34 @@ public static class ServiceConfiguration
 
     private static void ConfigureCommands(IServiceCollection source)
     {
-        source.AddSingleton<CommitCommand>();
-        source.AddSingleton<FastImportCommitCommand>();
+        source.AddSingleton<CommitCommandUsingTree>();
+        source.AddSingleton<CommitCommandUsingFastImport>();
         source.AddSingleton<ServiceResolver<CommitCommandType, ICommitCommand>>(serviceProvider => type =>
-        {
-            if (type == CommitCommandType.Auto)
+            GetDefaultCommitCommandType(type) switch
             {
-                type = GitCliCommand.IsGitInstalled ? CommitCommandType.FastImport : CommitCommandType.Normal;
-            }
-            return type switch
-            {
-                CommitCommandType.Normal => serviceProvider.GetRequiredService<CommitCommand>(),
-                CommitCommandType.FastImport => serviceProvider.GetRequiredService<FastImportCommitCommand>(),
+                CommitCommandType.Normal => serviceProvider.GetRequiredService<CommitCommandUsingTree>(),
+                CommitCommandType.FastImport => serviceProvider.GetRequiredService<CommitCommandUsingFastImport>(),
                 _ => throw new NotSupportedException(),
-            };
-        });
+            });
+
+        source.AddSingleton<GitUpdateCommandUsingTree>();
+        source.AddSingleton<GitUpdateCommandUsingFastImport>();
+        source.AddSingleton<ServiceResolver<CommitCommandType, IGitUpdateCommand>>(serviceProvider => type =>
+            GetDefaultCommitCommandType(type) switch
+            {
+                CommitCommandType.Normal => serviceProvider.GetRequiredService<GitUpdateCommandUsingTree>(),
+                CommitCommandType.FastImport => serviceProvider.GetRequiredService<GitUpdateCommandUsingFastImport>(),
+                _ => throw new NotSupportedException(),
+            });
+    }
+
+    private static CommitCommandType GetDefaultCommitCommandType(CommitCommandType type)
+    {
+        if (type == CommitCommandType.Auto)
+        {
+            type = GitCliCommand.IsGitInstalled ? CommitCommandType.FastImport : CommitCommandType.Normal;
+        }
+
+        return type;
     }
 }

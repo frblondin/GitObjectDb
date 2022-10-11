@@ -13,6 +13,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Models.Software;
 using NUnit.Framework;
+using System.IO;
 using System.Linq;
 
 namespace GitObjectDb.Tests.Commands;
@@ -31,17 +32,18 @@ public class CommitCommandTests
     {
         // Arrange
         var comparer = fixture.Create<Comparer>();
+        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
         var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(connection, "main", sut);
+        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
         composer.CreateOrUpdate(new Table { Id = newTableId }, application);
-        sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
+        sut.Invoke(commitType).Commit(composer, new(message, signature, signature));
 
         // Assert
         var changes = comparer.Compare(connection,
-                                       connection.Repository.Lookup<Commit>("HEAD~1"),
+                                       connection.Repository.Lookup<Commit>("main~1"),
                                        connection.Repository.Head.Tip,
                                        connection.Model.DefaultComparisonPolicy);
         Assert.That(changes, Has.Count.EqualTo(1));
@@ -60,17 +62,18 @@ public class CommitCommandTests
     {
         // Arrange
         var comparer = fixture.Create<Comparer>();
+        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
         var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(connection, "main", sut);
+        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
         composer.CreateOrUpdate(new Field { Id = newFieldId }, table);
-        sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
+        sut.Invoke(commitType).Commit(composer, new(message, signature, signature));
 
         // Assert
         var changes = comparer.Compare(connection,
-                                       connection.Repository.Lookup<Commit>("HEAD~1"),
+                                       connection.Repository.Lookup<Commit>("main~1"),
                                        connection.Repository.Head.Tip,
                                        connection.Model.DefaultComparisonPolicy);
         Assert.That(changes, Has.Count.EqualTo(1));
@@ -89,18 +92,19 @@ public class CommitCommandTests
     {
         // Arrange
         var comparer = fixture.Create<Comparer>();
+        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
         var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
         var connection = fixture.Create<IConnectionInternal>();
         var resource = new Resource(table, "Some/Folder", "File.txt", new Resource.Data(fileContent));
 
         // Act
-        var composer = new TransformationComposer(connection, "main", sut);
+        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
         composer.CreateOrUpdate(resource);
-        sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
+        sut.Invoke(commitType).Commit(composer, new(message, signature, signature));
 
         // Assert
         var changes = comparer.Compare(connection,
-                                       connection.Repository.Lookup<Commit>("HEAD~1"),
+                                       connection.Repository.Lookup<Commit>("main~1"),
                                        connection.Repository.Head.Tip,
                                        connection.Model.DefaultComparisonPolicy);
         Assert.That(changes, Has.Count.EqualTo(1));
@@ -121,20 +125,75 @@ public class CommitCommandTests
     {
         // Arrange
         var comparer = fixture.Create<Comparer>();
+        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
         var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(connection, "main", sut);
+        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
         composer.Delete(table);
-        sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
+        sut.Invoke(commitType).Commit(composer, new(message, signature, signature));
 
         // Assert
         var changes = comparer.Compare(connection,
-                                       connection.Repository.Lookup<Commit>("HEAD~1"),
+                                       connection.Repository.Lookup<Commit>("main~1"),
                                        connection.Repository.Head.Tip,
                                        connection.Model.DefaultComparisonPolicy);
         Assert.That(changes, Has.Count.GreaterThan(1));
+    }
+
+    [Test]
+    [InlineAutoDataCustomizations(
+        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+        CommitCommandType.Normal)]
+    [InlineAutoDataCustomizations(
+        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+        CommitCommandType.FastImport)]
+    public void RenamingNonGitFoldersIsSupported(CommitCommandType commitType, IFixture fixture, Field field, string message, Signature signature)
+    {
+        // Arrange
+        var comparer = fixture.Create<Comparer>();
+        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
+        var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+        var connection = fixture.Create<IConnectionInternal>();
+
+        // Act
+        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
+        var newPath = new DataPath(field.Path.FolderPath,
+                                   $"someName{Path.GetExtension(field.Path.FileName)}",
+                                   field.Path.UseNodeFolders);
+        composer.Rename(field, newPath);
+        sut.Invoke(commitType).Commit(composer, new(message, signature, signature));
+
+        // Assert
+        var changes = comparer.Compare(connection,
+                                       connection.Repository.Lookup<Commit>("main~1"),
+                                       connection.Repository.Head.Tip,
+                                       connection.Model.DefaultComparisonPolicy);
+        Assert.That(changes, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    [InlineAutoDataCustomizations(
+        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+        CommitCommandType.Normal)]
+    [InlineAutoDataCustomizations(
+        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
+        CommitCommandType.FastImport)]
+    public void RenamingGitFoldersIsNotSupported(CommitCommandType commitType, IFixture fixture, Table table, string message, Signature signature)
+    {
+        // Arrange
+        var comparer = fixture.Create<Comparer>();
+        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
+        var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+        var connection = fixture.Create<IConnectionInternal>();
+
+        // Act
+        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
+        var newPath = new DataPath(table.Path.FolderPath,
+                                   $"someName{Path.GetExtension(table.Path.FileName)}",
+                                   table.Path.UseNodeFolders);
+        Assert.Throws<GitObjectDbException>(() => composer.Rename(table, newPath));
     }
 
     [Test]
@@ -148,11 +207,12 @@ public class CommitCommandTests
     {
         // Arrange
         var comparer = fixture.Create<Comparer>();
+        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
         var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(connection, "main", sut);
+        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
         composer.CreateOrUpdate(field with
         {
             SomeValue = new()
@@ -163,11 +223,11 @@ public class CommitCommandTests
                 },
             },
         });
-        sut.Invoke(commitType).Commit(connection, composer, new(message, signature, signature));
+        sut.Invoke(commitType).Commit(composer, new(message, signature, signature));
 
         // Act
         var changes = comparer.Compare(connection,
-                                       connection.Repository.Lookup<Commit>("HEAD~1"),
+                                       connection.Repository.Lookup<Commit>("main~1"),
                                        connection.Repository.Head.Tip,
                                        connection.Model.DefaultComparisonPolicy);
         Assert.That(changes, Has.Count.EqualTo(1));
@@ -196,7 +256,7 @@ public class CommitCommandTests
             A.CallTo(validation).WithVoidReturnType().DoesNothing();
             fixture.Inject(validation);
 
-            fixture.Inject(new CommitCommand(() => validation));
+            fixture.Inject(new CommitCommandUsingTree(() => validation));
         }
     }
 }

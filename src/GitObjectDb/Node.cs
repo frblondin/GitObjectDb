@@ -5,7 +5,7 @@ namespace GitObjectDb;
 
 /// <summary>Represents a single object stored in the repository.</summary>
 [DebuggerDisplay("Id = {Id}, Path = {Path}")]
-public record Node : ITreeItem
+public record Node : TreeItem
 {
     /// <summary>Initializes a new instance of the <see cref="Node"/> class.</summary>
     protected Node()
@@ -14,10 +14,6 @@ public record Node : ITreeItem
 
     /// <summary>Gets the unique node identifier.</summary>
     public UniqueId Id { get; init; } = UniqueId.CreateNew();
-
-    /// <summary>Gets or sets the node path.</summary>
-    [IgnoreDataMember]
-    public DataPath? Path { get; set; }
 
     /// <summary>Gets the embedded resource.</summary>
     [IgnoreDataMember]

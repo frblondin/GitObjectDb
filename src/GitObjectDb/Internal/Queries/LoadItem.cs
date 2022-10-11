@@ -4,21 +4,21 @@ using System.IO;
 
 namespace GitObjectDb.Internal.Queries;
 
-internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
+internal class LoadItem : IQuery<LoadItem.Parameters, TreeItem>
 {
-    public ITreeItem Execute(IQueryAccessor queryAccessor, Parameters parms)
+    public TreeItem Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
         var loadParameters = new DataLoadParameters(parms.Path, parms.Tree.Id);
         return queryAccessor.Cache?.GetOrCreate(loadParameters, Load) ??
                Load(default);
 
-        ITreeItem Load(ICacheEntry? entry) =>
+        TreeItem Load(ICacheEntry? entry) =>
             parms.Path.IsNode ?
             LoadNode(queryAccessor, parms) :
             LoadResource(parms);
     }
 
-    private ITreeItem LoadNode(IQueryAccessor queryAccessor, Parameters parms)
+    private TreeItem LoadNode(IQueryAccessor queryAccessor, Parameters parms)
     {
         using var stream = GetStream(parms);
         return queryAccessor.Serializer.Deserialize(stream,
@@ -27,7 +27,7 @@ internal class LoadItem : IQuery<LoadItem.Parameters, ITreeItem>
                                                     p => Execute(queryAccessor, parms with { Path = p }));
     }
 
-    private static ITreeItem LoadResource(Parameters parms) =>
+    private static TreeItem LoadResource(Parameters parms) =>
         new Resource(parms.Path, new Resource.Data(() => GetStream(parms)));
 
     private static Stream GetStream(Parameters parms)

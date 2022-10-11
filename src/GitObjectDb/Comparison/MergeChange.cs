@@ -1,8 +1,10 @@
 using Fasterflect;
 using GitObjectDb.Internal.Commands;
 using GitObjectDb.Tools;
+using KellermanSoftware.CompareNetObjects;
 using LibGit2Sharp;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
@@ -14,40 +16,65 @@ namespace GitObjectDb.Comparison;
 [DebuggerDisplay("Status = {Status}, Path = {Path}")]
 public sealed class MergeChange
 {
-    internal MergeChange(ComparisonPolicy policy)
+    internal MergeChange(ComparisonPolicy policy,
+                         TreeItem? ancestor = null,
+                         TreeItem? ours = null,
+                         TreeItem? theirs = null,
+                         TreeItem? ourRootDeletedParent = null,
+                         TreeItem? theirRootDeletedParent = null)
     {
         Policy = policy;
+        Ancestor = ancestor;
+        Ours = ours;
+        Theirs = theirs;
+        OurRootDeletedParent = ourRootDeletedParent;
+        TheirRootDeletedParent = theirRootDeletedParent;
+
+        Path = GetMergePath();
+        var type = CreateMergeInstance();
+
+        var conflicts = ProcessPropertyValues(type);
+        Conflicts = conflicts.ToImmutable();
+        UpdateStatus();
     }
 
     /// <summary>Gets the ancestor.</summary>
-    public ITreeItem? Ancestor { get; internal set; }
+    public TreeItem? Ancestor { get; }
 
     /// <summary>Gets the node on our side.</summary>
-    public ITreeItem? Ours { get; internal set; }
+    public TreeItem? Ours { get; }
 
     /// <summary>Gets the node on their side.</summary>
-    public ITreeItem? Theirs { get; internal set; }
+    public TreeItem? Theirs { get; }
 
-    private bool StillExists => Ours != null && Theirs != null;
+    private bool StillExists => Ours is not null && Theirs is not null;
 
     /// <summary>Gets the parent root deleted node on our side.</summary>
-    public ITreeItem? OurRootDeletedParent { get; internal set; }
+    public TreeItem? OurRootDeletedParent { get; }
 
     /// <summary>Gets the parent root deleted node on their side.</summary>
-    public ITreeItem? TheirRootDeletedParent { get; internal set; }
+    public TreeItem? TheirRootDeletedParent { get; }
 
-    private bool IsTreeConflict => OurRootDeletedParent != null || TheirRootDeletedParent != null;
+    private bool AddedOrEdited => (Ancestor is null && (Theirs is not null || Ours is not null)) ||
+                                  (Ancestor is not null && Theirs is not null && !Compare(Ours, Merged).AreEqual) ||
+                                  (Ancestor is not null && Ours is not null && !Compare(Ours, Merged).AreEqual);
 
-    private bool IsDeletion => Ancestor != null && (Theirs == null || Ours == null);
+    private bool IsTreeConflict => (AddedOrEdited || AnyRename) && (IsDeletion || OurRootDeletedParent is not null || TheirRootDeletedParent is not null);
+
+    private bool IsDeletion => Ancestor is not null && (Theirs is null || Ours is null);
+
+    private bool AnyRename => Ancestor?.Path is not null &&
+                             ((Ours?.Path is not null && !Ours.Path.Equals(Ancestor.Path)) ||
+                              (Theirs?.Path is not null && !Theirs.Path.Equals(Ancestor.Path)));
 
     /// <summary>Gets the merged node.</summary>
-    public ITreeItem? Merged { get; private set; }
+    public TreeItem? Merged { get; private set; }
 
     /// <summary>Gets the node path.</summary>
-    public DataPath Path => (Theirs ?? Ours ?? Ancestor)?.Path ?? throw new InvalidOperationException();
+    public DataPath Path { get; private set; }
 
     /// <summary>Gets the list of conflicts.</summary>
-    public IImmutableList<MergeValueConflict> Conflicts { get; internal set; } = ImmutableList.Create<MergeValueConflict>();
+    public IImmutableList<MergeValueConflict> Conflicts { get; }
 
     private bool HasUnresolvedConflicts => Conflicts.Any(c => !c.IsResolved);
 
@@ -57,10 +84,27 @@ public sealed class MergeChange
     /// <summary>Gets the merge status.</summary>
     public ItemMergeStatus Status { get; internal set; }
 
-    internal MergeChange Initialize()
+    private Type CreateMergeInstance()
     {
-        var type = CreateMergeInstance();
+        var nonNull = Ours ?? Theirs ?? Ancestor ?? throw new NullReferenceException();
+        var type = nonNull.GetType();
+        switch (nonNull)
+        {
+            case Node node:
+                Merged = NodeFactory.Create(type, node.Id);
+                Merged.Path = Ancestor?.Path ?? (Ours ?? Theirs)?.Path ?? throw new NullReferenceException();
+                break;
+            case Resource resource:
+                Merged = new Resource(resource.ThrowIfNoPath(), new Resource.Data(System.IO.Stream.Null));
+                break;
+            default:
+                throw new NotSupportedException();
+        }
+        return type;
+    }
 
+    private ImmutableList<MergeValueConflict>.Builder ProcessPropertyValues(Type type)
+    {
         var conflicts = ImmutableList.CreateBuilder<MergeValueConflict>();
         foreach (var property in Comparer.GetProperties(type, Policy))
         {
@@ -83,36 +127,26 @@ public sealed class MergeChange
                 conflicts.Add(conflict);
             }
         }
-        Conflicts = conflicts.ToImmutable();
-        UpdateStatus();
-        return this;
+
+        return conflicts;
     }
 
-    private Type CreateMergeInstance()
+    private DataPath GetMergePath()
     {
-        var nonNull = Ours ?? Theirs ?? Ancestor ?? throw new NullReferenceException();
-        var type = nonNull.GetType();
-        var path = nonNull.Path ?? throw new NullReferenceException();
-        switch (nonNull)
+        if (AnyRename)
         {
-            case Node node:
-                Merged = NodeFactory.Create(type, node.Id);
-                Merged.Path = path;
-                break;
-            case Resource resource:
-                Merged = new Resource(resource.Path, new Resource.Data(System.IO.Stream.Null));
-                break;
-            default:
-                throw new NotSupportedException();
+            // If a rename operation was made on one branches, take the path
+            // which is different than the ancestor path
+            return Theirs?.Path is null || Theirs.Path.Equals(Ancestor!.Path) ? Ours!.Path! : Theirs.Path!;
         }
-        return type;
+        else
+        {
+            return Ours?.Path ?? Theirs?.Path ?? Ancestor?.Path ??
+                throw new NullReferenceException();
+        }
     }
 
-    internal void Transform(ObjectDatabase database,
-                            TreeDefinition tree,
-                            Tree? reference,
-                            ModuleCommands modules,
-                            INodeSerializer serializer)
+    internal Delegate Transform(IGitUpdateCommand command)
     {
         switch (Status)
         {
@@ -122,15 +156,23 @@ public sealed class MergeChange
                 {
                     throw new InvalidOperationException("No merge value has been set.");
                 }
-                UpdateTreeCommand.CreateOrUpdate(Merged).Invoke(reference, modules, serializer, database, tree);
-                break;
+                return command.CreateOrUpdate(Merged);
+            case ItemMergeStatus.Rename:
+                if (Merged is null)
+                {
+                    throw new InvalidOperationException("No merge value has been set.");
+                }
+                if (Path is null)
+                {
+                    throw new InvalidOperationException("No path has been set.");
+                }
+                return command.Rename(Merged, Path);
             case ItemMergeStatus.Delete:
                 if (Ancestor is null)
                 {
                     throw new InvalidOperationException("The deletion change does not contain any ancestor.");
                 }
-                UpdateTreeCommand.Delete(Ancestor).Invoke(reference, modules, serializer, database, tree);
-                break;
+                return command.Delete(Ancestor.ThrowIfNoPath());
             default:
                 throw new GitObjectDbException("Remaining conflicts.");
         }
@@ -145,7 +187,7 @@ public sealed class MergeChange
         else if (IsDeletion)
         {
             var nonNull = Theirs ?? Ours;
-            Status = nonNull != null && !Comparer.CompareInternal(Ancestor, nonNull, Policy).AreEqual ?
+            Status = nonNull != null && !Compare(Ancestor, nonNull).AreEqual ?
                 ItemMergeStatus.TreeConflict :
                 ItemMergeStatus.Delete;
         }
@@ -153,7 +195,11 @@ public sealed class MergeChange
         {
             Status = ItemMergeStatus.EditConflict;
         }
-        else if (Comparer.CompareInternal(Ours, Merged, Policy).AreEqual)
+        else if (AnyRename)
+        {
+            Status = ItemMergeStatus.Rename;
+        }
+        else if (Compare(Ours, Merged).AreEqual)
         {
             Status = ItemMergeStatus.NoChange;
         }
@@ -178,21 +224,21 @@ public sealed class MergeChange
         if (StillExists)
         {
             // Both values are equal -> no conflict
-            if (Comparer.CompareInternal(ourValue, theirValue, Policy).AreEqual)
+            if (Compare(ourValue, theirValue).AreEqual)
             {
                 setter(Merged, ourValue);
                 return true;
             }
 
             // Only changed in their changes -> no conflict
-            if (Ancestor != null && Comparer.CompareInternal(ancestorValue, ourValue, Policy).AreEqual)
+            if (Ancestor != null && Compare(ancestorValue, ourValue).AreEqual)
             {
                 setter(Merged, theirValue);
                 return true;
             }
 
             // Only changed in our changes -> no conflict
-            if (Ancestor != null && Comparer.CompareInternal(ancestorValue, theirValue, Policy).AreEqual)
+            if (Ancestor != null && Compare(ancestorValue, theirValue).AreEqual)
             {
                 setter(Merged, ourValue);
                 return true;
@@ -216,9 +262,14 @@ public sealed class MergeChange
         }
         throw new NotSupportedException("Expected execution path.");
 
-        object? GetValue(ITreeItem? item)
+        object? GetValue(TreeItem? item)
         {
             return item != null ? getter(item) : null;
         }
+    }
+
+    private ComparisonResult Compare(object? ancestorValue, object? theirValue)
+    {
+        return Comparer.CompareInternal(ancestorValue, theirValue, Policy);
     }
 }

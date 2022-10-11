@@ -10,7 +10,7 @@ namespace GitObjectDb;
 /// </summary>
 /// <typeparam name="TItem">The type of items to enumerate.</typeparam>
 public interface ICommitEnumerable<out TItem> : IEnumerable<TItem>
-    where TItem : ITreeItem
+    where TItem : TreeItem
 {
     /// <summary>Gets the commit id containing the nodes.</summary>
     ObjectId CommitId { get; }
@@ -18,7 +18,7 @@ public interface ICommitEnumerable<out TItem> : IEnumerable<TItem>
 
 #pragma warning disable SA1402 // File may only contain a single type
 internal class CommitEnumerable<TItem> : ICommitEnumerable<TItem>
-    where TItem : ITreeItem
+    where TItem : TreeItem
 {
     private readonly IEnumerable<TItem> _items;
 
@@ -49,7 +49,7 @@ public static class CommitEnumerable
     /// <returns>The converted enumerable.</returns>
     public static ICommitEnumerable<TItem> ToCommitEnumerable<TItem>(this IEnumerable<TItem> items,
                                                                        ObjectId commitId)
-       where TItem : ITreeItem =>
+       where TItem : TreeItem =>
        new CommitEnumerable<TItem>(items, commitId);
 
     /// <summary>
@@ -59,6 +59,6 @@ public static class CommitEnumerable
     /// <param name="commitId">Commit used to gather the items.</param>
     /// <returns>An empty <see cref="ICommitEnumerable{TItem}"/> whose type argument is <typeparamref name="TItem"/>.</returns>
     public static ICommitEnumerable<TItem> Empty<TItem>(ObjectId commitId)
-        where TItem : ITreeItem =>
+        where TItem : TreeItem =>
         Enumerable.Empty<TItem>().ToCommitEnumerable(commitId);
 }

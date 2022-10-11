@@ -12,10 +12,10 @@ public interface INodeSerializer
     /// <returns>The serializer to be used by GitObjectDb.</returns>
     public delegate INodeSerializer Factory(IDataModel model);
 
-    /// <summary>Represents a method that creates a <see cref="ITreeItem"/> from a path.</summary>
+    /// <summary>Represents a method that creates a <see cref="TreeItem"/> from a path.</summary>
     /// <param name="path">The path of item.</param>
     /// <returns>An item.</returns>
-    public delegate ITreeItem ItemLoader(DataPath path);
+    public delegate TreeItem ItemLoader(DataPath path);
 
     /// <summary>Gets the extension of serialized files (json, yaml...).</summary>
     string FileExtension { get; }

@@ -1,12 +1,13 @@
 using LibGit2Sharp;
 using System;
-using System.IO;
 
 namespace GitObjectDb.Internal.Commands;
 
-internal static class UpdateTreeCommand
+internal class GitUpdateCommandUsingTree : IGitUpdateCommand
 {
-    internal static ApplyUpdateTreeDefinition CreateOrUpdate(ITreeItem item) =>
+    Delegate IGitUpdateCommand.CreateOrUpdate(TreeItem item) => CreateOrUpdate(item);
+
+    internal static ApplyUpdateTreeDefinition CreateOrUpdate(TreeItem item) =>
         (_, modules, serializer, database, definition) =>
         {
             switch (item)
@@ -22,16 +23,7 @@ internal static class UpdateTreeCommand
             }
         };
 
-    internal static ApplyUpdateTreeDefinition Delete(ITreeItem item) =>
-        (_, modules, _, _, definition) =>
-        {
-            var path = item.ThrowIfNoPath();
-
-            // For nodes, delete whole folder containing node and nested entries
-            // For resources, only deleted resource
-            definition.Remove(item is Node && item.Path!.UseNodeFolders ? path.FolderPath : path.FilePath);
-            modules.RemoveRecursively(item.ThrowIfNoPath());
-        };
+    Delegate IGitUpdateCommand.Delete(DataPath path) => Delete(path);
 
     internal static ApplyUpdateTreeDefinition Delete(DataPath path) =>
         (_, modules, _, _, definition) =>
@@ -42,11 +34,46 @@ internal static class UpdateTreeCommand
             modules.RemoveRecursively(path);
         };
 
+    Delegate IGitUpdateCommand.Rename(TreeItem item, DataPath newPath) => Rename(item, newPath);
+
+    internal static ApplyUpdateTreeDefinition Rename(TreeItem item, DataPath newPath)
+    {
+        var newItem = ValidateRename(item, newPath);
+
+        return (ApplyUpdateTreeDefinition)Delegate.Combine(
+            Delete(item.ThrowIfNoPath()),
+            CreateOrUpdate(newItem));
+    }
+
+    internal static TreeItem ValidateRename(TreeItem item, DataPath newPath)
+    {
+        if (newPath.IsNode != item is Node ||
+            newPath.UseNodeFolders != item.ThrowIfNoPath().UseNodeFolders)
+        {
+            throw new GitObjectDbException("New rename path doesn't match the item type.");
+        }
+
+        if (newPath.UseNodeFolders)
+        {
+            throw new GitObjectDbException("Renaming nodes that can contain children is not supported.");
+        }
+
+        return item switch
+        {
+            Node n => n with
+            {
+                Id = new UniqueId(System.IO.Path.GetFileNameWithoutExtension(newPath.FileName)),
+                Path = newPath,
+            },
+            _ => item with { Path = newPath },
+        };
+    }
+
     private static void CreateOrUpdateNode(Node node,
-                                    ModuleCommands modules,
-                                    INodeSerializer serializer,
-                                    ObjectDatabase database,
-                                    TreeDefinition definition)
+                                           ModuleCommands modules,
+                                           INodeSerializer serializer,
+                                           ObjectDatabase database,
+                                           TreeDefinition definition)
     {
         using var stream = serializer.Serialize(node);
         var blob = database.CreateBlob(stream);
@@ -79,6 +106,6 @@ internal static class UpdateTreeCommand
     {
         var stream = resource.Embedded.GetContentStream();
         var blob = database.CreateBlob(stream);
-        definition.Add(resource.Path.FilePath, blob, Mode.NonExecutableFile);
+        definition.Add(resource.ThrowIfNoPath().FilePath, blob, Mode.NonExecutableFile);
     }
 }

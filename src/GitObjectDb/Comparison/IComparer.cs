@@ -12,7 +12,7 @@ public interface IComparer
     /// <param name="actualObject">The actual object value to compare.</param>
     /// <param name="policy">The merge policy to use.</param>
     /// <returns>Details about the comparison.</returns>
-    ComparisonResult Compare(ITreeItem? expectedObject, ITreeItem? actualObject, ComparisonPolicy policy);
+    ComparisonResult Compare(TreeItem? expectedObject, TreeItem? actualObject, ComparisonPolicy policy);
 }
 
 internal interface IComparerInternal

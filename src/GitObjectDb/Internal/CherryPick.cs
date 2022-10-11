@@ -2,6 +2,8 @@ using GitObjectDb.Comparison;
 using GitObjectDb.Injection;
 using GitObjectDb.Internal.Commands;
 using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -13,23 +15,26 @@ internal sealed class CherryPick : ICherryPick
 {
     private readonly IComparerInternal _comparer;
     private readonly IMergeComparer _mergeComparer;
-    private readonly CommitCommand _commitCommand;
+    private readonly IGitUpdateCommand _gitUpdateFactory;
+    private readonly ICommitCommand _commitCommand;
     private readonly IConnectionInternal _connection;
     private readonly Signature? _committer;
 
     [FactoryDelegateConstructor(typeof(Factories.CherryPickFactory))]
-    public CherryPick(IComparerInternal comparer,
-                      IMergeComparer mergeComparer,
-                      CommitCommand commitCommand,
+    public CherryPick(IServiceProvider serviceProvider,
                       IConnectionInternal connection,
                       string branchName,
                       string committish,
                       Signature? committer,
-                      CherryPickPolicy? policy = null)
+                      CherryPickPolicy? policy = null,
+                      CommitCommandType commitType = CommitCommandType.Auto)
     {
-        _comparer = comparer;
-        _mergeComparer = mergeComparer;
-        _commitCommand = commitCommand;
+        _comparer = serviceProvider.GetRequiredService<IComparerInternal>();
+        _mergeComparer = serviceProvider.GetRequiredService<IMergeComparer>();
+        _gitUpdateFactory = serviceProvider.GetRequiredService<ServiceResolver<CommitCommandType, IGitUpdateCommand>>()
+                                           .Invoke(commitType);
+        _commitCommand = serviceProvider.GetRequiredService<ServiceResolver<CommitCommandType, ICommitCommand>>()
+                                        .Invoke(commitType);
         _connection = connection;
         _committer = committer;
         Branch = connection.Repository.Branches[branchName] ?? throw new GitObjectDbNonExistingBranchException();
@@ -102,11 +107,9 @@ internal sealed class CherryPick : ICherryPick
         CompletedCommit = _commitCommand.Commit(
             _connection,
             Branch.FriendlyName,
-            Branch.Tip,
-            CurrentChanges.Select(c =>
-                (ApplyUpdateTreeDefinition)((refTree, modules, serializer, database, treeDefinition) =>
-                c.Transform(database, treeDefinition, refTree, modules, serializer))),
+            CurrentChanges.Select(c => c.Transform(_gitUpdateFactory)),
             new(UpstreamCommit.Message, UpstreamCommit.Author, _committer ?? UpstreamCommit.Committer),
+            Branch.Tip,
             updateBranchTip: false);
 
         // Update tip

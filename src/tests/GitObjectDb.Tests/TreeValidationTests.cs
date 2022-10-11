@@ -1,11 +1,13 @@
 using AutoFixture;
 using GitObjectDb.Internal;
+using GitObjectDb.Internal.Commands;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
 using Models.Software;
 using NUnit.Framework;
+using System.Linq;
 
 namespace GitObjectDb.Tests;
 
@@ -21,7 +23,7 @@ public class TreeValidationTests
             {
                 c.Delete(application);
                 c.CreateOrUpdate(new Field { }, table);
-            });
+            }, CommitCommandType.Normal);
         var tree = UpdateTree(connection, composer);
 
         // Assert
@@ -36,7 +38,8 @@ public class TreeValidationTests
         // Act
         var composer = (TransformationComposer)connection
             .Update("main",
-                    c => c.CreateOrUpdate(new Field { Path = new DataPath("InvalidFolder", "invalidfile.json", true) }));
+                    c => c.CreateOrUpdate(new Field { Path = new DataPath("InvalidFolder", "invalidfile.json", true) }),
+                    CommitCommandType.Normal);
         var tree = UpdateTree(connection, composer);
 
         // Assert
@@ -50,12 +53,12 @@ public class TreeValidationTests
     {
         // Arrange, delete parent
         connection
-            .Update("main", c => c.Delete(application))
+            .Update("main", c => c.Delete(application), CommitCommandType.Normal)
             .Commit(new(message, signature, signature));
 
         // Act, edit child
         var composer = (TransformationComposer)connection
-            .Update("main", c => c.CreateOrUpdate(field));
+            .Update("main", c => c.CreateOrUpdate(field), CommitCommandType.Normal);
         var tree = UpdateTree(connection, composer);
 
         // Assert
@@ -69,7 +72,7 @@ public class TreeValidationTests
     {
         // Act
         var composer = (TransformationComposer)connection
-            .Update("main", c => c.CreateOrUpdate(new Application { Id = field.Id }));
+            .Update("main", c => c.CreateOrUpdate(new Application { Id = field.Id }), CommitCommandType.Normal);
         var tree = UpdateTree(connection, composer);
 
         // Assert
@@ -79,9 +82,15 @@ public class TreeValidationTests
 
     private static Tree UpdateTree(IConnection connection, TransformationComposer composer)
     {
-        var repository = ((IConnectionInternal)connection).Repository;
-        var definition = composer.ApplyTransformations(repository.ObjectDatabase, connection.Repository.Head.Tip);
-        var tree = repository.ObjectDatabase.CreateTree(definition);
-        return tree;
+        var repository = connection.Repository;
+        var commit = repository.Head.Tip;
+        var definition = TreeDefinition.From(commit);
+        var modules = new ModuleCommands(commit?.Tree);
+        foreach (var transformation in composer.Transformations.Cast<ITransformationInternal>())
+        {
+            var action = (ApplyUpdateTreeDefinition)transformation.Action;
+            action.Invoke(commit?.Tree, modules, connection.Serializer, connection.Repository.ObjectDatabase, definition);
+        }
+        return repository.ObjectDatabase.CreateTree(definition);
     }
 }

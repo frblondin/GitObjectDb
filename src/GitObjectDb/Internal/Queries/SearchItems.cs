@@ -8,16 +8,16 @@ using System.Linq;
 
 namespace GitObjectDb.Internal.Queries;
 
-internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPath Path, ITreeItem Item)>>
+internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPath Path, TreeItem Item)>>
 {
-    private readonly IQuery<LoadItem.Parameters, ITreeItem> _loader;
+    private readonly IQuery<LoadItem.Parameters, TreeItem> _loader;
 
-    public SearchItems(IQuery<LoadItem.Parameters, ITreeItem> loader)
+    public SearchItems(IQuery<LoadItem.Parameters, TreeItem> loader)
     {
         _loader = loader;
     }
 
-    public IEnumerable<(DataPath Path, ITreeItem Item)> Execute(IQueryAccessor queryAccessor, Parameters parms)
+    public IEnumerable<(DataPath Path, TreeItem Item)> Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
         var regex = queryAccessor.Serializer.EscapeRegExPattern(parms.Pattern);
         var arguments = $"grep --name-only " +
@@ -38,7 +38,7 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
                         where data is not null
                         let colon = data.IndexOf(':')
                         where DataPath.TryParse(data.Substring(colon + 1), out path)
-                        let item = new Lazy<ITreeItem>(() => _loader.Execute(queryAccessor, new LoadItem.Parameters(parms.Tree, path!)))
+                        let item = new Lazy<TreeItem>(() => _loader.Execute(queryAccessor, new LoadItem.Parameters(parms.Tree, path!)))
                         select (path, item);
         return lazyItems
             .AsParallel()
@@ -48,7 +48,7 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
             .AsSequential();
     }
 
-    private static bool Matches(ITreeItem item, IDataModel model, Parameters parms)
+    private static bool Matches(TreeItem item, IDataModel model, Parameters parms)
     {
         var comparer = parms.IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         return item switch

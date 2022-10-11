@@ -8,45 +8,86 @@ using System.Text;
 
 namespace GitObjectDb.Internal.Commands;
 
-internal class FastImportCommitCommand : ICommitCommand
+internal class CommitCommandUsingFastImport : ICommitCommand
 {
     private readonly Func<ITreeValidation> _treeValidation;
 
-    public FastImportCommitCommand(Func<ITreeValidation> treeValidation)
+    public CommitCommandUsingFastImport(Func<ITreeValidation> treeValidation)
     {
         _treeValidation = treeValidation;
 
         GitCliCommand.ThrowIfGitNotInstalled();
     }
 
-    public Commit Commit(IConnection connection,
-                         TransformationComposer transformationComposer,
+    public Commit Commit(TransformationComposer composer,
                          CommitDescription description,
                          Action<ITransformation>? beforeProcessing = null)
     {
-        var branch = connection.Repository.Branches[transformationComposer.BranchName];
+        var branch = composer.Connection.Repository.Branches[composer.BranchName];
+        var parents = CommitCommandUsingTree.RetrieveParentsOfTheCommitBeingCreated(composer.Connection.Repository,
+                                                                           branch,
+                                                                           description.AmendPreviousCommit,
+                                                                           description.MergeParent).ToList();
+        return Commit(composer.Connection,
+                      info => ApplyTransformations(composer.Connection,
+                                                   composer.Transformations,
+                                                   branch?.Tip,
+                                                   info.Writer,
+                                                   info.Index,
+                                                   beforeProcessing),
+                      composer.BranchName,
+                      parents,
+                      description);
+    }
+
+    public Commit Commit(IConnection connection,
+                         string branchName,
+                         IEnumerable<Delegate> transformations,
+                         CommitDescription description,
+                         Commit predecessor,
+                         bool updateBranchTip = true)
+    {
+        var modules = new ModuleCommands(predecessor.Tree);
+        var parents = new List<Commit> { predecessor };
+        if (description.MergeParent is not null)
+        {
+            parents.Add(description.MergeParent);
+        }
+        return Commit(connection,
+                      info =>
+                      {
+                          foreach (var transformation in transformations)
+                          {
+                              var action = (ApplyUpdateFastInsert)transformation;
+                              action.Invoke(predecessor.Tree, modules, connection.Serializer, info.Writer, info.Index);
+                          }
+                      },
+                      branchName,
+                      parents,
+                      description);
+    }
+
+    private Commit Commit(IConnection connection,
+                          Action<(StreamWriter Writer, List<string> Index, string TempBranch)> transform,
+                          string branchName,
+                          List<Commit> parents,
+                          CommitDescription description)
+    {
         var importFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         var tempBranch = $"refs/fastimport/{UniqueId.CreateNew()}";
         try
         {
-            var parents = CommitCommand.RetrieveParentsOfTheCommitBeingCreated(connection.Repository,
-                                                                               branch,
-                                                                               description.AmendPreviousCommit,
-                                                                               description.MergeParent).ToList();
             int commitMarkId;
             using (var writer = new StreamWriter(File.OpenWrite(importFile)) { NewLine = "\n" })
             {
-                var index = new List<string>(transformationComposer.Transformations.Count);
-                commitMarkId = WriteFastInsertImportFile(branch,
-                                                         transformationComposer,
-                                                         parents,
-                                                         writer,
-                                                         index,
-                                                         description,
-                                                         tempBranch,
-                                                         beforeProcessing);
+                var index = new List<string>();
+                transform((writer, index, tempBranch));
+
+                commitMarkId = index.Count + 1;
+                WriteFastInsertCommit(tempBranch, parents, writer, description, commitMarkId);
+                WriteFastInsertCommitIndex(writer, index);
             }
-            return ValidateAndupdateBranchTip(connection, transformationComposer.BranchName, description, importFile, parents, commitMarkId);
+            return ValidateAndUpdateBranchTip(connection, branchName, description, importFile, parents, commitMarkId);
         }
         finally
         {
@@ -56,22 +97,26 @@ internal class FastImportCommitCommand : ICommitCommand
         }
     }
 
-    private static int WriteFastInsertImportFile(Branch? branch,
-                                                 TransformationComposer transformationComposer,
-                                                 List<Commit> parents,
-                                                 StreamWriter writer,
-                                                 List<string> index,
-                                                 CommitDescription description,
-                                                 string tempBranch,
-                                                 Action<ITransformation>? beforeProcessing)
+    private static void ApplyTransformations(IConnection connection,
+                                             IEnumerable<ITransformation> transformations,
+                                             Commit? commit,
+                                             StreamWriter writer,
+                                             IList<string> commitIndex,
+                                             Action<ITransformation>? beforeProcessing = null)
     {
-        transformationComposer.ApplyTransformations(branch?.Tip, writer, index, beforeProcessing);
+        var modules = new ModuleCommands(commit?.Tree);
+        foreach (var transformation in transformations.OfType<ITransformationInternal>())
+        {
+            beforeProcessing?.Invoke(transformation);
+            var action = (ApplyUpdateFastInsert)transformation.Action;
+            action.Invoke(commit?.Tree, modules, connection.Serializer, writer, commitIndex);
+        }
 
-        var commitMarkId = index.Count + 1;
-        WriteFastInsertCommit(tempBranch, parents, writer, description, commitMarkId);
-        WriteFastInsertCommitIndex(writer, index);
-
-        return commitMarkId;
+        if (modules.HasAnyChange)
+        {
+            using var stream = modules.CreateStream();
+            GitUpdateCommandUsingFastImport.AddBlob(ModuleCommands.ModuleFile, stream, writer, commitIndex);
+        }
     }
 
     private static void WriteFastInsertCommit(string tempBranch,
@@ -153,7 +198,7 @@ internal class FastImportCommitCommand : ICommitCommand
         }
     }
 
-    private Commit ValidateAndupdateBranchTip(IConnection connection, string branchName, CommitDescription description, string importFile, List<Commit> parents, int commitMarkId)
+    private Commit ValidateAndUpdateBranchTip(IConnection connection, string branchName, CommitDescription description, string importFile, List<Commit> parents, int commitMarkId)
     {
         var commit = SendCommandThroughCli(connection, importFile, commitMarkId);
         if (parents.Count == 1 && commit.Tree == parents[0].Tree)
