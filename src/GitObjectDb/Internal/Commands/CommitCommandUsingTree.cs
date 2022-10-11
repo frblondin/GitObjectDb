@@ -5,58 +5,58 @@ using System.Linq;
 
 namespace GitObjectDb.Internal.Commands;
 
-internal class CommitCommand : ICommitCommand
+internal class CommitCommandUsingTree : ICommitCommand
 {
     private readonly Func<ITreeValidation> _treeValidation;
 
-    public CommitCommand(Func<ITreeValidation> treeValidation)
+    public CommitCommandUsingTree(Func<ITreeValidation> treeValidation)
     {
         _treeValidation = treeValidation;
     }
 
-    public Commit Commit(IConnection connection,
-                         TransformationComposer transformationComposer,
+    public Commit Commit(TransformationComposer composer,
                          CommitDescription description,
                          Action<ITransformation>? beforeProcessing = null)
     {
-        var branch = connection.Repository.Branches[transformationComposer.BranchName];
-        var definition = transformationComposer.ApplyTransformations(connection.Repository.ObjectDatabase,
-                                                                     branch?.Tip,
-                                                                     beforeProcessing);
-        var parents = RetrieveParentsOfTheCommitBeingCreated(connection.Repository,
+        var branch = composer.Connection.Repository.Branches[composer.BranchName];
+        var definition = ApplyTransformations(composer.Connection,
+                                              composer.Transformations,
+                                              branch?.Tip,
+                                              beforeProcessing);
+        var parents = RetrieveParentsOfTheCommitBeingCreated(composer.Connection.Repository,
                                                              branch,
                                                              description.AmendPreviousCommit,
                                                              description.MergeParent).ToList();
-        return Commit(connection,
-                      transformationComposer.BranchName,
+        return Commit(composer.Connection,
+                      composer.BranchName,
                       definition,
                       description,
                       parents,
                       updateBranchTip: true);
     }
 
-    internal Commit Commit(IConnection connection,
-                           string branchName,
-                           Commit predecessor,
-                           IEnumerable<ApplyUpdateTreeDefinition> transformations,
-                           CommitDescription description,
-                           bool updateBranchTip = true,
-                           Commit? mergeParent = null)
+    public Commit Commit(IConnection connection,
+                         string branchName,
+                         IEnumerable<Delegate> transformations,
+                         CommitDescription description,
+                         Commit predecessor,
+                         bool updateBranchTip = true)
     {
         var modules = new ModuleCommands(predecessor.Tree);
         var definition = TreeDefinition.From(predecessor);
         foreach (var transformation in transformations)
         {
-            transformation(predecessor.Tree,
-                           modules,
-                           connection.Serializer,
-                           connection.Repository.ObjectDatabase,
-                           definition);
+            var action = (ApplyUpdateTreeDefinition)transformation;
+            action.Invoke(predecessor.Tree,
+                          modules,
+                          connection.Serializer,
+                          connection.Repository.ObjectDatabase,
+                          definition);
         }
         var parents = new List<Commit> { predecessor };
-        if (mergeParent != null)
+        if (description.MergeParent is not null)
         {
-            parents.Add(mergeParent);
+            parents.Add(description.MergeParent);
         }
         return Commit(connection,
                       branchName,
@@ -88,6 +88,31 @@ internal class CommitCommand : ICommitCommand
                 connection.Repository.Refs.UpdateTarget("HEAD", $"refs/heads/{branchName}");
             connection.Repository.UpdateBranchTip(reference, result, logMessage);
         }
+        return result;
+    }
+
+    private static TreeDefinition ApplyTransformations(IConnection connection,
+                                                       IEnumerable<ITransformation> transformations,
+                                                       Commit? commit,
+                                                       Action<ITransformation>? beforeProcessing = null)
+    {
+        var result = commit is not null ? TreeDefinition.From(commit) : new TreeDefinition();
+        var modules = new ModuleCommands(commit?.Tree);
+        var database = connection.Repository.ObjectDatabase;
+        foreach (var transformation in transformations.Cast<ITransformationInternal>())
+        {
+            beforeProcessing?.Invoke(transformation);
+            var action = (ApplyUpdateTreeDefinition)transformation.Action;
+            action.Invoke(commit?.Tree, modules, connection.Serializer, database, result);
+        }
+
+        if (modules.HasAnyChange)
+        {
+            using var stream = modules.CreateStream();
+            var blob = database.CreateBlob(stream);
+            result.Add(ModuleCommands.ModuleFile, blob, Mode.NonExecutableFile);
+        }
+
         return result;
     }
 

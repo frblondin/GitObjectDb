@@ -15,6 +15,9 @@ public enum ItemMergeStatus
     /// <summary>The node was deleted.</summary>
     Delete,
 
+    /// <summary>The node was renamed.</summary>
+    Rename,
+
     /// <summary>The node was edited in both sides.</summary>
     EditConflict,
 

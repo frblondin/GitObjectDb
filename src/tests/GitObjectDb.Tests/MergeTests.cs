@@ -1,7 +1,4 @@
 using GitObjectDb.Comparison;
-using GitObjectDb.Tests.Assets;
-using GitObjectDb.Tests.Assets.Data.Software;
-using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
 using Models.Software;
 using NUnit.Framework;
@@ -9,27 +6,16 @@ using System.Linq;
 
 namespace GitObjectDb.Tests;
 
-public class MergeTests : DisposeArguments
+public class MergeTests : BranchMergerFixture
 {
-    [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void TwoDifferentPropertyEdits(IConnection sut, Table table, string newDescription, string newName, Signature signature)
+    /* main:      A---B    A---B
+                   \    ->  \   \
+       newBranch:   C        C---x */
+
+    protected override void TwoDifferentPropertyEditsActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string newDescription, string newName, Signature signature, Commit b, Commit c)
     {
-        // main:      A---B    A---B
-        //             \    ->  \   \
-        // newBranch:   C        C---x
-
-        // Arrange
-        var b = sut
-            .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
-            .Commit(new("B", signature, signature));
-        sut.Repository.Branches.Add("newBranch", "main~1");
-        var c = sut
-            .Update("newBranch", c => c.CreateOrUpdate(table with { Name = newName }))
-            .Commit(new("C", signature, signature));
-
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
 
         // Assert
         var mergeCommit = merge.Commit(signature, signature);
@@ -47,28 +33,16 @@ public class MergeTests : DisposeArguments
         });
     }
 
-    [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void FastForward(IConnection sut, Table table, string newDescription, Signature signature)
+    protected override void FastForwardActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string newDescription, Signature signature, Commit b)
     {
-        // main:      A---B    A---B
-        //             \    ->  \   \
-        // newBranch:            ----x
-
-        // Arrange
-        var b = sut
-            .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
-            .Commit(new("B", signature, signature));
-        sut.Repository.Branches.Add("newBranch", "main~1");
-
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
 
         // Assert
         Assert.Multiple(() =>
         {
             Assert.That(merge.Status, Is.EqualTo(MergeStatus.FastForward));
-            Assert.That(merge.Commits, Has.Count.EqualTo(0));
+            Assert.That(merge.Commits, Has.Count.Zero);
         });
         var mergeCommit = merge.Commit(signature, signature);
         Assert.That(mergeCommit, Is.EqualTo(b));
@@ -77,26 +51,10 @@ public class MergeTests : DisposeArguments
         Assert.That(newTable.Description, Is.EqualTo(newDescription));
     }
 
-    [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void SamePropertyEdits(IConnection sut, Table table, string bValue, string cValue, Signature signature)
+    protected override void SamePropertyEditsActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string bValue, string cValue, Signature signature)
     {
-        // main:      A---B    A---B
-        //             \    ->  \   \
-        // newBranch:   C        C---x
-
-        // Arrange
-        var oldValue = table.Description;
-        sut
-            .Update("main", c => c.CreateOrUpdate(table with { Description = bValue }))
-            .Commit(new("B", signature, signature));
-        sut.Repository.Branches.Add("newBranch", "main~1");
-        sut
-            .Update("newBranch", c => c.CreateOrUpdate(table with { Description = cValue }))
-            .Commit(new("C", signature, signature));
-
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
 
         // Assert
         Assert.That(merge.Status, Is.EqualTo(MergeStatus.Conflicts));
@@ -107,7 +65,7 @@ public class MergeTests : DisposeArguments
             Assert.That(merge.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.EditConflict));
             Assert.That(merge.CurrentChanges[0].Conflicts, Has.Count.EqualTo(1));
             Assert.That(merge.CurrentChanges[0].Conflicts[0].Property.Name, Is.EqualTo(nameof(table.Description)));
-            Assert.That(merge.CurrentChanges[0].Conflicts[0].AncestorValue, Is.EqualTo(oldValue));
+            Assert.That(merge.CurrentChanges[0].Conflicts[0].AncestorValue, Is.EqualTo(table.Description));
             Assert.That(merge.CurrentChanges[0].Conflicts[0].OurValue, Is.EqualTo(cValue));
             Assert.That(merge.CurrentChanges[0].Conflicts[0].TheirValue, Is.EqualTo(bValue));
             Assert.That(merge.CurrentChanges[0].Conflicts[0].IsResolved, Is.False);
@@ -129,29 +87,10 @@ public class MergeTests : DisposeArguments
         Assert.That(newTable.Description, Is.EqualTo("resolved"));
     }
 
-    [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void EditOnTheirParentDeletion(IConnection sut, Application parentApplication, Table parentTable, Field field, string newDescription, Signature signature)
+    protected override void EditOnTheirParentDeletionActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Table parentTable, Field field, Signature signature)
     {
-        // main:      A---B    A---B
-        //             \    ->  \   \
-        // newBranch:   C        C---x
-
-        // Arrange
-        sut
-            .Update("main", c =>
-            {
-                c.CreateOrUpdate(field with { Description = newDescription });
-                c.CreateOrUpdate(parentApplication);
-            })
-            .Commit(new("C", signature, signature));
-        sut.Repository.Branches.Add("newBranch", "main~1");
-        sut
-            .Update("newBranch", c => c.Delete(parentTable.Path))
-            .Commit(new("B", signature, signature));
-
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
 
         // Assert
         var conflict = merge.CurrentChanges.Single(c => c.Status == ItemMergeStatus.TreeConflict);
@@ -159,11 +98,10 @@ public class MergeTests : DisposeArguments
         {
             Assert.That(merge.Status, Is.EqualTo(MergeStatus.Conflicts));
             Assert.Throws<GitObjectDbException>(() => merge.Commit(signature, signature));
-            Assert.That(merge.CurrentChanges, Has.Count.EqualTo(1));
             Assert.That(merge.CurrentChanges, Has.Exactly(1).Matches<MergeChange>(c => c.Status == ItemMergeStatus.TreeConflict));
             Assert.That(conflict.Path, Is.EqualTo(field.Path));
-            Assert.That(((Node)conflict.Theirs).Id, Is.EqualTo(field.Id));
-            Assert.That(((Node)conflict.OurRootDeletedParent).Id, Is.EqualTo(parentTable.Id));
+            Assert.That(((Node)(actionTarget == PerformAction.OnBranch ? conflict.Ours : conflict.Theirs)).Id, Is.EqualTo(field.Id));
+            Assert.That(((Node)(actionTarget == PerformAction.OnBranch ? conflict.TheirRootDeletedParent : conflict.OurRootDeletedParent)).Id, Is.EqualTo(parentTable.Id));
         });
 
         // Act
@@ -171,44 +109,21 @@ public class MergeTests : DisposeArguments
         merge.Commit(signature, signature);
 
         // Assert
-        Assert.That(merge.Status, Is.EqualTo(MergeStatus.FastForward));
+        Assert.That(merge.Status, Is.EqualTo(actionTarget == PerformAction.OnBranch ? MergeStatus.NonFastForward : MergeStatus.FastForward));
     }
 
-    [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void AddOnTheirParentDeletion(IConnection sut, Application parentApplication, Table parentTable, Signature signature)
+    protected override void AddOnTheirParentDeletionActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Signature signature)
     {
-        // main:      A---B    A---B
-        //             \    ->  \   \
-        // newBranch:   C        C---x
-
-        // Arrange
-        sut
-            .Update("main", c => c.Delete(parentApplication.Path))
-            .Commit(new("C", signature, signature));
-        sut.Repository.Branches.Add("newBranch", "main~1");
-        sut
-            .Update("newBranch", c => c.CreateOrUpdate(new Field { }, parentTable))
-            .Commit(new("B", signature, signature));
-
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
 
         // Assert
-        int expectedchangeCount =
-
-            // Deleted applications
-            1 +
-
-            // Deleted tables, field, resources, and constants
-            (DataGenerator.DefaultTablePerApplicationCount * (1 + DataGenerator.DefaultFieldPerTableCount + DataGenerator.DefaultResourcePerTableCount + DataGenerator.DefaultConstantPerTableCount)) +
-
-            // Added field (in conflict)
-            1;
         Assert.Multiple(() =>
         {
             Assert.That(merge.Status, Is.EqualTo(MergeStatus.Conflicts));
-            Assert.That(merge.CurrentChanges, Has.Exactly(expectedchangeCount).Items);
+            Assert.That(merge.CurrentChanges, actionTarget == PerformAction.OnMain ?
+                                              Has.Count.EqualTo(1) :
+                                              Has.Count.GreaterThan(1));
             Assert.That(merge.CurrentChanges, Has.Exactly(1).Matches<MergeChange>(c => c.Status == ItemMergeStatus.TreeConflict));
             Assert.Throws<GitObjectDbException>(() => merge.Commit(signature, signature));
         });
@@ -219,6 +134,45 @@ public class MergeTests : DisposeArguments
         merge.Commit(signature, signature);
 
         // Assert
-        Assert.That(merge.Status, Is.EqualTo(MergeStatus.NonFastForward));
+        Assert.That(merge.Status, Is.EqualTo(
+            actionTarget == PerformAction.OnMain ? MergeStatus.FastForward : MergeStatus.NonFastForward));
+    }
+
+    protected override void DeleteChildNoConflictActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Table table, string newDescription, Field field, Signature signature)
+    {
+        // Act
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
+        merge.Commit(signature, signature);
+
+        // Assert
+        var newTable = sut.Lookup<Table>("newBranch", table.Path);
+        var missingField = sut.Lookup<Field>("newBranch", field.Path);
+        Assert.Multiple(() =>
+        {
+            Assert.That(merge.Status, Is.EqualTo(MergeStatus.NonFastForward));
+            Assert.That(newTable.Description, Is.EqualTo(newDescription));
+            Assert.That(missingField, Is.Null);
+        });
+    }
+
+    protected override void RenameAndEditActAndAssert(CommitCommandType commitType, IConnection sut, Field field, string newDescription, Signature signature, DataPath newPath, Commit b, Commit c)
+    {
+        // Act
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var mergeCommit = merge.Commit(signature, signature);
+
+        // Assert
+        var parents = mergeCommit.Parents.ToList();
+        var newTable = sut.Lookup<Field>("newBranch", newPath);
+        Assert.Multiple(() =>
+        {
+            Assert.That(sut.Lookup<Field>("newBranch", field.Path), Is.Null);
+            Assert.That(merge.Status, Is.EqualTo(MergeStatus.NonFastForward));
+            Assert.That(merge.Commits, Has.Count.EqualTo(1));
+            Assert.That(parents, Has.Count.EqualTo(2));
+            Assert.That(parents[0], Is.EqualTo(c));
+            Assert.That(parents[1], Is.EqualTo(b));
+            Assert.That(newTable.Description, Is.EqualTo(newDescription));
+        });
     }
 }

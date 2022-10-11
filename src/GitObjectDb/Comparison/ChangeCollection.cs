@@ -1,15 +1,19 @@
 using LibGit2Sharp;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace GitObjectDb.Comparison;
 
 /// <summary>Represents a collection of node changes.</summary>
+[DebuggerDisplay("Count = {Count}")]
+[DebuggerTypeProxy(typeof(DebugView))]
 public sealed class ChangeCollection : IList<Change>
 {
-    private readonly IList<Change> _changes;
+    private readonly List<Change> _changes;
 
     internal ChangeCollection(Commit start, Commit end)
     {
@@ -24,21 +28,21 @@ public sealed class ChangeCollection : IList<Change>
     /// <summary>Gets the last commit of changes.</summary>
     public Commit End { get; }
 
-    /// <summary>Gets the modified.</summary>
-    /// <value>The modified.</value>
+    /// <summary>Gets the modified items.</summary>
     public IEnumerable<Change> Modified => _changes.Where(c => c.Status == ChangeStatus.Edit);
 
-    /// <summary>Gets the added.</summary>
-    /// <value>The added.</value>
+    /// <summary>Gets the added items.</summary>
     public IEnumerable<Change> Added => _changes.Where(c => c.Status == ChangeStatus.Add);
 
-    /// <summary>Gets the deleted.</summary>
-    /// <value>The deleted.</value>
+    /// <summary>Gets the deleted items.</summary>
     public IEnumerable<Change> Deleted => _changes.Where(c => c.Status == ChangeStatus.Delete);
+
+    /// <summary>Gets the renamed items.</summary>
+    public IEnumerable<Change> Renamed => _changes.Where(c => c.Status == ChangeStatus.Rename);
 
     /// <inheritdoc/>
     [ExcludeFromCodeCoverage]
-    public bool IsReadOnly => _changes.IsReadOnly;
+    public bool IsReadOnly => ((IList<Change>)_changes).IsReadOnly;
 
     /// <inheritdoc/>
     [ExcludeFromCodeCoverage]
@@ -55,6 +59,11 @@ public sealed class ChangeCollection : IList<Change>
     /// <inheritdoc/>
     [ExcludeFromCodeCoverage]
     public void Add(Change item) => _changes.Add(item);
+
+    /// <summary>Adds the elements of the specified collection to the end of the changes.</summary>
+    /// <param name="collection">The collection whose elements should be added.</param>
+    [ExcludeFromCodeCoverage]
+    public void AddRange(IEnumerable<Change> collection) => _changes.AddRange(collection);
 
     /// <inheritdoc/>
     [ExcludeFromCodeCoverage]
@@ -90,4 +99,25 @@ public sealed class ChangeCollection : IList<Change>
 
     [ExcludeFromCodeCoverage]
     IEnumerator IEnumerable.GetEnumerator() => _changes.GetEnumerator();
+
+    internal sealed class DebugView
+    {
+        private readonly ChangeCollection _collection;
+
+        public DebugView(ChangeCollection collection)
+        {
+            _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+        }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public Change[] Items
+        {
+            get
+            {
+                var array = new Change[_collection.Count];
+                _collection.CopyTo(array, 0);
+                return array;
+            }
+        }
+    }
 }

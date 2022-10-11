@@ -15,7 +15,7 @@ internal sealed partial class Connection
 
     public TItem? Lookup<TItem>(string committish,
                                 DataPath path)
-        where TItem : ITreeItem
+        where TItem : TreeItem
     {
         var (commit, _) = TryGetTree(committish, path);
         return commit.Tree[path.FilePath] is null ?
@@ -25,7 +25,7 @@ internal sealed partial class Connection
 
     public TItem? Lookup<TItem>(string committish,
                                 UniqueId id)
-        where TItem : ITreeItem
+        where TItem : TreeItem
     {
         var (commit, _, path) = TryGetTree(committish, id);
         return path is null ?
@@ -36,7 +36,7 @@ internal sealed partial class Connection
     public ICommitEnumerable<TItem> GetItems<TItem>(string committish,
                                                     Node? parent = null,
                                                     bool isRecursive = false)
-        where TItem : ITreeItem
+        where TItem : TreeItem
     {
         var (commit, relativeTree) = TryGetTree(committish, parent?.Path);
 
@@ -71,13 +71,13 @@ internal sealed partial class Connection
                                           DataPath? parentPath = null,
                                           bool isRecursive = false)
     {
-        return GetPaths<ITreeItem>(committish, parentPath, isRecursive);
+        return GetPaths<TreeItem>(committish, parentPath, isRecursive);
     }
 
     public IEnumerable<DataPath> GetPaths<TItem>(string committish,
                                                  DataPath? parentPath = null,
                                                  bool isRecursive = false)
-        where TItem : ITreeItem
+        where TItem : TreeItem
     {
         var (commit, relativeTree) = TryGetTree(committish, parentPath);
 
@@ -94,7 +94,7 @@ internal sealed partial class Connection
                                        isRecursive)).Select(i => i.Path);
     }
 
-    public IEnumerable<ITreeItem> Search(string committish,
+    public IEnumerable<TreeItem> Search(string committish,
                                          string pattern,
                                          DataPath? parentPath = null,
                                          bool ignoreCase = false,

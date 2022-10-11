@@ -46,18 +46,21 @@ public interface ITransformationComposer
     /// <param name="item">The node to update.</param>
     /// <returns>The item passed as argument.</returns>
     TItem Delete<TItem>(TItem item)
-        where TItem : ITreeItem;
+        where TItem : TreeItem;
 
     /// <summary>Deletes the specified item path.</summary>
     /// <param name="path">The node path to update.</param>
     void Delete(DataPath path);
 
+    /// <summary>Renames the specified item to a new path.</summary>
+    /// <param name="item">The item to be renamed.</param>
+    /// <param name="newPath">The new item path.</param>
+    void Rename(TreeItem item, DataPath newPath);
+
     /// <summary>Applies the transformation and store them in a new commit.</summary>
     /// <param name="description">The commit description.</param>
     /// <param name="beforeProcessing">Callback that gets invoked before processing each transformation.</param>
-    /// <param name="type">Type of commit command to use.</param>
     /// <returns>The resulting commit.</returns>
     Commit Commit(CommitDescription description,
-                  Action<ITransformation>? beforeProcessing = null,
-                  CommitCommandType type = CommitCommandType.Auto);
+                  Action<ITransformation>? beforeProcessing = null);
 }

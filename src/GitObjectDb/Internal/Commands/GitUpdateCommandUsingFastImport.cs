@@ -5,74 +5,25 @@ using System.IO;
 
 namespace GitObjectDb.Internal.Commands;
 
-internal static class UpdateFastInsertFile
+internal class GitUpdateCommandUsingFastImport : IGitUpdateCommand
 {
-    internal static ApplyUpdateFastInsert CreateOrUpdate(ITreeItem item) => (tree, modules, serializer, writer, commitIndex) =>
-    {
-        switch (item)
-        {
-            case Node node:
-                CreateOrUpdateNode(node, serializer, writer, commitIndex, tree, modules);
-                break;
-            case Resource resource:
-                CreateOrUpdateResource(resource, writer, commitIndex);
-                break;
-            default:
-                throw new NotSupportedException();
-        }
-    };
+    Delegate IGitUpdateCommand.CreateOrUpdate(TreeItem item) => CreateOrUpdate(item);
 
-    internal static ApplyUpdateFastInsert Delete(ITreeItem item) => (reference, modules, _, _, commitIndex) =>
-    {
-        var path = item.ThrowIfNoPath();
-
-        // For nodes, delete whole folder containing node and nested entries
-        // For resources, only deleted resource
-        if (item is Node && item.Path!.UseNodeFolders)
+    public static ApplyUpdateFastInsert CreateOrUpdate(TreeItem item) =>
+        (tree, modules, serializer, writer, commitIndex) =>
         {
-            DeleteNodeFolder(reference, commitIndex, path);
-        }
-        else
-        {
-            commitIndex.Add($"D {path.FilePath}");
-        }
-        modules.RemoveRecursively(path);
-    };
-
-    internal static ApplyUpdateFastInsert Delete(DataPath path) => (reference, modules, _, _, commitIndex) =>
-    {
-        // For nodes, delete whole folder containing node and nested entries
-        // For resources, only deleted resource
-        if (path.IsNode && path.UseNodeFolders)
-        {
-            DeleteNodeFolder(reference, commitIndex, path);
-        }
-        else
-        {
-            commitIndex.Add($"D {path.FilePath}");
-        }
-        modules.RemoveRecursively(path);
-    };
-
-    private static void DeleteNodeFolder(Tree? reference, IList<string> commitIndex, DataPath path)
-    {
-        var nested = reference?[path.FolderPath]?.Traverse(path.FolderPath);
-        if (nested is not null)
-        {
-            foreach (var item in nested)
+            switch (item)
             {
-                if (item.Entry.TargetType == TreeEntryTargetType.Blob ||
-                    item.Entry.TargetType == TreeEntryTargetType.GitLink)
-                {
-                    commitIndex.Add($"D {item.Path}");
-                }
+                case Node node:
+                    CreateOrUpdateNode(node, serializer, writer, commitIndex, tree, modules);
+                    break;
+                case Resource resource:
+                    CreateOrUpdateResource(resource, writer, commitIndex);
+                    break;
+                default:
+                    throw new NotSupportedException();
             }
-        }
-        else
-        {
-            commitIndex.Add($"D {path.FilePath}");
-        }
-    }
+        };
 
     private static void CreateOrUpdateNode(Node node,
                                            INodeSerializer serializer,
@@ -126,5 +77,54 @@ internal static class UpdateFastInsertFile
         stream.CopyTo(writer.BaseStream);
         writer.WriteLine();
         commitIndex.Add($"M 100644 :{mark} {path}");
+    }
+
+    Delegate IGitUpdateCommand.Rename(TreeItem item, DataPath newPath) => Rename(item, newPath);
+
+    internal static ApplyUpdateFastInsert Rename(TreeItem item, DataPath newPath)
+    {
+        var newItem = GitUpdateCommandUsingTree.ValidateRename(item, newPath);
+
+        return (ApplyUpdateFastInsert)Delegate.Combine(
+            Delete(item.ThrowIfNoPath()),
+            CreateOrUpdate(newItem));
+    }
+
+    Delegate IGitUpdateCommand.Delete(DataPath path) => Delete(path);
+
+    public static ApplyUpdateFastInsert Delete(DataPath path) =>
+        (reference, modules, _, _, commitIndex) =>
+        {
+            // For nodes, delete whole folder containing node and nested entries
+            // For resources, only deleted resource
+            if (path.IsNode && path.UseNodeFolders)
+            {
+                DeleteNodeFolder(reference, commitIndex, path);
+            }
+            else
+            {
+                commitIndex.Add($"D {path.FilePath}");
+            }
+            modules.RemoveRecursively(path);
+        };
+
+    private static void DeleteNodeFolder(Tree? reference, IList<string> commitIndex, DataPath path)
+    {
+        var nested = reference?[path.FolderPath]?.Traverse(path.FolderPath);
+        if (nested is not null)
+        {
+            foreach (var item in nested)
+            {
+                if (item.Entry.TargetType == TreeEntryTargetType.Blob ||
+                    item.Entry.TargetType == TreeEntryTargetType.GitLink)
+                {
+                    commitIndex.Add($"D {item.Path}");
+                }
+            }
+        }
+        else
+        {
+            commitIndex.Add($"D {path.FilePath}");
+        }
     }
 }

@@ -2,6 +2,8 @@ using GitObjectDb.Comparison;
 using GitObjectDb.Injection;
 using GitObjectDb.Internal.Commands;
 using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -14,21 +16,24 @@ internal sealed class Merge : IMerge
 {
     private readonly IComparerInternal _comparer;
     private readonly IMergeComparer _mergeComparer;
-    private readonly CommitCommand _commitCommand;
+    private readonly IGitUpdateCommand _gitUpdateFactory;
+    private readonly ICommitCommand _commitCommand;
     private readonly IConnectionInternal _connection;
 
     [FactoryDelegateConstructor(typeof(Factories.MergeFactory))]
-    public Merge(IComparerInternal comparer,
-                 IMergeComparer mergeComparer,
-                 CommitCommand commitCommand,
+    public Merge(IServiceProvider serviceProvider,
                  IConnectionInternal connection,
                  string branchName,
                  string upstreamCommittish,
-                 ComparisonPolicy? policy = null)
+                 ComparisonPolicy? policy = null,
+                 CommitCommandType commitType = CommitCommandType.Auto)
     {
-        _comparer = comparer;
-        _mergeComparer = mergeComparer;
-        _commitCommand = commitCommand;
+        _comparer = serviceProvider.GetRequiredService<IComparerInternal>();
+        _mergeComparer = serviceProvider.GetRequiredService<IMergeComparer>();
+        _gitUpdateFactory = serviceProvider.GetRequiredService<ServiceResolver<CommitCommandType, IGitUpdateCommand>>()
+                                           .Invoke(commitType);
+        _commitCommand = serviceProvider.GetRequiredService<ServiceResolver<CommitCommandType, ICommitCommand>>()
+                                        .Invoke(commitType);
         _connection = connection;
         Branch = connection.Repository.Branches[branchName] ?? throw new GitObjectDbNonExistingBranchException();
         UpstreamCommit = connection.FindUpstreamCommit(upstreamCommittish, Branch);
@@ -119,13 +124,9 @@ internal sealed class Merge : IMerge
         MergeCommit = _commitCommand.Commit(
             _connection,
             Branch.FriendlyName,
-            Branch.Tip,
-            CurrentChanges.Select(c =>
-                (ApplyUpdateTreeDefinition)((refTree, modules, serializer, database, treeDefinition) =>
-                c.Transform(database, treeDefinition, refTree, modules, serializer))),
-            new CommitDescription(message, author, committer),
-            updateBranchTip: false,
-            mergeParent: UpstreamCommit);
+            CurrentChanges.Select(c => c.Transform(_gitUpdateFactory)),
+            new CommitDescription(message, author, committer, mergeParent: UpstreamCommit),
+            Branch.Tip);
         var logMessage = MergeCommit.BuildCommitLogMessage(false, isMergeCommit: true);
         _connection.Repository.UpdateBranchTip(Branch.Reference, MergeCommit, logMessage);
         Status = MergeStatus.NonFastForward;

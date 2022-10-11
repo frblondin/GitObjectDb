@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 
 namespace GitObjectDb.Internal;
@@ -6,25 +7,21 @@ namespace GitObjectDb.Internal;
 internal class Transformation : ITransformationInternal
 {
     internal Transformation(DataPath path,
-                            ITreeItem? item,
-                            ApplyUpdateTreeDefinition transformation,
-                            ApplyUpdateFastInsert fastInsertTransformation,
+                            TreeItem? item,
+                            Delegate action,
                             string message)
     {
         Path = path;
         Item = item;
-        TreeTransformation = transformation;
-        FastInsertTransformation = fastInsertTransformation;
+        Action = action;
         Message = message;
     }
 
     public DataPath Path { get; }
 
-    public ITreeItem? Item { get; }
+    public TreeItem? Item { get; }
 
-    public ApplyUpdateTreeDefinition TreeTransformation { get; }
-
-    public ApplyUpdateFastInsert FastInsertTransformation { get; }
+    public Delegate Action { get; }
 
     public string Message { get; }
 

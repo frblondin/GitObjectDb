@@ -1,7 +1,9 @@
 using GitObjectDb.Model;
 using GitObjectDb.Tools;
+using KellermanSoftware.CompareNetObjects;
 using KellermanSoftware.CompareNetObjects.TypeComparers;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
@@ -13,6 +15,10 @@ namespace GitObjectDb.Comparison;
 /// <summary>Provides the description of a merge policy.</summary>
 public record ComparisonPolicy
 {
+    private static ISet<string> WhiteList { get; } = new HashSet<string>(
+        new[] { nameof(Node.EmbeddedResource), nameof(TreeItem.Path) },
+        System.StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Gets ignored node properties.</summary>
     public IImmutableList<PropertyInfo> IgnoredProperties { get; init; } = ImmutableList.Create<PropertyInfo>();
 
@@ -20,7 +26,8 @@ public record ComparisonPolicy
     public IImmutableList<Type> AttributesToIgnore { get; init; } = ImmutableList.Create<Type>();
 
     /// <summary>Gets a list of custom comparers that take priority over the built in comparers.</summary>
-    public IImmutableList<BaseTypeComparer> CustomComparers { get; init; } = ImmutableList.Create<BaseTypeComparer>();
+    public IImmutableList<BaseTypeComparer> CustomComparers { get; init; } = ImmutableList.Create<BaseTypeComparer>(
+        new DataPathComparer(RootComparerFactory.GetRootComparer()));
 
     /// <summary>
     /// Creates the default policy for a given model, ignoring properties decorated
@@ -30,13 +37,13 @@ public record ComparisonPolicy
     /// <returns>The comparison policy.</returns>
     public static ComparisonPolicy CreateDefault(IDataModel model)
     {
-        var @default = new ComparisonPolicy().UpdateWithDefaultExclusion();
+        var @default = new ComparisonPolicy();
         return @default with { IgnoredProperties = @default.IgnoredProperties.AddRange(model, IgnoreProperty) };
 
         static bool IgnoreProperty(PropertyInfo property)
         {
             var isIgnored = property.GetCustomAttribute<IgnoreDataMemberAttribute>() is not null;
-            return isIgnored && property.Name != nameof(Node.EmbeddedResource);
+            return isIgnored && !WhiteList.Contains(property.Name);
         }
     }
 }
@@ -44,14 +51,6 @@ public record ComparisonPolicy
 /// <summary>Adds ability to add ignored properties.</summary>
 public static class ComparisonPolicyExtensions
 {
-    internal static ComparisonPolicy UpdateWithDefaultExclusion(this ComparisonPolicy source)
-        {
-        return source with
-        {
-            IgnoredProperties = source.IgnoredProperties.Add((Node n) => n.Path),
-        };
-    }
-
     /// <summary>Adds custom comparers that take priority over the built in comparers.</summary>
     /// <param name="source">The comparison policy to update.</param>
     /// <param name="comparers">The custom comparers to add.</param>

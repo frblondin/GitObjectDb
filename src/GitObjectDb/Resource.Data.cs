@@ -5,7 +5,7 @@ using System.Text;
 
 namespace GitObjectDb;
 
-public sealed partial class Resource
+public sealed partial record Resource
 {
     /// <summary>Single resource linked to a <see cref="Node"/>.</summary>
 #pragma warning disable CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode()

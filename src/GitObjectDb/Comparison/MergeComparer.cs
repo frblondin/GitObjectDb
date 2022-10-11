@@ -10,7 +10,7 @@ internal class MergeComparer : IMergeComparer
                                             ChangeCollection toBeMergedIntoLocal,
                                             ComparisonPolicy policy)
     {
-        return MergeComparer.CompareImpl(localChanges, toBeMergedIntoLocal, policy)
+        return CompareImpl(localChanges, toBeMergedIntoLocal, policy)
             .Where(c => c.Status != ItemMergeStatus.NoChange)
             .Distinct(MergeChangeEqualityComparer.Instance);
     }
@@ -19,78 +19,48 @@ internal class MergeComparer : IMergeComparer
                                                         ChangeCollection toBeMergedIntoLocal,
                                                         ComparisonPolicy policy)
     {
-        foreach (var their in toBeMergedIntoLocal)
+        foreach (var their in toBeMergedIntoLocal.OrderBy(c => c.Path.FolderPath.Length))
         {
-            switch (their.Status)
+            var oldPath = their.Old?.Path;
+            var newPath = their.New?.Path;
+            yield return new(policy,
+                             ancestor: their.Old,
+                             ours: localChanges.FirstOrDefault(c => c.Status != ChangeStatus.Delete && their.Old!.Path!.Equals(c.Old?.Path))?.New ?? their.Old,
+                             theirs: their.New,
+                             ourRootDeletedParent: (from c in localChanges.Deleted
+                                                    where IsNestedChildOf(oldPath, c.Old?.Path) ||
+                                                            IsNestedChildOf(newPath, c.Old?.Path) ||
+                                                            IsNestedChildOf(oldPath, c.New?.Path) ||
+                                                            IsNestedChildOf(newPath, c.New?.Path)
+                                                    orderby c.Old?.Path?.FolderPath.Length ascending
+                                                    select c.Old).FirstOrDefault(),
+                             theirRootDeletedParent: (from c in toBeMergedIntoLocal.Deleted
+                                                      where IsNestedChildOf(oldPath, c.Old?.Path) ||
+                                                          IsNestedChildOf(newPath, c.Old?.Path) ||
+                                                          IsNestedChildOf(oldPath, c.New?.Path) ||
+                                                          IsNestedChildOf(newPath, c.New?.Path)
+                                                      orderby c.Old?.Path?.FolderPath.Length ascending
+                                                      select c.Old).FirstOrDefault());
+
+            // Search for local edits/adds on parents that have been removed from theirs
+            if (their.Status == ChangeStatus.Delete)
             {
-                case ChangeStatus.Edit:
-                    yield return CreateEdit(localChanges, policy, their);
-                    break;
-                case ChangeStatus.Add:
-                    yield return CreateAddition(localChanges, policy, their);
-                    break;
-                case ChangeStatus.Delete:
-                    // Just ignore deletion if deleted in our changes too
-                    if (localChanges.Deleted.Any(c => IsNestedChildOf(their.Old!.Path!, c.Old!.Path!)))
-                    {
-                        continue;
-                    }
-
-                    yield return CreateDeletion(localChanges, policy, their);
-
-                    foreach (var local in localChanges.Added.Where(c => IsNestedChildOf(c.New!.Path!, their.Old!.Path!)))
-                    {
-                        yield return CreateTreeConflict(policy, their, local);
-                    }
-                    break;
-                default:
-                    throw new NotSupportedException(nameof(their.Status));
+                foreach (var local in localChanges.Added
+                                                  .Concat(localChanges.Modified)
+                                                  .Concat(localChanges.Renamed)
+                                                  .Where(c => IsNestedChildOf(c.New!.Path!, their.Old!.Path!)))
+                {
+                    yield return new(policy,
+                                     ancestor: local.Old,
+                                     ours: local.New,
+                                     theirRootDeletedParent: their.Old);
+                }
             }
         }
     }
 
-    private static MergeChange CreateEdit(ChangeCollection localChanges,
-                                          ComparisonPolicy policy,
-                                          Change their) => new MergeChange(policy)
-    {
-        Ancestor = their.Old,
-        Ours = localChanges.Modified.FirstOrDefault(c => their.Old!.Path!.Equals(c.Old?.Path))?.New ?? their.Old,
-        Theirs = their.New,
-        OurRootDeletedParent = (from c in localChanges.Deleted
-                                where IsNestedChildOf(their.Old!.Path!, c.Old?.Path)
-                                orderby c.Old?.Path?.FolderPath.Length ascending
-                                select c.Old).FirstOrDefault(),
-    }.Initialize();
-
-    private static MergeChange CreateAddition(ChangeCollection localChanges,
-                                              ComparisonPolicy policy,
-                                              Change their) => new MergeChange(policy)
-    {
-        Ours = localChanges.Added.FirstOrDefault(c => c.New!.Path?.Equals(their.New!.Path!) ?? false)?.New,
-        Theirs = their.New,
-        OurRootDeletedParent = (from c in localChanges.Deleted
-                                where IsNestedChildOf(their.New!.Path!, c.Old?.Path)
-                                orderby c.Old?.Path?.FolderPath.Length ascending
-                                select c.Old).FirstOrDefault(),
-    }.Initialize();
-
-    private static MergeChange CreateDeletion(ChangeCollection localChanges,
-                                              ComparisonPolicy policy,
-                                              Change their) => new MergeChange(policy)
-    {
-        Ancestor = their.Old,
-        Ours = localChanges.FirstOrDefault(c => c.Path?.Equals(their.Old!.Path) ?? false)?.New ?? their.Old,
-    }.Initialize();
-
-    private static MergeChange CreateTreeConflict(ComparisonPolicy policy,
-                                                  Change their,
-                                                  Change local) => new MergeChange(policy)
-    {
-        Ancestor = local.Old,
-        Ours = local.New,
-        TheirRootDeletedParent = their.Old,
-    }.Initialize();
-
-    static bool IsNestedChildOf(DataPath path, DataPath? parentPath) =>
+    static bool IsNestedChildOf(DataPath? path, DataPath? parentPath) =>
+        path is not null &&
+        parentPath is not null &&
         path.FolderPath.StartsWith(parentPath?.FolderPath, StringComparison.Ordinal);
 }

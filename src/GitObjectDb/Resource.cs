@@ -3,7 +3,7 @@ using System;
 namespace GitObjectDb;
 
 /// <summary>Resource used by a <see cref="Node"/>.</summary>
-public sealed partial class Resource : ITreeItem
+public sealed partial record Resource : TreeItem
 {
     /// <summary>Initializes a new instance of the <see cref="Resource"/> class.</summary>
     /// <param name="node">The node this resources will belong to.</param>
@@ -24,15 +24,6 @@ public sealed partial class Resource : ITreeItem
         Embedded = embedded;
     }
 
-    /// <summary>Gets or sets the resource path.</summary>
-    public DataPath Path { get; set; }
-
     /// <summary>Gets the embedded resource.</summary>
     public Data Embedded { get; }
-
-    DataPath? ITreeItem.Path
-    {
-        get => Path;
-        set => Path = value ?? throw new ArgumentNullException(nameof(value));
-    }
 }

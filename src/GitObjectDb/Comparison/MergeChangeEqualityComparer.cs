@@ -25,11 +25,11 @@ internal sealed class MergeChangeEqualityComparer : IEqualityComparer<MergeChang
 
     private static object ExtracItemData(MergeChange obj)
     {
-        var item = obj.Theirs ?? obj.Ours;
+        var item = obj.Theirs ?? obj.Ours ?? obj.Ancestor;
         return item switch
         {
             Node node => node.Id,
-            Resource resource => resource.Path,
+            Resource resource => resource.ThrowIfNoPath(),
             _ => throw new NotSupportedException(),
         };
     }

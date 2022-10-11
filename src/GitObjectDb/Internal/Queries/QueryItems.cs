@@ -8,19 +8,19 @@ using System.Linq;
 
 namespace GitObjectDb.Internal.Queries;
 
-internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath Path, Lazy<ITreeItem> Item)>>
+internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath Path, Lazy<TreeItem> Item)>>
 {
-    private readonly IQuery<LoadItem.Parameters, ITreeItem> _loader;
+    private readonly IQuery<LoadItem.Parameters, TreeItem> _loader;
     private readonly IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> _queryResources;
 
-    public QueryItems(IQuery<LoadItem.Parameters, ITreeItem> loader,
+    public QueryItems(IQuery<LoadItem.Parameters, TreeItem> loader,
                       IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> queryResources)
     {
         _loader = loader;
         _queryResources = queryResources;
     }
 
-    public IEnumerable<(DataPath Path, Lazy<ITreeItem> Item)> Execute(IQueryAccessor queryAccessor, Parameters parms)
+    public IEnumerable<(DataPath Path, Lazy<TreeItem> Item)> Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
         var entries = new Stack<Parameters>();
 
@@ -31,7 +31,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
             var resources = GetResources(queryAccessor, node, parms);
             foreach (var resource in resources)
             {
-                yield return (resource.Path, new Lazy<ITreeItem>(() => resource.Resource.Value));
+                yield return (resource.Path, new Lazy<TreeItem>(() => resource.Resource.Value));
             }
         }
 
@@ -51,7 +51,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
                 var resources = GetResources(queryAccessor, (Node)lazyItem.Value, entryParams);
                 foreach (var resource in resources)
                 {
-                    yield return (resource.Path, new Lazy<ITreeItem>(() => resource.Resource.Value));
+                    yield return (resource.Path, new Lazy<TreeItem>(() => resource.Resource.Value));
                 }
             }
 
@@ -62,7 +62,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
         }
     }
 
-    private Lazy<ITreeItem> LoadItem(IQueryAccessor queryAccessor, Parameters parms) =>
+    private Lazy<TreeItem> LoadItem(IQueryAccessor queryAccessor, Parameters parms) =>
         new(() => _loader.Execute(queryAccessor,
                                   new LoadItem.Parameters(parms.Tree, parms.ParentPath!)));
 
@@ -73,12 +73,12 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
                                 new QueryResources.Parameters(parms.Tree, parms.RelativeTree, node));
 
     private static bool IncludeResources(Parameters parms) =>
-        (parms.Type == null || parms.Type == typeof(Resource) || parms.Type == typeof(ITreeItem)) &&
+        (parms.Type == null || parms.Type == typeof(Resource) || parms.Type == typeof(TreeItem)) &&
         parms.ParentPath is not null && parms.ParentPath.IsNode;
 
     private static bool IsOfType(IQueryAccessor queryAccessor, DataPath path, Type? type)
     {
-        if (type == null || type == typeof(ITreeItem) || type == typeof(Node))
+        if (type == null || type == typeof(TreeItem) || type == typeof(Node))
         {
             return true;
         }

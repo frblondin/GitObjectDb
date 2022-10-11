@@ -7,7 +7,7 @@ namespace GitObjectDb.SystemTextJson;
 
 internal class NodeReferenceResolver : ReferenceResolver
 {
-    private readonly IDictionary<DataPath, ITreeItem> _items = new Dictionary<DataPath, ITreeItem>();
+    private readonly IDictionary<DataPath, TreeItem> _items = new Dictionary<DataPath, TreeItem>();
     private readonly NodeReferenceHandler.DataContext? _context;
 
     public NodeReferenceResolver(NodeReferenceHandler.DataContext? context)
@@ -17,7 +17,7 @@ internal class NodeReferenceResolver : ReferenceResolver
 
     public override void AddReference(string referenceId, object value)
     {
-        if (value is ITreeItem item && DataPath.TryParse(referenceId, out var path))
+        if (value is TreeItem item && DataPath.TryParse(referenceId, out var path))
         {
             _items[path!] = item;
         }
@@ -25,7 +25,7 @@ internal class NodeReferenceResolver : ReferenceResolver
 
     public override string GetReference(object value, out bool alreadyExists)
     {
-        if (value is ITreeItem item)
+        if (value is TreeItem item)
         {
             if (item.Path is null)
             {

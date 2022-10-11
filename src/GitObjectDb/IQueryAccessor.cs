@@ -23,7 +23,7 @@ public interface IQueryAccessor
     /// <param name="path">The path.</param>
     /// <returns>The item being found, if any.</returns>
     TItem? Lookup<TItem>(string committish, DataPath path)
-        where TItem : ITreeItem;
+        where TItem : TreeItem;
 
     /// <summary>Lookups for the item defined by its unique identifier.
     /// If two nodes have the same id in two different hierarchy trees,
@@ -33,7 +33,7 @@ public interface IQueryAccessor
     /// <param name="id">The unique identifier.</param>
     /// <returns>The item being found, if any.</returns>
     TItem? Lookup<TItem>(string committish, UniqueId id)
-        where TItem : ITreeItem;
+        where TItem : TreeItem;
 
     /// <summary>Gets all items from repository.</summary>
     /// <param name="committish">The committish.</param>
@@ -44,7 +44,7 @@ public interface IQueryAccessor
     ICommitEnumerable<TItem> GetItems<TItem>(string committish,
                                              Node? parent = null,
                                              bool isRecursive = false)
-        where TItem : ITreeItem;
+        where TItem : TreeItem;
 
     /// <summary>Gets nodes from repository.</summary>
     /// <param name="committish">The committish.</param>
@@ -75,7 +75,7 @@ public interface IQueryAccessor
     IEnumerable<DataPath> GetPaths<TItem>(string committish,
                                           DataPath? parentPath = null,
                                           bool isRecursive = false)
-        where TItem : ITreeItem;
+        where TItem : TreeItem;
 
     /// <summary>Looks for specified pattern from repository.</summary>
     /// <param name="committish">The committish.</param>
@@ -84,7 +84,7 @@ public interface IQueryAccessor
     /// <param name="ignoreCase">Ignore case differences between the patterns and the files.</param>
     /// <param name="recurseSubModules">Recursively search in each submodule that is active and checked out in the repository.</param>
     /// <returns>The items being found, if any.</returns>
-    public IEnumerable<ITreeItem> Search(string committish,
+    public IEnumerable<TreeItem> Search(string committish,
                                          string pattern,
                                          DataPath? parentPath = null,
                                          bool ignoreCase = false,

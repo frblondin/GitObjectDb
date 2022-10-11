@@ -15,7 +15,7 @@ public abstract partial class Change
     /// <param name="old">The old item.</param>
     /// <param name="new">The new item.</param>
     /// <param name="status">The change status.</param>
-    protected Change(ITreeItem? old, ITreeItem? @new, ChangeStatus status)
+    protected Change(TreeItem? old, TreeItem? @new, ChangeStatus status)
     {
         Old = old;
         New = @new;
@@ -24,11 +24,11 @@ public abstract partial class Change
 
     /// <summary>Gets the old item.</summary>
     [ExcludeFromCodeCoverage]
-    public ITreeItem? Old { get; }
+    public TreeItem? Old { get; }
 
     /// <summary>Gets the new item.</summary>
     [ExcludeFromCodeCoverage]
-    public ITreeItem? New { get; }
+    public TreeItem? New { get; }
 
     /// <summary>Gets the change status.</summary>
     [ExcludeFromCodeCoverage]
@@ -47,8 +47,8 @@ public abstract partial class Change
     public override string ToString() => Message;
 
     internal static Change? Create(ContentChanges changes,
-                                   ITreeItem? old,
-                                   ITreeItem? @new,
+                                   TreeItem? old,
+                                   TreeItem? @new,
                                    ChangeStatus status,
                                    ComparisonPolicy policy)
     {

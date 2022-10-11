@@ -11,4 +11,7 @@ public enum ChangeStatus
 
     /// <summary>The node was deleted.</summary>
     Delete,
+
+    /// <summary>The node was renamed.</summary>
+    Rename,
 }
