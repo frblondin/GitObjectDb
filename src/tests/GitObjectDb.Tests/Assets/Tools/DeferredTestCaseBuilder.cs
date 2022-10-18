@@ -9,7 +9,7 @@ namespace GitObjectDb.Tests.Assets.Tools;
 #if NET6_0_OR_GREATER
 internal static class DeferredTestCaseBuilder
 {
-    private static readonly Regex _insertSpacesBetweenWords = new(@"([a-z])([A-Z])([\w])", RegexOptions.Compiled);
+    private static readonly Regex _insertSpacesBetweenWords = new(@"([a-z])([A-Z])(?![A-Z])", RegexOptions.Compiled);
 
     public static DeferredTestMethod BuildTestMethod(IMethodInfo method, Test parentSuite, object[] displayParameters, IEnumerable<object> parameters)
     {
@@ -18,7 +18,7 @@ internal static class DeferredTestCaseBuilder
         var testMethod = new DeferredTestMethod(normalTestMethod.Method, parentSuite)
         {
             Seed = normalTestMethod.Seed,
-            Name = _insertSpacesBetweenWords.Replace(normalTestMethod.Name, m => $"{m.Groups[1].Value} {m.Groups[2].Value.ToLowerInvariant()}{m.Groups[3].Value}"),
+            Name = _insertSpacesBetweenWords.Replace(normalTestMethod.Name, m => $"{m.Groups[1].Value} {m.Groups[2].Value.ToLowerInvariant()}"),
             FullName = normalTestMethod.FullName,
             DeferredArguments = parameters,
             RunState = normalTestMethod.RunState,
