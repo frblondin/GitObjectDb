@@ -72,7 +72,7 @@ internal partial class NodeSerializer : INodeSerializer
 
     public Node Deserialize(Stream stream,
                             ObjectId treeId,
-                            DataPath? path,
+                            DataPath path,
                             INodeSerializer.ItemLoader referenceResolver)
     {
         var isRootContext = NodeReferenceHandler.CurrentContext.Value == null;

@@ -157,11 +157,14 @@ internal class TreeValidation : ITreeValidation
                     case TreeEntryTargetType.Tree:
                         ValidateNodeCollection(item, path);
                         break;
-                    case TreeEntryTargetType.Blob when item.Name.Equals($"{id}.json", StringComparison.Ordinal):
+                    case TreeEntryTargetType.Blob
+                    when item.Name.Equals($"{id}.{_serializer.FileExtension}", StringComparison.Ordinal):
                         result = true;
                         break;
                     case TreeEntryTargetType.Blob:
-                        throw new GitObjectDbValidationException($"A node folder should only contain a file named '<ParentNodeId>.json'. " +
+                        throw new GitObjectDbValidationException(
+                            $"A node folder should only contain a file named " +
+                            $"'<ParentNodeId>.{_serializer.FileExtension}'. " +
                             $"Blob entry '{item.Name}' was not expected.");
                     case TreeEntryTargetType.GitLink:
                         throw new GitObjectDbValidationException($"A link folder is only valid as a resource. " +
