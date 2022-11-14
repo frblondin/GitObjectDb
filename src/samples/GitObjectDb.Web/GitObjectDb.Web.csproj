@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\GitObjectDb.SystemTextJson\GitObjectDb.SystemTextJson.csproj" />
+    <ProjectReference Include="..\..\GitObjectDb.YamlDotNet\GitObjectDb.YamlDotNet.csproj" />
     <ProjectReference Include="..\..\GitObjectDb.Api.GraphQL\GitObjectDb.Api.GraphQL.csproj" />
     <ProjectReference Include="..\..\GitObjectDb.Api.OData\GitObjectDb.Api.OData.csproj" />
     <ProjectReference Include="..\Models.Organization\Models.Organization.csproj" />
