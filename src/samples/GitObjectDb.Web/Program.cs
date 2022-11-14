@@ -2,6 +2,7 @@ using GraphQL;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
 using Models.Organization.Converters;
+using YamlDotNet.Serialization.NamingConventions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +13,9 @@ switch (repositoryType)
     case "Organization":
         builder.Services
             .AddMemoryCache()
-            .AddGitObjectDb(c => c.AddSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter())))
+            .AddGitObjectDb(c => c.AddYamlDotNet(CamelCaseNamingConvention.Instance,
+                                                 builder => builder.WithTypeConverter(new TimeZoneInfoConverter()),
+                                                 builder => builder.WithTypeConverter(new TimeZoneInfoConverter())))
             .AddOrganizationModel()
             .AddGitObjectDbOData()
             .AddGitObjectDbGraphQLSchema(builder =>

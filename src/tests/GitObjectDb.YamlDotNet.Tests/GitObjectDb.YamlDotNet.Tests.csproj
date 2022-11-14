@@ -7,28 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoFixture.NUnit3" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="coverlet.msbuild" />
-    <PackageReference Include="NUnit" />
-    <PackageReference Include="NUnit.Analyzers" />
-    <PackageReference Include="NUnit3TestAdapter" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="FakeItEasy" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\GitObjectDb\GitObjectDb.csproj" />
-    <ProjectReference Include="..\..\GitObjectDb.SystemTextJson\GitObjectDb.SystemTextJson.csproj" />
     <ProjectReference Include="..\..\GitObjectDb.YamlDotNet\GitObjectDb.YamlDotNet.csproj" />
     <ProjectReference Include="..\..\samples\Models.Software\Models.Software.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Assets\Data\Software\Benchmark.zip">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <ProjectReference Include="..\GitObjectDb.Tests\GitObjectDb.Tests.csproj" />
   </ItemGroup>
 
 </Project>

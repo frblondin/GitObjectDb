@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Models.Software;
 using System;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace GitObjectDb.Tests.Assets;
 
@@ -13,13 +14,25 @@ public class DefaultServiceProviderCustomization : ICustomization, ISpecimenBuil
     readonly IServiceProvider _serviceProvider;
 
     public DefaultServiceProviderCustomization()
+        : this(false)
     {
-        _serviceProvider = new ServiceCollection()
-            .AddSoftwareModel()
-            .AddGitObjectDb(c => c.AddSystemTextJson())
+    }
+
+    public DefaultServiceProviderCustomization(bool useYaml)
+    {
+        var collection = new ServiceCollection().AddSoftwareModel();
+        if (useYaml)
+        {
+            collection.AddGitObjectDb(c => c.AddYamlDotNet(CamelCaseNamingConvention.Instance));
+        }
+        else
+        {
+            collection.AddGitObjectDb(c => c.AddSystemTextJson());
+        }
+        _serviceProvider = collection
             .AddLogging(builder =>
                 builder.SetMinimumLevel(LogLevel.Trace)
-                       .AddProvider(new ConsoleProvider()))
+                        .AddProvider(new ConsoleProvider()))
             .BuildServiceProvider();
     }
 
