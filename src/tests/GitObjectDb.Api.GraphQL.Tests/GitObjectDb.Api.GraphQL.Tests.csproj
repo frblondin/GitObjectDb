@@ -11,15 +11,15 @@
     <PackageReference Include="AutoFixture.NUnit3" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="coverlet.msbuild" />
+    <PackageReference Include="FakeItEasy" />
     <PackageReference Include="NBomber" />
     <PackageReference Include="NBomber.Http" />
     <PackageReference Include="NUnit" />
     <PackageReference Include="NUnit.Analyzers" />
     <PackageReference Include="NUnit3TestAdapter" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="FakeItEasy" />
-    <PackageReference Include="Z.Expressions.Eval" />
   </ItemGroup>
 
   <ItemGroup>

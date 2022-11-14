@@ -1,8 +1,9 @@
+using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.Scripting;
 using System;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Z.Expressions;
 
 namespace GitObjectDb.Api.GraphQL.Tests.Assets;
 
@@ -60,7 +61,10 @@ internal static class JsonElementExtensions
             }
             else
             {
-                var predicate = Eval.Compile<Func<JsonElement, bool>>(index, "item");
+                var predicate = CSharpScript.EvaluateAsync<Func<JsonElement, bool>>(
+                    $"item => {index}",
+                    ScriptOptions.Default.WithReferences(typeof(JsonElement).Assembly))
+                    .ConfigureAwait(false).GetAwaiter().GetResult();
                 result = result.EnumerateArray().Single(predicate);
             }
         }
