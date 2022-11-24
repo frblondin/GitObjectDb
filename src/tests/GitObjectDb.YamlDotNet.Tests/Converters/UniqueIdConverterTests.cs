@@ -1,5 +1,4 @@
 using GitObjectDb.Model;
-using GitObjectDb.SystemTextJson.Converters;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
 using GitObjectDb.YamlDotNet.Converters;
@@ -7,7 +6,6 @@ using NUnit.Framework;
 using System;
 using System.IO;
 using System.Text;
-using System.Text.Json;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization.NamingConventions;

@@ -28,7 +28,7 @@ public partial class NodeSerializerTests
         var node = new SomeNodeV1
         {
             Id = new UniqueId("id"),
-            Path = new DataPath("Items", "id.json", false),
+            Path = new DataPath("Items", "id.yaml", false),
             Flags = (int)(BindingFlags.Public | BindingFlags.Instance),
         };
         var serialized = nodeSerializer.Serialize(node);

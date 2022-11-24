@@ -81,9 +81,7 @@ internal partial class NodeSerializer : INodeSerializer
 
         foreach (var nodeType in model.NodeTypes)
         {
-            var tag = nodeType.Type
-                .FullName
-                .Replace('+', '.');
+            var tag = nodeType.Type.GetYamlName();
             builder.WithTagMapping($"!{tag}", nodeType.Type);
         }
     }
