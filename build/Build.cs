@@ -159,15 +159,7 @@ class Build : NukeBuild
                 .SetConfiguration(Configuration)
                 .EnableNoBuild()
                 .EnableNoRestore()
-                .SetLoggers("trx")
-                .SetProcessArgumentConfigurator(arguments => arguments
-                    .Add("/p:CollectCoverage=true")
-                    .Add("/p:Exclude=\\\"{0}\\\"", "[*Tests]*,[Models.Software]*,[MetadataStorageConverter]*")
-                    .Add("/p:CoverletOutput={0}/", CoverageResult)
-                    .Add("/p:CoverletOutputFormat=\\\"{0}\\\"", "opencover,json")
-                    .Add("/p:UseSourceLink={0}", "true")
-                    .Add("/p:MergeWith={0}", CoverageResult / "coverage.json")
-                    .Add("-m:1"))
+                .SetLoggers("trx")                
                 .SetResultsDirectory(TestDirectory));
         });
 
