@@ -17,4 +17,13 @@
     </PackageReference>
     <AdditionalFiles Include="$(SolutionDir)src\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
+  <PropertyGroup Condition="$(MSBuildProjectName.Contains('.Tests'))">
+    <CollectCoverage>true</CollectCoverage>
+    <ExcludeByAttribute>GeneratedCodeAttribute</ExcludeByAttribute>
+    <Exclude>[*Tests]*,[Models.Software]*,[MetadataStorageConverter]*</Exclude>
+    <CoverletOutputFormat>opencover,json</CoverletOutputFormat>
+    <CoverletOutput>$(SolutionDir)/output/coverage/</CoverletOutput>
+    <MergeWith>$(SolutionDir)/output/coverage/coverage.json</MergeWith>
+    <UseSourceLink>true</UseSourceLink>
+  </PropertyGroup>
 </Project>
