@@ -113,18 +113,12 @@ public class DataProviderTests
         return new DataProvider(queryAccessor, mapper, new MemoryCache(Options.Create(new MemoryCacheOptions())));
     }
 
-    private class Customization : ICustomization, ISpecimenBuilder
+    private class Customization : ICustomization
     {
         public void Customize(IFixture fixture)
         {
-            fixture.Customizations.Add(this);
+            fixture.Register<ResourceLink>(() => null);
+            fixture.Register<ObjectId>(() => null);
         }
-
-        public object Create(object request, ISpecimenContext context) =>
-            request switch
-            {
-                Type t when t == typeof(ResourceLink) => null,
-                _ => new NoSpecimen(),
-            };
     }
 }
