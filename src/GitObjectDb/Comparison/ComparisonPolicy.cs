@@ -40,10 +40,10 @@ public record ComparisonPolicy
         var @default = new ComparisonPolicy();
         return @default with { IgnoredProperties = @default.IgnoredProperties.AddRange(model, IgnoreProperty) };
 
-        static bool IgnoreProperty(PropertyInfo property)
+        static bool IgnoreProperty((NodeTypeDescription TypeDescription, PropertyInfo Property) data)
         {
-            var isIgnored = property.GetCustomAttribute<IgnoreDataMemberAttribute>() is not null;
-            return isIgnored && !WhiteList.Contains(property.Name);
+            var isIgnored = !data.TypeDescription.SerializableProperties.Contains(data.Property);
+            return isIgnored && !WhiteList.Contains(data.Property.Name);
         }
     }
 }
@@ -89,14 +89,14 @@ public static class ComparisonPolicyExtensions
     /// <returns>A new list with the property added.</returns>
     public static IImmutableList<PropertyInfo> AddRange(this IImmutableList<PropertyInfo> source,
                                                         IDataModel dataModel,
-                                                        Predicate<PropertyInfo> propertyPredicate)
+                                                        Predicate<(NodeTypeDescription TypeDescription, PropertyInfo Property)> propertyPredicate)
     {
         var builder = ImmutableList.CreateBuilder<PropertyInfo>();
         builder.AddRange(source);
         foreach (var type in dataModel.NodeTypes)
         {
             foreach (var property in from property in type.Type.GetProperties().Except(builder)
-                                     where propertyPredicate(property)
+                                     where propertyPredicate((type, property))
                                      select property)
             {
                 builder.Add(property);

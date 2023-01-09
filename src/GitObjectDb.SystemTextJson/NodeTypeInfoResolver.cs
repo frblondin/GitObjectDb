@@ -25,20 +25,21 @@ internal class NodeTypeInfoResolver : DefaultJsonTypeInfoResolver
 
         if (typeof(Node).IsAssignableFrom(type))
         {
-            ExcludeIgnoreDataMemberDecoratedProperties(type, result);
+            var description = Model.GetDescription(type);
+            ExcludeIgnoreNonSerializedProperties(description, result);
             AddPolymorphismOptions(type, result);
         }
 
         return result;
     }
 
-    private static void ExcludeIgnoreDataMemberDecoratedProperties(Type type, JsonTypeInfo jsonTypeInfo)
+    private static void ExcludeIgnoreNonSerializedProperties(NodeTypeDescription typeDescription, JsonTypeInfo jsonTypeInfo)
     {
         foreach (var property in jsonTypeInfo.Properties)
         {
-            var propertyInfo = type.GetProperty(property.Name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-            var attribute = propertyInfo?.GetCustomAttribute<IgnoreDataMemberAttribute>(true);
-            if (attribute is not null)
+            var serializable = typeDescription.SerializableProperties.FirstOrDefault(
+                p => p.Name.Equals(property.Name, StringComparison.OrdinalIgnoreCase));
+            if (serializable is null)
             {
                 property.ShouldSerialize = (_, _) => false;
             }

@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace GitObjectDb.Model;
 
@@ -27,6 +28,7 @@ public sealed class NodeTypeDescription : IEquatable<NodeTypeDescription>
         Name = name;
 
         SearchableProperties = GetSearchableProperties(type).ToImmutableList();
+        SerializableProperties = GetSerializableProperties(type).ToImmutableList();
         UseNodeFolders = useNodeFolders ??
                          GitFolderAttribute.Get(type)?.UseNodeFolders ??
                          GitFolderAttribute.DefaultUseNodeFoldersValue;
@@ -40,6 +42,9 @@ public sealed class NodeTypeDescription : IEquatable<NodeTypeDescription>
 
     /// <summary>Gets the list of searchable properties.</summary>
     public IList<PropertyInfo> SearchableProperties { get; }
+
+    /// <summary>Gets the list of serializable properties.</summary>
+    public IList<PropertyInfo> SerializableProperties { get; }
 
     /// <summary>Gets the children that this node can contain.</summary>
     public IList<NodeTypeDescription> Children => _children.AsReadOnly();
@@ -70,6 +75,14 @@ public sealed class NodeTypeDescription : IEquatable<NodeTypeDescription>
         static bool IsSearchable(PropertyInfo property) =>
             property.GetCustomAttribute<IsSearchableAttribute>()?.Searchable ??
             property.PropertyType == typeof(string);
+    }
+
+    private static IEnumerable<PropertyInfo> GetSerializableProperties(Type type)
+    {
+        return type.GetProperties().Where(IsSerializable);
+
+        static bool IsSerializable(PropertyInfo property) =>
+            property.GetCustomAttribute<IgnoreDataMemberAttribute>(true) is null;
     }
 
     internal void AddChild(NodeTypeDescription nodeType)
