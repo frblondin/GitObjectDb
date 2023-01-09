@@ -89,14 +89,19 @@ internal partial class NodeSerializer : INodeSerializer
     public Stream Serialize(Node node)
     {
         var result = _streamManager.GetStream();
-        using (var writer = new StreamWriter(result, Encoding.UTF8, 1024, leaveOpen: true))
+        Serialize(node, result);
+        return result;
+    }
+
+    public void Serialize(Node node, Stream stream)
+    {
+        using (var writer = new StreamWriter(stream, Encoding.UTF8, 1024, leaveOpen: true))
         {
             var emitter = new NodeReferenceEmitter(writer, node);
             Serializer.Serialize(emitter, node);
             WriteEmbeddedResource(emitter, node);
         }
-        result.Seek(0L, SeekOrigin.Begin);
-        return result;
+        stream.Seek(0L, SeekOrigin.Begin);
     }
 
     public Node Deserialize(Stream stream,
