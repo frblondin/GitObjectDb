@@ -11,7 +11,7 @@ internal static class TypeExtensions
 
     /// <summary>Gets whether the type is a <see cref="Node"/> enumerable reference.</summary>
     /// <param name="type">The type to be analyzed.</param>
-    /// <param name="argumentType">The generic argument type marching the <paramref name="predicate"/>.</param>
+    /// <param name="argumentType">The node type that has been found, if any.</param>
     /// <returns><c>true</c> if the type is a Node enumerable reference, <c>false</c> otherwise.</returns>
     internal static bool IsNodeEnumerable(this Type type, out Type? argumentType) =>
         type.IsEnumerable(t => t.IsAssignableTo(typeof(Node)), out argumentType);
@@ -21,7 +21,7 @@ internal static class TypeExtensions
     /// </summary>
     /// <param name="type">The type to be analyzed.</param>
     /// <param name="predicate">The predicate to be applied on generic arguments.</param>
-    /// <param name="argumentType">The generic argument type marching the <paramref name="predicate"/>.</param>
+    /// <param name="argumentType">The generic argument type matching the <paramref name="predicate"/>.</param>
     /// <returns><c>true</c> if a matching enumerable could be found, <c>false</c> otherwise.</returns>
     internal static bool IsEnumerable(this Type type, Predicate<Type> predicate, out Type? argumentType)
     {
