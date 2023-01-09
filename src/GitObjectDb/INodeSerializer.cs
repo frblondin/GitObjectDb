@@ -41,6 +41,13 @@ public interface INodeSerializer
     Stream Serialize(Node node);
 
     /// <summary>
+    /// Transforms the <paramref name="node"/> into a text representation.
+    /// </summary>
+    /// <param name="node">The node to be converted.</param>
+    /// <param name="stream">The stream to write the text representation to.</param>
+    void Serialize(Node node, Stream stream);
+
+    /// <summary>
     /// Creates a RegEx representation of a value matching provided pattern.
     /// </summary>
     /// <param name="pattern">The pattern to be escaped by serializer.</param>

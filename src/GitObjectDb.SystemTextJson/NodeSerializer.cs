@@ -61,13 +61,18 @@ internal partial class NodeSerializer : INodeSerializer
     public Stream Serialize(Node node)
     {
         var result = _streamManager.GetStream();
-        using (var writer = new Utf8JsonWriter(result, _writerOptions))
+        Serialize(node, result);
+        result.Seek(0L, SeekOrigin.Begin);
+        return result;
+    }
+
+    public void Serialize(Node node, Stream stream)
+    {
+        using (var writer = new Utf8JsonWriter(stream, _writerOptions))
         {
             JsonSerializer.Serialize(writer, node, Options);
             WriteEmbeddedResource(node, writer);
         }
-        result.Seek(0L, SeekOrigin.Begin);
-        return result;
     }
 
     public Node Deserialize(Stream stream,
