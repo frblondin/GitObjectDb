@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 
@@ -8,7 +9,10 @@ namespace GitObjectDb.Model;
 /// <summary>Used to automatically map CLR classes to a model based on a set of conventions.</summary>
 public class ConventionBaseModelBuilder : ModelBuilder
 {
-    private readonly Dictionary<Type, NodeTypeDescription> _types = new();
+    private readonly Dictionary<Type, NodeTypeDescription> _types = new()
+    {
+        [typeof(Node)] = new NodeTypeDescription(typeof(Node), GetTypeName(typeof(Node))),
+    };
 
     /// <summary>Gets the type descriptions.</summary>
     public IReadOnlyCollection<NodeTypeDescription> Types => _types.Values;
@@ -70,6 +74,6 @@ public class ConventionBaseModelBuilder : ModelBuilder
                 type.AddChild(childDescription);
             }
         }
-        return new DataModel(_types.Values, DeprecatedNodeUpdater);
+        return new DataModel(_types.Values.ToImmutableList(), DeprecatedNodeUpdater);
     }
 }

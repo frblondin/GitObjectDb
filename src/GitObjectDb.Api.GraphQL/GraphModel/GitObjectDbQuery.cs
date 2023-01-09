@@ -34,6 +34,10 @@ public partial class GitObjectDbQuery : ObjectGraphType
 
         foreach (var description in schema.Model.NodeTypes)
         {
+            if (description.Type == typeof(Node))
+            {
+                continue;
+            }
             AddCollectionField(this, description.Type, description.Name);
             AddCollectionDeltaField(this, description);
         }
@@ -88,7 +92,7 @@ public partial class GitObjectDbQuery : ObjectGraphType
         return graphType.AddField(new()
         {
             Name = name,
-            Description = type.GetXmlDocsSummary(false),
+            Description = type.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }),
             Type = typeof(ListGraphType<>).MakeGenericType(childGraphType.GetType()),
             ResolvedType = new ListGraphType(childGraphType),
             Arguments = new(
