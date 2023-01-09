@@ -95,10 +95,10 @@ internal partial class NodeSerializer : INodeSerializer
                 var newType = Model.GetNewTypeIfDeprecated(result.GetType());
                 if (newType is not null)
                 {
-                    return Model.UpdateDeprecatedNode(result, newType);
+                    result = Model.UpdateDeprecatedNode(result, newType);
                 }
 
-                return result;
+                return result with { TreeId = treeId };
             }
             finally
             {
