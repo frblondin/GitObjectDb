@@ -10,7 +10,7 @@ internal static class TypeExtensions
     /// </summary>
     /// <param name="property">The property to be analyzed.</param>
     /// <param name="predicate">The predicate to be applied on generic arguments.</param>
-    /// <param name="type">The generic argument type marching the <paramref name="predicate"/>.</param>
+    /// <param name="type">The generic argument type matching the <paramref name="predicate"/>.</param>
     /// <returns><c>true</c> if a matching enumerable could be found, <c>false</c> otherwise.</returns>
     internal static bool IsEnumerable(this PropertyInfo property, Predicate<Type> predicate, out Type? type)
     {
