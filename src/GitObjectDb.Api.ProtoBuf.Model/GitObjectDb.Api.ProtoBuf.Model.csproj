@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>Provides ProtoBuf data model to handle GitObjectDb Grpc requests.</Description>
+    <PackageType>Dependency</PackageType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="protobuf-net.Grpc" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GitObjectDb\GitObjectDb.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\GitObjectDb.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

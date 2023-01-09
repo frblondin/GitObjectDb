@@ -1,11 +1,14 @@
+using GitObjectDb.Api.ProtoBuf;
 using GraphQL;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
 using Models.Organization.Converters;
-using YamlDotNet.Serialization.NamingConventions;
+using ProtoBuf.Grpc.Server;
+using System.IO.Compression;
+
+#pragma warning disable SA1516 // ElementsMustBeSeparatedByBlankLine
 
 var builder = WebApplication.CreateBuilder(args);
-
 var repositoryType = args.Length > 0 ? args[0] : null;
 
 switch (repositoryType)
@@ -72,9 +75,15 @@ builder.Services
     .AddGitObjectDbODataControllers("v1", o => o.Select().Filter().OrderBy().Expand())
     .AddGitObjectDbGraphQLControllers();
 
+builder.Services
+    .AddCodeFirstGrpc(config =>
+    {
+        config.ResponseCompressionLevel = CompressionLevel.Optimal;
+        config.ResponseCompressionAlgorithm = "gzip";
+    });
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
@@ -91,5 +100,6 @@ app.UseHttpsRedirection()
    .UseAuthorization();
 
 app.MapControllers();
+app.AddGitObjectProtobufControllers();
 
 app.Run();
