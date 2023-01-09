@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>Provides Grpc endpoints for querying GitObjectDb repository.</Description>
+    <PackageType>Dependency</PackageType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="protobuf-net.Grpc.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GitObjectDb.Api.ProtoBuf.Model\GitObjectDb.Api.ProtoBuf.Model.csproj" />
+    <ProjectReference Include="..\GitObjectDb\GitObjectDb.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\GitObjectDb.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <Compile Include="$(SolutionDir)src\GitObjectDb\Tools\TypeExtensions.cs" Link="Tools\TypeExtensions.cs" />
+  </ItemGroup>
+
+</Project>
