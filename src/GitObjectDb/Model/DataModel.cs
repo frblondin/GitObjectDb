@@ -12,7 +12,7 @@ internal class DataModel : IDataModel
     private readonly ILookup<string, NodeTypeDescription> _folderNames;
     private readonly Dictionary<Type, Type> _deprecatedTypes;
 
-    internal DataModel(IEnumerable<NodeTypeDescription> nodeTypes, UpdateDeprecatedNode? deprecatedNodeUpdater)
+    internal DataModel(IReadOnlyList<NodeTypeDescription> nodeTypes, UpdateDeprecatedNode? deprecatedNodeUpdater)
     {
         NodeTypes = nodeTypes;
         DeprecatedNodeUpdater = deprecatedNodeUpdater;
@@ -28,7 +28,7 @@ internal class DataModel : IDataModel
         ValidateDeprecatedTypes();
     }
 
-    public IEnumerable<NodeTypeDescription> NodeTypes { get; }
+    public IReadOnlyList<NodeTypeDescription> NodeTypes { get; }
 
     public ComparisonPolicy DefaultComparisonPolicy { get; }
 

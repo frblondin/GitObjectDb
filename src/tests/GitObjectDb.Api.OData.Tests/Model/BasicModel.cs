@@ -10,7 +10,8 @@ public class BasicModel
     public static IDataModel CreateDataModel(params Type[] types)
     {
         var model = A.Fake<IDataModel>(o => o.Strict());
-        A.CallTo(() => model.NodeTypes).Returns(types.Select(t => new NodeTypeDescription(t, t.Name)));
+        A.CallTo(() => model.NodeTypes)
+            .Returns(types.Select(t => new NodeTypeDescription(t, t.Name)).ToList());
         return model;
     }
 

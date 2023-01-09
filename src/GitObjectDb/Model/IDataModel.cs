@@ -14,7 +14,7 @@ public delegate Node UpdateDeprecatedNode(Node old, Type targetType);
 public interface IDataModel
 {
     /// <summary>Gets the collection of node types that are contained in this model.</summary>
-    IEnumerable<NodeTypeDescription> NodeTypes { get; }
+    IReadOnlyList<NodeTypeDescription> NodeTypes { get; }
 
     /// <summary>Gets the default comparison policy that should apply for the model.</summary>
     ComparisonPolicy DefaultComparisonPolicy { get; }
