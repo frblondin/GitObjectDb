@@ -17,11 +17,11 @@ internal class NodeDeltaType<TNode> : ObjectGraphType<DeltaDto<TNode>>, INodeDel
 
         var updatedAtProperty = ExpressionReflector.GetProperty<DeltaDto<TNode>>(d => d.UpdatedAt);
         Field<ObjectIdGraphType>(updatedAtProperty.Name)
-            .Description(updatedAtProperty.GetXmlDocsSummary(false));
+            .Description(updatedAtProperty.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }));
 
         var deletedProperty = ExpressionReflector.GetProperty<DeltaDto<TNode>>(d => d.Deleted);
         Field<BooleanGraphType>(deletedProperty.Name)
-            .Description(deletedProperty.GetXmlDocsSummary(false));
+            .Description(deletedProperty.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }));
     }
 
     void INodeDeltaType.AddNodeReference(GitObjectDbQuery query)
@@ -32,7 +32,7 @@ internal class NodeDeltaType<TNode> : ObjectGraphType<DeltaDto<TNode>>, INodeDel
         AddField(new()
         {
             Name = oldProperty.Name,
-            Description = oldProperty.GetXmlDocsSummary(false),
+            Description = oldProperty.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }),
             Type = type.GetType(),
             ResolvedType = type,
         });
@@ -41,7 +41,7 @@ internal class NodeDeltaType<TNode> : ObjectGraphType<DeltaDto<TNode>>, INodeDel
         AddField(new()
         {
             Name = newProperty.Name,
-            Description = newProperty.GetXmlDocsSummary(false),
+            Description = newProperty.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }),
             Type = type.GetType(),
             ResolvedType = type,
         });

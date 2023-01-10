@@ -18,7 +18,7 @@ public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<GitObjectDbQuer
     public NodeType()
     {
         Name = typeof(TNode).Name.Replace("`", string.Empty);
-        Description = typeof(TNode).GetXmlDocsSummary(false);
+        Description = typeof(TNode).GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false });
 
         Interface<NodeInterface>();
 
@@ -68,8 +68,9 @@ public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<GitObjectDbQuer
                 continue;
             }
             var type = property.PropertyType.GetGraphTypeFromType(isNullable: true, TypeMappingMode.OutputType);
-            var summary = typeof(TNode).GetProperty(property.Name)?.GetXmlDocsSummary(false) ??
-                property.GetXmlDocsSummary(false);
+            var summary =
+                typeof(TNode).GetProperty(property.Name)?.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }) ??
+                property.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false });
             Field(property.Name, type)
                 .Description(summary);
         }
@@ -101,8 +102,8 @@ public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<GitObjectDbQuer
         var getter = Reflect.PropertyGetter(property);
 
         Field(property.Name, type)
-            .Description(property.GetXmlDocsSummary(false) ??
-                property.GetXmlDocsSummary(false))
+            .Description(property.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }) ??
+                property.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }))
             .Resolve(new FuncFieldResolver<object?, object?>(context =>
             {
                 var parentNode = context.Source as Node ??
@@ -117,8 +118,8 @@ public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<GitObjectDbQuer
         var getter = Reflect.PropertyGetter(property);
 
         Field(property.Name, type)
-            .Description(property.GetXmlDocsSummary(false) ??
-                property.GetXmlDocsSummary(false))
+            .Description(property.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }) ??
+                property.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }))
             .Resolve(new FuncFieldResolver<object?, object?>(context =>
             {
                 var parentNode = context.Source as Node ??

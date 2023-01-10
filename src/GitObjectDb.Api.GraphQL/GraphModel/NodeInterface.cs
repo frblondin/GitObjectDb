@@ -1,4 +1,3 @@
-using GitObjectDb.Api.GraphQL.Tools;
 using GraphQL;
 using GraphQL.Builders;
 using GraphQL.Types;
@@ -27,7 +26,7 @@ internal sealed class NodeInterface : InterfaceGraphType<Node>
                 continue;
             }
             var type = property.PropertyType.GetGraphTypeFromType(isNullable: true, TypeMappingMode.OutputType);
-            var summary = typeof(Node).GetProperty(property.Name)?.GetXmlDocsSummary(false);
+            var summary = typeof(Node).GetProperty(property.Name)?.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false });
             Field(property.Name, type).Description(summary);
         }
     }
