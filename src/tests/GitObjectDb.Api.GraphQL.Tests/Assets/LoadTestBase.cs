@@ -12,7 +12,7 @@ namespace GitObjectDb.Api.GraphQL.Tests;
 
 public class LoadTestBase : QueryTestBase
 {
-    private readonly ClientFactory<IDocumentExecuter> _clientFactory =
+    private readonly IClientFactory<IDocumentExecuter> _clientFactory =
         ClientFactory.Create("graphql_executer_factory", (_, _) => Task.FromResult(CreateExecuter()));
 
     protected IStep CreateGraphQLStep(string name, string query, TimeSpan? timeout = null) => Step.Create(

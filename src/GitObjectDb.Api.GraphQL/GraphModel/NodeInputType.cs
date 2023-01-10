@@ -12,7 +12,7 @@ public class NodeInputType<TNode> : InputObjectGraphType<TNode>, INodeType<GitOb
     public NodeInputType()
     {
         Name = typeof(TNode).Name.Replace("`", string.Empty) + "Input";
-        Description = typeof(TNode).GetXmlDocsSummary(false);
+        Description = typeof(TNode).GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false });
 
         AddReferences();
     }
@@ -33,7 +33,7 @@ public class NodeInputType<TNode> : InputObjectGraphType<TNode>, INodeType<GitOb
                 continue;
             }
             var type = property.PropertyType.GetGraphTypeFromType(isNullable: true, TypeMappingMode.InputType);
-            var summary = property.GetXmlDocsSummary(false);
+            var summary = property.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false });
             Field(property.Name, type).Description(summary);
         }
     }
@@ -61,12 +61,12 @@ public class NodeInputType<TNode> : InputObjectGraphType<TNode>, INodeType<GitOb
     private void AddSingleReference(MemberInfo member) =>
         Field<GraphQLClrInputTypeReference<string>>(member.Name)
         .Description(
-            typeof(TNode).GetProperty(member.Name)?.GetXmlDocsSummary(false) ??
-            member.GetXmlDocsSummary(false));
+            typeof(TNode).GetProperty(member.Name)?.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }) ??
+            member.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }));
 
     private void AddMultiReference(MemberInfo member) =>
         Field<ListGraphType<GraphQLClrInputTypeReference<string>>>(member.Name)
         .Description(
-            typeof(TNode).GetProperty(member.Name)?.GetXmlDocsSummary(false) ??
-            member.GetXmlDocsSummary(false));
+            typeof(TNode).GetProperty(member.Name)?.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }) ??
+            member.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }));
 }

@@ -57,7 +57,7 @@ class Build : NukeBuild
 
     public static int Main() => Execute<Build>(x => x.Pack);
 
-    const string NetFramework = "net6.0";
+    const string NetFramework = "net7.0";
 
     [NerdbankGitVersioning(UpdateBuildNumber = true)] readonly NerdbankGitVersioning GitVersion;
     [GitRepository] readonly GitRepository Repository;
@@ -169,7 +169,7 @@ class Build : NukeBuild
         .Executes(() =>
         {
             ReportGenerator(s => s
-                .SetFramework(NetFramework)
+                .SetFramework("net6.0")
                 .SetReports(CoverageResult / "coverage.opencover.xml")
                 .SetTargetDirectory(CoverageResult));
         });
