@@ -1,4 +1,5 @@
 using GitObjectDb.Comparison;
+using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 
@@ -45,8 +46,8 @@ public interface IDataModel
 
     /// <summary>Updates the base node properties.</summary>
     /// <param name="node">The node to update.</param>
+    /// <param name="treeId">The id of the tree where the stream is originated from.</param>
     /// <param name="path">The new path value.</param>
     /// <param name="embeddedResource">The embedded resource value.</param>
-    /// <returns>The updated node containing new property values.</returns>
-    Node UpdateBaseProperties(Node node, DataPath? path, string? embeddedResource);
+    void UpdateBaseProperties(Node node, ObjectId? treeId, DataPath? path, string? embeddedResource);
 }

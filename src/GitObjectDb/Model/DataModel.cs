@@ -1,4 +1,7 @@
+using Fasterflect;
 using GitObjectDb.Comparison;
+using GitObjectDb.Tools;
+using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +12,12 @@ namespace GitObjectDb.Model;
 /// <summary>Semantic representation of a model.</summary>
 internal class DataModel : IDataModel
 {
+    private static readonly MemberSetter _treeIdSetter = Reflect.PropertySetter(
+        ExpressionReflector.GetProperty<Node>(n => n.TreeId));
+
+    private static readonly MemberSetter _embeddedResourceSetter = Reflect.PropertySetter(
+        ExpressionReflector.GetProperty<Node>(n => n.EmbeddedResource));
+
     private readonly ILookup<string, NodeTypeDescription> _folderNames;
     private readonly Dictionary<Type, Type> _deprecatedTypes;
 
@@ -93,12 +102,14 @@ internal class DataModel : IDataModel
         {
             throw new GitObjectDbException($"Updated node does not have the same id.");
         }
-        return UpdateBaseProperties(updated, deprecated.Path, deprecated.EmbeddedResource);
+        UpdateBaseProperties(updated, deprecated.TreeId, deprecated.Path, deprecated.EmbeddedResource);
+        return updated;
     }
 
-    public Node UpdateBaseProperties(Node node, DataPath? path, string? embeddedResource) => node with
+    public void UpdateBaseProperties(Node node, ObjectId? treeId, DataPath? path, string? embeddedResource)
     {
-        Path = path,
-        EmbeddedResource = embeddedResource,
-    };
+        node.Path = path;
+        _treeIdSetter.Invoke(node, treeId);
+        _embeddedResourceSetter.Invoke(node, embeddedResource);
+    }
 }

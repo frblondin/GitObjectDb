@@ -1,23 +1,18 @@
-using GitObjectDb.Model;
-using GitObjectDb.Tests;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
+using GitObjectDb.Tests.Customization;
 using LibGit2Sharp;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
 
 namespace GitObjectDb.YamlDotNet.Tests;
 
 public partial class NodeSerializerTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization))]
-    public void ReferencesAreSupported(IServiceProvider serviceProvider, string name, Signature signature)
+    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
+    public void ReferencesAreSupported(IConnection sut, string name, Signature signature)
     {
         // Arrange
-        var sut = CreateRepository(serviceProvider);
         DataPath path = default;
         sut.Update("main", c =>
         {
@@ -33,16 +28,15 @@ public partial class NodeSerializerTests
         Assert.Multiple(() =>
         {
             Assert.That(result.Reference, Is.InstanceOf<NodeWithReference>());
-            Assert.That(((NodeWithReference)result.Reference).Name, Is.EqualTo(name));
+            Assert.That(result.Reference.Name, Is.EqualTo(name));
         });
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization))]
-    public void CircularReferencesAreSupported(IServiceProvider serviceProvider, string name, Signature signature)
+    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
+    public void CircularReferencesAreSupported(IConnection sut, string name, Signature signature)
     {
         // Arrange
-        var sut = CreateRepository(serviceProvider);
         DataPath path = default;
         sut.Update("main", c =>
         {
@@ -59,22 +53,47 @@ public partial class NodeSerializerTests
         Assert.Multiple(() =>
         {
             Assert.That(result.Reference, Is.InstanceOf<NodeWithReference>());
-            Assert.That(((NodeWithReference)result.Reference).Name, Is.EqualTo(name));
+            Assert.That(result.Reference.Name, Is.EqualTo(name));
+            Assert.That(result.Reference.Reference, Is.SameAs(result));
         });
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization))]
-    public void MultipleReferencesAreSupported(IServiceProvider serviceProvider, string name1, string name2, Signature signature)
+    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
+    public void CircularReferencesAndDeprecationAreSupported(IConnection sut, Signature signature)
     {
         // Arrange
-        var sut = CreateRepository(serviceProvider);
         DataPath path = default;
         sut.Update("main", c =>
         {
-            var node1 = c.CreateOrUpdate(new NodeWithMultipleReference { Name = name1 });
-            var node2 = c.CreateOrUpdate(new NodeWithMultipleReference { Name = name2 });
-            var node3 = c.CreateOrUpdate(new NodeWithMultipleReference
+            var node1 = c.CreateOrUpdate(new NodeWithReference { Id = new("node1") });
+            var node2 = c.CreateOrUpdate(new NodeWithReference { Id = new("node2"), Reference = node1 });
+            node1 = c.CreateOrUpdate((NodeWithReferenceOld)node1 with { Reference = node2 });
+            path = node1.Path;
+        }).Commit(new("foo", signature, signature));
+
+        // Act
+        var result = sut.Lookup<NodeWithReference>("main", path);
+
+        // Act, Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Reference, Is.InstanceOf<NodeWithReference>());
+            Assert.That(result.Reference.Reference, Is.SameAs(result));
+        });
+    }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
+    public void MultipleReferencesAreSupported(IConnection sut, string name1, string name2, Signature signature)
+    {
+        // Arrange
+        DataPath path = default;
+        sut.Update("main", c =>
+        {
+            var node1 = c.CreateOrUpdate(new NodeWithMultipleReferences { Name = name1 });
+            var node2 = c.CreateOrUpdate(new NodeWithMultipleReferences { Name = name2 });
+            var node3 = c.CreateOrUpdate(new NodeWithMultipleReferences
             {
                 References = new[] { node1, node2 },
             });
@@ -82,39 +101,38 @@ public partial class NodeSerializerTests
         }).Commit(new("foo", signature, signature));
 
         // Act
-        var result = sut.Lookup<NodeWithMultipleReference>("main", path);
+        var result = sut.Lookup<NodeWithMultipleReferences>("main", path);
 
         // Act, Assert
         Assert.Multiple(() =>
         {
             Assert.That(result.References, Has.Exactly(2).Items);
-            Assert.That(((NodeWithMultipleReference)result.References[0]).Name, Is.EqualTo(name1));
+            Assert.That(result.References[0].Name, Is.EqualTo(name1));
         });
     }
 
-    private static IConnection CreateRepository(IServiceProvider serviceProvider)
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
+    public void CircularMultipleReferencesAndDeprecationAreSupported(IConnection sut, Signature signature)
     {
-        var path = GitObjectDbYamlDotNetFixture.GetAvailableFolderPath();
-        var repositoryFactory = serviceProvider.GetRequiredService<ConnectionFactory>();
-        var model = new ConventionBaseModelBuilder()
-            .RegisterType<NodeWithReference>()
-            .RegisterType<NodeWithMultipleReference>()
-            .Build();
-        var result = repositoryFactory(path, model);
-        return result;
-    }
+        // Arrange
+        DataPath path = default;
+        sut.Update("main", c =>
+        {
+            var node1 = c.CreateOrUpdate(new NodeWithMultipleReferences { Id = new("node1") });
+            var node2 = c.CreateOrUpdate(new NodeWithMultipleReferences { Id = new("node2"), References = new[] { node1 } });
+            node1 = c.CreateOrUpdate((NodeWithMultipleReferencesOld)node1 with { References = new[] { node2 } });
+            path = node1.Path;
+        }).Commit(new("foo", signature, signature));
 
-    public record NodeWithReference : Node
-    {
-        public string Name { get; set; }
+        // Act
+        var result = sut.Lookup<NodeWithMultipleReferences>("main", path);
 
-        public Node Reference { get; set; }
-    }
-
-    public record NodeWithMultipleReference : Node
-    {
-        public string Name { get; set; }
-
-        public IList<Node> References { get; set; }
+        // Act, Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.References, Has.Exactly(1).Items);
+            Assert.That(result.References[0].References, Has.Exactly(1).Items.SameAs(result));
+        });
     }
 }

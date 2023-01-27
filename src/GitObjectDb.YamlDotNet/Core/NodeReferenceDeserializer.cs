@@ -1,7 +1,6 @@
 using GitObjectDb.YamlDotNet.Model;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
@@ -16,8 +15,17 @@ internal class NodeReferenceDeserializer : INodeDeserializer
         if (!_preventReEntrant.Contains(reader) &&
             typeof(NodeReference).IsAssignableFrom(expectedType))
         {
-            DeserializeReference(reader, nestedObjectDeserializer, out value);
-            return true;
+            _preventReEntrant.Add(reader);
+            try
+            {
+                value = nestedObjectDeserializer.Invoke(reader, typeof(NodeReference)) ??
+                    throw new YamlException($"{nameof(NodeReference)} could not be read.");
+                return true;
+            }
+            finally
+            {
+                _preventReEntrant.Remove(reader);
+            }
         }
         else
         {

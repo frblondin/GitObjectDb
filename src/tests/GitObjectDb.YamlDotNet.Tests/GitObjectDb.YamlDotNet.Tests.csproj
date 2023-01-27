@@ -25,4 +25,10 @@
     <ProjectReference Include="..\GitObjectDb.Tests\GitObjectDb.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\GitObjectDb.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <Compile Include="$(SolutionDir)src\tests\GitObjectDb.SystemTextJson.Tests\Customization\ReferenceCustomization.cs" Link="Customization\ReferenceCustomization.cs" />
+  </ItemGroup>
+
 </Project>

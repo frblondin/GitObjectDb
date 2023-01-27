@@ -1,5 +1,5 @@
-using GitObjectDb.Api.OData.Tools;
 using GitObjectDb.Model;
+using GitObjectDb.Tools;
 using LibGit2Sharp;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -132,7 +132,7 @@ public sealed class DtoTypeEmitter
         {
             return nodeToDto(property.PropertyType);
         }
-        if (property.IsEnumerable(t => t.IsAssignableTo(typeof(Node)), out var type))
+        if (property.PropertyType.IsEnumerable(t => t.IsAssignableTo(typeof(Node)), out var type))
         {
             var dtoType = nodeToDto(type!);
             return typeof(IEnumerable<>).MakeGenericType(dtoType);

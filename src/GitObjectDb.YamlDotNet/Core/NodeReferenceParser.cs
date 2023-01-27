@@ -1,3 +1,4 @@
+using GitObjectDb.YamlDotNet.Model;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,11 +18,19 @@ internal class NodeReferenceParser : Parser, IDisposable
         Path = path;
         ReferenceResolver = referenceResolver;
         _parent = _current.Value;
-        Nodes = _parent?.Nodes ?? new List<Node>();
         _current.Value = this;
+        Nodes = _parent?.Nodes ?? new();
+        UpdatedDeprecatedNodes = _parent?.UpdatedDeprecatedNodes ?? new();
+        ReferencesToBeResolved = _parent?.ReferencesToBeResolved ?? new();
     }
 
-    internal IList<Node> Nodes { get; }
+    internal bool IsRoot => _parent is null;
+
+    internal List<Node> Nodes { get; }
+
+    internal List<KeyValuePair<Node, Node>> UpdatedDeprecatedNodes { get; }
+
+    internal List<NodeReference> ReferencesToBeResolved { get; }
 
     public DataPath Path { get; }
 
@@ -30,6 +39,8 @@ internal class NodeReferenceParser : Parser, IDisposable
     public static NodeReferenceParser CurrentInstance =>
         _current.Value ??
         throw new NotSupportedException($"No {nameof(NodeReferenceParser)} instance is in use.");
+
+    public static NodeReferenceParser? TryGetCurrentInstance() => _current.Value;
 
     protected virtual void Dispose(bool disposing)
     {
