@@ -15,7 +15,7 @@ public interface IQueryAccessor
     INodeSerializer Serializer { get; }
 
     /// <summary>Gets the cache that can be used to reuse same shared node references between queries.</summary>
-    IMemoryCache? Cache { get; }
+    IMemoryCache Cache { get; }
 
     /// <summary>Lookups for the item defined in the specified path.</summary>
     /// <typeparam name="TItem">The type of the node.</typeparam>

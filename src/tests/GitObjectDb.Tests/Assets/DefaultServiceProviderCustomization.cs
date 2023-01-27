@@ -20,7 +20,9 @@ public class DefaultServiceProviderCustomization : ICustomization, ISpecimenBuil
 
     public DefaultServiceProviderCustomization(bool useYaml)
     {
-        var collection = new ServiceCollection().AddSoftwareModel();
+        var collection = new ServiceCollection()
+            .AddMemoryCache()
+            .AddSoftwareModel();
         if (useYaml)
         {
             collection.AddGitObjectDb(c => c.AddYamlDotNet(CamelCaseNamingConvention.Instance));

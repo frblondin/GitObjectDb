@@ -9,7 +9,7 @@ internal class LoadItem : IQuery<LoadItem.Parameters, TreeItem>
     public TreeItem Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
         var loadParameters = new DataLoadParameters(parms.Path, parms.Tree.Id);
-        return queryAccessor.Cache?.GetOrCreate(loadParameters, Load) ??
+        return queryAccessor.Cache.GetOrCreate(loadParameters, Load) ??
                Load(default);
 
         TreeItem Load(ICacheEntry? entry) =>
