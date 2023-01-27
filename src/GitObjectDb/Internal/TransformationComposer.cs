@@ -1,5 +1,6 @@
 using GitObjectDb.Injection;
 using GitObjectDb.Internal.Commands;
+using GitObjectDb.Tools;
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
@@ -90,6 +91,13 @@ internal class TransformationComposer : ITransformationComposer
     private TItem CreateOrUpdateItem<TItem>(TItem item, DataPath? parent = null)
         where TItem : TreeItem
     {
+        var type = item.GetType();
+        if (type.IsNode())
+        {
+            // Make sure that node type is defined in model
+            Connection.Model.GetDescription(type);
+        }
+
         var path = item is Node node ?
             UpdateNodePathIfNeeded(node, parent) :
             item.ThrowIfNoPath();
