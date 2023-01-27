@@ -1,6 +1,6 @@
 using AutoMapper;
 using Fasterflect;
-using GitObjectDb.Api.OData.Tools;
+using GitObjectDb.Tools;
 using LibGit2Sharp;
 using System.Reflection;
 
@@ -81,7 +81,7 @@ public class AutoMapperProfile : Profile
             {
                 MapSingleReference(description, mapping, property);
             }
-            else if (property.IsEnumerable(t => t.IsAssignableTo(typeof(NodeDto)), out var dtoType))
+            else if (property.PropertyType.IsEnumerable(t => t.IsAssignableTo(typeof(NodeDto)), out var dtoType))
             {
                 MapMultiReference(description, mapping, property, dtoType!);
             }
@@ -106,7 +106,7 @@ public class AutoMapperProfile : Profile
                                           Type dtoType)
     {
         var sourceProperty = description.NodeType.Type.GetProperty(property.Name)!;
-        if (!sourceProperty.IsEnumerable(t => t.IsAssignableTo(typeof(Node)), out var nodeType))
+        if (!sourceProperty.PropertyType.IsEnumerable(t => t.IsAssignableTo(typeof(Node)), out var nodeType))
         {
             throw new NotSupportedException("Could not find node type of multi reference.");
         }

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
@@ -7,7 +6,6 @@ namespace GitObjectDb.SystemTextJson;
 
 internal class NodeReferenceResolver : ReferenceResolver
 {
-    private readonly IDictionary<DataPath, TreeItem> _items = new Dictionary<DataPath, TreeItem>();
     private readonly NodeReferenceHandler.DataContext? _context;
 
     public NodeReferenceResolver(NodeReferenceHandler.DataContext? context)
@@ -15,11 +13,13 @@ internal class NodeReferenceResolver : ReferenceResolver
         _context = context;
     }
 
+    internal IDictionary<DataPath, TreeItem> Items { get; } = new Dictionary<DataPath, TreeItem>();
+
     public override void AddReference(string referenceId, object value)
     {
         if (value is TreeItem item && DataPath.TryParse(referenceId, out var path))
         {
-            _items[path!] = item;
+            Items[path!] = item;
         }
     }
 
@@ -32,10 +32,10 @@ internal class NodeReferenceResolver : ReferenceResolver
                 throw new GitObjectDbException("The path has not been set for current item.");
             }
 
-            alreadyExists = _items.Count != 0; // Only first node should be stored, others should be pointed to through a ref
-            if (!_items.ContainsKey(item.Path))
+            alreadyExists = Items.Count != 0; // Only first node should be stored, others should be pointed to through a ref
+            if (!Items.ContainsKey(item.Path))
             {
-                _items[item.Path] = item;
+                Items[item.Path] = item;
             }
             return item.Path.FilePath;
         }
@@ -48,21 +48,9 @@ internal class NodeReferenceResolver : ReferenceResolver
 
     public override object ResolveReference(string referenceId)
     {
-        if (DataPath.TryParse(referenceId, out var path))
-        {
-            if (!_items.TryGetValue(path!, out var item))
-            {
-                if (_context is null)
-                {
-                    throw new NotSupportedException("The node accessor could not be found.");
-                }
-                _items[path!] = item = _context.Accessor(path!);
-            }
-            return item;
-        }
-        else
-        {
-            throw new NotSupportedException("Only data path reference is supported.");
-        }
+        // Because of type depreciation management (e.g. node types decorated with IsDeprecatedNodeTypeAttribute),
+        // we need to resolve nodes without references first and then resolve direct references
+        // (see NodeSerializer.ReadReferencePaths and NodeSerializer.ResolveReferencesFromPaths)
+        return null!;
     }
 }

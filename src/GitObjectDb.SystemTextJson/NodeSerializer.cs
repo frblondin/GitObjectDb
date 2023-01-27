@@ -1,11 +1,16 @@
-using GitObjectDb.Injection;
+using Fasterflect;
 using GitObjectDb.Model;
 using GitObjectDb.SystemTextJson.Converters;
+using GitObjectDb.SystemTextJson.Tools;
+using GitObjectDb.Tools;
 using LibGit2Sharp;
 using Microsoft.IO;
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -16,7 +21,6 @@ internal partial class NodeSerializer : INodeSerializer
 {
     private const string CommentStringToEscape = "*/";
     private const string CommentStringToUnescape = "ø/";
-
     private readonly RecyclableMemoryStreamManager _streamManager;
     private readonly JsonWriterOptions _writerOptions = new()
     {
@@ -68,11 +72,9 @@ internal partial class NodeSerializer : INodeSerializer
 
     public void Serialize(Node node, Stream stream)
     {
-        using (var writer = new Utf8JsonWriter(stream, _writerOptions))
-        {
-            JsonSerializer.Serialize(writer, node, Options);
-            WriteEmbeddedResource(node, writer);
-        }
+        using var writer = new Utf8JsonWriter(stream, _writerOptions);
+        JsonSerializer.Serialize(writer, node, Options);
+        WriteEmbeddedResource(node, writer);
     }
 
     public Node Deserialize(Stream stream,
@@ -81,7 +83,9 @@ internal partial class NodeSerializer : INodeSerializer
                             INodeSerializer.ItemLoader referenceResolver)
     {
         var isRootContext = NodeReferenceHandler.CurrentContext.Value == null;
-        NodeReferenceHandler.CurrentContext.Value ??= new NodeReferenceHandler.DataContext(referenceResolver, treeId);
+        var context =
+            NodeReferenceHandler.CurrentContext.Value ??=
+            new NodeReferenceHandler.DataContext(this, referenceResolver, treeId);
         try
         {
             var length = (int)stream.Length;
@@ -89,21 +93,31 @@ internal partial class NodeSerializer : INodeSerializer
             try
             {
                 stream.Read(bytes, 0, length);
-                var reader = new Utf8JsonReader(bytes, new()
+                var document = JsonDocument.Parse(bytes.AsMemory(0, length), new()
                 {
                     CommentHandling = JsonCommentHandling.Skip,
                 });
-                var result = JsonSerializer.Deserialize<Node>(ref reader, Options)!;
-                var embeddedResource = ReadEmbeddedResource(new ReadOnlySequence<byte>(bytes, 0, length));
-                result = Model.UpdateBaseProperties(result, path, embeddedResource);
+                var result = JsonSerializer.Deserialize<Node>(document, Options)!;
+                var embeddedResource = ReadEmbeddedResource(new(bytes, 0, length));
+                Model.UpdateBaseProperties(result, treeId, path, embeddedResource);
 
                 var newType = Model.GetNewTypeIfDeprecated(result.GetType());
                 if (newType is not null)
                 {
                     result = Model.UpdateDeprecatedNode(result, newType);
+
+                    // Update back reference to modified node
+                    context.Resolver!.AddReference(result.Path!.ToString(), result);
                 }
 
-                return result with { TreeId = treeId };
+                context.PostDeserializeationRefResolver.ReadReferencePaths(result, document, path);
+
+                if (isRootContext)
+                {
+                    context.PostDeserializeationRefResolver.ResolveReferencesFromPaths(context, referenceResolver);
+                }
+
+                return result;
             }
             finally
             {
@@ -139,12 +153,11 @@ internal partial class NodeSerializer : INodeSerializer
 
     private void WriteJsonValue(string pattern, Stream stream)
     {
-        var options = new JsonWriterOptions
+        using var writer = new Utf8JsonWriter(stream, new()
         {
             Encoder = Options.Encoder,
             SkipValidation = true,
-        };
-        using var writer = new Utf8JsonWriter(stream, options);
+        });
         writer.WriteStringValue(pattern);
     }
 }

@@ -7,7 +7,7 @@ namespace GitObjectDb.YamlDotNet.Core;
 internal class NodeReferenceEmitter : IEmitter
 {
     private readonly IEmitter _inner;
-    private readonly HashSet<object> _contexts = new HashSet<object>();
+    private readonly HashSet<object> _contexts = new();
 
     public NodeReferenceEmitter(TextWriter writer, Node serializedNode)
     {

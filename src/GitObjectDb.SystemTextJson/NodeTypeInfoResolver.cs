@@ -1,3 +1,4 @@
+using Fasterflect;
 using GitObjectDb.Model;
 using System;
 using System.Collections.Generic;
