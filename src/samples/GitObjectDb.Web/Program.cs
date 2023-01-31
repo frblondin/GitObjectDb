@@ -13,15 +13,14 @@ switch (repositoryType)
     case "Organization":
         builder.Services
             .AddMemoryCache()
-            .AddGitObjectDb(c => c.AddYamlDotNet(CamelCaseNamingConvention.Instance,
-                                                 builder => builder.WithTypeConverter(new TimeZoneInfoConverter()),
-                                                 builder => builder.WithTypeConverter(new TimeZoneInfoConverter())))
+            .AddGitObjectDb()
+            .AddGitObjectDbSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter()))
             .AddOrganizationModel()
             .AddGitObjectDbOData()
-            .AddGitObjectDbGraphQLSchema(builder =>
+            .AddGitObjectDbGraphQLSchema(options =>
             {
-                builder.Schema.RegisterTypeMapping<TimeZoneInfo, TimeZoneInfoGraphType>();
-                builder.CacheEntryStrategy = CacheStrategy;
+                options.ConfigureSchema = s => s.RegisterTypeMapping<TimeZoneInfo, TimeZoneInfoGraphType>();
+                options.CacheEntryStrategy = CacheStrategy;
             })
             .AddGraphQL(builder => builder
                 .UseApolloTracing(true)
@@ -36,7 +35,8 @@ switch (repositoryType)
     case "Software":
         builder.Services
             .AddMemoryCache()
-            .AddGitObjectDb(c => c.AddSystemTextJson())
+            .AddGitObjectDb()
+            .AddGitObjectDbSystemTextJson()
             .AddSoftwareModel()
             .AddGitObjectDbOData()
             .AddGitObjectDbGraphQLSchema(builder => builder.CacheEntryStrategy = CacheStrategy)

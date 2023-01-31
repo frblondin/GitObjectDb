@@ -7,11 +7,6 @@ namespace GitObjectDb;
 /// <summary>Provides methods to serialize and deserialize nodes.</summary>
 public interface INodeSerializer
 {
-    /// <summary>Provides a node serializer.</summary>
-    /// <param name="model">The model of GitObjectDb.</param>
-    /// <returns>The serializer to be used by GitObjectDb.</returns>
-    public delegate INodeSerializer Factory(IDataModel model);
-
     /// <summary>Represents a method that creates a <see cref="TreeItem"/> from a path.</summary>
     /// <param name="path">The path of item.</param>
     /// <returns>An item.</returns>

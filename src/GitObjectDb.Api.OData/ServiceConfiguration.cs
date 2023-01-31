@@ -8,8 +8,6 @@ namespace GitObjectDb.Api.OData;
 /// <summary>A set of methods for instances of <see cref="IServiceCollection"/>.</summary>
 public static class ServiceConfiguration
 {
-    private static DtoTypeEmitter? _emitter;
-
     /// <summary>Adds access to GitObjectDb repositories.</summary>
     /// <param name="source">The source.</param>
     /// <returns>The source <see cref="IServiceCollection"/>.</returns>
@@ -30,12 +28,13 @@ public static class ServiceConfiguration
             s.Lifetime == ServiceLifetime.Singleton &&
             s.ImplementationInstance is not null)?.ImplementationInstance as IDataModel ??
             throw new NotSupportedException($"{nameof(IDataModel)} has not bee registered.");
-
-        _emitter = new DtoTypeEmitter(model);
         source
             .AddSingleton<DataProvider>()
-            .AddSingleton(_emitter)
-            .AddAutoMapper(c => c.AddProfile(new AutoMapperProfile(_emitter.TypeDescriptions)));
+            .AddSingleton(new DtoTypeEmitter(model))
+            .AddAutoMapper((s, c) => c.AddProfile(
+                new AutoMapperProfile(
+                    s.GetRequiredService<DtoTypeEmitter>().TypeDescriptions)),
+                Type.EmptyTypes);
 
         return source;
     }

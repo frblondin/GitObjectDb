@@ -1,11 +1,13 @@
 using GitObjectDb.Injection;
+using GitObjectDb.Model;
 using GitObjectDb.YamlDotNet;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using YamlDotNet.Serialization;
 
 namespace GitObjectDb;
 
-/// <summary>A set of methods for instances of <see cref="IGitObjectDbBuilder"/>.</summary>
+/// <summary>A set of methods for instances of <see cref="IServiceCollection"/>.</summary>
 public static class GitObjectDbBuilderExtensions
 {
     /// <summary>Registers the serializer factory within the dependency injection framework.</summary>
@@ -14,15 +16,16 @@ public static class GitObjectDbBuilderExtensions
     /// <param name="configureSerializer">Optional yaml serializer configuration.</param>
     /// <param name="configureDeserializer">Optional yaml deserializer configuration.</param>
     /// <returns>The builder for chained calls.</returns>
-    public static IGitObjectDbBuilder AddYamlDotNet(this IGitObjectDbBuilder source,
-                                                    INamingConvention namingConvention,
-                                                    Action<SerializerBuilder>? configureSerializer = null,
-                                                    Action<DeserializerBuilder>? configureDeserializer = null)
+    public static IServiceCollection AddGitObjectDbYamlDotNet(this IServiceCollection source,
+                                                              INamingConvention namingConvention,
+                                                              Action<SerializerBuilder>? configureSerializer = null,
+                                                              Action<DeserializerBuilder>? configureDeserializer = null)
     {
-        source.AddSerializer(model => new NodeSerializer(model,
-                                                         namingConvention,
-                                                         configureSerializer,
-                                                         configureDeserializer));
+        source.AddSingleton<INodeSerializer, NodeSerializer>(s => new(
+            s.GetRequiredService<IDataModel>(),
+            namingConvention,
+            configureSerializer,
+            configureDeserializer));
 
         return source;
     }

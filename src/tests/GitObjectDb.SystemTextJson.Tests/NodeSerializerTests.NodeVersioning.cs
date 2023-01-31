@@ -1,9 +1,9 @@
 using AutoFixture;
 using GitObjectDb.Model;
 using GitObjectDb.Tests.Assets;
-using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Reflection;
@@ -13,7 +13,7 @@ namespace GitObjectDb.SystemTextJson.Tests;
 public partial class NodeSerializerTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
     public void DeserializerUpdatesToUpperVersion(IFixture fixture)
     {
         // Arrange
@@ -22,9 +22,10 @@ public partial class NodeSerializerTests
             .RegisterType<SomeNodeV2>()
             .AddDeprecatedNodeUpdater(UpdateDeprecatedNode)
             .Build();
+        fixture.Do<IServiceCollection>(services => services.AddSingleton(model));
 
         // Act
-        var nodeSerializer = fixture.Create<INodeSerializer.Factory>().Invoke(model);
+        var nodeSerializer = fixture.Create<INodeSerializer>();
         var node = new SomeNodeV1
         {
             Id = new UniqueId("id"),

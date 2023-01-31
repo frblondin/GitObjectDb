@@ -11,7 +11,7 @@ namespace GitObjectDb.Tests.Assets;
 
 public class DefaultServiceProviderCustomization : ICustomization, ISpecimenBuilder
 {
-    readonly IServiceProvider _serviceProvider;
+    private readonly bool _useYaml;
 
     public DefaultServiceProviderCustomization()
         : this(false)
@@ -20,31 +20,40 @@ public class DefaultServiceProviderCustomization : ICustomization, ISpecimenBuil
 
     public DefaultServiceProviderCustomization(bool useYaml)
     {
-        var collection = new ServiceCollection()
-            .AddMemoryCache()
-            .AddSoftwareModel();
-        if (useYaml)
-        {
-            collection.AddGitObjectDb(c => c.AddYamlDotNet(CamelCaseNamingConvention.Instance));
-        }
-        else
-        {
-            collection.AddGitObjectDb(c => c.AddSystemTextJson());
-        }
-        _serviceProvider = collection
-            .AddLogging(builder =>
-                builder.SetMinimumLevel(LogLevel.Trace)
-                        .AddProvider(new ConsoleProvider()))
-            .BuildServiceProvider();
+        _useYaml = useYaml;
     }
 
     public void Customize(IFixture fixture)
     {
         fixture.Register(UniqueId.CreateNew);
+        fixture.Freeze<IServiceCollection>(c => c
+            .FromFactory(() => new ServiceCollection())
+            .Do(AddServices));
+        IServiceProvider singleton = null;
+        fixture.Register(() => singleton ??= fixture.Create<IServiceCollection>().BuildServiceProvider());
         fixture.Customizations.Add(this);
     }
 
+    private void AddServices(IServiceCollection services)
+    {
+        services
+            .AddLogging(builder =>
+                builder.SetMinimumLevel(LogLevel.Trace)
+                        .AddProvider(new ConsoleProvider()))
+            .AddMemoryCache()
+            .AddSoftwareModel()
+            .AddGitObjectDb();
+        if (_useYaml)
+        {
+            services.AddGitObjectDbYamlDotNet(CamelCaseNamingConvention.Instance);
+        }
+        else
+        {
+            services.AddGitObjectDbSystemTextJson();
+        }
+    }
+
     public object Create(object request, ISpecimenContext context) =>
-        (request is Type t ? _serviceProvider.GetService(t) : null) ??
+        (request is Type t ? context.Create<IServiceProvider>().GetService(t) : null) ??
         new NoSpecimen();
 }

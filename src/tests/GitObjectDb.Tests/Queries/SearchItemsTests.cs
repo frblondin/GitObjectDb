@@ -51,12 +51,14 @@ public class SearchItemsTests : DisposeArguments
     {
         public void Customize(IFixture fixture)
         {
-            var serviceProvider = fixture.Create<IServiceProvider>();
-
             var model = new ConventionBaseModelBuilder().RegisterType<SomeNode>().Build();
-            var connection = new Lazy<IConnectionInternal>(() => CreateConnection(fixture, serviceProvider, model));
+            fixture.Do<IServiceCollection>(services => services.AddSingleton(model));
+            var connection = new Lazy<IConnectionInternal>(() =>
+            {
+                var serviceProvider = fixture.Create<IServiceProvider>();
+                return CreateConnection(fixture, serviceProvider, model);
+            });
 
-            fixture.Inject(model);
             fixture.Register(() => connection.Value);
             fixture.Register<IConnection>(() => connection.Value);
             fixture.Register(() => connection.Value.Repository);

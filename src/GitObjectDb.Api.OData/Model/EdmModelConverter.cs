@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace GitObjectDb.Api.OData.Model;
 
-public static class EdmModelConverter
+internal static class EdmModelConverter
 {
     public static IEdmModel ConvertToEdm(this IEnumerable<Type> dtoTypes)
     {

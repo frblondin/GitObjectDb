@@ -20,13 +20,10 @@ internal class NodeFactory : IObjectFactory
 
     private static object CreateNode(Type type)
     {
-        var parser = NodeReferenceParser.CurrentInstance;
-
         var result = (Node)Activator.CreateInstance(type);
-        result.Path = parser.Path;
 
         // Make sure that nested lookups will find node to avoid stack overflows
-        parser.Nodes.Add(result);
+        NodeReferenceParser.CurrentInstance.Nodes.Add(result);
 
         return result;
     }

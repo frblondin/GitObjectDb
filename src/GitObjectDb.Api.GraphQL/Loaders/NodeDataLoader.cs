@@ -3,7 +3,7 @@ using GitObjectDb.Api.GraphQL.Tools;
 using GraphQL;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
-using Models.Organization;
+using Microsoft.Extensions.Options;
 
 namespace GitObjectDb.Api.GraphQL.Loaders;
 
@@ -12,8 +12,8 @@ internal class NodeDataLoader<TNode> : GitObjectDbDataLoaderBase<NodeDataLoaderK
 {
     private readonly IQueryAccessor _queryAccessor;
 
-    public NodeDataLoader(IQueryAccessor queryAccessor, IMemoryCache memoryCache, CacheEntryStrategyProvider cacheStrategy)
-        : base(memoryCache, cacheStrategy)
+    public NodeDataLoader(IQueryAccessor queryAccessor, IMemoryCache memoryCache, IOptions<GitObjectDbGraphQLOptions> options)
+        : base(memoryCache, options)
     {
         _queryAccessor = queryAccessor;
     }

@@ -45,12 +45,13 @@ public class SoftwareCustomization : ICustomization
 
     public void Customize(IFixture fixture)
     {
-        var serviceProvider = fixture.Create<IServiceProvider>();
+        var connection = new Lazy<IConnectionInternal>(() =>
+        {
+            var serviceProvider = fixture.Create<IServiceProvider>();
+            var model = serviceProvider.GetRequiredService<IDataModel>();
+            return CreateConnection(fixture, serviceProvider, model);
+        });
 
-        var model = serviceProvider.GetRequiredService<IDataModel>();
-        var connection = new Lazy<IConnectionInternal>(() => CreateConnection(fixture, serviceProvider, model));
-
-        fixture.Inject(model);
         fixture.Register(() => connection.Value);
         fixture.Register<IConnection>(() => connection.Value);
         fixture.Register(() => connection.Value.Repository);

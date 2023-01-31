@@ -7,7 +7,7 @@ using System.Reflection.Emit;
 namespace GitObjectDb.Api.OData.Model;
 
 /// <summary>Emits data transfer types from a <see cref="IDataModel"/>.</summary>
-public sealed class DtoTypeEmitter
+internal sealed class DtoTypeEmitter
 {
     /// <summary>Initializes a new instance of the <see cref="DtoTypeEmitter"/> class.</summary>
     /// <param name="model">The model for which data transfer types must be emitted.</param>

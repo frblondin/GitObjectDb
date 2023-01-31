@@ -18,23 +18,13 @@ public static class ServiceConfiguration
 {
     /// <summary>Adds access to GitObjectDb repositories.</summary>
     /// <param name="source">The source.</param>
-    /// <param name="configure">The configuration callback.</param>
     /// <returns>The source <see cref="IServiceCollection"/>.</returns>
-    public static IServiceCollection AddGitObjectDb(this IServiceCollection source, Action<IGitObjectDbBuilder> configure)
+    public static IServiceCollection AddGitObjectDb(this IServiceCollection source)
     {
         // Avoid double-registrations
         if (source.IsGitObjectDbRegistered())
         {
             throw new NotSupportedException("GitObjectDb has already been registered.");
-        }
-
-        configure(new GitObjectDbBuilder(source));
-        if (!source.Any(sd => sd.ServiceType == typeof(INodeSerializer.Factory)))
-        {
-            throw new GitObjectDbException(
-                $"The {nameof(INodeSerializer)}.{nameof(INodeSerializer.Factory)} " +
-                $"has not been configured. Consider using {nameof(AddGitObjectDb)}(" +
-                $"c => c.{nameof(GitObjectDbBuilderExtensions.AddSerializer)}(...).");
         }
 
         ConfigureMain(source);

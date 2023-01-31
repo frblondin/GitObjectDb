@@ -4,6 +4,7 @@ using GitObjectDb.SystemTextJson.Converters;
 using GitObjectDb.SystemTextJson.Tools;
 using GitObjectDb.Tools;
 using LibGit2Sharp;
+using Microsoft.Extensions.Options;
 using Microsoft.IO;
 using System;
 using System.Buffers;
@@ -27,12 +28,12 @@ internal partial class NodeSerializer : INodeSerializer
         Indented = true,
     };
 
-    public NodeSerializer(IDataModel model, Action<JsonSerializerOptions>? configure = null)
+    public NodeSerializer(IDataModel model, IOptions<JsonSerializerOptions>? options = null)
     {
         Model = model;
         _streamManager = new();
 
-        Options = CreateSerializerOptions(model, configure);
+        Options = CreateSerializerOptions(model, options);
     }
 
     public IDataModel Model { get; }
@@ -41,23 +42,19 @@ internal partial class NodeSerializer : INodeSerializer
 
     public string FileExtension => "json";
 
-    private static JsonSerializerOptions CreateSerializerOptions(IDataModel model, Action<JsonSerializerOptions>? configure)
+    private static JsonSerializerOptions CreateSerializerOptions(IDataModel model, IOptions<JsonSerializerOptions>? options)
     {
-        var result = new JsonSerializerOptions
-        {
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = true,
-            ReferenceHandler = new NodeReferenceHandler(),
-            ReadCommentHandling = JsonCommentHandling.Skip,
-            TypeInfoResolver = new NodeTypeInfoResolver(model),
-        };
+        var result = options?.Value ?? new JsonSerializerOptions();
+        result.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
+        result.PropertyNameCaseInsensitive = true;
+        result.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        result.WriteIndented = true;
+        result.ReferenceHandler = new NodeReferenceHandler();
+        result.ReadCommentHandling = JsonCommentHandling.Skip;
+        result.TypeInfoResolver = new NodeTypeInfoResolver(model);
 
         result.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         result.Converters.Add(new UniqueIdConverter());
-
-        configure?.Invoke(result);
 
         return result;
     }

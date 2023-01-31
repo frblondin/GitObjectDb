@@ -1,4 +1,5 @@
 using GitObjectDb.Api.OData.Model;
+using GitObjectDb.Model;
 using Microsoft.AspNetCore.OData;
 using Microsoft.Extensions.DependencyInjection;
 
