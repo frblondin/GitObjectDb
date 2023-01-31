@@ -10,7 +10,7 @@ namespace GitObjectDb.Api.OData.Model;
 /// Gets the automapper profile for converting <see cref="Node"/> types to
 /// their corresponding <see cref="NodeDto"/> types.
 /// </summary>
-public class AutoMapperProfile : Profile
+internal class AutoMapperProfile : Profile
 {
     internal const string ChildResolver = nameof(ChildResolver);
     internal const string CommitId = nameof(CommitId);

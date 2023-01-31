@@ -2,6 +2,7 @@ using GitObjectDb.Model;
 using GitObjectDb.SystemTextJson.Converters;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
+using Microsoft.Extensions.Options;
 using NUnit.Framework;
 using System;
 using System.IO;
@@ -18,7 +19,7 @@ public class UniqueIdConverterTests
     {
         // Arrange
         var model = new ConventionBaseModelBuilder().Build();
-        var serializer = new NodeSerializer(model);
+        var serializer = new NodeSerializer(model, Options.Create(new JsonSerializerOptions()));
 
         // Act
         var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes($@"""{id}""").AsSpan());

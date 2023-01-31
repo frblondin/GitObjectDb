@@ -15,7 +15,8 @@ internal class IgnoreDataMemberTypeInspector : TypeInspectorSkeleton
         _innerTypeDescriptor = innerTypeDescriptor;
     }
 
-    public override IEnumerable<IPropertyDescriptor> GetProperties(Type type, object? container) => _innerTypeDescriptor
+    public override IEnumerable<IPropertyDescriptor> GetProperties(Type type, object? container) =>
+        _innerTypeDescriptor
         .GetProperties(type, container)
         .Where(p => p.GetCustomAttribute<IgnoreDataMemberAttribute>() == null);
 }

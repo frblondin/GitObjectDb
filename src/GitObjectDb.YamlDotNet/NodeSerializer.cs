@@ -1,22 +1,13 @@
-using Fasterflect;
 using GitObjectDb.Model;
-using GitObjectDb.Tools;
-using GitObjectDb.YamlDotNet.Converters;
 using GitObjectDb.YamlDotNet.Core;
-using GitObjectDb.YamlDotNet.Model;
 using LibGit2Sharp;
 using Microsoft.IO;
 using System;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NodeDeserializers;
-using YamlDotNet.Serialization.ObjectFactories;
-using YamlDotNet.Serialization.TypeResolvers;
-using NodeFactory = GitObjectDb.YamlDotNet.Core.NodeFactory;
 
 namespace GitObjectDb.YamlDotNet;
 
@@ -25,7 +16,10 @@ internal partial class NodeSerializer : INodeSerializer
     internal const string ReferenceTag = "!$Reference";
     private readonly RecyclableMemoryStreamManager _streamManager;
 
-    public NodeSerializer(IDataModel model, INamingConvention namingConvention, Action<SerializerBuilder>? configureSerializer = null, Action<DeserializerBuilder>? configureDeserializer = null)
+    public NodeSerializer(IDataModel model,
+                          INamingConvention namingConvention,
+                          Action<SerializerBuilder>? configureSerializer = null,
+                          Action<DeserializerBuilder>? configureDeserializer = null)
     {
         Model = model;
         _streamManager = new();
@@ -41,54 +35,6 @@ internal partial class NodeSerializer : INodeSerializer
     public IDeserializer Deserializer { get; set; }
 
     public string FileExtension => "yaml";
-
-    private static ISerializer CreateSerializer(IDataModel model, INamingConvention namingConvention, Action<SerializerBuilder>? configure)
-    {
-        var result = new SerializerBuilder()
-            .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitDefaults |
-                                            DefaultValuesHandling.OmitEmptyCollections)
-            .DisableAliases()
-            .WithTypeInspector(inner => new IgnoreDataMemberTypeInspector(inner))
-            .WithTypeInspector(inner => new SortedReadablePropertiesTypeInspector(inner, new DynamicTypeResolver()), w => w.OnBottom())
-            .WithObjectGraphTraversalStrategyFactory(
-                NodeReferenceGraphTraversalStrategy.CreateFactory(namingConvention));
-
-        ConfigureCommon(result, model, namingConvention);
-
-        configure?.Invoke(result);
-
-        return result.Build();
-    }
-
-    private static IDeserializer CreateDeserializer(IDataModel model, INamingConvention namingConvention, Action<DeserializerBuilder>? configure)
-    {
-        var objectFactory = new NodeFactory(new DefaultObjectFactory());
-        var result = new DeserializerBuilder()
-            .WithNodeDeserializer(new NodeReferenceDeserializer(), w => w.Before<ObjectNodeDeserializer>())
-            .WithObjectFactory(objectFactory);
-
-        ConfigureCommon(result, model, namingConvention);
-        configure?.Invoke(result);
-
-        return result.Build();
-    }
-
-    private static void ConfigureCommon<TBuilder>(BuilderSkeleton<TBuilder> builder, IDataModel model, INamingConvention namingConvention)
-        where TBuilder : BuilderSkeleton<TBuilder>
-    {
-        builder
-            .IgnoreFields()
-            .WithNamingConvention(namingConvention)
-            .WithTypeConverter(new DataPathConverter())
-            .WithTypeConverter(new UniqueIdConverter())
-            .WithTagMapping(ReferenceTag, typeof(NodeReference));
-
-        foreach (var nodeType in model.NodeTypes)
-        {
-            var tag = nodeType.Type.GetYamlName();
-            builder.WithTagMapping($"!{tag}", nodeType.Type);
-        }
-    }
 
     public Stream Serialize(Node node)
     {
@@ -114,12 +60,24 @@ internal partial class NodeSerializer : INodeSerializer
                             INodeSerializer.ItemLoader referenceResolver)
     {
         using var reader = new StreamReader(stream);
-        using var parser = new NodeReferenceParser(reader, path, referenceResolver);
+        using var parser = new NodeReferenceParser(reader, referenceResolver);
         var result = Deserializer.Deserialize<Node>(parser);
 
         var embeddedResource = ReadEmbeddedResource(stream);
         Model.UpdateBaseProperties(result, treeId, path, embeddedResource);
 
+        result = UpdateIfDeprecated(parser, result);
+
+        if (parser.IsRoot)
+        {
+            ResolveReferences(parser);
+        }
+
+        return result;
+    }
+
+    private Node UpdateIfDeprecated(NodeReferenceParser parser, Node result)
+    {
         var newType = Model.GetNewTypeIfDeprecated(result.GetType());
         if (newType is not null)
         {
@@ -128,40 +86,6 @@ internal partial class NodeSerializer : INodeSerializer
             result = Model.UpdateDeprecatedNode(result, newType);
             parser.Nodes.Add(result);
             parser.UpdatedDeprecatedNodes.Add(new(old, result));
-        }
-
-        if (parser.IsRoot)
-        {
-            while (parser.ReferencesToBeResolved.Count > 0)
-            {
-                var reference = parser.ReferencesToBeResolved[0];
-                reference.ResolveReference();
-                parser.ReferencesToBeResolved.RemoveAt(0);
-            }
-
-            foreach (var kvp in parser.UpdatedDeprecatedNodes)
-            {
-                var oldTypeDescription = Model.GetDescription(kvp.Key.GetType());
-                var newTypeDescription = Model.GetDescription(kvp.Value.GetType());
-                foreach (var oldProperty in oldTypeDescription.SerializableProperties)
-                {
-                    if (oldProperty.PropertyType.IsNode() ||
-                        oldProperty.PropertyType.IsNodeEnumerable(out var _))
-                    {
-                        var newProperty = newTypeDescription.SerializableProperties.FirstOrDefault(p =>
-                            p.Name.Equals(oldProperty.Name, StringComparison.OrdinalIgnoreCase) &&
-                            p.PropertyType == oldProperty.PropertyType);
-                        if (newProperty is not null)
-                        {
-                            var oldValue = Reflect.PropertyGetter(oldProperty).Invoke(kvp.Key);
-                            if (oldValue is not null)
-                            {
-                                Reflect.PropertySetter(newProperty).Invoke(kvp.Value, oldValue);
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         return result;

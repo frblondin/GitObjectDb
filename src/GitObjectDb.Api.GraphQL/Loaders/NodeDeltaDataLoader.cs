@@ -4,6 +4,7 @@ using GitObjectDb.Api.GraphQL.Tools;
 using GraphQL;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace GitObjectDb.Api.GraphQL.Loaders;
 
@@ -12,8 +13,8 @@ internal class NodeDeltaDataLoader<TNode> : GitObjectDbDataLoaderBase<NodeDeltaD
 {
     private readonly IQueryAccessor _queryAccessor;
 
-    public NodeDeltaDataLoader(IQueryAccessor queryAccessor, IMemoryCache memoryCache, CacheEntryStrategyProvider cacheStrategy)
-        : base(memoryCache, cacheStrategy)
+    public NodeDeltaDataLoader(IQueryAccessor queryAccessor, IMemoryCache memoryCache, IOptions<GitObjectDbGraphQLOptions> options)
+        : base(memoryCache, options)
     {
         _queryAccessor = queryAccessor;
     }

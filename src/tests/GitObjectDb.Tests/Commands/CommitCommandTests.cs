@@ -248,7 +248,7 @@ public class CommitCommandTests
             var connection = A.Fake<IConnectionInternal>(x => x.Strict());
             A.CallTo(() => connection.Repository).Returns(fixture.Create<IRepository>());
             A.CallTo(() => connection.Model).Returns(fixture.Create<IDataModel>());
-            A.CallTo(() => connection.Serializer).Returns(fixture.Create<INodeSerializer.Factory>().Invoke(fixture.Create<IDataModel>()));
+            A.CallTo(() => connection.Serializer).Returns(fixture.Create<INodeSerializer>());
             A.CallTo(() => connection.Cache).Returns(fixture.Create<IMemoryCache>());
             fixture.Inject(connection);
 

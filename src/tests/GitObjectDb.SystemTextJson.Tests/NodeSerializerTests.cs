@@ -1,9 +1,9 @@
 using AutoFixture;
 using GitObjectDb.Model;
 using GitObjectDb.Tests.Assets;
-using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 
@@ -12,13 +12,14 @@ namespace GitObjectDb.SystemTextJson.Tests;
 public partial class NodeSerializerTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
     public void EmbeddedResourceGetPreserved(IFixture fixture)
     {
         // Arrange
         var model = new ConventionBaseModelBuilder()
             .RegisterType<SomeNode>()
             .Build();
+        fixture.Do<IServiceCollection>(services => services.AddSingleton(model));
 
         // Arrange
         var value = new SomeNode
@@ -28,7 +29,7 @@ public partial class NodeSerializerTests
         };
 
         // Act
-        var nodeSerializer = fixture.Create<INodeSerializer.Factory>().Invoke(model);
+        var nodeSerializer = fixture.Create<INodeSerializer>();
         var serialized = nodeSerializer.Serialize(value);
         var deserialized = nodeSerializer.Deserialize(serialized, ObjectId.Zero, null, _ => throw new NotImplementedException());
 

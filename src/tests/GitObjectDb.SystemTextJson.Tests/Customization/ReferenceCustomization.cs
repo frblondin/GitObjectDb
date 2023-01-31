@@ -12,9 +12,7 @@ public class ReferenceCustomization : ICustomization
     {
         fixture.Register(() =>
         {
-            var serviceProvider = fixture.Create<IServiceProvider>();
             var path = GitObjectDbFixture.GetAvailableFolderPath();
-            var repositoryFactory = serviceProvider.GetRequiredService<ConnectionFactory>();
             var model = new ConventionBaseModelBuilder()
                 .RegisterType<NodeWithReference>()
                 .RegisterType<NodeWithReferenceOld>()
@@ -30,6 +28,9 @@ public class ReferenceCustomization : ICustomization
                     };
                 })
                 .Build();
+            fixture.Do<IServiceCollection>(services => services.AddSingleton(model));
+            var repositoryFactory = fixture.Create<IServiceProvider>()
+                .GetRequiredService<ConnectionFactory>();
             return repositoryFactory(path, model);
         });
     }

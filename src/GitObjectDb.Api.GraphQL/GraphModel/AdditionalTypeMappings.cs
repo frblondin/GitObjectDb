@@ -8,7 +8,7 @@ using Models.Organization;
 namespace GitObjectDb.Api.GraphQL.GraphModel;
 internal static class AdditionalTypeMappings
 {
-    internal static void Add(Schema schema)
+    internal static void Add(ISchema schema)
     {
         schema.RegisterTypeMapping<ObjectId, ObjectIdGraphType>();
         schema.RegisterTypeMapping<UniqueId, UniqueIdGraphType>();

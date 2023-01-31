@@ -12,10 +12,9 @@ internal class NodeReferenceParser : Parser, IDisposable
     private readonly NodeReferenceParser? _parent;
     private bool _isDisposed;
 
-    public NodeReferenceParser(TextReader input, DataPath path, INodeSerializer.ItemLoader referenceResolver)
+    public NodeReferenceParser(TextReader input, INodeSerializer.ItemLoader referenceResolver)
         : base(input)
     {
-        Path = path;
         ReferenceResolver = referenceResolver;
         _parent = _current.Value;
         _current.Value = this;
@@ -31,8 +30,6 @@ internal class NodeReferenceParser : Parser, IDisposable
     internal List<KeyValuePair<Node, Node>> UpdatedDeprecatedNodes { get; }
 
     internal List<NodeReference> ReferencesToBeResolved { get; }
-
-    public DataPath Path { get; }
 
     public INodeSerializer.ItemLoader ReferenceResolver { get; }
 

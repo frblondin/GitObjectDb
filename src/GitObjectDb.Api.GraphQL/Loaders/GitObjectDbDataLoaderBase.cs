@@ -1,5 +1,6 @@
 using GraphQL.DataLoader;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace GitObjectDb.Api.GraphQL.Loaders;
 
@@ -8,11 +9,11 @@ internal abstract class GitObjectDbDataLoaderBase<TKey, TResult> : DataLoaderBas
     private readonly IMemoryCache _memoryCache;
     private readonly CacheEntryStrategyProvider _cacheStrategy;
 
-    protected GitObjectDbDataLoaderBase(IMemoryCache memoryCache, CacheEntryStrategyProvider cacheStrategy)
+    protected GitObjectDbDataLoaderBase(IMemoryCache memoryCache, IOptions<GitObjectDbGraphQLOptions> options)
         : base(false)
     {
         _memoryCache = memoryCache;
-        _cacheStrategy = cacheStrategy;
+        _cacheStrategy = options.Value.CacheEntryStrategy;
     }
 
     protected override Task FetchAsync(IEnumerable<DataLoaderPair<TKey, TResult>> list, CancellationToken cancellationToken)

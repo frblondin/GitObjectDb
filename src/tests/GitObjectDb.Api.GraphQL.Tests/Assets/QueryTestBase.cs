@@ -54,11 +54,12 @@ public class QueryTestBase<TDocumentBuilder>
         ServiceProvider = new ServiceCollection()
             .AddOrganizationModel()
             .AddMemoryCache()
-            .AddGitObjectDb(c => c.AddSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter())))
-            .AddGitObjectDbGraphQLSchema(builder =>
+            .AddGitObjectDb()
+            .AddGitObjectDbSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter()))
+            .AddGitObjectDbGraphQLSchema(o =>
             {
-                builder.Schema.RegisterTypeMapping<TimeZoneInfo, TimeZoneInfoGraphType>();
-                builder.CacheEntryStrategy = e => e.SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1));
+                o.ConfigureSchema = s => s.RegisterTypeMapping<TimeZoneInfo, TimeZoneInfoGraphType>();
+                o.CacheEntryStrategy = e => e.SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1));
             })
             .AddGraphQL(builder => builder.AddSystemTextJson())
             .AddGitObjectDbConnection(UniqueId.CreateNew().ToString())
