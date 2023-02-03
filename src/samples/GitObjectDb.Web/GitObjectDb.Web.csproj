@@ -9,18 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Using Include="GitObjectDb" />
-    <Using Include="GitObjectDb.Api.OData" />
-    <Using Include="GitObjectDb.Api.GraphQL" />
-    <Using Include="GitObjectDb.Web" />
-    <Using Include="Models.Organization" />
-    <Using Include="Models.Software" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="Auth0.Fga" />
+    <PackageReference Include="Fga.Net.AspNetCore" />
     <PackageReference Include="GraphQL.MemoryCache" />
     <PackageReference Include="GraphQL.Server.Ui.Altair" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
     <PackageReference Include="Microsoft.AspNetCore.OData" />
+    <PackageReference Include="Microsoft.Tye.Extensions.Configuration" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
   </ItemGroup>
 

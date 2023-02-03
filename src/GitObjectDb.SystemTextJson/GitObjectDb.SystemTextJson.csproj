@@ -24,6 +24,7 @@
   <ItemGroup>
     <None Include="..\..\GitObjectDb.png" Pack="true" PackagePath="\" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <Compile Include="$(SolutionDir)src\GitObjectDb\Tools\ExpressionReflector.cs" Link="Tools\ExpressionReflector.cs" />
     <Compile Include="$(SolutionDir)src\GitObjectDb\Tools\TypeExtensions.cs" Link="Tools\TypeExtensions.cs" />
   </ItemGroup>
 

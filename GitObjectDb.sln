@@ -56,6 +56,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb.Api.ProtoBuf.Mo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitObjectDb.Api.ProtoBuf.Tests", "src\tests\GitObjectDb.Api.ProtoBuf.Tests\GitObjectDb.Api.ProtoBuf.Tests.csproj", "{C149AED8-F690-45A9-AF9F-C99A89FC5A05}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IdentityServer", "src\samples\IdentityServer\IdentityServer.csproj", "{B68232C5-9050-4902-B52F-71F4BF6D4354}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -129,6 +131,10 @@ Global
 		{C149AED8-F690-45A9-AF9F-C99A89FC5A05}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C149AED8-F690-45A9-AF9F-C99A89FC5A05}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C149AED8-F690-45A9-AF9F-C99A89FC5A05}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B68232C5-9050-4902-B52F-71F4BF6D4354}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B68232C5-9050-4902-B52F-71F4BF6D4354}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B68232C5-9050-4902-B52F-71F4BF6D4354}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B68232C5-9050-4902-B52F-71F4BF6D4354}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -150,6 +156,7 @@ Global
 		{7FC90C48-1D6A-4326-A4B5-F90C5A1C92C5} = {02646CBF-41CC-48E1-A816-1F030E9A9D2D}
 		{FDE4C912-C0EC-49EA-800C-5D358509F15D} = {02646CBF-41CC-48E1-A816-1F030E9A9D2D}
 		{C149AED8-F690-45A9-AF9F-C99A89FC5A05} = {96852FB8-475B-4CF5-AD64-0565395F775D}
+		{B68232C5-9050-4902-B52F-71F4BF6D4354} = {CD7D4EE2-82D1-4EFE-8023-A6DF6589D505}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {909F3182-5E05-4EE3-8A7E-65188A32A31E}

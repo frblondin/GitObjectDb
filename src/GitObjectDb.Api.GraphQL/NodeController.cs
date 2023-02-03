@@ -1,3 +1,5 @@
+using System;
+using GitObjectDb.SystemTextJson;
 using GraphQL;
 using GraphQL.DataLoader;
 using GraphQL.Execution;
@@ -6,20 +8,24 @@ using GraphQL.Transport;
 using GraphQL.Types;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GitObjectDb.Api.GraphQL;
 
 [ApiController]
 [Route("api")]
+[Authorize]
 public class NodeController : Controller
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly IDocumentExecuter _documentExecuter;
     private readonly ISchema _schema;
     private readonly IGraphQLTextSerializer _serializer;
     private readonly DataLoaderDocumentListener _listener;
 
-    public NodeController(IDocumentExecuter documentExecuter, ISchema schema, IGraphQLTextSerializer serializer, DataLoaderDocumentListener listener)
+    public NodeController(IServiceProvider serviceProvider, IDocumentExecuter documentExecuter, ISchema schema, IGraphQLTextSerializer serializer, DataLoaderDocumentListener listener)
     {
+        _serviceProvider = serviceProvider;
         _documentExecuter = documentExecuter;
         _schema = schema;
         _serializer = serializer;
@@ -77,6 +83,7 @@ public class NodeController : Controller
     {
         try
         {
+            NodeSerializerContext.ServiceProvider = _serviceProvider;
             var result = await _documentExecuter.ExecuteAsync(s =>
             {
                 s.Schema = _schema;
@@ -98,6 +105,10 @@ public class NodeController : Controller
         catch
         {
             return BadRequest();
+        }
+        finally
+        {
+            NodeSerializerContext.ServiceProvider = null!;
         }
     }
 

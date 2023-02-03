@@ -1,0 +1,52 @@
+# tye application configuration file
+# read all about it at https://github.com/dotnet/tye
+#
+# when you've given us a try, we'd love to know what you think:
+#    https://aka.ms/AA7q20u
+#
+name: gitobjectdb
+services:
+- name: identityserver
+  project: src/samples/IdentityServer/IdentityServer.csproj
+  bindings:
+  - name: https
+    port: 5001
+    protocol: https
+- name: gitobjectdb-web
+  project: src/samples/GitObjectDb.Web/GitObjectDb.Web.csproj
+  bindings:
+  - name: https
+    port: 55554
+    protocol: https
+- name: openfga-db
+  image: postgres:14
+  # db-data
+  volumes:
+  - name: postgres-storage
+    target: /mnt/c/temp/postgresql/openfga
+  bindings:
+  - port: 5432
+  env:
+  - name: POSTGRES_USER
+    value: postgres
+  - name: POSTGRES_PASSWORD
+    value: password
+  - name: POSTGRES_DB
+    value: openfga
+- name: openfga
+  image: openfga/openfga
+  args: run
+  bindings:
+  - name: http
+    port: 8080
+  - name: grpc
+    port: 8081
+  - name: playground
+    port: 3000
+  env:
+  # - name: OPENFGA_DATASTORE_ENGINE
+  #   value: postgres
+  - name: OPENFGA_DATASTORE_URI
+    value: postgres://postgres:password@db:5432/openfga
+  - name: OPENFGA_LOG_FORMAT
+    value: json

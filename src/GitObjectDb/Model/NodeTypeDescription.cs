@@ -58,10 +58,6 @@ public sealed class NodeTypeDescription : IEquatable<NodeTypeDescription>
         {
             throw new ArgumentException($"Type {type} is a generic type definition.");
         }
-        if (type != typeof(Node) && !type.IsAbstract && type.GetConstructor(Type.EmptyTypes) is null)
-        {
-            throw new ArgumentException($"No parameterless constructor found for type {type}.");
-        }
         if (!typeof(Node).IsAssignableFrom(type))
         {
             throw new ArgumentException($"{nameof(type)} should inherit from {nameof(Node)}.");

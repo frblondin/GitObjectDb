@@ -335,4 +335,7 @@ ASALocalRun/
 # Coverage
 coverage.json
 
+# Keys
+**/keys/*.json
+
 /output

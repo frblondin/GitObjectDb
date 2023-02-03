@@ -1,15 +1,24 @@
+using GitObjectDb;
+using GitObjectDb.Api.GraphQL;
+using GitObjectDb.Api.OData;
 using GitObjectDb.Api.ProtoBuf;
+using GitObjectDb.Web;
 using GraphQL;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
+using Models.Organization;
 using Models.Organization.Converters;
+using Models.Software;
 using ProtoBuf.Grpc.Server;
 using System.IO.Compression;
 
 #pragma warning disable SA1516 // ElementsMustBeSeparatedByBlankLine
 
 var builder = WebApplication.CreateBuilder(args);
-var repositoryType = args.Length > 0 ? args[0] : null;
+builder.AddAuthentication()
+    .AddAuthorization();
+
+var repositoryType = args.Length > 1 ? args[1] : builder.Configuration["RepositoryType"];
 
 switch (repositoryType)
 {
@@ -71,6 +80,7 @@ switch (repositoryType)
 static void CacheStrategy(ICacheEntry entry) => entry.SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1));
 
 builder.Services
+    .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
     .AddControllers()
     .AddGitObjectDbODataControllers("v1", o => o.Select().Filter().OrderBy().Expand())
     .AddGitObjectDbGraphQLControllers();
@@ -88,6 +98,10 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+app.UseHttpsRedirection()
+   .UseAuthentication()
+   .UseAuthorization();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -95,9 +109,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
     app.UseGraphQLAltair("/", new() { GraphQLEndPoint = "/api/graphql" });
 }
-
-app.UseHttpsRedirection()
-   .UseAuthorization();
 
 app.MapControllers();
 app.AddGitObjectProtobufControllers();

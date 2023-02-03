@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <NoWarn>CS1591</NoWarn>
@@ -18,11 +18,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Fga.Net.AspNetCore" />
     <PackageReference Include="System.Text.Json" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\GitObjectDb.Api.GraphQL\GitObjectDb.Api.GraphQL.csproj" />
     <ProjectReference Include="..\..\GitObjectDb\GitObjectDb.csproj" />
   </ItemGroup>
 
