@@ -2,6 +2,7 @@
 
 ```
 mutation {
+  checkout(branch: "main")
   siteType: createOrganizationType(node: {
     id: "site", label: "Site"
   })
