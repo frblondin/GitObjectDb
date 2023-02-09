@@ -28,6 +28,7 @@ internal static class HostingExtensions
             {
                 options.LoginPath = "/login";
                 options.LogoutPath = "/logout";
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
             })
             .AddOpenIdConnect("oidc", options =>
             {

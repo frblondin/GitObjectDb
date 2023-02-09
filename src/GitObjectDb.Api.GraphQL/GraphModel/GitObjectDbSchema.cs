@@ -7,7 +7,8 @@ namespace GitObjectDb.Api.GraphQL.GraphModel;
 
 public class GitObjectDbSchema : Schema
 {
-    public GitObjectDbSchema(IDataModel model, IOptions<GitObjectDbGraphQLOptions> options)
+    public GitObjectDbSchema(IServiceProvider serviceProvider, IDataModel model, IOptions<GitObjectDbGraphQLOptions> options)
+        : base(serviceProvider)
     {
         Model = model;
 

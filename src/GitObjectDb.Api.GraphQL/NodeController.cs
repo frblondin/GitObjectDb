@@ -95,6 +95,7 @@ public class NodeController : Controller
                 {
                     User = HttpContext.User,
                 };
+                s.User = HttpContext.User;
                 s.UnhandledExceptionDelegate = WaitHandleCannotBeOpenedException;
                 s.CancellationToken = HttpContext.RequestAborted;
                 s.Listeners.Add(_listener);

@@ -56,6 +56,7 @@ public class QueryTestBase<TDocumentBuilder>
             .AddMemoryCache()
             .AddGitObjectDb()
             .AddGitObjectDbSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter()))
+            .AddSingleton<TimeZoneInfoGraphType>()
             .AddGitObjectDbGraphQLSchema(o =>
             {
                 o.ConfigureSchema = s => s.RegisterTypeMapping<TimeZoneInfo, TimeZoneInfoGraphType>();

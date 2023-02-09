@@ -1,9 +1,7 @@
-using Fasterflect;
 using GitObjectDb.Api.GraphQL.Loaders;
 using GitObjectDb.Model;
 using GraphQL;
 using GraphQL.DataLoader;
-using GraphQL.Introspection;
 using GraphQL.Resolvers;
 using GraphQL.Types;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,7 +47,7 @@ public partial class GitObjectDbQuery : ObjectGraphType
     {
         if (nodeType == typeof(Node))
         {
-            return new NodeInterface();
+            return Schema.GetRequiredService<NodeInterface>();
         }
         else
         {
@@ -63,8 +61,7 @@ public partial class GitObjectDbQuery : ObjectGraphType
         if (!_typeToGraphType.TryGetValue(description, out var result))
         {
             var schemaType = typeof(NodeType<>).MakeGenericType(description.Type);
-            var factory = Reflect.Constructor(schemaType);
-            _typeToGraphType[description] = result = (INodeType<GitObjectDbQuery>)factory.Invoke();
+            _typeToGraphType[description] = result = (INodeType<GitObjectDbQuery>)Schema.GetRequiredService(schemaType);
 
             result.AddFieldsThroughReflection(this);
         }
@@ -76,8 +73,7 @@ public partial class GitObjectDbQuery : ObjectGraphType
         if (!_typeToDeltaGraphType.TryGetValue(description, out var result))
         {
             var schemaType = typeof(NodeDeltaType<>).MakeGenericType(description.Type);
-            var factory = Reflect.Constructor(schemaType);
-            _typeToDeltaGraphType[description] = result = (INodeDeltaType)factory.Invoke();
+            _typeToDeltaGraphType[description] = result = (INodeDeltaType)Schema.GetRequiredService(schemaType);
 
             result.AddNodeReference(this);
         }

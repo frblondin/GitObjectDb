@@ -1,15 +1,11 @@
+using GitObjectDb;
 using System;
 
 namespace Models.Organization;
 
 /// <summary>Represents an application.</summary>
-public record Organization : NodeWithPerms
+public record Organization : Node
 {
-    public Organization(IServiceProvider? original = null)
-        : base(original)
-    {
-    }
-
     /// <summary>Gets the label of the organization.</summary>
     public string? Label { get; init; }
 

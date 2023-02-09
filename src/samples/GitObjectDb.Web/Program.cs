@@ -5,6 +5,7 @@ using GitObjectDb.Api.ProtoBuf;
 using GitObjectDb.Web;
 using GraphQL;
 using LibGit2Sharp;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Caching.Memory;
 using Models.Organization;
 using Models.Organization.Converters;
@@ -29,6 +30,7 @@ switch (repositoryType)
             .AddGitObjectDbSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter()))
             .AddOrganizationModel()
             .AddGitObjectDbOData()
+            .AddSingleton<TimeZoneInfoGraphType>()
             .AddGitObjectDbGraphQLSchema(options =>
             {
                 options.ConfigureSchema = s => s.RegisterTypeMapping<TimeZoneInfo, TimeZoneInfoGraphType>();
@@ -81,6 +83,7 @@ static void CacheStrategy(ICacheEntry entry) => entry.SetAbsoluteExpiration(Date
 
 builder.Services
     .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
+    .AddSingleton<IAuthorizationProvider, AuthorizationProvider>()
     .AddControllers()
     .AddGitObjectDbODataControllers("v1", o => o.Select().Filter().OrderBy().Expand())
     .AddGitObjectDbGraphQLControllers();
@@ -100,7 +103,19 @@ var app = builder.Build();
 
 app.UseHttpsRedirection()
    .UseAuthentication()
-   .UseAuthorization();
+   .UseAuthorization()
+   .Use(async (context, next) =>
+   {
+       if (!context.User.Identity?.IsAuthenticated ?? false)
+       {
+           await context.ChallengeAsync(new AuthenticationProperties
+           {
+               RedirectUri = context.Request.Path,
+           });
+           return;
+       }
+       await next.Invoke(context);
+   });
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

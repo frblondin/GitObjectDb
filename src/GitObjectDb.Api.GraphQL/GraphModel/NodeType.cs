@@ -7,6 +7,7 @@ using GraphQL.Resolvers;
 using GraphQL.Types;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
+using Models.Organization;
 using Namotion.Reflection;
 using System.Reflection;
 
@@ -15,8 +16,14 @@ namespace GitObjectDb.Api.GraphQL.GraphModel;
 public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<GitObjectDbQuery>
     where TNode : Node
 {
-    public NodeType()
+    private const string PermissionsField = "Permissions";
+    private const string IsAuthorizedField = "IsAuthorized";
+    private readonly IAuthorizationProvider? _authorizationProvider;
+
+    public NodeType(IAuthorizationProvider? authorizationProvider = null)
     {
+        _authorizationProvider = authorizationProvider;
+
         Name = typeof(TNode).Name.Replace("`", string.Empty);
         Description = typeof(TNode).GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false });
 
@@ -24,6 +31,7 @@ public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<GitObjectDbQuer
 
         AddChildrenField();
         AddHistoryField();
+        AddAuthorizationFields();
     }
 
     private void AddChildrenField() =>
@@ -49,6 +57,40 @@ public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<GitObjectDbQuer
                     .GetCommits(commitId.Sha, context.Source!)
                     .Select(e => e.Commit);
         });
+
+    private void AddAuthorizationFields()
+    {
+        if (_authorizationProvider is null)
+        {
+            return;
+        }
+        if (!Fields.Any(f => f.Name.Equals(PermissionsField, StringComparison.OrdinalIgnoreCase)))
+        {
+            Field<ListGraphType<StringGraphType>>(PermissionsField)
+                .Description("Gets the permissions of the node.")
+                .ResolveAsync(async context =>
+                {
+                    var claims = context.User?.Claims;
+                    return claims is null || !claims.Any() ?
+                        new[] { "<Not authenticated>" } :
+                        await _authorizationProvider.GetPermissionsAsync(context.Source, claims);
+                });
+        }
+        if (!Fields.Any(f => f.Name.Equals(IsAuthorizedField, StringComparison.OrdinalIgnoreCase)))
+        {
+            Field<BooleanGraphType>(IsAuthorizedField)
+                .Description("Gets whether the user is authorized to perform an action.")
+                .Argument<NonNullGraphType<StringGraphType>>("action", "Requested action name.")
+                .ResolveAsync(async context =>
+                {
+                    var claims = context.User?.Claims;
+                    var action = context.GetArgument<string>("action");
+                    return claims is not null && claims.Any() &&
+                        !string.IsNullOrWhiteSpace(action) &&
+                        await _authorizationProvider.IsAuthorizedAsync(context.Source, claims, action);
+                });
+        }
+    }
 
     void INodeType<GitObjectDbQuery>.AddFieldsThroughReflection(GitObjectDbQuery query)
     {

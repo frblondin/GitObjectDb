@@ -7,6 +7,7 @@ using GraphQL.DI;
 using GraphQL.Types;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
+using Models.Organization;
 using System.Reflection;
 using ServiceLifetime = Microsoft.Extensions.DependencyInjection.ServiceLifetime;
 
@@ -29,6 +30,13 @@ public static class ServiceConfiguration
         }
 
         return source
+            .AddTransient(typeof(NodeType<>))
+            .AddTransient(typeof(NodeDeltaType<>))
+            .AddSingleton<CommitType>()
+            .AddSingleton<DataPathGraphType>()
+            .AddSingleton<ObjectIdGraphType>()
+            .AddSingleton<UniqueIdGraphType>()
+            .AddSingleton<NodeInterface>()
             .AddSingleton<ISchema, GitObjectDbSchema>()
             .AddSingleton<IDataLoaderContextAccessor, DataLoaderContextAccessor>()
             .AddSingleton(typeof(NodeDataLoader<>))
