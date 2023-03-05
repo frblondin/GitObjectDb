@@ -1,5 +1,5 @@
-using LibGit2Sharp;
 using System;
+using ObjectId = LibGit2Sharp.ObjectId;
 
 namespace GitObjectDb;
 

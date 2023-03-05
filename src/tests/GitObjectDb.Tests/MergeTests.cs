@@ -12,10 +12,10 @@ public class MergeTests : BranchMergerFixture
                    \    ->  \   \
        newBranch:   C        C---x */
 
-    protected override void TwoDifferentPropertyEditsActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string newDescription, string newName, Signature signature, Commit b, Commit c)
+    protected override void TwoDifferentPropertyEditsActAndAssert(IConnection sut, Table table, string newDescription, string newName, Signature signature, Commit b, Commit c)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
 
         // Assert
         var mergeCommit = merge.Commit(signature, signature);
@@ -33,10 +33,10 @@ public class MergeTests : BranchMergerFixture
         });
     }
 
-    protected override void FastForwardActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string newDescription, Signature signature, Commit b)
+    protected override void FastForwardActAndAssert(IConnection sut, Table table, string newDescription, Signature signature, Commit b)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
 
         // Assert
         Assert.Multiple(() =>
@@ -51,10 +51,10 @@ public class MergeTests : BranchMergerFixture
         Assert.That(newTable.Description, Is.EqualTo(newDescription));
     }
 
-    protected override void SamePropertyEditsActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string bValue, string cValue, Signature signature)
+    protected override void SamePropertyEditsActAndAssert(IConnection sut, Table table, string bValue, string cValue, Signature signature)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
 
         // Assert
         Assert.That(merge.Status, Is.EqualTo(MergeStatus.Conflicts));
@@ -87,10 +87,10 @@ public class MergeTests : BranchMergerFixture
         Assert.That(newTable.Description, Is.EqualTo("resolved"));
     }
 
-    protected override void EditOnTheirParentDeletionActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Table parentTable, Field field, Signature signature)
+    protected override void EditOnTheirParentDeletionActAndAssert(PerformAction actionTarget, IConnection sut, Table parentTable, Field field, Signature signature)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
 
         // Assert
         var conflict = merge.CurrentChanges.Single(c => c.Status == ItemMergeStatus.TreeConflict);
@@ -112,10 +112,10 @@ public class MergeTests : BranchMergerFixture
         Assert.That(merge.Status, Is.EqualTo(actionTarget == PerformAction.OnBranch ? MergeStatus.NonFastForward : MergeStatus.FastForward));
     }
 
-    protected override void AddOnTheirParentDeletionActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Signature signature)
+    protected override void AddOnTheirParentDeletionActAndAssert(PerformAction actionTarget, IConnection sut, Signature signature)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
 
         // Assert
         Assert.Multiple(() =>
@@ -138,10 +138,10 @@ public class MergeTests : BranchMergerFixture
             actionTarget == PerformAction.OnMain ? MergeStatus.FastForward : MergeStatus.NonFastForward));
     }
 
-    protected override void DeleteChildNoConflictActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Table table, string newDescription, Field field, Signature signature)
+    protected override void DeleteChildNoConflictActAndAssert(PerformAction actionTarget, IConnection sut, Table table, string newDescription, Field field, Signature signature)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
         merge.Commit(signature, signature);
 
         // Assert
@@ -155,10 +155,10 @@ public class MergeTests : BranchMergerFixture
         });
     }
 
-    protected override void RenameAndEditActAndAssert(CommitCommandType commitType, IConnection sut, Field field, string newDescription, Signature signature, DataPath newPath, Commit b, Commit c)
+    protected override void RenameAndEditActAndAssert(IConnection sut, Field field, string newDescription, Signature signature, DataPath newPath, Commit b, Commit c)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
         var mergeCommit = merge.Commit(signature, signature);
 
         // Assert

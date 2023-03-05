@@ -6,12 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 
 namespace GitObjectDb.Internal;
 
 [DebuggerDisplay("Transformations: {Transformations.Count}")]
-internal class TransformationComposer : ITransformationComposer
+internal class TransformationComposer : ITransformationComposerWithCommit
 {
     private readonly IGitUpdateCommand _gitUpdateFactory;
     private readonly ICommitCommand _commitCommand;
@@ -19,15 +18,13 @@ internal class TransformationComposer : ITransformationComposer
     [FactoryDelegateConstructor(typeof(Factories.TransformationComposerFactory))]
     public TransformationComposer(IConnectionInternal connection,
                                   string branchName,
-                                  CommitCommandType type,
-                                  ServiceResolver<CommitCommandType, IGitUpdateCommand> gitUpdateFactory,
-                                  ServiceResolver<CommitCommandType, ICommitCommand> commitCommandFactory)
+                                  IGitUpdateCommand gitUpdateFactory,
+                                  ICommitCommand commitCommandFactory)
     {
         Connection = connection;
         BranchName = branchName;
-        Type = type;
-        _gitUpdateFactory = gitUpdateFactory.Invoke(type);
-        _commitCommand = commitCommandFactory.Invoke(type);
+        _gitUpdateFactory = gitUpdateFactory;
+        _commitCommand = commitCommandFactory;
         Transformations = new List<ITransformation>();
     }
 
@@ -35,9 +32,14 @@ internal class TransformationComposer : ITransformationComposer
 
     public string BranchName { get; }
 
-    public CommitCommandType Type { get; }
-
     public IList<ITransformation> Transformations { get; }
+
+    public Commit Commit(CommitDescription description,
+                         Action<ITransformation>? beforeProcessing = null) =>
+        _commitCommand.Commit(
+            this,
+            description,
+            beforeProcessing: beforeProcessing);
 
     public TNode CreateOrUpdate<TNode>(TNode node)
         where TNode : Node =>
@@ -54,30 +56,6 @@ internal class TransformationComposer : ITransformationComposer
     public Resource CreateOrUpdate(Resource resource) =>
         CreateOrUpdateItem(resource, default);
 
-    public TItem Delete<TItem>(TItem item)
-        where TItem : TreeItem
-    {
-        var path = item.ThrowIfNoPath();
-
-        var transformation = new Transformation(
-            path,
-            default,
-            _gitUpdateFactory.Delete(item.ThrowIfNoPath()),
-            $"Removing {path}.");
-        Transformations.Add(transformation);
-        return item;
-    }
-
-    public void Delete(DataPath path)
-    {
-        var transformation = new Transformation(
-            path,
-            default,
-            _gitUpdateFactory.Delete(path),
-            $"Removing {path}.");
-        Transformations.Add(transformation);
-    }
-
     public void Rename(TreeItem item, DataPath newPath)
     {
         var transformation = new Transformation(
@@ -88,7 +66,23 @@ internal class TransformationComposer : ITransformationComposer
         Transformations.Add(transformation);
     }
 
-    private TItem CreateOrUpdateItem<TItem>(TItem item, DataPath? parent = null)
+    public void Delete<TItem>(TItem item)
+        where TItem : TreeItem
+    {
+        Revert(item.ThrowIfNoPath());
+    }
+
+    public void Revert(DataPath path)
+    {
+        var transformation = new Transformation(
+            path,
+            default,
+            _gitUpdateFactory.Delete(path),
+            $"Removing {path}.");
+        Transformations.Add(transformation);
+    }
+
+    protected TItem CreateOrUpdateItem<TItem>(TItem item, DataPath? parent = null)
         where TItem : TreeItem
     {
         var type = item.GetType();
@@ -99,7 +93,7 @@ internal class TransformationComposer : ITransformationComposer
         }
 
         var path = item is Node node ?
-            UpdateNodePathIfNeeded(node, parent) :
+            UpdateNodePathIfNeeded(node, parent, Connection) :
             item.ThrowIfNoPath();
 
         var transformation = new Transformation(
@@ -108,28 +102,22 @@ internal class TransformationComposer : ITransformationComposer
             _gitUpdateFactory.CreateOrUpdate(item),
             $"Adding or updating {path}.");
         Transformations.Add(transformation);
+
         return item;
     }
 
-    private DataPath UpdateNodePathIfNeeded(Node node, DataPath? parent)
+    internal static DataPath UpdateNodePathIfNeeded(Node node, DataPath? parent, IConnection connection)
     {
         if (parent is not null)
         {
             ThrowIfWrongParentPath(parent);
 
-            var newPath = parent.AddChild(node, Connection.Model, Connection.Serializer.FileExtension);
+            var newPath = parent.AddChild(node, connection.Model, connection.Serializer.FileExtension);
             ThrowIfWrongExistingPath(node, newPath);
             node.Path = newPath;
         }
-        return node.Path ??= DataPath.Root(node, Connection.Model, Connection.Serializer.FileExtension);
+        return node.Path ??= DataPath.Root(node, connection.Model, connection.Serializer.FileExtension);
     }
-
-    Commit ITransformationComposer.Commit(CommitDescription description,
-                                          Action<ITransformation>? beforeProcessing) =>
-        _commitCommand.Commit(
-            this,
-            description,
-            beforeProcessing: beforeProcessing);
 
     [ExcludeFromCodeCoverage]
     private static void ThrowIfWrongParentPath(DataPath parent)

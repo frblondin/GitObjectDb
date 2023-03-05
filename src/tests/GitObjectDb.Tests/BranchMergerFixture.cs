@@ -12,129 +12,113 @@ namespace GitObjectDb.Tests;
 public abstract class BranchMergerFixture : DisposeArguments
 {
     [Test]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, CommitCommandType.FastImport)]
-    public void TwoDifferentPropertyEdits(CommitCommandType commitType, IConnection sut, Table table, string newDescription, string newName, Signature signature)
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void TwoDifferentPropertyEdits(IConnection sut, Table table, string newDescription, string newName, Signature signature)
     {
         // Arrange
         var (b, c) = PerformActions(PerformAction.OnMain,
                                     c => c.CreateOrUpdate(table with { Description = newDescription }),
                                     c => c.CreateOrUpdate(table with { Name = newName }),
                                     sut,
-                                    signature,
-                                    commitType);
+                                    signature);
 
         // Act, Assert
-        TwoDifferentPropertyEditsActAndAssert(commitType, sut, table, newDescription, newName, signature, b, c);
+        TwoDifferentPropertyEditsActAndAssert(sut, table, newDescription, newName, signature, b, c);
     }
 
-    protected abstract void TwoDifferentPropertyEditsActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string newDescription, string newName, Signature signature, Commit b, Commit c);
+    protected abstract void TwoDifferentPropertyEditsActAndAssert(IConnection sut, Table table, string newDescription, string newName, Signature signature, Commit b, Commit c);
 
     [Test]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, CommitCommandType.FastImport)]
-    public void FastForward(CommitCommandType commitType, IConnection sut, Table table, string newDescription, Signature signature)
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void FastForward(IConnection sut, Table table, string newDescription, Signature signature)
     {
         // Arrange
         var b = sut
-            .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }), commitType)
+            .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
             .Commit(new("B", signature, signature));
         sut.Repository.Branches.Add("newBranch", "main~1");
 
         // Act, Assert
-        FastForwardActAndAssert(commitType, sut, table, newDescription, signature, b);
+        FastForwardActAndAssert(sut, table, newDescription, signature, b);
     }
 
-    protected abstract void FastForwardActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string newDescription, Signature signature, Commit b);
+    protected abstract void FastForwardActAndAssert(IConnection sut, Table table, string newDescription, Signature signature, Commit b);
 
     [Test]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, CommitCommandType.FastImport)]
-    public void SamePropertyEdits(CommitCommandType commitType, IConnection sut, Table table, string bValue, string cValue, Signature signature)
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void SamePropertyEdits(IConnection sut, Table table, string bValue, string cValue, Signature signature)
     {
         // Arrange
         PerformActions(PerformAction.OnMain,
                        c => c.CreateOrUpdate(table with { Description = bValue }),
                        c => c.CreateOrUpdate(table with { Description = cValue }),
                        sut,
-                       signature,
-                       commitType);
+                       signature);
 
         // Act, Assert
-        SamePropertyEditsActAndAssert(commitType, sut, table, bValue, cValue, signature);
+        SamePropertyEditsActAndAssert(sut, table, bValue, cValue, signature);
     }
 
-    protected abstract void SamePropertyEditsActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string bValue, string cValue, Signature signature);
+    protected abstract void SamePropertyEditsActAndAssert(IConnection sut, Table table, string bValue, string cValue, Signature signature);
 
     [Test]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnMain, CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnMain, CommitCommandType.FastImport)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnBranch, CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnBranch, CommitCommandType.FastImport)]
-    public void EditOnTheirParentDeletion(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Table parentTable, Field field, string newDescription, Signature signature)
+    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnMain)]
+    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnBranch)]
+    public void EditOnTheirParentDeletion(PerformAction actionTarget, IConnection sut, Table parentTable, Field field, string newDescription, Signature signature)
     {
         // Arrange
         PerformActions(actionTarget,
                        c => c.CreateOrUpdate(field with { Description = newDescription }),
-                       c => c.Delete(parentTable.Path),
+                       c => c.Revert(parentTable.Path),
                        sut,
-                       signature,
-                       commitType);
+                       signature);
 
         // Act, Assert
-        EditOnTheirParentDeletionActAndAssert(actionTarget, commitType, sut, parentTable, field, signature);
+        EditOnTheirParentDeletionActAndAssert(actionTarget, sut, parentTable, field, signature);
     }
 
-    protected abstract void EditOnTheirParentDeletionActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Table parentTable, Field field, Signature signature);
+    protected abstract void EditOnTheirParentDeletionActAndAssert(PerformAction actionTarget, IConnection sut, Table parentTable, Field field, Signature signature);
 
     [Test]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnMain, CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnMain, CommitCommandType.FastImport)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnBranch, CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnBranch, CommitCommandType.FastImport)]
-    public void DeleteChildNoConflict(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Table table, string newDescription, Field field, Signature signature)
+    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnMain)]
+    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnBranch)]
+    public void DeleteChildNoConflict(PerformAction actionTarget, IConnection sut, Table table, string newDescription, Field field, Signature signature)
     {
         // Arrange
         PerformActions(actionTarget,
                        c => c.Delete(field),
                        c => c.CreateOrUpdate(table with { Description = newDescription }),
                        sut,
-                       signature,
-                       commitType);
+                       signature);
 
         // Act, Assert
-        DeleteChildNoConflictActAndAssert(actionTarget, commitType, sut, table, newDescription, field, signature);
+        DeleteChildNoConflictActAndAssert(actionTarget, sut, table, newDescription, field, signature);
     }
 
-    protected abstract void DeleteChildNoConflictActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Table table, string newDescription, Field field, Signature signature);
+    protected abstract void DeleteChildNoConflictActAndAssert(PerformAction actionTarget, IConnection sut, Table table, string newDescription, Field field, Signature signature);
 
     [Test]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnMain, CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnMain, CommitCommandType.FastImport)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnBranch, CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnBranch, CommitCommandType.FastImport)]
-    public void AddOnTheirParentDeletion(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Application parentApplication, Table parentTable, Signature signature)
+    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnMain)]
+    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnBranch)]
+    public void AddOnTheirParentDeletion(PerformAction actionTarget, IConnection sut, Application parentApplication, Table parentTable, Signature signature)
     {
         // Arrange
         PerformActions(actionTarget,
                        c => c.CreateOrUpdate(new Field { }, parentTable),
-                       c => c.Delete(parentApplication.Path),
+                       c => c.Revert(parentApplication.Path),
                        sut,
-                       signature,
-                       commitType);
+                       signature);
 
         // Act, Assert
-        AddOnTheirParentDeletionActAndAssert(actionTarget, commitType, sut, signature);
+        AddOnTheirParentDeletionActAndAssert(actionTarget, sut, signature);
     }
 
-    protected abstract void AddOnTheirParentDeletionActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Signature signature);
+    protected abstract void AddOnTheirParentDeletionActAndAssert(PerformAction actionTarget, IConnection sut, Signature signature);
 
     [Test]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnMain, CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnMain, CommitCommandType.FastImport)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnBranch, CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnBranch, CommitCommandType.FastImport)]
-    public void RenameAndEdit(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Field field, UniqueId newId, string newDescription, Signature signature)
+    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnMain)]
+    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) }, PerformAction.OnBranch)]
+    public void RenameAndEdit(PerformAction actionTarget, IConnection sut, Field field, UniqueId newId, string newDescription, Signature signature)
     {
         // Arrange
         var newPath = new DataPath(field.Path.FolderPath,
@@ -144,28 +128,26 @@ public abstract class BranchMergerFixture : DisposeArguments
                                     c => c.CreateOrUpdate(field with { Description = newDescription }),
                                     c => c.Rename(field, newPath),
                                     sut,
-                                    signature,
-                                    commitType);
+                                    signature);
 
         // Act, Assert
-        RenameAndEditActAndAssert(commitType, sut, field, newDescription, signature, newPath, b, c);
+        RenameAndEditActAndAssert(sut, field, newDescription, signature, newPath, b, c);
     }
 
-    protected abstract void RenameAndEditActAndAssert(CommitCommandType commitType, IConnection sut, Field field, string newDescription, Signature signature, DataPath newPath, Commit b, Commit c);
+    protected abstract void RenameAndEditActAndAssert(IConnection sut, Field field, string newDescription, Signature signature, DataPath newPath, Commit b, Commit c);
 
     private static (Commit B, Commit C) PerformActions(PerformAction actionTarget,
                                                        Action<ITransformationComposer> mainAction,
                                                        Action<ITransformationComposer> secondAction,
                                                        IConnection sut,
-                                                       Signature signature,
-                                                       CommitCommandType commitType = CommitCommandType.Auto)
+                                                       Signature signature)
     {
         var b = sut
-            .Update("main", actionTarget == PerformAction.OnMain ? mainAction : secondAction, commitType)
+            .Update("main", actionTarget == PerformAction.OnMain ? mainAction : secondAction)
             .Commit(new("B", signature, signature));
         sut.Repository.Branches.Add("newBranch", "main~1");
         var c = sut
-            .Update("newBranch", actionTarget == PerformAction.OnBranch ? mainAction : secondAction, commitType)
+            .Update("newBranch", actionTarget == PerformAction.OnBranch ? mainAction : secondAction)
             .Commit(new("C", signature, signature));
         return (b, c);
     }

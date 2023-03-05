@@ -15,7 +15,7 @@ internal sealed class CherryPick : ICherryPick
 {
     private readonly IComparerInternal _comparer;
     private readonly IMergeComparer _mergeComparer;
-    private readonly IGitUpdateCommand _gitUpdateFactory;
+    private readonly IGitUpdateCommand _gitUpdate;
     private readonly ICommitCommand _commitCommand;
     private readonly IConnectionInternal _connection;
     private readonly Signature? _committer;
@@ -26,15 +26,12 @@ internal sealed class CherryPick : ICherryPick
                       string branchName,
                       string committish,
                       Signature? committer,
-                      CherryPickPolicy? policy = null,
-                      CommitCommandType commitType = CommitCommandType.Auto)
+                      CherryPickPolicy? policy = null)
     {
         _comparer = serviceProvider.GetRequiredService<IComparerInternal>();
         _mergeComparer = serviceProvider.GetRequiredService<IMergeComparer>();
-        _gitUpdateFactory = serviceProvider.GetRequiredService<ServiceResolver<CommitCommandType, IGitUpdateCommand>>()
-                                           .Invoke(commitType);
-        _commitCommand = serviceProvider.GetRequiredService<ServiceResolver<CommitCommandType, ICommitCommand>>()
-                                        .Invoke(commitType);
+        _gitUpdate = serviceProvider.GetRequiredService<IGitUpdateCommand>();
+        _commitCommand = serviceProvider.GetRequiredService<ICommitCommand>();
         _connection = connection;
         _committer = committer;
         Branch = connection.Repository.Branches[branchName] ?? throw new GitObjectDbNonExistingBranchException();
@@ -107,7 +104,7 @@ internal sealed class CherryPick : ICherryPick
         CompletedCommit = _commitCommand.Commit(
             _connection,
             Branch.FriendlyName,
-            CurrentChanges.Select(c => c.Transform(_gitUpdateFactory)),
+            CurrentChanges.Select(c => c.Transform(_gitUpdate)),
             new(UpstreamCommit.Message, UpstreamCommit.Author, _committer ?? UpstreamCommit.Committer),
             Branch.Tip,
             updateBranchTip: false);

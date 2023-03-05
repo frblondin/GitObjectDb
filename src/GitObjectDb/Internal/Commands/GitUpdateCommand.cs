@@ -5,11 +5,9 @@ using System.IO;
 
 namespace GitObjectDb.Internal.Commands;
 
-internal class GitUpdateCommandUsingFastImport : IGitUpdateCommand
+internal class GitUpdateCommand : IGitUpdateCommand
 {
-    Delegate IGitUpdateCommand.CreateOrUpdate(TreeItem item) => CreateOrUpdate(item);
-
-    public static ApplyUpdateFastInsert CreateOrUpdate(TreeItem item) =>
+    public ApplyUpdate CreateOrUpdate(TreeItem item) =>
         (tree, modules, serializer, writer, commitIndex) =>
         {
             switch (item)
@@ -35,19 +33,20 @@ internal class GitUpdateCommandUsingFastImport : IGitUpdateCommand
         using var stream = serializer.Serialize(node);
         AddBlob(node.Path!, stream, writer, commitIndex);
 
-        CreateOrUpdateNodeRemoteResource(node, tree, commitIndex, modules);
+        CreateOrUpdateNodeRemoteResource(node.ThrowIfNoPath(), node.RemoteResource, tree, commitIndex, modules);
     }
 
-    private static void CreateOrUpdateNodeRemoteResource(Node node,
-                                                  Tree? tree,
-                                                  ICollection<string> commitIndex,
-                                                  ModuleCommands modules)
+    internal static void CreateOrUpdateNodeRemoteResource(DataPath nodePath,
+                                                         ResourceLink? link,
+                                                         Tree? tree,
+                                                         ICollection<string> commitIndex,
+                                                         ModuleCommands modules)
     {
-        var resourcePath = $"{node.ThrowIfNoPath().FolderPath}/{FileSystemStorage.ResourceFolder}";
-        if (node.RemoteResource is not null)
+        var resourcePath = $"{nodePath.FolderPath}/{FileSystemStorage.ResourceFolder}";
+        if (link is not null)
         {
-            modules[resourcePath] = new(resourcePath, node.RemoteResource.Repository, null);
-            commitIndex.Add($"M 160000 {node.RemoteResource.Sha} {resourcePath}");
+            modules[resourcePath] = new(resourcePath, link.Repository, null);
+            commitIndex.Add($"M 160000 {link.Sha} {resourcePath}");
         }
         else if (tree is not null && tree[resourcePath]?.TargetType == TreeEntryTargetType.GitLink)
         {
@@ -79,20 +78,43 @@ internal class GitUpdateCommandUsingFastImport : IGitUpdateCommand
         commitIndex.Add($"M 100644 :{mark} {path}");
     }
 
-    Delegate IGitUpdateCommand.Rename(TreeItem item, DataPath newPath) => Rename(item, newPath);
-
-    internal static ApplyUpdateFastInsert Rename(TreeItem item, DataPath newPath)
+    public ApplyUpdate Rename(TreeItem item, DataPath newPath)
     {
-        var newItem = GitUpdateCommandUsingTree.ValidateRename(item, newPath);
+        var newItem = ValidateRename(item, newPath);
 
-        return (ApplyUpdateFastInsert)Delegate.Combine(
+        return (ApplyUpdate)Delegate.Combine(
             Delete(item.ThrowIfNoPath()),
             CreateOrUpdate(newItem));
     }
 
-    Delegate IGitUpdateCommand.Delete(DataPath path) => Delete(path);
+    internal static TreeItem ValidateRename(TreeItem item, DataPath newPath)
+    {
+        if (newPath.IsNode != item is Node ||
+            newPath.UseNodeFolders != item.ThrowIfNoPath().UseNodeFolders)
+        {
+            throw new GitObjectDbException("New rename path doesn't match the item type.");
+        }
 
-    public static ApplyUpdateFastInsert Delete(DataPath path) =>
+        if (newPath.UseNodeFolders)
+        {
+            throw new GitObjectDbException("Renaming nodes that can contain children is not supported.");
+        }
+
+        return item switch
+        {
+            Node n => n with
+            {
+                Id = new UniqueId(System.IO.Path.GetFileNameWithoutExtension(newPath.FileName)),
+                Path = newPath,
+            },
+            _ => item with { Path = newPath },
+        };
+    }
+
+    ApplyUpdate IGitUpdateCommand.Delete(DataPath path) =>
+        Delete(path);
+
+    public static ApplyUpdate Delete(DataPath path) =>
         (reference, modules, _, _, commitIndex) =>
         {
             // For nodes, delete whole folder containing node and nested entries

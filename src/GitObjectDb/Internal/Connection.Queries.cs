@@ -20,17 +20,17 @@ internal sealed partial class Connection
         var (commit, _) = TryGetTree(committish, path);
         return commit.Tree[path.FilePath] is null ?
             default :
-            (TItem)_loader.Execute(this, new(commit.Tree, path));
+            (TItem)_loader.Execute(this, new(commit.Tree, index: null, path))!;
     }
 
     public TItem? Lookup<TItem>(string committish,
                                 UniqueId id)
         where TItem : TreeItem
     {
-        var (commit, _, path) = TryGetTree(committish, id);
+        var (commit, path) = TryGetTree(committish, id);
         return path is null ?
             default :
-            (TItem)_loader.Execute(this, new(commit.Tree, path));
+            (TItem)_loader.Execute(this, new(commit.Tree, index: null, path))!;
     }
 
     public ICommitEnumerable<TItem> GetItems<TItem>(string committish,
@@ -48,6 +48,7 @@ internal sealed partial class Connection
         return _queryItems
             .Execute(this, new(commit.Tree,
                                relativeTree,
+                               index: null,
                                typeof(TItem),
                                parent?.Path,
                                isRecursive))
@@ -89,6 +90,7 @@ internal sealed partial class Connection
         return _queryItems.Execute(this,
                                    new(commit.Tree,
                                        relativeTree,
+                                       index: null,
                                        typeof(TItem),
                                        parentPath,
                                        isRecursive)).Select(i => i.Path);
@@ -169,37 +171,35 @@ internal sealed partial class Connection
         }
     }
 
-    private (Commit Commit, Tree? RelativePath, DataPath? Path) TryGetTree(string committish, UniqueId id)
+    private (Commit Commit, DataPath? Path) TryGetTree(string committish, UniqueId id)
     {
         var commit = (Commit)Repository.Lookup(committish) ??
             throw new GitObjectDbInvalidCommitException();
 
         var stack = new Stack<string>();
-        var tree = Search(commit.Tree, $"{id}.{Serializer.FileExtension}", stack);
-        var path = DataPath.Parse(string.Join("/", stack.Reverse()));
-        return (commit, tree, path);
+        var path = Search(commit.Tree, $"{id}.{Serializer.FileExtension}", stack) ?
+            DataPath.Parse(string.Join("/", stack.Reverse())) :
+            null;
+        return (commit, path);
 
-        static Tree? Search(Tree tree, string blobName, Stack<string> path)
+        static bool Search(Tree tree, string blobName, Stack<string> path)
         {
             foreach (var item in tree)
             {
                 path.Push(item.Name);
                 if (item.TargetType == TreeEntryTargetType.Blob && item.Name == blobName)
                 {
-                    return tree;
+                    return true;
                 }
                 if (item.TargetType == TreeEntryTargetType.Tree &&
-                    !FileSystemStorage.IsResourceName(item.Name))
+                    !FileSystemStorage.IsResourceName(item.Name) &&
+                    Search(item.Target.Peel<Tree>(), blobName, path))
                 {
-                    var found = Search(item.Target.Peel<Tree>(), blobName, path);
-                    if (found is not null)
-                    {
-                        return found;
-                    }
+                    return true;
                 }
                 path.Pop();
             }
-            return default;
+            return false;
         }
     }
 

@@ -7,8 +7,6 @@ namespace GitObjectDb.Tools;
 
 internal class StringReaderStream : Stream
 {
-    private readonly Encoding _encoding;
-    private readonly string _input;
     private readonly int _maxBytesPerChar;
 
     private int _inputPosition;
@@ -21,11 +19,15 @@ internal class StringReaderStream : Stream
 
     public StringReaderStream(string input, Encoding encoding)
     {
-        _input = input;
-        _encoding = encoding;
+        Value = input;
+        Encoding = encoding;
         Length = encoding.GetByteCount(input);
         _maxBytesPerChar = encoding.Equals(Encoding.ASCII) ? 1 : encoding.GetMaxByteCount(1);
     }
+
+    public string Value { get; }
+
+    public Encoding Encoding { get; }
 
     [ExcludeFromCodeCoverage]
     public override bool CanRead => true;
@@ -61,18 +63,15 @@ internal class StringReaderStream : Stream
 
     public override int Read(byte[] buffer, int offset, int count)
     {
-        if (_inputPosition >= _input.Length)
+        if (_inputPosition >= Value.Length)
         {
             return 0;
         }
 
-        if (count < _maxBytesPerChar)
-        {
-            throw new ArgumentException($"{nameof(count)} has to be greater or equal to max encoding byte count per char.");
-        }
-
-        var charCount = Math.Min(_input.Length - _inputPosition, count / _maxBytesPerChar);
-        var byteCount = _encoding.GetBytes(_input, _inputPosition, charCount, buffer, offset);
+        var charCount = count < _maxBytesPerChar ?
+            1 :
+            Math.Min(Value.Length - _inputPosition, count / _maxBytesPerChar);
+        var byteCount = Encoding.GetBytes(Value, _inputPosition, charCount, buffer, offset);
         _inputPosition += charCount;
         _position += byteCount;
         return byteCount;

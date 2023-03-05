@@ -31,11 +31,13 @@ internal class ModuleCommands
     private readonly Dictionary<string, ModuleDescription> _modules = new();
 
     internal ModuleCommands(Tree? tree)
+        : this(tree?[ModuleFile]?.Target.Peel<Blob>().GetContentStream())
     {
-        if (tree is not null)
-        {
-            ReadFile(tree);
-        }
+    }
+
+    internal ModuleCommands(Stream? stream)
+    {
+        ReadFile(stream);
     }
 
     internal bool HasAnyChange { get; private set; }
@@ -69,14 +71,13 @@ internal class ModuleCommands
         }
     }
 
-    private void ReadFile(Tree tree)
+    private void ReadFile(Stream? stream)
     {
-        using var blob = tree[ModuleFile]?.Target.Peel<Blob>().GetContentStream();
-        if (blob is null)
+        if (stream is null)
         {
             return;
         }
-        using var reader = new StreamReader(blob);
+        using var reader = new StreamReader(stream);
         string? line, module = null, path = null, url = null, branch = null;
         while ((line = reader.ReadLine()) is not null)
         {

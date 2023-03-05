@@ -64,7 +64,7 @@ internal static partial class NodeMutation
         try
         {
             var path = context.GetArgument<DataPath>(GitObjectDbMutation.PathArgument);
-            mutationContext.Transformations.Delete(path);
+            mutationContext.Transformations.Revert(path);
 
             return path;
         }

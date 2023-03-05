@@ -12,10 +12,10 @@ public class RebaseTests : BranchMergerFixture
                    \
        newBranch:   C   ->   A---B---C */
 
-    protected override void TwoDifferentPropertyEditsActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string newDescription, string newName, Signature signature, Commit b, Commit c)
+    protected override void TwoDifferentPropertyEditsActAndAssert(IConnection sut, Table table, string newDescription, string newName, Signature signature, Commit b, Commit c)
     {
         // Act
-        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         var commitFilter = new CommitFilter
@@ -37,10 +37,10 @@ public class RebaseTests : BranchMergerFixture
         });
     }
 
-    protected override void FastForwardActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string newDescription, Signature signature, Commit b)
+    protected override void FastForwardActAndAssert(IConnection sut, Table table, string newDescription, Signature signature, Commit b)
     {
         // Act
-        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         Assert.Multiple(() =>
@@ -53,10 +53,10 @@ public class RebaseTests : BranchMergerFixture
         Assert.That(newTable.Description, Is.EqualTo(newDescription));
     }
 
-    protected override void SamePropertyEditsActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string bValue, string cValue, Signature signature)
+    protected override void SamePropertyEditsActAndAssert(IConnection sut, Table table, string bValue, string cValue, Signature signature)
     {
         // Act
-        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         Assert.That(rebase.Status, Is.EqualTo(RebaseStatus.Conflicts));
@@ -90,10 +90,10 @@ public class RebaseTests : BranchMergerFixture
         Assert.That(newTable.Description, Is.EqualTo("resolved"));
     }
 
-    protected override void EditOnTheirParentDeletionActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Table parentTable, Field field, Signature signature)
+    protected override void EditOnTheirParentDeletionActAndAssert(PerformAction actionTarget, IConnection sut, Table parentTable, Field field, Signature signature)
     {
         // Act
-        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         var conflict = rebase.CurrentChanges.Single(c => c.Status == ItemMergeStatus.TreeConflict);
@@ -111,10 +111,10 @@ public class RebaseTests : BranchMergerFixture
         Assert.That(rebase.Continue(), Is.EqualTo(RebaseStatus.Complete));
     }
 
-    protected override void AddOnTheirParentDeletionActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Signature signature)
+    protected override void AddOnTheirParentDeletionActAndAssert(PerformAction actionTarget, IConnection sut, Signature signature)
     {
         // Act
-        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         Assert.Multiple(() =>
@@ -138,10 +138,10 @@ public class RebaseTests : BranchMergerFixture
         });
     }
 
-    protected override void DeleteChildNoConflictActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Table table, string newDescription, Field field, Signature signature)
+    protected override void DeleteChildNoConflictActAndAssert(PerformAction actionTarget, IConnection sut, Table table, string newDescription, Field field, Signature signature)
     {
         // Act
-        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         var commitFilter = new CommitFilter
@@ -163,10 +163,10 @@ public class RebaseTests : BranchMergerFixture
         });
     }
 
-    protected override void RenameAndEditActAndAssert(CommitCommandType commitType, IConnection sut, Field field, string newDescription, Signature signature, DataPath newPath, Commit b, Commit c)
+    protected override void RenameAndEditActAndAssert(IConnection sut, Field field, string newDescription, Signature signature, DataPath newPath, Commit b, Commit c)
     {
         // Act
-        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main", commitType: commitType);
+        var rebase = sut.Rebase("newBranch", upstreamCommittish: "main");
 
         // Assert
         var newTable = sut.Lookup<Field>("newBranch", newPath);

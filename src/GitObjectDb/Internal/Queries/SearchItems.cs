@@ -10,9 +10,9 @@ namespace GitObjectDb.Internal.Queries;
 
 internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPath Path, TreeItem Item)>>
 {
-    private readonly IQuery<LoadItem.Parameters, TreeItem> _loader;
+    private readonly IQuery<LoadItem.Parameters, TreeItem?> _loader;
 
-    public SearchItems(IQuery<LoadItem.Parameters, TreeItem> loader)
+    public SearchItems(IQuery<LoadItem.Parameters, TreeItem?> loader)
     {
         _loader = loader;
     }
@@ -38,7 +38,7 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
                         where data is not null
                         let colon = data.IndexOf(':')
                         where DataPath.TryParse(data.Substring(colon + 1), out path)
-                        let item = new Lazy<TreeItem>(() => _loader.Execute(queryAccessor, new LoadItem.Parameters(parms.Tree, path!)))
+                        let item = new Lazy<TreeItem>(() => _loader.Execute(queryAccessor, new LoadItem.Parameters(parms.Tree, index: null, path: path!))!)
                         select (path, item);
         return lazyItems
             .AsParallel()

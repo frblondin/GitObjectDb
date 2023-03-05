@@ -4,6 +4,7 @@ using GitObjectDb.Tests.Assets.Tools;
 using LibGit2Sharp;
 using Models.Software;
 using NUnit.Framework;
+using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -26,6 +27,32 @@ public class RemoteResourceTests
         };
         connection
             .Update("main", c => c.CreateOrUpdate(applicationWithLinkedResources))
+            .Commit(new(message, committer, committer));
+
+        // Assert
+        var result = connection.GetResources("main", applicationWithLinkedResources).ToList();
+        Assert.That(result, Has.Exactly(1).Items);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result[0].Path, Is.EqualTo(application.Path.CreateResourcePath("folder", "file.txt")));
+            Assert.That(result[0].Embedded.ReadAsString(), Is.EqualTo(content));
+        });
+    }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void StageAndAddRemoteResourceRepository(IConnection connection, Application application, string content, string message, Signature committer)
+    {
+        // Arrange
+        var (path, tip) = CreateResourceRepository(content, message, committer);
+
+        // Act
+        var applicationWithLinkedResources = application with
+        {
+            RemoteResource = new(path, tip),
+        };
+        connection
+            .GetIndex("main", c => c.CreateOrUpdate(applicationWithLinkedResources))
             .Commit(new(message, committer, committer));
 
         // Assert

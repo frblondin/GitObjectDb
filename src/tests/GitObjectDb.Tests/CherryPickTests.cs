@@ -12,10 +12,10 @@ public class CherryPickTests : BranchMergerFixture
                    \
        newBranch:   C   ->   A---C---B */
 
-    protected override void TwoDifferentPropertyEditsActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string newDescription, string newName, Signature signature, Commit b, Commit c)
+    protected override void TwoDifferentPropertyEditsActAndAssert(IConnection sut, Table table, string newDescription, string newName, Signature signature, Commit b, Commit c)
     {
         // Act
-        var cherryPick = sut.CherryPick("newBranch", b.Sha, commitType: commitType);
+        var cherryPick = sut.CherryPick("newBranch", b.Sha);
 
         // Assert
         var commitFilter = new CommitFilter
@@ -36,10 +36,10 @@ public class CherryPickTests : BranchMergerFixture
         });
     }
 
-    protected override void FastForwardActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string newDescription, Signature signature, Commit b)
+    protected override void FastForwardActAndAssert(IConnection sut, Table table, string newDescription, Signature signature, Commit b)
     {
         // Act
-        var rebase = sut.CherryPick("newBranch", "main", commitType: commitType);
+        var rebase = sut.CherryPick("newBranch", "main");
 
         // Assert
         var newTable = sut.Lookup<Table>("newBranch", table.Path);
@@ -50,10 +50,10 @@ public class CherryPickTests : BranchMergerFixture
         });
     }
 
-    protected override void SamePropertyEditsActAndAssert(CommitCommandType commitType, IConnection sut, Table table, string bValue, string cValue, Signature signature)
+    protected override void SamePropertyEditsActAndAssert(IConnection sut, Table table, string bValue, string cValue, Signature signature)
     {
         // Act
-        var cherryPick = sut.CherryPick("newBranch", "main", commitType: commitType);
+        var cherryPick = sut.CherryPick("newBranch", "main");
 
         // Assert
         Assert.That(cherryPick.Status, Is.EqualTo(CherryPickStatus.Conflicts));
@@ -86,7 +86,7 @@ public class CherryPickTests : BranchMergerFixture
         Assert.That(newTable.Description, Is.EqualTo("resolved"));
     }
 
-    protected override void EditOnTheirParentDeletionActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Table parentTable, Field field, Signature signature)
+    protected override void EditOnTheirParentDeletionActAndAssert(PerformAction actionTarget, IConnection sut, Table parentTable, Field field, Signature signature)
     {
         // Act
         var cherryPick = sut.CherryPick("newBranch", "main");
@@ -110,10 +110,10 @@ public class CherryPickTests : BranchMergerFixture
         Assert.That(cherryPick.CommitChanges(), Is.EqualTo(CherryPickStatus.CherryPicked));
     }
 
-    protected override void DeleteChildNoConflictActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Table table, string newDescription, Field field, Signature signature)
+    protected override void DeleteChildNoConflictActAndAssert(PerformAction actionTarget, IConnection sut, Table table, string newDescription, Field field, Signature signature)
     {
         // Act
-        var cherryPick = sut.CherryPick("newBranch", "main", commitType: commitType);
+        var cherryPick = sut.CherryPick("newBranch", "main");
 
         // Assert
         Assert.That(cherryPick.Status, Is.EqualTo(CherryPickStatus.CherryPicked));
@@ -134,10 +134,10 @@ public class CherryPickTests : BranchMergerFixture
         });
     }
 
-    protected override void AddOnTheirParentDeletionActAndAssert(PerformAction actionTarget, CommitCommandType commitType, IConnection sut, Signature signature)
+    protected override void AddOnTheirParentDeletionActAndAssert(PerformAction actionTarget, IConnection sut, Signature signature)
     {
         // Act
-        var cherryPick = sut.CherryPick("newBranch", "main", commitType: commitType);
+        var cherryPick = sut.CherryPick("newBranch", "main");
 
         // Assert
         Assert.Multiple(() =>
@@ -161,10 +161,10 @@ public class CherryPickTests : BranchMergerFixture
         });
     }
 
-    protected override void RenameAndEditActAndAssert(CommitCommandType commitType, IConnection sut, Field field, string newDescription, Signature signature, DataPath newPath, Commit b, Commit c)
+    protected override void RenameAndEditActAndAssert(IConnection sut, Field field, string newDescription, Signature signature, DataPath newPath, Commit b, Commit c)
     {
         // Act
-        var cherryPick = sut.CherryPick("newBranch", "main", commitType: commitType);
+        var cherryPick = sut.CherryPick("newBranch", "main");
 
         // Assert
         var newTable = sut.Lookup<Field>("newBranch", newPath);

@@ -20,13 +20,13 @@ internal abstract class GitObjectDbDataLoaderBase<TKey, TResult> : DataLoaderBas
     {
         foreach (var loadPair in list)
         {
-            var result = _memoryCache.GetOrCreate(loadPair.Key, entry =>
+            var result = _memoryCache.GetOrCreate(loadPair.Key!, entry =>
             {
                 _cacheStrategy(entry);
 
                 return Fetch(entry, loadPair.Key);
             });
-            loadPair.SetResult(result);
+            loadPair.SetResult(result!);
         }
 
         return Task.CompletedTask;

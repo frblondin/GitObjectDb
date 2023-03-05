@@ -30,11 +30,10 @@ internal class TransformationComposerTests
             fixture.Inject(A.Fake<IConnectionInternal>(o =>
                 o.ConfigureFake(fake =>
                     A.CallTo(() => fake.Model).Returns(fixture.Create<IDataModel>()))));
-            fixture.Register(() =>
+            fixture.Register<ITransformationComposer>(() =>
                 fixture.Create<Factories.TransformationComposerFactory>().Invoke(
                     fixture.Create<IConnectionInternal>(),
-                    fixture.Create<string>(),
-                    CommitCommandType.Auto));
+                    fixture.Create<string>()));
         }
     }
 }

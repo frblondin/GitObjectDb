@@ -64,34 +64,8 @@ public static class ServiceConfiguration
 
     private static void ConfigureCommands(IServiceCollection source)
     {
-        source.AddSingleton<CommitCommandUsingTree>();
-        source.AddSingleton<CommitCommandUsingFastImport>();
-        source.AddSingleton<ServiceResolver<CommitCommandType, ICommitCommand>>(serviceProvider => type =>
-            GetDefaultCommitCommandType(type) switch
-            {
-                CommitCommandType.Normal => serviceProvider.GetRequiredService<CommitCommandUsingTree>(),
-                CommitCommandType.FastImport => serviceProvider.GetRequiredService<CommitCommandUsingFastImport>(),
-                _ => throw new NotSupportedException(),
-            });
-
-        source.AddSingleton<GitUpdateCommandUsingTree>();
-        source.AddSingleton<GitUpdateCommandUsingFastImport>();
-        source.AddSingleton<ServiceResolver<CommitCommandType, IGitUpdateCommand>>(serviceProvider => type =>
-            GetDefaultCommitCommandType(type) switch
-            {
-                CommitCommandType.Normal => serviceProvider.GetRequiredService<GitUpdateCommandUsingTree>(),
-                CommitCommandType.FastImport => serviceProvider.GetRequiredService<GitUpdateCommandUsingFastImport>(),
-                _ => throw new NotSupportedException(),
-            });
-    }
-
-    private static CommitCommandType GetDefaultCommitCommandType(CommitCommandType type)
-    {
-        if (type == CommitCommandType.Auto)
-        {
-            type = GitCliCommand.IsGitInstalled ? CommitCommandType.FastImport : CommitCommandType.Normal;
-        }
-
-        return type;
+        source.AddSingleton<ICommitCommand, CommitCommand>();
+        source.AddSingleton<IIndex, Internal.Index>();
+        source.AddSingleton<IGitUpdateCommand, GitUpdateCommand>();
     }
 }

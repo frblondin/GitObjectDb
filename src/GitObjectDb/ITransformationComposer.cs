@@ -1,6 +1,5 @@
 using LibGit2Sharp;
 using System;
-using System.Collections.Generic;
 
 namespace GitObjectDb;
 
@@ -9,9 +8,6 @@ public interface ITransformationComposer
 {
     /// <summary>Gets the branch to apply the changes to.</summary>
     string BranchName { get; }
-
-    /// <summary>Gets the list of transformations.</summary>
-    IList<ITransformation> Transformations { get; }
 
     /// <summary>Creates the specified node under an existing parent.</summary>
     /// <typeparam name="TNode">The type of the node being modified.</typeparam>
@@ -44,19 +40,22 @@ public interface ITransformationComposer
     /// <summary>Deletes the specified item.</summary>
     /// <typeparam name="TItem">The type of the item being modified.</typeparam>
     /// <param name="item">The node to update.</param>
-    /// <returns>The item passed as argument.</returns>
-    TItem Delete<TItem>(TItem item)
+    void Delete<TItem>(TItem item)
         where TItem : TreeItem;
 
     /// <summary>Deletes the specified item path.</summary>
     /// <param name="path">The node path to update.</param>
-    void Delete(DataPath path);
+    void Revert(DataPath path);
 
     /// <summary>Renames the specified item to a new path.</summary>
     /// <param name="item">The item to be renamed.</param>
     /// <param name="newPath">The new item path.</param>
     void Rename(TreeItem item, DataPath newPath);
+}
 
+/// <summary>Represents a series of node transformations.</summary>
+public interface ITransformationComposerWithCommit : ITransformationComposer
+{
     /// <summary>Applies the transformation and store them in a new commit.</summary>
     /// <param name="description">The commit description.</param>
     /// <param name="beforeProcessing">Callback that gets invoked before processing each transformation.</param>

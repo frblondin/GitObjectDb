@@ -7,7 +7,7 @@ internal static partial class NodeMutation
     internal sealed class Context
     {
         private string? _branchName;
-        private ITransformationComposer? _transformationComposer;
+        private ITransformationComposerWithCommit? _transformationComposer;
 
         internal Context(IServiceProvider serviceProvider)
         {
@@ -34,10 +34,9 @@ internal static partial class NodeMutation
             }
         }
 
-        internal ITransformationComposer Transformations => _transformationComposer ??= Connection.Update(BranchName);
+        internal ITransformationComposerWithCommit Transformations => _transformationComposer ??= Connection.Update(BranchName);
 
         internal IDictionary<DataPath, Node> ModifiedNodesByPath { get; } = new Dictionary<DataPath, Node>();
-
 
         internal IDictionary<UniqueId, Node> ModifiedNodesById { get; } = new Dictionary<UniqueId, Node>();
 

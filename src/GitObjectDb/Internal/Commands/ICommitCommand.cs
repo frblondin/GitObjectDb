@@ -1,6 +1,7 @@
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
+using static GitObjectDb.Internal.Commands.CommitCommand;
 
 namespace GitObjectDb.Internal.Commands;
 
@@ -16,4 +17,10 @@ internal interface ICommitCommand
                   CommitDescription description,
                   Commit predecessor,
                   bool updateBranchTip = true);
+
+    Commit Commit(IConnection connection,
+                  Action<ImportFileArguments> transform,
+                  string branchName,
+                  List<Commit> parents,
+                  CommitDescription description);
 }

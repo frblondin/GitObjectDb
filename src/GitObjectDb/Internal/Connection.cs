@@ -18,10 +18,11 @@ namespace GitObjectDb.Internal;
 internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvider
 {
     private readonly TransformationComposerFactory _transformationComposerFactory;
+    private readonly IndexFactory _indexFactory;
     private readonly RebaseFactory _rebaseFactory;
     private readonly MergeFactory _mergeFactory;
     private readonly CherryPickFactory _cherryPickFactory;
-    private readonly IQuery<LoadItem.Parameters, TreeItem> _loader;
+    private readonly IQuery<LoadItem.Parameters, TreeItem?> _loader;
     private readonly IQuery<QueryItems.Parameters, IEnumerable<(DataPath Path, Lazy<TreeItem> Item)>> _queryItems;
     private readonly IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> _queryResources;
     private readonly IQuery<SearchItems.Parameters, IEnumerable<(DataPath Path, TreeItem Item)>> _searchItems;
@@ -38,10 +39,11 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
         Cache = serviceProvider.GetRequiredService<IMemoryCache>();
         Serializer = serviceProvider.GetRequiredService<INodeSerializer>();
         _transformationComposerFactory = serviceProvider.GetRequiredService<TransformationComposerFactory>();
+        _indexFactory = serviceProvider.GetRequiredService<IndexFactory>();
         _rebaseFactory = serviceProvider.GetRequiredService<RebaseFactory>();
         _mergeFactory = serviceProvider.GetRequiredService<MergeFactory>();
         _cherryPickFactory = serviceProvider.GetRequiredService<CherryPickFactory>();
-        _loader = serviceProvider.GetRequiredService<IQuery<LoadItem.Parameters, TreeItem>>();
+        _loader = serviceProvider.GetRequiredService<IQuery<LoadItem.Parameters, TreeItem?>>();
         _queryItems = serviceProvider.GetRequiredService<IQuery<QueryItems.Parameters, IEnumerable<(DataPath Path, Lazy<TreeItem> Item)>>>();
         _queryResources = serviceProvider.GetRequiredService<IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>>>();
         _searchItems = serviceProvider.GetRequiredService<IQuery<SearchItems.Parameters, IEnumerable<(DataPath Path, TreeItem Item)>>>();
@@ -72,33 +74,37 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
         return result;
     }
 
-    public ITransformationComposer Update(string branchName,
-                                          Action<ITransformationComposer>? transformations = null,
-                                          CommitCommandType commitType = CommitCommandType.Auto)
+    public ITransformationComposerWithCommit Update(string branchName,
+                                                    Action<ITransformationComposer>? transformations = null)
     {
-        var composer = _transformationComposerFactory(this, branchName, commitType);
+        var composer = _transformationComposerFactory(this, branchName);
         transformations?.Invoke(composer);
         return composer;
     }
 
+    public IIndex GetIndex(string branchName,
+                              Action<ITransformationComposer>? transformations = null)
+    {
+        var index = _indexFactory(this, branchName);
+        transformations?.Invoke(index);
+        return index;
+    }
+
     public IRebase Rebase(string branchName,
                           string upstreamCommittish,
-                          ComparisonPolicy? policy = null,
-                          CommitCommandType commitType = CommitCommandType.Auto) =>
-        _rebaseFactory(this, branchName, upstreamCommittish, policy, commitType);
+                          ComparisonPolicy? policy = null) =>
+        _rebaseFactory(this, branchName, upstreamCommittish, policy);
 
     public IMerge Merge(string branchName,
                         string upstreamCommittish,
-                        ComparisonPolicy? policy = null,
-                        CommitCommandType commitType = CommitCommandType.Auto) =>
-        _mergeFactory(this, branchName, upstreamCommittish, policy, commitType);
+                        ComparisonPolicy? policy = null) =>
+        _mergeFactory(this, branchName, upstreamCommittish, policy);
 
     public ICherryPick CherryPick(string branchName,
                                   string committish,
                                   Signature? committer = null,
-                                  CherryPickPolicy? policy = null,
-                                  CommitCommandType commitType = CommitCommandType.Auto) =>
-        _cherryPickFactory(this, branchName, committish, committer, policy, commitType);
+                                  CherryPickPolicy? policy = null) =>
+        _cherryPickFactory(this, branchName, committish, committer, policy);
 
     public Commit FindUpstreamCommit(string? committish, Branch branch)
     {

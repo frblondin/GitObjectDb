@@ -8,7 +8,7 @@ internal class Transformation : ITransformationInternal
 {
     internal Transformation(DataPath path,
                             TreeItem? item,
-                            Delegate action,
+                            ApplyUpdate action,
                             string message)
     {
         Path = path;
@@ -21,7 +21,7 @@ internal class Transformation : ITransformationInternal
 
     public TreeItem? Item { get; }
 
-    public Delegate Action { get; }
+    public ApplyUpdate Action { get; }
 
     public string Message { get; }
 
