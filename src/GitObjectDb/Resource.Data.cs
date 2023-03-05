@@ -1,6 +1,7 @@
 using GitObjectDb.Tools;
 using System;
 using System.IO;
+using System.Net.Http.Headers;
 using System.Text;
 
 namespace GitObjectDb;
@@ -16,7 +17,7 @@ public sealed partial record Resource
         /// <summary>Initializes a new instance of the <see cref="Data"/> class.</summary>
         /// <param name="value">The resource content.</param>
         public Data(string value)
-            : this(new StringReaderStream(value))
+            : this(() => new StringReaderStream(value))
         {
         }
 
@@ -34,8 +35,27 @@ public sealed partial record Resource
 
         /// <summary>Gets the content stream.</summary>
         /// <returns>The stream.</returns>
-        public Stream GetContentStream() =>
-            _stream.Invoke();
+        public Stream GetContentStream()
+        {
+            var result = _stream.Invoke();
+            if (result.CanSeek)
+            {
+                result.Seek(0, SeekOrigin.Begin);
+            }
+            return result;
+        }
+
+        /// <summary>Gets the data as a sequence of bytes.</summary>
+        /// <returns>A byte array containing the data.</returns>
+        public byte[] GetBytes()
+        {
+            using var stream = GetContentStream();
+            return stream switch
+            {
+                StringReaderStream stringReader => stringReader.Encoding.GetBytes(stringReader.Value),
+                _ => new BinaryReader(stream).ReadBytes((int)stream.Length),
+            };
+        }
 
         /// <summary>Reads the resource stream as a string.</summary>
         /// <param name="encoding">The character encoding to use.</param>

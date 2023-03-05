@@ -6,7 +6,6 @@ namespace GitObjectDb.YamlDotNet.Tests;
 
 public class TypeExtensionsTests
 {
-
     [Test]
     [TestCase(typeof(int), "int")]
     [TestCase(typeof(int?), "int?")]
@@ -19,7 +18,7 @@ public class TypeExtensionsTests
     [TestCase(typeof(Dictionary<int, string>), "System.Collections.Generic.Dictionary(int,string)")]
     [TestCase(typeof(Dictionary<int, Dictionary<string, char>>), "System.Collections.Generic.Dictionary(int,System.Collections.Generic.Dictionary(string,char))")]
     [TestCase(typeof(MyStruct), "GitObjectDb.YamlDotNet.Tests.TypeExtensionsTests.MyStruct")]
-    [TestCase(typeof(Nullable<MyStruct>), "GitObjectDb.YamlDotNet.Tests.TypeExtensionsTests.MyStruct?")]
+    [TestCase(typeof(MyStruct?), "GitObjectDb.YamlDotNet.Tests.TypeExtensionsTests.MyStruct?")]
     [TestCase(typeof(MyStruct?), "GitObjectDb.YamlDotNet.Tests.TypeExtensionsTests.MyStruct?")]
     [TestCase(typeof(MyClass), "GitObjectDb.YamlDotNet.Tests.TypeExtensionsTests.MyClass")]
     [TestCase(typeof(MyGenericClass<MyClass>), "GitObjectDb.YamlDotNet.Tests.TypeExtensionsTests.MyGenericClass(GitObjectDb.YamlDotNet.Tests.TypeExtensionsTests.MyClass)")]

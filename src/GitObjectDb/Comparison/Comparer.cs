@@ -12,9 +12,9 @@ namespace GitObjectDb.Comparison;
 
 internal class Comparer : IComparer, IComparerInternal
 {
-    private readonly IQuery<LoadItem.Parameters, TreeItem> _nodeLoader;
+    private readonly IQuery<LoadItem.Parameters, TreeItem?> _nodeLoader;
 
-    public Comparer(IQuery<LoadItem.Parameters, TreeItem> nodeLoader)
+    public Comparer(IQuery<LoadItem.Parameters, TreeItem?> nodeLoader)
     {
         _nodeLoader = nodeLoader;
     }
@@ -34,7 +34,7 @@ internal class Comparer : IComparer, IComparerInternal
                                     ComparisonPolicy? policy = null)
     {
         using var changes = connection.Repository.Diff.Compare<Patch>(old.Tree, @new.Tree);
-        var result = new ChangeCollection(old, @new);
+        var result = new ChangeCollection(@new);
         foreach (var change in changes)
         {
             var treeChanges = Compare(connection, old.Tree, @new.Tree, change, policy);
@@ -43,11 +43,11 @@ internal class Comparer : IComparer, IComparerInternal
         return result;
     }
 
-    private IEnumerable<Change?> Compare(IQueryAccessor queryAccessor,
-                                         Tree oldTree,
-                                         Tree newTree,
-                                         PatchEntryChanges change,
-                                         ComparisonPolicy? policy)
+    public IEnumerable<Change?> Compare(IQueryAccessor queryAccessor,
+                                        Tree oldTree,
+                                        Tree newTree,
+                                        PatchEntryChanges change,
+                                        ComparisonPolicy? policy)
     {
         if (change.Status == ChangeKind.Modified)
         {
@@ -71,10 +71,10 @@ internal class Comparer : IComparer, IComparerInternal
         }
         Change? CreateChange(TreeItem? old, TreeItem? @new, ChangeStatus status) => Change.Create(
             change, old, @new, status, policy ?? queryAccessor.Model.DefaultComparisonPolicy);
-        TreeItem CreateNode(Tree tree, string path) =>
+        TreeItem? CreateNode(Tree tree, string path) =>
             _nodeLoader.Execute(
                 queryAccessor,
-                new(tree, DataPath.Parse(path)));
+                new(tree, index: null, DataPath.Parse(path)));
     }
 
     internal static ComparisonResult CompareInternal(object? expectedObject,

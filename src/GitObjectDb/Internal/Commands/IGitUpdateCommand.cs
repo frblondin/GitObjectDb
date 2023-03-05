@@ -3,9 +3,9 @@ using System;
 namespace GitObjectDb.Internal.Commands;
 internal interface IGitUpdateCommand
 {
-    Delegate CreateOrUpdate(TreeItem item);
+    ApplyUpdate CreateOrUpdate(TreeItem item);
 
-    Delegate Rename(TreeItem item, DataPath newPath);
+    ApplyUpdate Rename(TreeItem item, DataPath newPath);
 
-    Delegate Delete(DataPath path);
+    ApplyUpdate Delete(DataPath path);
 }

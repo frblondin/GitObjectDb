@@ -51,6 +51,7 @@
     <PackageVersion Include="PowerAssert" Version="1.0.85" />
     <PackageVersion Include="protobuf-net.Grpc" Version="1.0.179" />
     <PackageVersion Include="protobuf-net.Grpc.AspNetCore" Version="1.0.179" />
+    <PackageVersion Include="Realm" Version="10.20.0" />
     <PackageVersion Include="SourceLink.Copy.PdbFiles" Version="2.8.3" />
     <PackageVersion Include="SourceLink.Create.CommandLine" Version="2.8.3" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.406" />

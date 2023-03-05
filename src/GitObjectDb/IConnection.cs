@@ -22,11 +22,16 @@ public interface IConnection : IQueryAccessor, IDisposable
     /// <summary>Initiates a series of node transformations.</summary>
     /// <param name="branchName">The branch to apply the changes to.</param>
     /// <param name="transformations">The transformations to be applied.</param>
-    /// <param name="commitType">Type of commit command to use.</param>
     /// <returns>The collection of transformations.</returns>
-    ITransformationComposer Update(string branchName,
-                                   Action<ITransformationComposer>? transformations = null,
-                                   CommitCommandType commitType = CommitCommandType.Auto);
+    ITransformationComposerWithCommit Update(string branchName,
+                                             Action<ITransformationComposer>? transformations = null);
+
+    /// <summary>Gets the index for a given branch.</summary>
+    /// <param name="branchName">The branch to apply the changes to.</param>
+    /// <param name="transformations">The transformations to be applied.</param>
+    /// <returns>The index.</returns>
+    IIndex GetIndex(string branchName,
+                       Action<ITransformationComposer>? transformations = null);
 
     /// <summary>Compares two commits (additions, deletions, editions, conflicts).</summary>
     /// <param name="startCommittish">Starting points of comparison.</param>
@@ -41,23 +46,19 @@ public interface IConnection : IQueryAccessor, IDisposable
     /// <param name="branchName">The branch to merge changes into.</param>
     /// <param name="upstreamCommittish">The upstream committish.</param>
     /// <param name="policy">The merge policy.</param>
-    /// <param name="commitType">Type of commit command to use.</param>
     /// <returns>The resut of the rebase operation.</returns>
     IRebase Rebase(string branchName,
                    string upstreamCommittish,
-                   ComparisonPolicy? policy = null,
-                   CommitCommandType commitType = CommitCommandType.Auto);
+                   ComparisonPolicy? policy = null);
 
     /// <summary>Merges changes from upstream into the branch.</summary>
     /// <param name="branchName">The branch to merge changes into.</param>
     /// <param name="upstreamCommittish">The upstream committish.</param>
     /// <param name="policy">The merge policy.</param>
-    /// <param name="commitType">Type of commit command to use.</param>
     /// <returns>The resut of the rebase operation.</returns>
     IMerge Merge(string branchName,
                  string upstreamCommittish,
-                 ComparisonPolicy? policy = null,
-                 CommitCommandType commitType = CommitCommandType.Auto);
+                 ComparisonPolicy? policy = null);
 
     /// <summary>
     /// Cherry-picks the specified commit.
@@ -66,13 +67,11 @@ public interface IConnection : IQueryAccessor, IDisposable
     /// <param name="committish">The commit to cherry-pick.</param>
     /// <param name="committer">The <see cref="Signature"/> of who is performing the cherry pick.</param>
     /// <param name="policy">The cherry-pick policy.</param>
-    /// <param name="commitType">Type of commit command to use.</param>
     /// <returns>The result of the cherry-pick operation.</returns>
     ICherryPick CherryPick(string branchName,
                            string committish,
                            Signature? committer = null,
-                           CherryPickPolicy? policy = null,
-                           CommitCommandType commitType = CommitCommandType.Auto);
+                           CherryPickPolicy? policy = null);
 }
 
 internal interface IConnectionInternal : IConnection

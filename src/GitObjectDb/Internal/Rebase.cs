@@ -25,15 +25,12 @@ internal sealed class Rebase : IRebase
                   IConnectionInternal connection,
                   string branchName,
                   string upstreamCommittish,
-                  ComparisonPolicy? policy = null,
-                  CommitCommandType commitType = CommitCommandType.Auto)
+                  ComparisonPolicy? policy = null)
     {
         _comparer = serviceProvider.GetRequiredService<IComparerInternal>();
         _mergeComparer = serviceProvider.GetRequiredService<IMergeComparer>();
-        _gitUpdateFactory = serviceProvider.GetRequiredService<ServiceResolver<CommitCommandType, IGitUpdateCommand>>()
-                                           .Invoke(commitType);
-        _commitCommand = serviceProvider.GetRequiredService<ServiceResolver<CommitCommandType, ICommitCommand>>()
-                                        .Invoke(commitType);
+        _gitUpdateFactory = serviceProvider.GetRequiredService<IGitUpdateCommand>();
+        _commitCommand = serviceProvider.GetRequiredService<ICommitCommand>();
         _connection = connection;
         Branch = connection.Repository.Branches[branchName] ?? throw new GitObjectDbNonExistingBranchException();
         UpstreamCommit = connection.FindUpstreamCommit(upstreamCommittish, Branch);

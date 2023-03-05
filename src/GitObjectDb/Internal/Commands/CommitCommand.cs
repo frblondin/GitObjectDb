@@ -8,11 +8,11 @@ using System.Text;
 
 namespace GitObjectDb.Internal.Commands;
 
-internal class CommitCommandUsingFastImport : ICommitCommand
+internal class CommitCommand : ICommitCommand
 {
     private readonly Func<ITreeValidation> _treeValidation;
 
-    public CommitCommandUsingFastImport(Func<ITreeValidation> treeValidation)
+    public CommitCommand(Func<ITreeValidation> treeValidation)
     {
         _treeValidation = treeValidation;
 
@@ -24,10 +24,11 @@ internal class CommitCommandUsingFastImport : ICommitCommand
                          Action<ITransformation>? beforeProcessing = null)
     {
         var branch = composer.Connection.Repository.Branches[composer.BranchName];
-        var parents = CommitCommandUsingTree.RetrieveParentsOfTheCommitBeingCreated(composer.Connection.Repository,
-                                                                           branch,
-                                                                           description.AmendPreviousCommit,
-                                                                           description.MergeParent).ToList();
+        var parents = RetrieveParentsOfTheCommitBeingCreated(
+            composer.Connection.Repository,
+            branch,
+            description.AmendPreviousCommit,
+            description.MergeParent).ToList();
         return Commit(composer.Connection,
                       info => ApplyTransformations(composer.Connection,
                                                    composer.Transformations,
@@ -48,17 +49,13 @@ internal class CommitCommandUsingFastImport : ICommitCommand
                          bool updateBranchTip = true)
     {
         var modules = new ModuleCommands(predecessor.Tree);
-        var parents = new List<Commit> { predecessor };
-        if (description.MergeParent is not null)
-        {
-            parents.Add(description.MergeParent);
-        }
+        var parents = GetParents(description, predecessor);
         return Commit(connection,
                       info =>
                       {
                           foreach (var transformation in transformations)
                           {
-                              var action = (ApplyUpdateFastInsert)transformation;
+                              var action = (ApplyUpdate)transformation;
                               action.Invoke(predecessor.Tree, modules, connection.Serializer, info.Writer, info.Index);
                           }
                       },
@@ -67,11 +64,22 @@ internal class CommitCommandUsingFastImport : ICommitCommand
                       description);
     }
 
-    private Commit Commit(IConnection connection,
-                          Action<(StreamWriter Writer, List<string> Index, string TempBranch)> transform,
-                          string branchName,
-                          List<Commit> parents,
-                          CommitDescription description)
+    internal static List<Commit> GetParents(CommitDescription description, Commit predecessor)
+    {
+        var parents = new List<Commit> { predecessor };
+        if (description.MergeParent is not null)
+        {
+            parents.Add(description.MergeParent);
+        }
+
+        return parents;
+    }
+
+    public Commit Commit(IConnection connection,
+                         Action<ImportFileArguments> transform,
+                         string branchName,
+                         List<Commit> parents,
+                         CommitDescription description)
     {
         var importFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         var tempBranch = $"refs/fastimport/{UniqueId.CreateNew()}";
@@ -108,14 +116,13 @@ internal class CommitCommandUsingFastImport : ICommitCommand
         foreach (var transformation in transformations.OfType<ITransformationInternal>())
         {
             beforeProcessing?.Invoke(transformation);
-            var action = (ApplyUpdateFastInsert)transformation.Action;
-            action.Invoke(commit?.Tree, modules, connection.Serializer, writer, commitIndex);
+            transformation.Action.Invoke(commit?.Tree, modules, connection.Serializer, writer, commitIndex);
         }
 
         if (modules.HasAnyChange)
         {
             using var stream = modules.CreateStream();
-            GitUpdateCommandUsingFastImport.AddBlob(ModuleCommands.ModuleFile, stream, writer, commitIndex);
+            GitUpdateCommand.AddBlob(ModuleCommands.ModuleFile, stream, writer, commitIndex);
         }
     }
 
@@ -217,5 +224,51 @@ internal class CommitCommandUsingFastImport : ICommitCommand
         connection.Repository.UpdateBranchTip(reference, commit, logMessage);
 
         return commit;
+    }
+
+    internal static List<Commit> RetrieveParentsOfTheCommitBeingCreated(IRepository repository,
+                                                                        Branch? branch,
+                                                                        bool amendPreviousCommit,
+                                                                        Commit? mergeParent = null)
+    {
+        if (amendPreviousCommit)
+        {
+            if (branch is null)
+            {
+                throw new GitObjectDbNonExistingBranchException();
+            }
+            return branch.Tip.Parents.ToList();
+        }
+
+        var parents = new List<Commit>();
+        if (branch?.Tip is not null)
+        {
+            parents.Add(branch.Tip);
+        }
+
+        if (mergeParent != null)
+        {
+            parents.Add(mergeParent);
+        }
+
+        if (repository.Info.CurrentOperation == CurrentOperation.Merge)
+        {
+            throw new NotSupportedException();
+        }
+
+        return parents;
+    }
+
+    internal record struct ImportFileArguments(StreamWriter Writer, List<string> Index, string TempBranch)
+    {
+        public static implicit operator (StreamWriter Writer, List<string> Index, string TempBranch)(ImportFileArguments value)
+        {
+            return (value.Writer, value.Index, value.TempBranch);
+        }
+
+        public static implicit operator ImportFileArguments((StreamWriter Writer, List<string> Index, string TempBranch) value)
+        {
+            return new ImportFileArguments(value.Writer, value.Index, value.TempBranch);
+        }
     }
 }

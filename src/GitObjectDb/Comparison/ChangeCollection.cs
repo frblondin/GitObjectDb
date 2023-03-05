@@ -15,15 +15,11 @@ public sealed class ChangeCollection : IList<Change>
 {
     private readonly List<Change> _changes;
 
-    internal ChangeCollection(Commit start, Commit end)
+    internal ChangeCollection(Commit end)
     {
         _changes = new List<Change>();
-        Start = start;
         End = end;
     }
-
-    /// <summary>Gets the first commit of changes.</summary>
-    public Commit Start { get; }
 
     /// <summary>Gets the last commit of changes.</summary>
     public Commit End { get; }

@@ -22,24 +22,19 @@ namespace GitObjectDb.Tests.Commands;
 public class CommitCommandTests
 {
     [Test]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.FastImport)]
-    public void AddNewNodeUsingNodeFolders(CommitCommandType commitType, IFixture fixture, Application application, UniqueId newTableId, string message, Signature signature)
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+    public void AddNewNodeUsingNodeFolders(IFixture fixture, Application application, UniqueId newTableId, string message, Signature signature)
     {
         // Arrange
         var comparer = fixture.Create<Comparer>();
-        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
-        var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+        var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
+        var sut = fixture.Create<ICommitCommand>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
+        var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
         composer.CreateOrUpdate(new Table { Id = newTableId }, application);
-        sut.Invoke(commitType).Commit(composer, new(message, signature, signature));
+        sut.Commit(composer, new(message, signature, signature));
 
         // Assert
         var changes = comparer.Compare(connection,
@@ -52,24 +47,19 @@ public class CommitCommandTests
     }
 
     [Test]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.FastImport)]
-    public void AddNewNodeWithoutNodeFolders(CommitCommandType commitType, IFixture fixture, Table table, UniqueId newFieldId, string message, Signature signature)
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+    public void AddNewNodeWithoutNodeFolders(IFixture fixture, Table table, UniqueId newFieldId, string message, Signature signature)
     {
         // Arrange
         var comparer = fixture.Create<Comparer>();
-        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
-        var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+        var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
+        var sut = fixture.Create<ICommitCommand>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
+        var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
         composer.CreateOrUpdate(new Field { Id = newFieldId }, table);
-        sut.Invoke(commitType).Commit(composer, new(message, signature, signature));
+        sut.Commit(composer, new(message, signature, signature));
 
         // Assert
         var changes = comparer.Compare(connection,
@@ -82,25 +72,20 @@ public class CommitCommandTests
     }
 
     [Test]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.FastImport)]
-    public void AddNewResource(CommitCommandType commitType, IFixture fixture, Table table, string fileContent, string message, Signature signature)
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+    public void AddNewResource(IFixture fixture, Table table, string fileContent, string message, Signature signature)
     {
         // Arrange
         var comparer = fixture.Create<Comparer>();
-        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
-        var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+        var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
+        var sut = fixture.Create<ICommitCommand>();
         var connection = fixture.Create<IConnectionInternal>();
         var resource = new Resource(table, "Some/Folder", "File.txt", new Resource.Data(fileContent));
 
         // Act
-        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
+        var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
         composer.CreateOrUpdate(resource);
-        sut.Invoke(commitType).Commit(composer, new(message, signature, signature));
+        sut.Commit(composer, new(message, signature, signature));
 
         // Assert
         var changes = comparer.Compare(connection,
@@ -115,24 +100,19 @@ public class CommitCommandTests
     }
 
     [Test]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.FastImport)]
-    public void DeletingNodeRemovesNestedChildren(CommitCommandType commitType, IFixture fixture, Table table, string message, Signature signature)
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+    public void DeletingNodeRemovesNestedChildren(IFixture fixture, Table table, string message, Signature signature)
     {
         // Arrange
         var comparer = fixture.Create<Comparer>();
-        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
-        var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+        var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
+        var sut = fixture.Create<ICommitCommand>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
+        var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
         composer.Delete(table);
-        sut.Invoke(commitType).Commit(composer, new(message, signature, signature));
+        sut.Commit(composer, new(message, signature, signature));
 
         // Assert
         var changes = comparer.Compare(connection,
@@ -143,27 +123,22 @@ public class CommitCommandTests
     }
 
     [Test]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.FastImport)]
-    public void RenamingNonGitFoldersIsSupported(CommitCommandType commitType, IFixture fixture, Field field, string message, Signature signature)
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+    public void RenamingNonGitFoldersIsSupported(IFixture fixture, Field field, string message, Signature signature)
     {
         // Arrange
         var comparer = fixture.Create<Comparer>();
-        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
-        var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+        var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
+        var sut = fixture.Create<ICommitCommand>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
+        var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
         var newPath = new DataPath(field.Path.FolderPath,
                                    $"someName{Path.GetExtension(field.Path.FileName)}",
                                    field.Path.UseNodeFolders);
         composer.Rename(field, newPath);
-        sut.Invoke(commitType).Commit(composer, new(message, signature, signature));
+        sut.Commit(composer, new(message, signature, signature));
 
         // Assert
         var changes = comparer.Compare(connection,
@@ -174,22 +149,17 @@ public class CommitCommandTests
     }
 
     [Test]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.FastImport)]
-    public void RenamingGitFoldersIsNotSupported(CommitCommandType commitType, IFixture fixture, Table table, string message, Signature signature)
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+    public void RenamingGitFoldersIsNotSupported(IFixture fixture, Table table, string message, Signature signature)
     {
         // Arrange
         var comparer = fixture.Create<Comparer>();
-        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
-        var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+        var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
+        var sut = fixture.Create<ICommitCommand>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
+        var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
         var newPath = new DataPath(table.Path.FolderPath,
                                    $"someName{Path.GetExtension(table.Path.FileName)}",
                                    table.Path.UseNodeFolders);
@@ -197,22 +167,17 @@ public class CommitCommandTests
     }
 
     [Test]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.Normal)]
-    [InlineAutoDataCustomizations(
-        new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks) },
-        CommitCommandType.FastImport)]
-    public void EditNestedProperty(CommitCommandType commitType, IFixture fixture, Field field, string message, Signature signature)
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+    public void EditNestedProperty(IFixture fixture, Field field, string message, Signature signature)
     {
         // Arrange
         var comparer = fixture.Create<Comparer>();
-        var gitUpdateCommand = fixture.Create<ServiceResolver<CommitCommandType, IGitUpdateCommand>>();
-        var sut = fixture.Create<ServiceResolver<CommitCommandType, ICommitCommand>>();
+        var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
+        var sut = fixture.Create<ICommitCommand>();
         var connection = fixture.Create<IConnectionInternal>();
 
         // Act
-        var composer = new TransformationComposer(connection, "main", commitType, gitUpdateCommand, sut);
+        var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
         composer.CreateOrUpdate(field with
         {
             SomeValue = new()
@@ -223,7 +188,7 @@ public class CommitCommandTests
                 },
             },
         });
-        sut.Invoke(commitType).Commit(composer, new(message, signature, signature));
+        sut.Commit(composer, new(message, signature, signature));
 
         // Act
         var changes = comparer.Compare(connection,
@@ -255,8 +220,6 @@ public class CommitCommandTests
             var validation = A.Fake<ITreeValidation>(x => x.Strict());
             A.CallTo(validation).WithVoidReturnType().DoesNothing();
             fixture.Inject(validation);
-
-            fixture.Inject(new CommitCommandUsingTree(() => validation));
         }
     }
 }

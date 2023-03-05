@@ -10,10 +10,10 @@ namespace GitObjectDb.Internal.Queries;
 
 internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath Path, Lazy<TreeItem> Item)>>
 {
-    private readonly IQuery<LoadItem.Parameters, TreeItem> _loader;
+    private readonly IQuery<LoadItem.Parameters, TreeItem?> _loader;
     private readonly IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> _queryResources;
 
-    public QueryItems(IQuery<LoadItem.Parameters, TreeItem> loader,
+    public QueryItems(IQuery<LoadItem.Parameters, TreeItem?> loader,
                       IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> queryResources)
     {
         _loader = loader;
@@ -64,7 +64,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
 
     private Lazy<TreeItem> LoadItem(IQueryAccessor queryAccessor, Parameters parms) =>
         new(() => _loader.Execute(queryAccessor,
-                                  new LoadItem.Parameters(parms.Tree, parms.ParentPath!)));
+                                  new LoadItem.Parameters(parms.Tree, parms.Index, path: parms.ParentPath!))!);
 
     private IEnumerable<(DataPath Path, Lazy<Resource> Resource)> GetResources(IQueryAccessor queryAccessor,
                                                                                Node node,
@@ -137,12 +137,14 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
     {
         public Parameters(Tree tree,
                           Tree relativeTree,
+                          IIndex? index,
                           Type? type,
                           DataPath? parentPath,
                           bool isRecursive)
         {
             Tree = tree;
             RelativeTree = relativeTree;
+            Index = index;
             Type = type;
             ParentPath = parentPath;
             IsRecursive = isRecursive;
@@ -151,6 +153,8 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
         public Tree Tree { get; }
 
         public Tree RelativeTree { get; init; }
+
+        public IIndex? Index { get; }
 
         public Type? Type { get; }
 

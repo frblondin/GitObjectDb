@@ -88,4 +88,34 @@ public class QueryNodesTests : DisposeArguments
         // Assert
         Assert.That(result, Is.EqualTo(table));
     }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void ModifiedReferenceEditedInIndexGetsResolved(IConnection connection, Field field, string newDescription)
+    {
+        // Arrange
+        var index = connection.GetIndex("main",
+            c => c.CreateOrUpdate(field.LinkedTable with { Description = newDescription }));
+
+        // Act
+        var resolvedField = index.TryLoadItem<Field>(field.Path);
+
+        // Assert
+        Assert.That(resolvedField.LinkedTable.Description, Is.EqualTo(newDescription));
+    }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void TryLoadItemGetsItemsFromIndex(IConnection connection, Field field, string newDescription)
+    {
+        // Arrange
+        var index = connection.GetIndex("main",
+            c => c.CreateOrUpdate(field.LinkedTable with { Description = newDescription }));
+
+        // Act
+        var resolvedTable = index.TryLoadItem<Table>(field.LinkedTable.Path);
+
+        // Assert
+        Assert.That(resolvedTable.Description, Is.EqualTo(newDescription));
+    }
 }
