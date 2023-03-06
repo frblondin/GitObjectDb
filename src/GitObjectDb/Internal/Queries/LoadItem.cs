@@ -32,7 +32,14 @@ internal class LoadItem : IQuery<LoadItem.Parameters, TreeItem>
 
     private static Stream GetStream(Parameters parms)
     {
-        var blob = parms.Tree[parms.Path.FilePath].Target.Peel<Blob>();
+        var filePath = parms.Path.FilePath;
+        var treeEntry = parms.Tree[filePath];
+
+        if (treeEntry is null)
+        {
+            throw new GitObjectDbException($"The entry at the path {filePath} does not exist.");
+        }
+        var blob = treeEntry.Target.Peel<Blob>();
         return blob.GetContentStream();
     }
 
