@@ -38,6 +38,7 @@ internal static partial class NodeMutation
 
         internal IDictionary<DataPath, Node> ModifiedNodesByPath { get; } = new Dictionary<DataPath, Node>();
 
+
         internal IDictionary<UniqueId, Node> ModifiedNodesById { get; } = new Dictionary<UniqueId, Node>();
 
         internal bool AnyException { get; set; }

@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
 using GitObjectDb.Tests.Customization;
@@ -134,5 +136,28 @@ public partial class NodeSerializerTests
             Assert.That(result.References, Has.Exactly(1).Items);
             Assert.That(result.References[0].References, Has.Exactly(1).Items.SameAs(result));
         });
+    }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
+    public void NonExistingReferenceFails(IConnection sut, string name, Signature signature)
+    {
+        // Arrange
+        DataPath path = default;
+        var path2 = new DataPath("a", "a.yml", true);
+        sut.Update("main", c =>
+        {
+            var node2 = c.CreateOrUpdate(new NodeWithReference
+            {
+                Reference = new NodeWithReference { Name = "other", Path = path2 },
+                Name = "test",
+            });
+            path = node2.Path;
+        }).Commit(new("foo", signature, signature));
+
+        // Act
+        var aggregate = Assert.Throws<AggregateException>(() => sut.GetItems<TreeItem>("main").ToList());
+        Assert.That(aggregate.InnerExceptions, Has.Exactly(1).Items);
+        Assert.That(aggregate.InnerExceptions[0], Is.TypeOf<GitObjectDbException>());
     }
 }
