@@ -9,6 +9,11 @@
     <PackageProjectUrl>https://github.com/frblondin/GitObjectDb</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/frblondin/GitObjectDb.git</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugType>full</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="StyleCop.Analyzers">
@@ -16,6 +21,10 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
     <AdditionalFiles Include="$(SolutionDir)src\stylecop.json" Link="stylecop.json" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
   <PropertyGroup Condition="$(MSBuildProjectName.Contains('.Tests'))">
     <CollectCoverage>true</CollectCoverage>
@@ -25,5 +34,8 @@
     <CoverletOutput>$(SolutionDir)/output/coverage/</CoverletOutput>
     <MergeWith>$(SolutionDir)/output/coverage/coverage.json</MergeWith>
     <UseSourceLink>true</UseSourceLink>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 </Project>
