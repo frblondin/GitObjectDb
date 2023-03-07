@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
 using GitObjectDb.Tests.Customization;
@@ -159,5 +160,27 @@ public partial class NodeSerializerTests
         var aggregate = Assert.Throws<AggregateException>(() => sut.GetItems<TreeItem>("main").ToList());
         Assert.That(aggregate.InnerExceptions, Has.Exactly(1).Items);
         Assert.That(aggregate.InnerExceptions[0], Is.TypeOf<GitObjectDbException>());
+    }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
+    public void MultipleReferencesIsThreadSafe(IConnection sut, string name, Signature signature)
+    {
+        // Arrange
+        const int NumberOfItems = 1_000;
+        sut.Update("main", c =>
+        {
+            var nodeRef = c.CreateOrUpdate(new NodeWithReference { Name = "Ref" });
+            for (var i = 0; i < NumberOfItems; i++)
+            {
+                c.CreateOrUpdate(new NodeWithReference { Name = $"Item {i}", Reference = nodeRef });
+            }
+        }).Commit(new("foo", signature, signature));
+
+        // Act
+        var actual = sut.GetItems<TreeItem>("main").ToList();
+
+        // Assert
+        Assert.That(actual, Has.Count.EqualTo(NumberOfItems + 1));
     }
 }
