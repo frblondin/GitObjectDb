@@ -2,23 +2,27 @@ using GitObjectDb.YamlDotNet.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
 namespace GitObjectDb.YamlDotNet.Core;
 internal class NodeReferenceDeserializer : INodeDeserializer
 {
-    private readonly HashSet<IParser> _preventReEntrant = new();
+    private readonly AsyncLocal<HashSet<IParser>> _preventReEntrant = new();
+
+    private HashSet<IParser> PreventReEntrant => _preventReEntrant.Value ??= new();
 
     public bool Deserialize(IParser reader,
                             Type expectedType,
                             Func<IParser, Type, object?> nestedObjectDeserializer,
                             out object? value)
     {
-        if (!_preventReEntrant.Contains(reader) &&
+        var preventReEntrant = PreventReEntrant;
+        if (!preventReEntrant.Contains(reader) &&
             typeof(NodeReference).IsAssignableFrom(expectedType))
         {
-            _preventReEntrant.Add(reader);
+            preventReEntrant.Add(reader);
             try
             {
                 value = nestedObjectDeserializer.Invoke(reader, typeof(NodeReference)) ??
@@ -27,7 +31,7 @@ internal class NodeReferenceDeserializer : INodeDeserializer
             }
             finally
             {
-                _preventReEntrant.Remove(reader);
+                preventReEntrant.Remove(reader);
             }
         }
         else
