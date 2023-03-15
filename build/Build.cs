@@ -28,6 +28,9 @@ using Nuke.Common.ChangeLog;
 using System;
 using System.Threading.Tasks;
 using Nuke.Common.Tools.NerdbankGitVersioning;
+using Nuke.Common.Tools.Git;
+using Project = Nuke.Common.ProjectModel.Project;
+using System.Xml.Linq;
 
 [ShutdownDotNetAfterServerBuild]
 [GitHubActions(
@@ -191,8 +194,11 @@ class Build : NukeBuild
         .Triggers(PublishToGithub, PublishToNuGet)
         .Executes(() =>
         {
+            var modifiedFilesSinceLastTag = GitFileChangeLogTasks.ChangedFilesSinceLastTag();
+
             Solution.AllProjects
                 .Where(p => p.GetProperty<string>("PackageType") == "Dependency")
+                .Where(HasProjectBeenModifiedSinceLastTag)
                 .ForEach(project =>
                     DotNetPack(s => s
                         .SetProject(Solution.GetProject(project))
@@ -203,6 +209,12 @@ class Build : NukeBuild
                         .EnableNoBuild()
                         .EnableNoRestore()
                         .SetOutputDirectory(NugetDirectory)));
+
+            bool HasProjectBeenModifiedSinceLastTag(Project project)
+            {
+                var gitPath = project.Path.ToGitPath(RootDirectory);
+                return modifiedFilesSinceLastTag.Any(f => f.StartsWith(gitPath));
+            }
         });
 
     Target PublishToGithub => _ => _
