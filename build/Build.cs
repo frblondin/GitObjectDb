@@ -191,7 +191,7 @@ class Build : NukeBuild
     Target Pack => _ => _
         .DependsOn(EndSonarqube)
         .Produces(NugetDirectory / ArtifactsType)
-        .Triggers(PublishToGithub, PublishToNuGet)
+        .Triggers(PublishToGithub, PublishToNuGet, CreateRelease)
         .Executes(() =>
         {
             var modifiedFilesSinceLastTag = GitFileChangeLogTasks.ChangedFilesSinceLastTag();
@@ -218,8 +218,7 @@ class Build : NukeBuild
         });
 
     Target PublishToGithub => _ => _
-       .Description($"Publishing to Github for Development only.")
-       .Triggers(CreateRelease)
+       .Description($"Publishing to GitHub for Development only.")
        .Requires(() => Configuration.Equals(Configuration.Release))
        .OnlyWhenStatic(() => GitHubActions.Instance != null && string.IsNullOrEmpty(GitHubActions.Instance.HeadRef) && // Not from a fork
                              (Repository.IsOnDevelopBranch() || GitHubActions.Instance.IsPullRequest))
@@ -260,7 +259,7 @@ class Build : NukeBuild
     Target CreateRelease => _ => _
        .Description($"Creating release for the publishable version.")
        .Requires(() => Configuration.Equals(Configuration.Release))
-       .OnlyWhenStatic(() => GitHubActions.Instance != null && (Repository.IsOnMainOrMasterBranch() || Repository.IsOnReleaseBranch()))
+       .OnlyWhenStatic(() => GitHubActions.Instance != null && Repository.IsOnMainOrMasterBranch())
        .Executes(async () =>
        {
            GitHubTasks.GitHubClient = new GitHubClient(
