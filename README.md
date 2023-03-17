@@ -3,9 +3,12 @@
 | Name | Badge |
 | --- | --- |
 | GitObjectDb  | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb?includePreReleases=true)](https://www.nuget.org/packages/GitObjectDb/) |
-| GitObjectDb.Api | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb.Api?includePreReleases=true)](https://www.nuget.org/packages/GitObjectDb.Api/) |
+| GitObjectDb.SystemTextJson | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb.SystemTextJson?includePreReleases=true)](https://www.nuget.org/packages/GitObjectDb.SystemTextJson/) |
+| GitObjectDb.YamlDotNet | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb.YamlDotNet?includePreReleases=true)](https://www.nuget.org/packages/GitObjectDb.YamlDotNet/) |
 | GitObjectDb.Api.OData | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb.Api.OData?includePreReleases=true)](https://www.nuget.org/packages/GitObjectDb.Api.OData/) |
 | GitObjectDb.Api.GraphQL | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb.Api.GraphQL?includePreReleases=true)](https://www.nuget.org/packages/GitObjectDb.Api.GraphQL/) |
+| GitObjectDb.Api.ProtoBuf | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb.Api.ProtoBuf?includePreReleases=true)](https://www.nuget.org/packages/GitObjectDb.Api.ProtoBuf/) |
+| GitObjectDb.Api.ProtoBuf.Model | [![NuGet Badge](https://buildstats.info/nuget/GitObjectDb.Api.ProtoBuf.Model?includePreReleases=true)](https://www.nuget.org/packages/GitObjectDb.Api.ProtoBuf.Model/) |
 
 [![Build Status](https://github.com/frblondin/GitObjectDb/actions/workflows/CI.yml/badge.svg)](https://github.com/frblondin/GitObjectDb/actions/workflows/Release.yml)
 [![](https://sonarcloud.io/api/project_badges/measure?project=GitObjectDb&metric=alert_status)](https://sonarcloud.io/dashboard/index/GitObjectDb)
@@ -86,19 +89,7 @@ connection
     .Commit(new("Another message", signature, signature));
 ```
 
-## History
-
-```csharp
-var commits = sut.Commits
-    .QueryBy(new CommitFilter
-    {
-        IncludeReachableFrom = "main~10",
-        SortBy = CommitSortStrategies.Reverse | CommitSortStrategies.Topological,
-    })
-    .Take(5)
-```
-
-## Compare commits
+## Comparing commits
 
 ```csharp
 var comparison = connection.Compare("main~5", "main");
@@ -195,7 +186,7 @@ Node UpdateDeprecatedNode(Node old, Type targetType)
 
 # Documentation
 
-See [Documentation][Documentation].
+See [documentation][Documentation].
 
  [Documentation]: https://gitobjectdb.readthedocs.io
 
