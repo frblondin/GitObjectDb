@@ -194,7 +194,7 @@ class Build : NukeBuild
         .Triggers(PublishToGithub, PublishToNuGet, CreateRelease)
         .Executes(() =>
         {
-            var modifiedFilesSinceLastTag = GitFileChangeLogTasks.ChangedFilesSinceLastTag();
+            var modifiedFilesSinceLastTag = GitChangeLogTasks.ChangedFilesSinceLastTag();
 
             Solution.AllProjects
                 .Where(p => p.GetProperty<string>("PackageType") == "Dependency")
@@ -270,9 +270,8 @@ class Build : NukeBuild
            var (owner, name) = (Repository.GetGitHubOwner(), Repository.GetGitHubName());
 
            var releaseTag = GitVersion.NuGetPackageVersion;
-           var changeLogSectionEntries = ChangelogTasks.ExtractChangelogSectionNotes(ChangeLogFile);
-           var latestChangeLog = changeLogSectionEntries
-               .Aggregate((c, n) => c + Environment.NewLine + n);
+           var messages = GitChangeLogTasks.CommitsSinceLastTag();
+           var latestChangeLog = string.Join("\n", messages.Where(IsReleaseNoteCommit).Select(TurnIntoLog));
 
            var newRelease = new NewRelease(releaseTag)
            {
@@ -294,6 +293,12 @@ class Build : NukeBuild
            await GitHubTasks.GitHubClient
               .Repository.Release
               .Edit(owner, name, createdRelease.Id, new ReleaseUpdate { Draft = false });
+
+           static bool IsReleaseNoteCommit(string message) =>
+               !message.Contains("[skip release notes]", StringComparison.OrdinalIgnoreCase);
+
+           static string TurnIntoLog(string message) =>
+               $"- {Regex.Replace(message, @"\s*\[.*\]", string.Empty)}";
        });
 
 
