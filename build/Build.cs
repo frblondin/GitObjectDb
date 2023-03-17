@@ -169,6 +169,8 @@ class Build : NukeBuild
     Target Coverage => _ => _
         .DependsOn(Test)
         .AssuredAfterFailure()
+        .OnlyWhenStatic(() => IsLocalBuild)
+        .WhenSkipped(DependencyBehavior.Execute)
         .Executes(() =>
         {
             ReportGenerator(s => s
