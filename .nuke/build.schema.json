@@ -99,7 +99,7 @@
             "enum": [
               "Clean",
               "Compile",
-              "Coverage",
+              "CoverageReport",
               "CreateRelease",
               "EndSonarqube",
               "Pack",
@@ -135,7 +135,7 @@
             "enum": [
               "Clean",
               "Compile",
-              "Coverage",
+              "CoverageReport",
               "CreateRelease",
               "EndSonarqube",
               "Pack",
