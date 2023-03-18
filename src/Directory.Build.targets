@@ -2,6 +2,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- StyleCop Analyzers configuration -->
   <PropertyGroup>
+    <Company>GitObjectDb</Company>
     <CodeAnalysisRuleSet>$(SolutionDir)src\StyleCop.ruleset</CodeAnalysisRuleSet>
     <LangVersion>10.0</LangVersion>
     <PackageIcon>GitObjectDb.png</PackageIcon>
@@ -10,10 +11,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/frblondin/GitObjectDb.git</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <DebugType>full</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="StyleCop.Analyzers">
@@ -26,15 +24,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
   </ItemGroup>
-  <PropertyGroup Condition="$(MSBuildProjectName.Contains('.Tests'))">
-    <CollectCoverage>true</CollectCoverage>
-    <ExcludeByAttribute>GeneratedCodeAttribute</ExcludeByAttribute>
-    <Exclude>[*Tests]*,[Models.Software]*,[MetadataStorageConverter]*</Exclude>
-    <CoverletOutputFormat>opencover,json</CoverletOutputFormat>
-    <CoverletOutput>$(SolutionDir)/output/coverage/</CoverletOutput>
-    <MergeWith>$(SolutionDir)/output/coverage/coverage.json</MergeWith>
-    <UseSourceLink>true</UseSourceLink>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>

@@ -122,10 +122,11 @@ class Build : NukeBuild
                     .SetName(SonarqubeProjectKey)
                     .SetProjectKey(SonarqubeProjectKey)
                     .SetVersion(GitVersion.AssemblyVersion)
-                    .AddOpenCoverPaths(CoverageResult / "coverage.opencover.xml")
-                    .AddCoverageExclusions("**/*.Tests/**/*.*, **/GitObjectDb.Web/**/*.*, **/MetadataStorageConverter*/**/*.*, **/Models.Software/**/*.*")
-                    .AddSourceExclusions("**/MetadataStorageConverter*/**, **/Models.Software/**")
-                    .SetVSTestReports(TestDirectory);
+                    .EnableExcludeTestProjects()
+                    .AddVisualStudioCoveragePaths(CoverageResult / "coverage.xml")
+                    .AddCoverageExclusions("**/tests/**/*.*, **/samples/**/*.*")
+                    .AddSourceExclusions("**/tests/**, **/samples/**")
+                    .SetVSTestReports(TestDirectory / "*.trx");
 
                 return IsPR ?
                     settings.SetPullRequestBase(PrTargetBranch)
@@ -157,16 +158,25 @@ class Build : NukeBuild
         .DependsOn(Compile)
         .Executes(() =>
         {
-            DotNetTest(s => s
+            var args = new DotNetTestSettings()
                 .SetProjectFile(Solution)
                 .SetConfiguration(Configuration)
                 .EnableNoBuild()
                 .EnableNoRestore()
-                .SetLoggers("trx")                
-                .SetResultsDirectory(TestDirectory));
+                .SetLoggers("trx")
+                .SetProcessArgumentConfigurator(arguments => arguments
+                    .Add("-m:1")) // Make sure only one assembly gets tested at a time for coverage collect
+                .SetResultsDirectory(TestDirectory)
+                .GetProcessArguments()
+                .RenderForExecution();
+            var dotnetCoveragePath = ToolPathResolver.GetPackageExecutable("dotnet-coverage", "dotnet-coverage.dll");
+            using var process = StartProcess(
+                "dotnet",
+                @$"{dotnetCoveragePath} collect ""dotnet {args}"" -s {SourceDirectory / "CoverageConfig.xml"} -f xml -o ""{CoverageResult / "coverage.xml"}""");
+            process.AssertZeroExitCode();
         });
 
-    Target Coverage => _ => _
+    Target CoverageReport => _ => _
         .DependsOn(Test)
         .AssuredAfterFailure()
         .OnlyWhenStatic(() => IsLocalBuild)
@@ -175,12 +185,12 @@ class Build : NukeBuild
         {
             ReportGenerator(s => s
                 .SetFramework("net6.0")
-                .SetReports(CoverageResult / "coverage.opencover.xml")
+                .SetReports(CoverageResult / "coverage.xml")
                 .SetTargetDirectory(CoverageResult));
         });
 
     Target EndSonarqube => _ => _
-        .DependsOn(Coverage)
+        .DependsOn(CoverageReport)
         .OnlyWhenStatic(() => !string.IsNullOrWhiteSpace(SonarLogin))
         .WhenSkipped(DependencyBehavior.Execute)
         .Executes(() =>
@@ -206,8 +216,6 @@ class Build : NukeBuild
                         .SetProject(Solution.GetProject(project))
                         .SetConfiguration(Configuration)
                         .SetVersion(GitVersion.NuGetPackageVersion)
-                        .SetIncludeSource(true)
-                        .SetIncludeSymbols(true)
                         .EnableNoBuild()
                         .EnableNoRestore()
                         .SetOutputDirectory(NugetDirectory)));

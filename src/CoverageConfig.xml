@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+  <CodeCoverage>
+    <!-- Match attributes on any code element: -->
+    <Attributes>
+      <Exclude>
+        <!-- Don't forget "Attribute" at the end of the name -->
+        <Attribute>^System\.Diagnostics\.DebuggerHiddenAttribute$</Attribute>
+        <Attribute>^System\.Diagnostics\.DebuggerNonUserCodeAttribute$</Attribute>
+        <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
+        <Attribute>^System\.Diagnostics\.CodeAnalysis\.ExcludeFromCodeCoverageAttribute$</Attribute>
+      </Exclude>
+    </Attributes>
+
+    <!-- Match the company name property in the assembly: -->
+    <CompanyNames>
+      <Include>
+        <CompanyName>GitObjectDb</CompanyName>
+      </Include>
+    </CompanyNames>
+    
+    <!-- Match the path of the source files in which each method is defined: -->
+    <Sources>
+      <Exclude>
+        <Source>.*\\tests\\.*</Source>
+        <Source>.*\\samples\\.*</Source>
+      </Exclude>
+    </Sources>
+
+    <EnableStaticManagedInstrumentation>True</EnableStaticManagedInstrumentation>
+    <EnableDynamicManagedInstrumentation>True</EnableDynamicManagedInstrumentation>
+  </CodeCoverage>
+</Configuration>
