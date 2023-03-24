@@ -29,7 +29,7 @@ public class CommitCommandTests
         var comparer = fixture.Create<Comparer>();
         var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
         var sut = fixture.Create<ICommitCommand>();
-        var connection = fixture.Create<IConnectionInternal>();
+        using var connection = fixture.Create<IConnectionInternal>();
 
         // Act
         var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
@@ -54,7 +54,7 @@ public class CommitCommandTests
         var comparer = fixture.Create<Comparer>();
         var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
         var sut = fixture.Create<ICommitCommand>();
-        var connection = fixture.Create<IConnectionInternal>();
+        using var connection = fixture.Create<IConnectionInternal>();
 
         // Act
         var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
@@ -79,7 +79,7 @@ public class CommitCommandTests
         var comparer = fixture.Create<Comparer>();
         var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
         var sut = fixture.Create<ICommitCommand>();
-        var connection = fixture.Create<IConnectionInternal>();
+        using var connection = fixture.Create<IConnectionInternal>();
         var resource = new Resource(table, "Some/Folder", "File.txt", new Resource.Data(fileContent));
 
         // Act
@@ -107,7 +107,7 @@ public class CommitCommandTests
         var comparer = fixture.Create<Comparer>();
         var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
         var sut = fixture.Create<ICommitCommand>();
-        var connection = fixture.Create<IConnectionInternal>();
+        using var connection = fixture.Create<IConnectionInternal>();
 
         // Act
         var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
@@ -130,7 +130,7 @@ public class CommitCommandTests
         var comparer = fixture.Create<Comparer>();
         var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
         var sut = fixture.Create<ICommitCommand>();
-        var connection = fixture.Create<IConnectionInternal>();
+        using var connection = fixture.Create<IConnectionInternal>();
 
         // Act
         var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
@@ -156,7 +156,7 @@ public class CommitCommandTests
         var comparer = fixture.Create<Comparer>();
         var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
         var sut = fixture.Create<ICommitCommand>();
-        var connection = fixture.Create<IConnectionInternal>();
+        using var connection = fixture.Create<IConnectionInternal>();
 
         // Act
         var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
@@ -174,7 +174,7 @@ public class CommitCommandTests
         var comparer = fixture.Create<Comparer>();
         var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
         var sut = fixture.Create<ICommitCommand>();
-        var connection = fixture.Create<IConnectionInternal>();
+        using var connection = fixture.Create<IConnectionInternal>();
 
         // Act
         var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
@@ -215,6 +215,7 @@ public class CommitCommandTests
             A.CallTo(() => connection.Model).Returns(fixture.Create<IDataModel>());
             A.CallTo(() => connection.Serializer).Returns(fixture.Create<INodeSerializer>());
             A.CallTo(() => connection.Cache).Returns(fixture.Create<IMemoryCache>());
+            A.CallTo(() => connection.Dispose()).DoesNothing();
             fixture.Inject(connection);
 
             var validation = A.Fake<ITreeValidation>(x => x.Strict());
