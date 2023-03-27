@@ -4,7 +4,7 @@ namespace GitObjectDb;
 public enum CommitCommandType
 {
     /// <summary>Choose automatically the most appropriate method.</summary>
-    Auto = 0,
+    Auto = 1,
 
     /// <summary>
     /// Use git <see href="fast-import">https://git-scm.com/docs/git-fast-import</see> method
