@@ -181,6 +181,8 @@ public class IndexCommandTests
             Assert.That(changes.Modified.OfType<Change.NodeChange>().Single().Differences, Has.Count.EqualTo(1));
             Assert.That(changes.Added, Is.Empty);
             Assert.That(changes.Deleted, Is.Empty);
+            Assert.That(new FileInfo(((Internal.Index)index).IndexStoragePath),
+                        Has.Property(nameof(FileInfo.Exists)).False);
         });
     }
 
@@ -263,7 +265,8 @@ public class IndexCommandTests
     {
         // Arrange
         using var connection = fixture.Create<IConnectionInternal>();
-        var index = connection.GetIndex("main", c => c.CreateOrUpdate(application with { Description = string.Empty }));
+        var index = connection.GetIndex("main",
+                                        c => c.CreateOrUpdate(application with { Description = string.Empty }));
         var indexVersion = index.Version;
 
         // Act

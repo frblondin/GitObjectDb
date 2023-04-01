@@ -57,7 +57,10 @@ internal partial class Index : IIndex
     {
         try
         {
-            Realm.DeleteRealm(new RealmConfiguration(IndexStoragePath));
+            if (_realm is null)
+            {
+                Realm.DeleteRealm(new RealmConfiguration(IndexStoragePath));
+            }
         }
         catch
         {

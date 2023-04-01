@@ -16,7 +16,9 @@ internal partial class Index
     {
         var predecessor = GetAndVerifyBranchTip();
         var parents = GetParents(description, predecessor);
-        return DoRealmAction(realm => Commit(description, realm, predecessor, parents));
+        var result = DoRealmAction(realm => Commit(description, realm, predecessor, parents));
+        Reset();
+        return result;
     }
 
     private Commit Commit(CommitDescription description, Realm realm, Commit predecessor, List<Commit> parents)
@@ -28,7 +30,6 @@ internal partial class Index
                                            BranchName,
                                            parents,
                                            description);
-        Reset();
         return result;
     }
 
