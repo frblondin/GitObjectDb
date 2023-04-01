@@ -1,12 +1,11 @@
 using System;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace GitObjectDb.YamlDotNet;
 
-/// <summary>
-/// type extensions.
-/// </summary>
+/// <summary>Type extensions.</summary>
+[ExcludeFromCodeCoverage]
 public static class TypeExtensions
 {
     /// <summary>

@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace GitObjectDb.Tools;
 
 /// <summary>Provides extension methods for <see cref="Type"/> type.</summary>
+[ExcludeFromCodeCoverage]
 internal static class TypeExtensions
 {
     /// <summary>Gets whether the type is a <see cref="Node"/> reference.</summary>

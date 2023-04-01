@@ -30,34 +30,33 @@ public sealed class DataProvider
     /// the <typeparamref name="TNodeDto"/> type.
     /// </summary>
     /// <typeparam name="TNode">The type of node to be queried.</typeparam>
-    /// <typeparam name="TNodeDto">The type of the data transfer object of the result collection.</typeparam>
+    /// <param name="description">The data transfer type description.</param>
     /// <param name="committish">The optional committish (head tip is used otherwise).</param>
-    /// <param name="parentPath">The optional node parent path when retriving node children.</param>
+    /// <param name="parentPath">The optional node parent path when retrieving node children.</param>
     /// <param name="isRecursive">Gets whether all nested nodes should be returned.</param>
     /// <returns>The item being found, if any.</returns>
-    public IEnumerable<TNodeDto> GetNodes<TNode, TNodeDto>(string committish,
-                                                           string? parentPath = null,
-                                                           bool isRecursive = false)
+    internal IEnumerable<NodeDto> GetNodes<TNode>(DataTransferTypeDescription description,
+                                                string committish,
+                                                string? parentPath = null,
+                                                bool isRecursive = false)
         where TNode : Node
-        where TNodeDto : NodeDto
     {
         var parent = parentPath != null ?
             QueryAccessor.Lookup<Node>(committish, DataPath.Parse(parentPath)) :
             null;
         var result = QueryAccessor.GetNodes<TNode>(committish, parent, isRecursive);
 
-        return MapItemsCached<TNode, TNodeDto>((IEnumerable<TNode>?)result, result.CommitId)!;
+        return MapItemsCached((IEnumerable<TNode>?)result, description, result.CommitId)!;
     }
 
     /// <summary>Executes a mapping from the source to a new destination object.</summary>
     /// <typeparam name="TNode">Source type to use.</typeparam>
-    /// <typeparam name="TNodeDto">Destination type to create.</typeparam>
     /// <param name="source">Source object to map from.</param>
+    /// <param name="description">The data transfer type description.</param>
     /// <param name="commitId">Commit containing the object.</param>
     /// <returns>Mapped destination object.</returns>
-    public TNodeDto? MapCached<TNode, TNodeDto>(TNode? source, ObjectId commitId)
+    public NodeDto? MapCached<TNode>(TNode? source, DataTransferTypeDescription description, ObjectId commitId)
         where TNode : Node
-        where TNodeDto : NodeDto
     {
         if (source is null)
         {
@@ -68,7 +67,7 @@ public sealed class DataProvider
         {
             UpdateExpiration(cacheEntry);
 
-            return Map<TNode, TNodeDto>(source, commitId);
+            return Map(source, description, commitId);
         });
     }
 
@@ -78,9 +77,8 @@ public sealed class DataProvider
         return (source.Path!, commitId);
     }
 
-    private TNodeDto? Map<TNode, TNodeDto>(TNode? source, ObjectId commitId)
+    private NodeDto? Map<TNode>(TNode? source, DataTransferTypeDescription description, ObjectId commitId)
         where TNode : Node
-        where TNodeDto : NodeDto
     {
         if (source is null)
         {
@@ -88,8 +86,10 @@ public sealed class DataProvider
         }
 
 #pragma warning disable CS8974 // Converting method group to non-delegate type
-        return _mapper.Map<TNode, TNodeDto>(
+        return (NodeDto?)_mapper.Map(
             source,
+            typeof(TNode),
+            description.DtoType,
             opt =>
             {
                 opt.Items[AutoMapperProfile.CommitId] = commitId;
@@ -102,15 +102,14 @@ public sealed class DataProvider
 
     /// <summary>Executes a mapping from the source to a new destination object.</summary>
     /// <typeparam name="TNode">Source type to use.</typeparam>
-    /// <typeparam name="TNodeDto">Destination type to create.</typeparam>
     /// <param name="source">Source object to map from.</param>
+    /// <param name="description">The data transfer type description.</param>
     /// <param name="commitId">Commit containing the object.</param>
     /// <returns>Mapped destination object.</returns>
-    public IEnumerable<TNodeDto>? MapItemsCached<TNode, TNodeDto>(IEnumerable<TNode>? source, ObjectId commitId)
+    public IEnumerable<NodeDto>? MapItemsCached<TNode>(IEnumerable<TNode>? source, DataTransferTypeDescription description, ObjectId commitId)
         where TNode : Node
-        where TNodeDto : NodeDto
     {
-        return source?.Select(i => Map<TNode, TNodeDto>(i, commitId)!);
+        return source?.Select(i => MapCached(i, description, commitId)!);
     }
 
     private static void UpdateExpiration(ICacheEntry entry)

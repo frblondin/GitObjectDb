@@ -1,4 +1,5 @@
 using Nuke.Common;
+using Nuke.Common.ChangeLog;
 using Nuke.Common.CI;
 using Nuke.Common.CI.AzurePipelines;
 using Nuke.Common.CI.GitHubActions;
@@ -8,29 +9,28 @@ using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
+using Nuke.Common.Tools.Git;
+using Nuke.Common.Tools.GitHub;
+using Nuke.Common.Tools.GitVersion;
+using Nuke.Common.Tools.NerdbankGitVersioning;
 using Nuke.Common.Tools.ReportGenerator;
 using Nuke.Common.Tools.SonarScanner;
 using Nuke.Common.Utilities.Collections;
+using Octokit;
+using System;
+using System.Diagnostics;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 using static Nuke.Common.EnvironmentInfo;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tooling.ProcessTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.Tools.ReportGenerator.ReportGeneratorTasks;
-using System.Linq;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
 using static System.Net.WebRequestMethods;
-using Nuke.Common.Tools.GitHub;
-using Octokit;
-using Nuke.Common.Tools.GitVersion;
-using Nuke.Common.ChangeLog;
-using System;
-using System.Threading.Tasks;
-using Nuke.Common.Tools.NerdbankGitVersioning;
-using Nuke.Common.Tools.Git;
 using Project = Nuke.Common.ProjectModel.Project;
-using System.Xml.Linq;
 
 [ShutdownDotNetAfterServerBuild]
 [GitHubActions(

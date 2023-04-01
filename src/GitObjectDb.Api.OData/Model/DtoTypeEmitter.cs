@@ -61,7 +61,7 @@ internal sealed class DtoTypeEmitter
 
     private (NodeTypeDescription Type, TypeBuilder Dto) EmitDto(NodeTypeDescription type)
     {
-        var result = ModuleBuilder.DefineType($"{GetTypeName(type.Type)}DTO",
+        var result = ModuleBuilder.DefineType($"{typeof(DtoTypeEmitter).Namespace}.{GetTypeName(type.Type)}DTO",
                                               TypeAttributes.Public |
                                               TypeAttributes.Class |
                                               TypeAttributes.AutoClass |
