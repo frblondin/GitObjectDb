@@ -38,7 +38,7 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
                         where data is not null
                         let colon = data.IndexOf(':')
                         where DataPath.TryParse(data.Substring(colon + 1), out path)
-                        let item = new Lazy<TreeItem>(() => _loader.Execute(queryAccessor, new LoadItem.Parameters(parms.Tree, index: null, path: path!))!)
+                        let item = new Lazy<TreeItem>(() => _loader.Execute(queryAccessor, new LoadItem.Parameters(parms.Tree, Index: null, path!))!)
                         select (path, item);
         return lazyItems
             .AsParallel()
@@ -84,37 +84,11 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
         value is not null &&
         value.ToString().IndexOf(pattern, comparison) != -1;
 
-    internal record Parameters
-    {
-        public Parameters(IConnection connection,
-                          Tree tree,
-                          string pattern,
-                          DataPath? parentPath,
-                          string committish,
-                          bool ignoreCase,
-                          bool recurseSubModules)
-        {
-            Connection = connection;
-            Tree = tree;
-            Pattern = pattern;
-            ParentPath = parentPath;
-            Committish = committish;
-            IgnoreCase = ignoreCase;
-            RecurseSubModules = recurseSubModules;
-        }
-
-        public IConnection Connection { get; }
-
-        public Tree Tree { get; }
-
-        public string Pattern { get; }
-
-        public DataPath? ParentPath { get; }
-
-        public string Committish { get; }
-
-        public bool IgnoreCase { get; }
-
-        public bool RecurseSubModules { get; }
-    }
+    internal record struct Parameters(IConnection Connection,
+                                      Tree Tree,
+                                      string Pattern,
+                                      DataPath? ParentPath,
+                                      string Committish,
+                                      bool IgnoreCase,
+                                      bool RecurseSubModules);
 }

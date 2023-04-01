@@ -64,7 +64,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
 
     private Lazy<TreeItem> LoadItem(IQueryAccessor queryAccessor, Parameters parms) =>
         new(() => _loader.Execute(queryAccessor,
-                                  new LoadItem.Parameters(parms.Tree, parms.Index, path: parms.ParentPath!))!);
+                                  new LoadItem.Parameters(parms.Tree, parms.Index, parms.ParentPath!))!);
 
     private IEnumerable<(DataPath Path, Lazy<Resource> Resource)> GetResources(IQueryAccessor queryAccessor,
                                                                                Node node,
@@ -133,33 +133,10 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
         }
     }
 
-    internal record Parameters
-    {
-        public Parameters(Tree tree,
-                          Tree relativeTree,
-                          IIndex? index,
-                          Type? type,
-                          DataPath? parentPath,
-                          bool isRecursive)
-        {
-            Tree = tree;
-            RelativeTree = relativeTree;
-            Index = index;
-            Type = type;
-            ParentPath = parentPath;
-            IsRecursive = isRecursive;
-        }
-
-        public Tree Tree { get; }
-
-        public Tree RelativeTree { get; init; }
-
-        public IIndex? Index { get; }
-
-        public Type? Type { get; }
-
-        public DataPath? ParentPath { get; init; }
-
-        public bool IsRecursive { get; }
-    }
+    internal record struct Parameters(Tree Tree,
+                                      Tree RelativeTree,
+                                      IIndex? Index,
+                                      Type? Type,
+                                      DataPath? ParentPath,
+                                      bool IsRecursive);
 }

@@ -69,21 +69,5 @@ internal class QueryResources : IQuery<QueryResources.Parameters, IEnumerable<(D
         }
     }
 
-    internal class Parameters
-    {
-        public Parameters(Tree tree,
-                          Tree relativeTree,
-                          Node node)
-        {
-            Tree = tree;
-            RelativeTree = relativeTree;
-            Node = node;
-        }
-
-        public Tree Tree { get; }
-
-        public Tree RelativeTree { get; }
-
-        public Node Node { get; }
-    }
+    internal record struct Parameters(Tree Tree, Tree RelativeTree, Node Node);
 }
