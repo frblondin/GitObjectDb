@@ -20,7 +20,7 @@ internal sealed partial class Connection
         var (commit, _) = TryGetTree(committish, path);
         return commit.Tree[path.FilePath] is null ?
             default :
-            (TItem)_loader.Execute(this, new(commit.Tree, index: null, path))!;
+            (TItem)_loader.Execute(this, new(commit.Tree, Index: null, path))!;
     }
 
     public TItem? Lookup<TItem>(string committish,
@@ -30,7 +30,7 @@ internal sealed partial class Connection
         var (commit, path) = TryGetTree(committish, id);
         return path is null ?
             default :
-            (TItem)_loader.Execute(this, new(commit.Tree, index: null, path))!;
+            (TItem)_loader.Execute(this, new(commit.Tree, Index: null, path))!;
     }
 
     public ICommitEnumerable<TItem> GetItems<TItem>(string committish,
@@ -48,7 +48,7 @@ internal sealed partial class Connection
         return _queryItems
             .Execute(this, new(commit.Tree,
                                relativeTree,
-                               index: null,
+                               Index: null,
                                typeof(TItem),
                                parent?.Path,
                                isRecursive))
@@ -90,7 +90,7 @@ internal sealed partial class Connection
         return _queryItems.Execute(this,
                                    new(commit.Tree,
                                        relativeTree,
-                                       index: null,
+                                       Index: null,
                                        typeof(TItem),
                                        parentPath,
                                        isRecursive)).Select(i => i.Path);

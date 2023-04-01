@@ -38,13 +38,5 @@ internal class QuerySubModules : IQuery<QuerySubModules.Parameters, Commit>
         return repository;
     }
 
-    internal class Parameters
-    {
-        public Parameters(Node node)
-        {
-            Node = node;
-        }
-
-        public Node Node { get; }
-    }
+    internal record struct Parameters(Node Node);
 }

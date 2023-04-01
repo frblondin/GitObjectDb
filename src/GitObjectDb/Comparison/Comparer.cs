@@ -74,7 +74,7 @@ internal class Comparer : IComparer, IComparerInternal
         TreeItem? CreateNode(Tree tree, string path) =>
             _nodeLoader.Execute(
                 queryAccessor,
-                new(tree, index: null, DataPath.Parse(path)));
+                new(tree, Index: null, DataPath.Parse(path)));
     }
 
     internal static ComparisonResult CompareInternal(object? expectedObject,

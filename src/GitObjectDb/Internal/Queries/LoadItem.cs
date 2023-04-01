@@ -76,53 +76,9 @@ internal class LoadItem : IQuery<LoadItem.Parameters, TreeItem?>
     private static TreeItem LoadResource(Parameters parms, Resource.Data data) =>
         new Resource(parms.Path, data);
 
-    internal record Parameters
-    {
-        public Parameters(Tree tree, IIndex? index, DataPath path)
-        {
-            Tree = tree;
-            Index = index;
-            Path = path;
-        }
+    internal record struct Parameters(Tree Tree, IIndex? Index, DataPath Path);
 
-        public Tree Tree { get; }
+    private record struct DataLoadFromTreeParameters(DataPath Path, ObjectId TreeId, Guid? IndexVersion);
 
-        public IIndex? Index { get; }
-
-        public DataPath Path { get; init; }
-    }
-
-    private record DataLoadFromTreeParameters
-    {
-        public DataLoadFromTreeParameters(DataPath path, ObjectId treeId, Guid? indexVersion)
-        {
-            Path = path;
-            TreeId = treeId;
-            IndexVersion = indexVersion;
-        }
-
-        /// <summary>Gets the path of loaded item.</summary>
-        public DataPath Path { get; }
-
-        /// <summary>Gets the id of the tree from which the blob is loaded.</summary>
-        public ObjectId TreeId { get; }
-
-        /// <summary>Gets the unique version of index to guarantee proper cache id management.</summary>
-        public Guid? IndexVersion { get; }
-    }
-
-    private record DataLoadFromIndexParameters
-    {
-        public DataLoadFromIndexParameters(DataPath path, Guid guid)
-        {
-            Path = path;
-            Guid = guid;
-        }
-
-        /// <summary>Gets the path of loaded item.</summary>
-        public DataPath Path { get; }
-
-        /// <summary>Gets the id of the tree from which the blob is loaded.</summary>
-        public Guid Guid { get; }
-    }
+    private record struct DataLoadFromIndexParameters(DataPath Path, Guid Guid);
 }
