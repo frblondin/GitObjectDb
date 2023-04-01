@@ -1,6 +1,7 @@
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
+using LibGit2Sharp;
 using Models.Software;
 using NUnit.Framework;
 using System.Linq;
@@ -117,5 +118,23 @@ public class QueryNodesTests : DisposeArguments
 
         // Assert
         Assert.That(resolvedTable.Description, Is.EqualTo(newDescription));
+    }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void GetNodeHistory(IConnection connection, Field field, string newDescription, CommitDescription commitDescription)
+    {
+        // Arrange
+        var index = connection.GetIndex("main",
+            c => c.CreateOrUpdate(field with { Description = newDescription }))
+            .Commit(commitDescription);
+
+        // Act
+        var commits = connection.GetCommits("main", field).ToList();
+
+        // Assert
+        Assert.That(commits, Has.Count.EqualTo(2));
+        Assert.That(commits, Has.One.Items.Matches<LogEntry>(
+            c => c.Commit.Message.Equals(commitDescription.Message, System.StringComparison.Ordinal)));
     }
 }
