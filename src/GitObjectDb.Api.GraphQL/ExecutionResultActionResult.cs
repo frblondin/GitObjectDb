@@ -7,21 +7,21 @@ namespace GitObjectDb.Api.GraphQL;
 
 public class ExecutionResultActionResult : IActionResult
 {
-    private readonly ExecutionResult _executionResult;
-
     public ExecutionResultActionResult(ExecutionResult executionResult)
     {
-        _executionResult = executionResult;
+        ExecutionResult = executionResult;
     }
+
+    public ExecutionResult ExecutionResult { get; }
 
     public async Task ExecuteResultAsync(ActionContext context)
     {
         var writer = context.HttpContext.RequestServices.GetRequiredService<IGraphQLSerializer>();
         var response = context.HttpContext.Response;
         response.ContentType = "application/json";
-        response.StatusCode = _executionResult.Data == null && _executionResult.Errors?.Any() == true ?
+        response.StatusCode = ExecutionResult.Data == null && ExecutionResult.Errors?.Any() == true ?
             (int)HttpStatusCode.BadRequest :
             (int)HttpStatusCode.OK;
-        await writer.WriteAsync(response.Body, _executionResult, context.HttpContext.RequestAborted);
+        await writer.WriteAsync(response.Body, ExecutionResult, context.HttpContext.RequestAborted);
     }
 }

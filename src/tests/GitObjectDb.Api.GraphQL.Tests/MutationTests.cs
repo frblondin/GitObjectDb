@@ -1,7 +1,9 @@
 using GitObjectDb.Api.GraphQL.Tests.Assets;
 using Models.Organization;
+using Namotion.Reflection;
 using NUnit.Framework;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace GitObjectDb.Api.GraphQL.Assets;
@@ -99,5 +101,34 @@ public class MutationTests : QueryTestBase
         var type = Connection.GetNodes<OrganizationType>("main").Single();
         var organization = Connection.GetNodes<Organization>("main").Single();
         Assert.That(organization, Has.Property(nameof(Organization.Type)).SameAs(type));
+    }
+
+    [Test]
+    public async Task DeleteOneNodeMutationAsync()
+    {
+        // Arrange
+        var generator = new DataGenerator(Connection, 20, 5);
+        generator.CreateInitData();
+        var node = Connection.GetNodes<Organization>("main").First();
+
+        // Act
+        var result = await AssertQuerySuccessAsync(@$"
+            mutation {{
+              checkout(branch: ""main"")
+              deleteOrg: deleteNode(path: ""{node.Path}"")
+              deleteCommit: commit(
+                message: ""Delete"",
+                author: ""Me"",
+                email: ""me@myself.com""
+              )
+            }}");
+        var writtenResult = JsonDocument.Parse(Serializer.Serialize(result)).RootElement;
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(Connection.Repository.Head.Commits.ToList(), Has.Exactly(2).Items);
+            Assert.That(writtenResult.GetFromPath<string>("data.deleteOrg"), Is.EqualTo(node.Path!.FilePath));
+        });
     }
 }

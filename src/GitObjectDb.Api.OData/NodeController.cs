@@ -9,18 +9,23 @@ public class NodeController<TNode, TNodeDTO> : ODataController
     where TNode : Node
     where TNodeDTO : NodeDto
 {
-    private readonly DataProvider _dataProvider;
+    private readonly DataTransferTypeDescription _description;
 
-    protected NodeController(DataProvider dataProvider)
+    internal NodeController(DataProvider dataProvider, DtoTypeEmitter typeEmitter)
     {
-        _dataProvider = dataProvider;
+        DataProvider = dataProvider;
+        _description = typeEmitter.TypeDescriptions.Single(d => d.NodeType.Type == typeof(TNode));
     }
+
+    public DataProvider DataProvider { get; }
 
     [EnableQuery]
     public IEnumerable<TNodeDTO> Get([FromODataUri] string committish,
                                      [FromODataUri] string? parentPath = null,
                                      [FromODataUri] bool isRecursive = false)
     {
-        return _dataProvider.GetNodes<TNode, TNodeDTO>(committish, parentPath, isRecursive);
+        return DataProvider
+            .GetNodes<TNode>(_description, committish, parentPath, isRecursive)
+            .Cast<TNodeDTO>();
     }
 }

@@ -6,16 +6,18 @@ namespace GitObjectDb.Api.OData.Model;
 
 internal class GeneratedTypesApplicationPart : ApplicationPart, IApplicationPartTypeProvider
 {
-    private readonly DtoTypeEmitter _emitter;
+    internal const string DynamicEmitterAssemblyName = $"{nameof(GeneratedTypesApplicationPart)}d3b40e9d-7662-4466-96cb-c4e3e1f4b339";
 
     public GeneratedTypesApplicationPart(DtoTypeEmitter emitter)
     {
-        var assemblyName = new AssemblyName($"{nameof(GeneratedTypesApplicationPart)}{Guid.NewGuid()}");
+        var assemblyName = new AssemblyName(DynamicEmitterAssemblyName);
         var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-        ModuleBuilder = assemblyBuilder.DefineDynamicModule(nameof(DtoTypeEmitter));
-        _emitter = emitter;
+        ModuleBuilder = assemblyBuilder.DefineDynamicModule(DynamicEmitterAssemblyName);
+        Emitter = emitter;
         Types = EmitControllers().ToList();
     }
+
+    internal DtoTypeEmitter Emitter { get; }
 
     public override string Name => nameof(GeneratedTypesApplicationPart);
 
@@ -25,9 +27,9 @@ internal class GeneratedTypesApplicationPart : ApplicationPart, IApplicationPart
 
     public ModuleBuilder ModuleBuilder { get; }
 
-    public IEnumerable<TypeInfo> EmitControllers()
+    private IEnumerable<TypeInfo> EmitControllers()
     {
-        foreach (var description in _emitter.TypeDescriptions)
+        foreach (var description in Emitter.TypeDescriptions)
         {
             var controllerTypeBuilder = EmitController(description);
             yield return controllerTypeBuilder.CreateTypeInfo()!;

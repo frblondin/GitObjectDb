@@ -41,7 +41,7 @@ public class NodeController : Controller
     }
 
     [HttpPost("graphql")]
-    public async Task<IActionResult> GraphQL()
+    public async Task<IActionResult> GraphQLAsync()
     {
         if (HttpContext.Request.HasFormContentType)
         {
@@ -73,7 +73,7 @@ public class NodeController : Controller
         Extensions = _serializer.Deserialize<Inputs>(extensions == string.Empty ? null : extensions),
     };
 
-    private async Task<IActionResult> ExecuteGraphQLRequestAsync(GraphQLRequest? request)
+    public async Task<IActionResult> ExecuteGraphQLRequestAsync(GraphQLRequest? request)
     {
         try
         {

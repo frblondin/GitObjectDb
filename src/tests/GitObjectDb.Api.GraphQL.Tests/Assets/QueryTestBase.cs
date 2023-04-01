@@ -2,22 +2,21 @@ using GitObjectDb.Api.GraphQL.Assets;
 using GitObjectDb.Api.GraphQL.GraphModel;
 using GitObjectDb.Tests.Assets.Tools;
 using GraphQL;
-using GraphQL.Conversion;
 using GraphQL.Execution;
 using GraphQL.SystemTextJson;
+using GraphQL.Transport;
 using GraphQL.Types;
 using GraphQL.Validation;
 using GraphQLParser.Exceptions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Models.Organization;
 using Models.Organization.Converters;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace GitObjectDb.Api.GraphQL.Tests.Assets;
@@ -39,6 +38,7 @@ public class QueryTestBase<TDocumentBuilder>
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping, // less strict about what is encoded into \uXXXX
     });
 
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     public IServiceProvider ServiceProvider { get; private set; }
 
     public IDocumentExecuter Executer { get; private set; }
@@ -46,6 +46,7 @@ public class QueryTestBase<TDocumentBuilder>
     public IConnection Connection { get; private set; }
 
     public GitObjectDbSchema Schema { get; private set; }
+#pragma warning restore CS8618
 
     [SetUp]
     public void Setup()
@@ -63,6 +64,7 @@ public class QueryTestBase<TDocumentBuilder>
             })
             .AddGraphQL(builder => builder.AddSystemTextJson())
             .AddGitObjectDbConnection(UniqueId.CreateNew().ToString())
+            .AddTransient<NodeController>()
             .BuildServiceProvider();
         Schema = (GitObjectDbSchema)ServiceProvider.GetRequiredService<ISchema>();
         Connection = ServiceProvider.GetRequiredService<IConnection>();
@@ -89,56 +91,34 @@ public class QueryTestBase<TDocumentBuilder>
     protected async Task<ExecutionResult> AssertQuerySuccessAsync(
         string query,
         string? expected = null,
-        Inputs? variables = null,
-        object? root = null,
-        IDictionary<string, object?>? userContext = null,
-        IEnumerable<IValidationRule>? rules = null,
-        INameConverter? nameConverter = null,
-        CancellationToken cancellationToken = default)
+        Inputs? variables = null)
     {
         var queryResult = expected is not null ? CreateQueryResult(expected) : null;
         return await AssertQueryAsync(query,
                                       queryResult,
-                                      variables,
-                                      root,
-                                      userContext,
-                                      rules,
-                                      null,
-                                      nameConverter,
-                                      cancellationToken);
+                                      variables);
     }
 
     protected async Task<ExecutionResult> AssertQueryAsync(
         string query,
         object? expectedExecutionResultOrJson,
-        Inputs? variables = null,
-        object? root = null,
-        IDictionary<string, object?>? userContext = null,
-        IEnumerable<IValidationRule>? rules = null,
-        Func<UnhandledExceptionContext, Task>? unhandledExceptionDelegate = null,
-        INameConverter? nameConverter = null,
-        CancellationToken? cancellationToken = default)
+        Inputs? variables = null)
     {
-        var schema = Schema;
-        schema.NameConverter = nameConverter ?? CamelCaseNameConverter.Instance;
-        var runResult = await Executer.ExecuteAsync(options =>
+        var controller = ServiceProvider.GetRequiredService<NodeController>();
+        controller.ControllerContext = new()
         {
-            options.Schema = schema;
-            options.Query = query;
-            options.Root = root;
-            options.Variables = variables;
-            options.UserContext = userContext ?? new Dictionary<string, object?>();
-            options.CancellationToken = cancellationToken ?? CancellationToken.None;
-            options.ValidationRules = rules;
-            options.UnhandledExceptionDelegate = unhandledExceptionDelegate ?? (_ => Task.CompletedTask);
-            options.UserContext = new Dictionary<string, object?>();
-            options.RequestServices = ServiceProvider;
-            options.UnhandledExceptionDelegate = context =>
+            HttpContext = new DefaultHttpContext
             {
-                context.ErrorMessage = context.Exception.Message;
-                return Task.CompletedTask;
-            };
-        }).ConfigureAwait(false);
+                RequestServices = ServiceProvider,
+            },
+        };
+        controller.ControllerContext.HttpContext.Request.Form = new FormCollection(new()
+        {
+            ["query"] = query,
+            ["variables"] = Serializer.Serialize(variables),
+        });
+        var request = await controller.GraphQLAsync().ConfigureAwait(false);
+        var runResult = ((ExecutionResultActionResult)request).ExecutionResult;
 
         if (expectedExecutionResultOrJson is not null)
         {

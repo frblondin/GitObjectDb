@@ -1,11 +1,16 @@
 using AutoFixture;
 using AutoFixture.Kernel;
+using Bogus;
+using Bogus.DataSets;
 using GitObjectDb.Tests.Assets.Loggers;
+using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Models.Software;
+using Realms.Sync;
 using System;
 using YamlDotNet.Serialization.NamingConventions;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace GitObjectDb.Tests.Assets;
 
@@ -26,12 +31,26 @@ public class DefaultServiceProviderCustomization : ICustomization, ISpecimenBuil
     public void Customize(IFixture fixture)
     {
         fixture.Register(UniqueId.CreateNew);
+        var signatureProvider = new Faker<Signature>()
+            .CustomInstantiator(f => new(
+                f.Internet.UserName(),
+                f.Internet.Email(),
+                DateTimeOffset.Now));
+        fixture.Register(CreateSignature);
+        fixture.Register(CreateCommitDescription);
         fixture.Freeze<IServiceCollection>(c => c
             .FromFactory(() => new ServiceCollection())
             .Do(AddServices));
         IServiceProvider singleton = null;
         fixture.Register(() => singleton ??= fixture.Create<IServiceCollection>().BuildServiceProvider());
         fixture.Customizations.Add(this);
+
+        Signature CreateSignature() => signatureProvider.Generate();
+        CommitDescription CreateCommitDescription()
+        {
+            var signature = CreateSignature();
+            return new(new Lorem().Sentence(), signature, signature);
+        }
     }
 
     private void AddServices(IServiceCollection services)
