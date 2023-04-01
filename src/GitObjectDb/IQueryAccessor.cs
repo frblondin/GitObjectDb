@@ -85,10 +85,10 @@ public interface IQueryAccessor
     /// <param name="recurseSubModules">Recursively search in each submodule that is active and checked out in the repository.</param>
     /// <returns>The items being found, if any.</returns>
     public IEnumerable<TreeItem> Search(string committish,
-                                         string pattern,
-                                         DataPath? parentPath = null,
-                                         bool ignoreCase = false,
-                                         bool recurseSubModules = false);
+                                        string pattern,
+                                        DataPath? parentPath = null,
+                                        bool ignoreCase = false,
+                                        bool recurseSubModules = false);
 
     /// <summary>Gets the resources associated to the node.</summary>
     /// <param name="committish">The committish.</param>
@@ -98,8 +98,8 @@ public interface IQueryAccessor
                                                     Node node);
 
     /// <summary>Gets the history of a node.</summary>
-    /// <param name="branch">The branch to get log from.</param>
-    /// <param name="node">The node whose commits should be returned.</param>
-    /// <returns>The node history.</returns>
-    public IEnumerable<LogEntry> GetCommits(string branch, Node node);
+    /// <param name="committish">The committish.</param>
+    /// <param name="item">The item whose commits should be returned.</param>
+    /// <returns>The item history.</returns>
+    public IEnumerable<LogEntry> GetCommits(string committish, TreeItem item);
 }
