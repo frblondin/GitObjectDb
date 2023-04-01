@@ -4,8 +4,10 @@ using LibGit2Sharp;
 using Microsoft.IO;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
@@ -93,26 +95,53 @@ internal partial class NodeSerializer : INodeSerializer
 
     public string EscapeRegExPattern(string pattern)
     {
-        var yamlPattern = ConvertToYamlValue(pattern);
-        return pattern.Equals(yamlPattern, StringComparison.Ordinal) ?
-               pattern :
-               $"{Regex.Escape(pattern)}|{Regex.Escape(yamlPattern)}";
+        CheckForInvalidCharacters(pattern);
+        return Regex.Escape(pattern);
     }
 
-    private string ConvertToYamlValue(string pattern)
+    /// <summary>
+    /// YamlDotNet doesn't provide a clean way to escape a string value...
+    /// so for now, we don't support search with string containing chars needing to be escaped.
+    /// </summary>
+    private void CheckForInvalidCharacters(string pattern)
     {
-        var stream = _streamManager.GetStream();
-        WriteYamlValue(pattern, stream);
-        stream.Position = 0L;
-        using var reader = new StreamReader(stream);
-        var yamlValue = reader.ReadToEnd();
-        return yamlValue.Substring(1, yamlValue.Length - 2); // Remove double quotes
-    }
+        var matches = pattern.Where(CharNeedingEscaping).ToList();
+        if (matches.Any())
+        {
+            throw new GitObjectDbException($"Search pattern '{pattern}' contains characters needing to be escaped: {string.Join(", ", matches)}.");
+        }
 
-    private void WriteYamlValue(string pattern, Stream stream)
-    {
-        using var writer = new StreamWriter(stream, Encoding.UTF8, 1024, leaveOpen: true);
-        var emitter = NodeReferenceEmitter.CreateEmitter(writer);
-        emitter.Emit(new Scalar(pattern));
+        static bool CharNeedingEscaping(char character) =>
+            !IsPrintable(character) ||
+            IsBreak(character) ||
+            character == '"' ||
+            character == '\\';
+        static bool IsPrintable(char character) =>
+            character == '\t' ||
+            character == '\n' ||
+            character == '\r' ||
+            (character >= ' ' && character <= '~') ||
+            character == '\u0085' ||
+            (character >= '\u00a0' && character <= '\ud7ff') ||
+            (character >= '\ue000' && character <= '\ufffd');
+        static bool IsBreak(char character)
+        {
+            if (character <= '\r')
+            {
+                if (character != '\n' && character != '\r')
+                {
+                    return false;
+                }
+            }
+            else if (character != '\u0085')
+            {
+                if (character != '\u2028' && character != '\u2029')
+                {
+                    return false;
+                }
+                return true;
+            }
+            return true;
+        }
     }
 }

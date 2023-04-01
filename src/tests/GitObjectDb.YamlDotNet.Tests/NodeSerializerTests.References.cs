@@ -1,11 +1,10 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
 using GitObjectDb.Tests.Customization;
 using LibGit2Sharp;
 using NUnit.Framework;
+using System;
+using System.Linq;
 
 namespace GitObjectDb.YamlDotNet.Tests;
 
