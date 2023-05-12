@@ -30,6 +30,18 @@ public record ComparisonPolicy
         new DataPathComparer(RootComparerFactory.GetRootComparer()));
 
     /// <summary>
+    /// Gets a value indicating whether If <c>true</c>, <see cref="string.Empty"/> and <c>null</c> will be treated as
+    /// equal for <see cref="string"/> and <see cref="System.Text.StringBuilder"/>. The default is <c>false</c>.
+    /// </summary>
+    public bool TreatStringEmptyAndNullTheSame { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether leading and trailing whitespaces will be ignored for
+    /// for <see cref="string"/> and <see cref="System.Text.StringBuilder"/>. The default is <c>false</c>.
+    /// </summary>
+    public bool IgnoreStringLeadingTrailingWhitespace { get; init; }
+
+    /// <summary>
     /// Creates the default policy for a given model, ignoring properties decorated
     /// with <see cref="IgnoreDataMemberAttribute"/>.
     /// </summary>
