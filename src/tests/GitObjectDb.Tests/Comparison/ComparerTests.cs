@@ -42,6 +42,46 @@ public class ComparerTests
         Assert.That(result.Differences, Is.Empty);
     }
 
+    [Test]
+    [TestCase(null, "", true)]
+    [TestCase(null, "", false)]
+    public void TreatStringEmptyAndNullTheSame(string val1, string val2, bool ignoreStringLeadingTrailingWhitespace)
+    {
+        // Arrange
+        var model = new ConventionBaseModelBuilder().RegisterType<SomeNode>().Build();
+        var comparer = Comparer.Cache.Get(
+            model.DefaultComparisonPolicy with
+            {
+                TreatStringEmptyAndNullTheSame = ignoreStringLeadingTrailingWhitespace,
+            });
+
+        // Act
+        var result = comparer.Compare(val1, val2);
+
+        // Assert
+        Assert.That(result.AreEqual, Is.EqualTo(ignoreStringLeadingTrailingWhitespace));
+    }
+
+    [Test]
+    [TestCase(" \nfoo\n ", "foo", true)]
+    [TestCase(" \nfoo\n ", "foo", false)]
+    public void IgnoreStringLeadingTrailingWhitespace(string val1, string val2, bool ignoreStringLeadingTrailingWhitespace)
+    {
+        // Arrange
+        var model = new ConventionBaseModelBuilder().RegisterType<SomeNode>().Build();
+        var comparer = Comparer.Cache.Get(
+            model.DefaultComparisonPolicy with
+            {
+                IgnoreStringLeadingTrailingWhitespace = ignoreStringLeadingTrailingWhitespace,
+            });
+
+        // Act
+        var result = comparer.Compare(val1, val2);
+
+        // Assert
+        Assert.That(result.AreEqual, Is.EqualTo(ignoreStringLeadingTrailingWhitespace));
+    }
+
     private record SomeNode : Node
     {
 #pragma warning disable S1144 // Unused private types or members should be removed

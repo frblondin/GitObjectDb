@@ -100,6 +100,8 @@ internal class Comparer : IComparer, IComparerInternal
                 SkipInvalidIndexers = true,
                 MembersToIgnore = policy.IgnoredProperties.Select(p => $"{p.DeclaringType.Name}.{p.Name}").ToList(),
                 AttributesToIgnore = policy.AttributesToIgnore.ToList(),
+                TreatStringEmptyAndNullTheSame = policy.TreatStringEmptyAndNullTheSame,
+                IgnoreStringLeadingTrailingWhitespace = policy.IgnoreStringLeadingTrailingWhitespace,
             };
             config.CustomComparers.AddRange(policy.CustomComparers);
             return new CompareLogic(config);
