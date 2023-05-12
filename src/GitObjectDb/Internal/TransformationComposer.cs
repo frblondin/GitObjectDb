@@ -3,7 +3,7 @@ using GitObjectDb.Internal.Commands;
 using GitObjectDb.Tools;
 using LibGit2Sharp;
 using System;
-using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -25,14 +25,14 @@ internal class TransformationComposer : ITransformationComposerWithCommit
         BranchName = branchName;
         _gitUpdateFactory = gitUpdateFactory;
         _commitCommand = commitCommandFactory;
-        Transformations = new List<ITransformation>();
+        Transformations = ImmutableList.Create<ITransformation>();
     }
 
     public IConnectionInternal Connection { get; }
 
     public string BranchName { get; }
 
-    public IList<ITransformation> Transformations { get; }
+    public IImmutableList<ITransformation> Transformations { get; private set; }
 
     public Commit Commit(CommitDescription description,
                          Action<ITransformation>? beforeProcessing = null) =>
@@ -63,7 +63,7 @@ internal class TransformationComposer : ITransformationComposerWithCommit
             item,
             _gitUpdateFactory.Rename(item, newPath),
             $"Renaming {item.Path} to {newPath}.");
-        Transformations.Add(transformation);
+        Transformations = Transformations.Add(transformation);
     }
 
     public void Delete<TItem>(TItem item)
@@ -79,7 +79,7 @@ internal class TransformationComposer : ITransformationComposerWithCommit
             default,
             _gitUpdateFactory.Delete(path),
             $"Removing {path}.");
-        Transformations.Add(transformation);
+        Transformations = Transformations.Add(transformation);
     }
 
     protected TItem CreateOrUpdateItem<TItem>(TItem item, DataPath? parent = null)
@@ -101,7 +101,7 @@ internal class TransformationComposer : ITransformationComposerWithCommit
             item,
             _gitUpdateFactory.CreateOrUpdate(item),
             $"Adding or updating {path}.");
-        Transformations.Add(transformation);
+        Transformations = Transformations.Add(transformation);
 
         return item;
     }
