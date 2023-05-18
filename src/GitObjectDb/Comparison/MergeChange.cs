@@ -3,6 +3,8 @@ using GitObjectDb.Internal.Commands;
 using GitObjectDb.Tools;
 using KellermanSoftware.CompareNetObjects;
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
@@ -104,7 +106,7 @@ public sealed class MergeChange
     private ImmutableList<MergeValueConflict>.Builder ProcessPropertyValues(Type type)
     {
         var conflicts = ImmutableList.CreateBuilder<MergeValueConflict>();
-        foreach (var property in Comparer.GetProperties(type, Policy))
+        foreach (var property in GetProperties(type, Policy))
         {
             if (!TryMergePropertyValue(property,
                                        out var setter,
@@ -128,6 +130,15 @@ public sealed class MergeChange
 
         return conflicts;
     }
+
+    private static IEnumerable<PropertyInfo> GetProperties(Type type, ComparisonPolicy policy) =>
+        from p in type.GetTypeInfo().GetProperties(BindingFlags.Instance | BindingFlags.Public)
+        where p.CanRead && p.CanWrite
+        where !policy.IgnoredProperties.Contains(p) ||
+            p.PropertyType.IsNode() ||
+            p.PropertyType.IsNodeEnumerable(out var _)
+        where p.Name != nameof(TreeItem.Path)
+        select p;
 
     private DataPath GetMergePath()
     {

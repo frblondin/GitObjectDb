@@ -1,11 +1,8 @@
 using GitObjectDb.Internal.Queries;
 using KellermanSoftware.CompareNetObjects;
 using LibGit2Sharp;
-using Microsoft.Extensions.Caching.Memory;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace GitObjectDb.Comparison;
@@ -18,10 +15,6 @@ internal class Comparer : IComparer, IComparerInternal
     {
         _nodeLoader = nodeLoader;
     }
-
-    internal static IEnumerable<PropertyInfo> GetProperties(Type type, ComparisonPolicy policy) =>
-        type.GetTypeInfo().GetProperties(BindingFlags.Instance | BindingFlags.Public)
-        .Where(p => p.CanRead && p.CanWrite && !policy.IgnoredProperties.Contains(p) && p.Name != nameof(TreeItem.Path));
 
     public ComparisonResult Compare(TreeItem? expectedObject, TreeItem? actualObject, ComparisonPolicy policy)
     {
