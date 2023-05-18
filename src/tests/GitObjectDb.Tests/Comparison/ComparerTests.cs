@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using GitObjectDb.Comparison;
 using GitObjectDb.Model;
 using GitObjectDb.Tests.Assets;
@@ -82,10 +83,141 @@ public class ComparerTests
         Assert.That(result.AreEqual, Is.EqualTo(ignoreStringLeadingTrailingWhitespace));
     }
 
+    [Test]
+    public void IgnoreReferencedNodeChange()
+    {
+        // Arrange
+        var model = new ConventionBaseModelBuilder()
+            .RegisterType<NodeWithReference>()
+            .RegisterType<SomeNode>()
+            .Build();
+        var sut = Comparer.Cache.Get(model.DefaultComparisonPolicy);
+        var original = new NodeWithReference
+        {
+            Reference = new()
+            {
+                Value = "foo",
+                Path = DataPath.Root("a", UniqueId.CreateNew(), false, "json"),
+            },
+        };
+        var modified = original with
+        {
+            Reference = original.Reference with { Value = "bar" },
+        };
+
+        // Act
+        var result = sut.Compare(original, modified);
+
+        // Assert
+        Assert.That(result.AreEqual, Is.True);
+    }
+
+    [Test]
+    public void DetectReferencedPathChange()
+    {
+        // Arrange
+        var model = new ConventionBaseModelBuilder()
+            .RegisterType<NodeWithReference>()
+            .RegisterType<SomeNode>()
+            .Build();
+        var sut = Comparer.Cache.Get(model.DefaultComparisonPolicy);
+        var original = new NodeWithReference
+        {
+            Reference = new()
+            {
+                Value = "foo",
+                Path = DataPath.Root("a", UniqueId.CreateNew(), false, "json"),
+            },
+        };
+        var modified = original with
+        {
+            Reference = original.Reference with
+            {
+                Path = DataPath.Root("a", UniqueId.CreateNew(), false, "json"),
+            },
+        };
+
+        // Act
+        var result = sut.Compare(original, modified);
+
+        // Assert
+        Assert.That(result.AreEqual, Is.False);
+    }
+
+    [Test]
+    public void IgnoreMultiReferencedNodeChange()
+    {
+        // Arrange
+        var model = new ConventionBaseModelBuilder()
+            .RegisterType<NodeWithMultiReferences>()
+            .RegisterType<SomeNode>()
+            .Build();
+        var sut = Comparer.Cache.Get(model.DefaultComparisonPolicy);
+        var original = new NodeWithMultiReferences
+        {
+            References = ImmutableList.Create(new SomeNode()
+            {
+                Value = "foo",
+                Path = DataPath.Root("a", UniqueId.CreateNew(), false, "json"),
+            }),
+        };
+        var modified = original with
+        {
+            References = ImmutableList.Create(
+                original.References[0] with { Value = "bar" }),
+        };
+
+        // Act
+        var result = sut.Compare(original, modified);
+
+        // Assert
+        Assert.That(result.AreEqual, Is.True);
+    }
+
+    [Test]
+    public void DetectMultiReferencedPathChange()
+    {
+        // Arrange
+        var model = new ConventionBaseModelBuilder()
+            .RegisterType<NodeWithMultiReferences>()
+            .RegisterType<SomeNode>()
+            .Build();
+        var sut = Comparer.Cache.Get(model.DefaultComparisonPolicy);
+        var original = new NodeWithMultiReferences
+        {
+            References = ImmutableList.Create(new SomeNode()
+            {
+                Value = "foo",
+                Path = DataPath.Root("a", UniqueId.CreateNew(), false, "json"),
+            }),
+        };
+        var modified = original with
+        {
+            References = ImmutableList.Create(original.References[0] with
+            {
+                Path = DataPath.Root("a", UniqueId.CreateNew(), false, "json"),
+            }),
+        };
+
+        // Act
+        var result = sut.Compare(original, modified);
+
+        // Assert
+        Assert.That(result.AreEqual, Is.False);
+    }
+
     private record SomeNode : Node
     {
-#pragma warning disable S1144 // Unused private types or members should be removed
-        public string Value { get; set; }
-#pragma warning restore S1144 // Unused private types or members should be removed
+        public string Value { get; init; }
+    }
+
+    private record NodeWithReference : Node
+    {
+        public SomeNode Reference { get; init; }
+    }
+
+    private record NodeWithMultiReferences : Node
+    {
+        public IImmutableList<SomeNode> References { get; init; }
     }
 }

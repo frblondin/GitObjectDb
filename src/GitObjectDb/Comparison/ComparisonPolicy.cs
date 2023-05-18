@@ -2,6 +2,7 @@ using GitObjectDb.Model;
 using GitObjectDb.Tools;
 using KellermanSoftware.CompareNetObjects;
 using KellermanSoftware.CompareNetObjects.TypeComparers;
+using Realms.Schema;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -15,6 +16,8 @@ namespace GitObjectDb.Comparison;
 /// <summary>Provides the description of a merge policy.</summary>
 public record ComparisonPolicy
 {
+    private static readonly RootComparer _rootComparer = RootComparerFactory.GetRootComparer();
+
     private static ISet<string> WhiteList { get; } = new HashSet<string>(
         new[] { nameof(Node.EmbeddedResource), nameof(TreeItem.Path) },
         System.StringComparer.OrdinalIgnoreCase);
@@ -27,7 +30,8 @@ public record ComparisonPolicy
 
     /// <summary>Gets a list of custom comparers that take priority over the built in comparers.</summary>
     public IImmutableList<BaseTypeComparer> CustomComparers { get; init; } = ImmutableList.Create<BaseTypeComparer>(
-        new DataPathComparer(RootComparerFactory.GetRootComparer()));
+        new DataPathComparer(_rootComparer),
+        new NodeComparerLimitedToPath(_rootComparer));
 
     /// <summary>
     /// Gets a value indicating whether If <c>true</c>, <see cref="string.Empty"/> and <c>null</c> will be treated as
@@ -54,7 +58,9 @@ public record ComparisonPolicy
 
         static bool IgnoreProperty((NodeTypeDescription TypeDescription, PropertyInfo Property) data)
         {
-            var isIgnored = !data.TypeDescription.SerializableProperties.Contains(data.Property);
+            var isIgnored = !data.TypeDescription.SerializableProperties.Contains(data.Property) ||
+                data.Property.PropertyType.IsNode() ||
+                data.Property.PropertyType.IsNodeEnumerable(out _);
             return isIgnored && !WhiteList.Contains(data.Property.Name);
         }
     }
