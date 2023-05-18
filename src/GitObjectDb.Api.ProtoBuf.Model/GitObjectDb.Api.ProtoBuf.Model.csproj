@@ -8,6 +8,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Description>Provides ProtoBuf data model to handle GitObjectDb Grpc requests.</Description>
     <PackageType>Dependency</PackageType>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Description>Provides GraphQL endpoints for querying and mutating GitObjectDb repository.</Description>
     <PackageType>Dependency</PackageType>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>

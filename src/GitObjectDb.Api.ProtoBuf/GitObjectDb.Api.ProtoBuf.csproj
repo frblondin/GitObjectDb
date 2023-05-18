@@ -8,6 +8,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Description>Provides Grpc endpoints for querying GitObjectDb repository.</Description>
     <PackageType>Dependency</PackageType>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>

@@ -11,6 +11,8 @@
     <Description>GitObjectDb is designed to simplify the configuration management versioning. It does so by removing the need for hand-coding the commands needed to interact with Git. The Git repository is used as a pure database as the files containing the serialized copy of the objects are never fetched in the filesystem. GitObjectDb only uses the blob storage provided by Git.</Description>
     <PackageId>GitObjectDb</PackageId>
     <PackageType>Dependency</PackageType>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>

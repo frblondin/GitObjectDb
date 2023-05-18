@@ -10,6 +10,8 @@
     <WarningsAsErrors />
     <Description>Provides a Yaml serialization based on YamlDotNet for GitObjectDb nodes.</Description>
     <PackageType>Dependency</PackageType>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
