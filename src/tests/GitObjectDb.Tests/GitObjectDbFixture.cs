@@ -1,11 +1,8 @@
 using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
-using System;
-using System.Globalization;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Reflection;
 
 namespace GitObjectDb.Tests;
@@ -13,12 +10,8 @@ namespace GitObjectDb.Tests;
 [SetUpFixture]
 public class GitObjectDbFixture
 {
-    private const string TempPath = @"C:\Temp";
-
     private static readonly object _sync = new();
     private static readonly string _workDirectory =
-        Directory.Exists(TempPath) ?
-        TempPath :
         Path.GetDirectoryName(AssemblyHelper.GetAssemblyPath(Assembly.GetExecutingAssembly()));
 
     public static string SoftwareBenchmarkRepositoryPath { get; } =
@@ -31,21 +24,11 @@ public class GitObjectDbFixture
     public static string GetAvailableFolderPath()
 #pragma warning restore NUnit1028 // The non-test method is public
     {
-        var i = 1;
-        string result;
-        lock (_sync)
-        {
-            while (true)
-            {
-                result = Path.Combine(TempRepoPath, i.ToString("D4", CultureInfo.InvariantCulture));
-                if (!Directory.Exists(result))
-                {
-                    Directory.CreateDirectory(result);
-                    return result;
-                }
-                i++;
-            }
-        }
+        var test = TestContext.CurrentContext.Test;
+        var result = Path.Combine(TempRepoPath, $"{test.MethodName}-{test.ID}");
+        DirectoryUtils.Delete(result, true);
+        Directory.CreateDirectory(result);
+        return result;
     }
 
     [OneTimeSetUp]
@@ -63,8 +46,4 @@ public class GitObjectDbFixture
             }
         }
     }
-
-    [OneTimeSetUp]
-    [OneTimeTearDown]
-    public void DeleteTempPath() => DirectoryUtils.Delete(TempRepoPath, true);
 }

@@ -1,6 +1,5 @@
 using AutoFixture;
 using GitObjectDb.Model;
-using GitObjectDb.Tests;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
