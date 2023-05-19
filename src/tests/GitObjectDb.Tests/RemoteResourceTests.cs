@@ -11,14 +11,14 @@ using System.Text;
 
 namespace GitObjectDb.Tests;
 
-public class RemoteResourceTests
+public class RemoteResourceTests : DisposeArguments
 {
     [Test]
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
     public void AddRemoteResourceRepository(IConnection connection, Application application, string content, string message, Signature committer)
     {
         // Arrange
-        var (path, tip) = CreateResourceRepository(content, message, committer);
+        var (path, tip) = CreateResourceRepository(connection, content, message, committer);
 
         // Act
         var applicationWithLinkedResources = application with
@@ -44,7 +44,7 @@ public class RemoteResourceTests
     public void StageAndAddRemoteResourceRepository(IConnection connection, Application application, string content, string message, Signature committer)
     {
         // Arrange
-        var (path, tip) = CreateResourceRepository(content, message, committer);
+        var (path, tip) = CreateResourceRepository(connection, content, message, committer);
 
         // Act
         var applicationWithLinkedResources = application with
@@ -70,7 +70,7 @@ public class RemoteResourceTests
     public void ThrowIfWrongCommitId(IConnection connection, Application application, string content, string message, Signature committer)
     {
         // Arrange
-        var (path, tip) = CreateResourceRepository(content, message, committer);
+        var (path, tip) = CreateResourceRepository(connection, content, message, committer);
 
         // Act
         var applicationWithLinkedResources = application with
@@ -94,7 +94,7 @@ public class RemoteResourceTests
     public void CannotMixEmbeddedAndRemoteResources(IConnection connection, Application application, string content, string message, Signature committer)
     {
         // Arrange
-        var (path, tip) = CreateResourceRepository(content, message, committer);
+        var (path, tip) = CreateResourceRepository(connection, content, message, committer);
 
         // Act
         var applicationWithLinkedResources = application with
@@ -117,9 +117,9 @@ public class RemoteResourceTests
             () => changes.Commit(new(message, committer, committer)));
     }
 
-    private static (string Path, string Tip) CreateResourceRepository(string content, string message, Signature committer)
+    private static (string Path, string Tip) CreateResourceRepository(IConnection connection, string content, string message, Signature committer)
     {
-        var path = GitObjectDbFixture.GetAvailableFolderPath();
+        var path = Path.Combine(connection.Repository.Info.Path, Guid.NewGuid().ToString());
         Repository.Init(path);
 
         var repo = new Repository(path);
