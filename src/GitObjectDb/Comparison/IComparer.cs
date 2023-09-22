@@ -1,6 +1,5 @@
 using KellermanSoftware.CompareNetObjects;
 using LibGit2Sharp;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace GitObjectDb.Comparison;
 
@@ -12,7 +11,7 @@ public interface IComparer
     /// <param name="actualObject">The actual object value to compare.</param>
     /// <param name="policy">The merge policy to use.</param>
     /// <returns>Details about the comparison.</returns>
-    ComparisonResult Compare(TreeItem? expectedObject, TreeItem? actualObject, ComparisonPolicy policy);
+    ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy);
 }
 
 internal interface IComparerInternal

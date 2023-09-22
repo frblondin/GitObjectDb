@@ -16,7 +16,7 @@ internal class Comparer : IComparer, IComparerInternal
         _nodeLoader = nodeLoader;
     }
 
-    public ComparisonResult Compare(TreeItem? expectedObject, TreeItem? actualObject, ComparisonPolicy policy)
+    public ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy)
     {
         return CompareInternal(expectedObject, actualObject, policy);
     }
