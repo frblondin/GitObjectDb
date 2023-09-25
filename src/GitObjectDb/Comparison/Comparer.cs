@@ -1,8 +1,10 @@
 using GitObjectDb.Internal.Queries;
-using KellermanSoftware.CompareNetObjects;
+using GitObjectDb.Tools;
 using LibGit2Sharp;
+using ObjectsComparer;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace GitObjectDb.Comparison;
@@ -16,9 +18,9 @@ internal class Comparer : IComparer, IComparerInternal
         _nodeLoader = nodeLoader;
     }
 
-    public ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy)
+    public bool Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy, out IEnumerable<Difference> result)
     {
-        return CompareInternal(expectedObject, actualObject, policy);
+        return CompareInternal(expectedObject, actualObject, policy, out result);
     }
 
     public ChangeCollection Compare(IConnectionInternal connection,
@@ -70,34 +72,44 @@ internal class Comparer : IComparer, IComparerInternal
                 new(tree, Index: null, DataPath.Parse(path)));
     }
 
-    internal static ComparisonResult CompareInternal(object? expectedObject,
-                                                     object? actualObject,
-                                                     ComparisonPolicy policy)
+    internal static bool CompareInternal(object? expectedObject,
+                                         object? actualObject,
+                                         ComparisonPolicy policy,
+                                         out IEnumerable<Difference> result)
     {
         var logic = Cache.Get(policy);
-        return logic.Compare(expectedObject, actualObject);
+        var type = expectedObject?.GetType() ?? actualObject?.GetType() ?? typeof(object);
+        return logic.Compare(type, expectedObject, actualObject, out result);
     }
 
     internal static class Cache
     {
-        private static readonly ConditionalWeakTable<ComparisonPolicy, CompareLogic> _cache = new();
+        private static readonly ConditionalWeakTable<ComparisonPolicy, ObjectsComparer.Comparer> _cache = new();
 
-        internal static CompareLogic Get(ComparisonPolicy policy) =>
+        internal static ObjectsComparer.Comparer Get(ComparisonPolicy policy) =>
             _cache.GetValue(policy, CreateCompareLogic);
 
-        private static CompareLogic CreateCompareLogic(ComparisonPolicy policy)
+        private static ObjectsComparer.Comparer CreateCompareLogic(ComparisonPolicy policy)
         {
-            var config = new ComparisonConfig
-            {
-                MaxDifferences = int.MaxValue,
-                SkipInvalidIndexers = true,
-                MembersToIgnore = policy.IgnoredProperties.Select(p => $"{p.DeclaringType.Name}.{p.Name}").ToList(),
-                AttributesToIgnore = policy.AttributesToIgnore.ToList(),
-                TreatStringEmptyAndNullTheSame = policy.TreatStringEmptyAndNullTheSame,
-                IgnoreStringLeadingTrailingWhitespace = policy.IgnoreStringLeadingTrailingWhitespace,
-            };
-            config.CustomComparers.AddRange(policy.CustomComparers);
-            return new CompareLogic(config);
+            var comparer = new ObjectsComparer.Comparer(
+                new ComparisonSettings
+                {
+                    EmptyAndNullEnumerablesEqual = true,
+                });
+
+            comparer.AddComparerOverride(
+                NodeComparerLimitedToPath.Instance,
+                member => member is PropertyInfo property &&
+                (property.PropertyType.IsNode() || property.PropertyType.IsNodeEnumerable(out var _)) &&
+                member.DeclaringType != null);
+            comparer.IgnoreMember(member => policy.IgnoredProperties.Contains(member));
+            comparer.IgnoreMember(member => policy.AttributesToIgnore.Any(attribute => member.IsDefined(attribute, inherit: true)));
+            comparer.AddComparerOverride<string>(
+                new CustomStringComparer(policy.TreatStringEmptyAndNullTheSame, policy.IgnoreStringLeadingTrailingWhitespace));
+
+            policy.Configure?.Invoke(comparer);
+
+            return comparer;
         }
     }
 }

@@ -1,9 +1,10 @@
-using System.Collections.Immutable;
 using GitObjectDb.Comparison;
 using GitObjectDb.Model;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
+using System.Collections.Immutable;
+using System.Linq;
 
 namespace GitObjectDb.Tests.Comparison;
 
@@ -17,13 +18,14 @@ public class ComparerTests
         var model = new ConventionBaseModelBuilder().RegisterType<SomeNode>().Build();
 
         // Act
-        var result = sut.Compare(
+        sut.Compare(
             new SomeNode { Id = id, EmbeddedResource = oldValue },
             new SomeNode { Id = id, EmbeddedResource = newValue },
-            model.DefaultComparisonPolicy);
+            model.DefaultComparisonPolicy,
+            out var result);
 
         // Assert
-        Assert.That(result.Differences, Has.Exactly(1).Items);
+        Assert.That(result.ToList(), Has.Exactly(1).Items);
     }
 
     [Test]
@@ -34,13 +36,14 @@ public class ComparerTests
         var model = new ConventionBaseModelBuilder().RegisterType<SomeNode>().Build();
 
         // Act
-        var result = sut.Compare(
+        sut.Compare(
             new SomeNode { Id = id, EmbeddedResource = value },
             new SomeNode { Id = id, EmbeddedResource = value },
-            model.DefaultComparisonPolicy);
+            model.DefaultComparisonPolicy,
+            out var result);
 
         // Assert
-        Assert.That(result.Differences, Is.Empty);
+        Assert.That(result, Is.Empty);
     }
 
     [Test]
@@ -60,7 +63,7 @@ public class ComparerTests
         var result = comparer.Compare(val1, val2);
 
         // Assert
-        Assert.That(result.AreEqual, Is.EqualTo(ignoreStringLeadingTrailingWhitespace));
+        Assert.That(result, Is.EqualTo(ignoreStringLeadingTrailingWhitespace));
     }
 
     [Test]
@@ -80,7 +83,7 @@ public class ComparerTests
         var result = comparer.Compare(val1, val2);
 
         // Assert
-        Assert.That(result.AreEqual, Is.EqualTo(ignoreStringLeadingTrailingWhitespace));
+        Assert.That(result, Is.EqualTo(ignoreStringLeadingTrailingWhitespace));
     }
 
     [Test]
@@ -109,7 +112,7 @@ public class ComparerTests
         var result = sut.Compare(original, modified);
 
         // Assert
-        Assert.That(result.AreEqual, Is.True);
+        Assert.That(result, Is.True);
     }
 
     [Test]
@@ -141,7 +144,7 @@ public class ComparerTests
         var result = sut.Compare(original, modified);
 
         // Assert
-        Assert.That(result.AreEqual, Is.False);
+        Assert.That(result, Is.False);
     }
 
     [Test]
@@ -171,7 +174,7 @@ public class ComparerTests
         var result = sut.Compare(original, modified);
 
         // Assert
-        Assert.That(result.AreEqual, Is.True);
+        Assert.That(result, Is.True);
     }
 
     [Test]
@@ -203,7 +206,7 @@ public class ComparerTests
         var result = sut.Compare(original, modified);
 
         // Assert
-        Assert.That(result.AreEqual, Is.False);
+        Assert.That(result, Is.False);
     }
 
     private record SomeNode : Node

@@ -56,8 +56,7 @@ public abstract partial class Change
         var newNode = @new as Node;
         if (oldNode != null || newNode != null)
         {
-            var differences = Comparer.CompareInternal(oldNode, newNode, policy);
-            return differences.AreEqual ?
+            return Comparer.CompareInternal(oldNode, newNode, policy, out var differences) ?
                 null :
                 new NodeChange(oldNode, newNode, status, differences);
         }

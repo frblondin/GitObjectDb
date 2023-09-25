@@ -16,7 +16,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CompareNETObjects" />
     <PackageReference Include="fasterflect.reflect" />
     <PackageReference Include="IsExternalInit">
       <PrivateAssets>all</PrivateAssets>
@@ -36,7 +35,12 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Realm" />
-    <PackageReference Include="System.Collections.Immutable" />
+    <PackageReference Include="RequiredMemberAttribute">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="ObjectsComparer" />
+      <PackageReference Include="System.Collections.Immutable" />
     <PackageReference Include="System.Runtime.Caching" />
   </ItemGroup>
 

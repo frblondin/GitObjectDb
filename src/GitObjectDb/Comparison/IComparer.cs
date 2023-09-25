@@ -1,5 +1,6 @@
-using KellermanSoftware.CompareNetObjects;
 using LibGit2Sharp;
+using ObjectsComparer;
+using System.Collections.Generic;
 
 namespace GitObjectDb.Comparison;
 
@@ -10,8 +11,9 @@ public interface IComparer
     /// <param name="expectedObject">The expected object value to compare.</param>
     /// <param name="actualObject">The actual object value to compare.</param>
     /// <param name="policy">The merge policy to use.</param>
+    /// <param name="result">An enumerable containing all the differences.</param>
     /// <returns>Details about the comparison.</returns>
-    ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy);
+    bool Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy, out IEnumerable<Difference> result);
 }
 
 internal interface IComparerInternal
