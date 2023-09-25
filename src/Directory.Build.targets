@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Company>GitObjectDb</Company>
     <CodeAnalysisRuleSet>$(SolutionDir)src\StyleCop.ruleset</CodeAnalysisRuleSet>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>11.0</LangVersion>
     <PackageIcon>GitObjectDb.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/frblondin/GitObjectDb</PackageProjectUrl>
