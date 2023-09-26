@@ -23,6 +23,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Nuke.Common.CI.GitHubActions.Configuration;
 using static Nuke.Common.EnvironmentInfo;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
@@ -33,9 +34,11 @@ using static System.Net.WebRequestMethods;
 using Project = Nuke.Common.ProjectModel.Project;
 
 [ShutdownDotNetAfterServerBuild]
-[GitHubActions(
+[GitHubActionsCustom(
     "CI",
     GitHubActionsImage.UbuntuLatest,
+    JavaDistribution = GitHubActionJavaDistribution.Temurin,
+    JavaVersion = "17",
     OnPushBranches = new[]
     {
         "main",
@@ -47,6 +50,7 @@ using Project = Nuke.Common.ProjectModel.Project;
         "main",
         "releases/**",
     },
+    
     InvokedTargets = new[] { nameof(Pack) },
     ImportSecrets = new[] { "GITHUB_TOKEN", "SONAR_TOKEN", nameof(NuGetApiKey) },
     FetchDepth = 0)]
