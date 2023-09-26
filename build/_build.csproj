@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<LangVersion>11.0</LangVersion>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net6.0</TargetFramework>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -14,6 +15,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="Nuke.Common" Version="6.3.0" />
+		<PackageReference Include="RequiredMemberAttribute" Version="1.0.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 	</ItemGroup>
 
 	<ItemGroup>
