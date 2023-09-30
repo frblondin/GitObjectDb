@@ -1,6 +1,9 @@
 using GitObjectDb.Model;
 using GitObjectDb.Tools;
+using KellermanSoftware.CompareNetObjects;
+using KellermanSoftware.CompareNetObjects.TypeComparers;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
@@ -12,11 +15,22 @@ namespace GitObjectDb.Comparison;
 /// <summary>Provides the description of a merge policy.</summary>
 public record ComparisonPolicy
 {
+    private static readonly RootComparer _rootComparer = RootComparerFactory.GetRootComparer();
+
+    private static ISet<string> WhiteList { get; } = new HashSet<string>(
+        new[] { nameof(Node.EmbeddedResource), nameof(TreeItem.Path) },
+        System.StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Gets ignored node properties.</summary>
     public IImmutableList<PropertyInfo> IgnoredProperties { get; init; } = ImmutableList.Create<PropertyInfo>();
 
     /// <summary>Gets ignored class, property or field when decorated with attributes.</summary>
     public IImmutableList<Type> AttributesToIgnore { get; init; } = ImmutableList.Create<Type>();
+
+    /// <summary>Gets a list of custom comparers that take priority over the built in comparers.</summary>
+    public IImmutableList<BaseTypeComparer> CustomComparers { get; init; } = ImmutableList.Create<BaseTypeComparer>(
+        new DataPathComparer(_rootComparer),
+        new ComparerLimitedToReferencedNodePathChanges(_rootComparer));
 
     /// <summary>
     /// Gets a value indicating whether If <c>true</c>, <see cref="string.Empty"/> and <c>null</c> will be treated as
@@ -30,9 +44,6 @@ public record ComparisonPolicy
     /// </summary>
     public bool IgnoreStringLeadingTrailingWhitespace { get; init; }
 
-    /// <summary>Gets a configuration callback that will be invoked while initializing the comparer.</summary>
-    public Action<ObjectsComparer.Comparer>? Configure { get; init; }
-
     /// <summary>
     /// Creates the default policy for a given model, ignoring properties decorated
     /// with <see cref="IgnoreDataMemberAttribute"/>.
@@ -41,22 +52,32 @@ public record ComparisonPolicy
     /// <returns>The comparison policy.</returns>
     public static ComparisonPolicy CreateDefault(IDataModel model)
     {
-        return new()
+        return new ComparisonPolicy
         {
-            IgnoredProperties = ImmutableList<PropertyInfo>.Empty
-                .AddRange(model, IgnoreNonSerializedProperty),
+            IgnoredProperties = ImmutableList<PropertyInfo>.Empty.AddRange(model, IgnoreProperty),
         };
 
-        static bool IgnoreNonSerializedProperty(NodeTypeDescription typeDescription, PropertyInfo property) =>
-            !typeDescription.SerializableProperties.Contains(property) &&
-            !(property.DeclaringType == typeof(Node) && property.Name == nameof(Node.EmbeddedResource)) &&
-            !(property.DeclaringType == typeof(TreeItem) && property.Name == nameof(TreeItem.Path));
+        static bool IgnoreProperty((NodeTypeDescription TypeDescription, PropertyInfo Property) data) =>
+            !data.TypeDescription.SerializableProperties.Contains(data.Property) &&
+            !WhiteList.Contains(data.Property.Name);
     }
 }
 
 /// <summary>Adds ability to add ignored properties.</summary>
 public static class ComparisonPolicyExtensions
 {
+    /// <summary>Adds custom comparers that take priority over the built in comparers.</summary>
+    /// <param name="source">The comparison policy to update.</param>
+    /// <param name="comparers">The custom comparers to add.</param>
+    /// <returns>A new comparison policy with added comparer.</returns>
+    public static ComparisonPolicy UpdateWithCustomComparer(this ComparisonPolicy source, params BaseTypeComparer[] comparers)
+    {
+        return source with
+        {
+            CustomComparers = source.CustomComparers.AddRange(comparers),
+        };
+    }
+
     /// <summary>
     /// Makes a copy of the list, and adds the specified property to the end of the copied.
     /// </summary>
@@ -83,14 +104,14 @@ public static class ComparisonPolicyExtensions
     /// <returns>A new list with the property added.</returns>
     public static IImmutableList<PropertyInfo> AddRange(this IImmutableList<PropertyInfo> source,
                                                         IDataModel dataModel,
-                                                        Func<NodeTypeDescription, PropertyInfo, bool> propertyPredicate)
+                                                        Predicate<(NodeTypeDescription TypeDescription, PropertyInfo Property)> propertyPredicate)
     {
         var builder = ImmutableList.CreateBuilder<PropertyInfo>();
         builder.AddRange(source);
         foreach (var type in dataModel.NodeTypes)
         {
-            foreach (var property in from property in type.Type.GetProperties()
-                                     where propertyPredicate(type, property)
+            foreach (var property in from property in type.Type.GetProperties().Except(builder)
+                                     where propertyPredicate((type, property))
                                      select property)
             {
                 builder.Add(property);

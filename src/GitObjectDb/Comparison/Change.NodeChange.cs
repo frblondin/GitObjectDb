@@ -1,5 +1,4 @@
-using ObjectsComparer;
-using System.Collections.Generic;
+using KellermanSoftware.CompareNetObjects;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
@@ -11,11 +10,11 @@ public abstract partial class Change
     /// <seealso cref="GitObjectDb.Comparison.Change" />
     public class NodeChange : Change
     {
-        internal NodeChange(Node? old, Node? @new, ChangeStatus status, IEnumerable<Difference>? differences = null)
+        internal NodeChange(Node? old, Node? @new, ChangeStatus status, ComparisonResult? differences = null)
             : base(old, @new, status)
         {
-            Differences = differences?.ToImmutableList() ?? ImmutableList.Create<Difference>();
-            Message = differences != null ? string.Join("\n", differences) : Status.ToString();
+            Differences = differences?.Differences.ToImmutableList() ?? ImmutableList.Create<Difference>();
+            Message = differences?.DifferencesString ?? Status.ToString();
         }
 
         /// <summary>Gets the old node.</summary>
