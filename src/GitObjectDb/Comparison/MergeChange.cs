@@ -1,6 +1,7 @@
 using Fasterflect;
 using GitObjectDb.Internal.Commands;
 using GitObjectDb.Tools;
+using KellermanSoftware.CompareNetObjects;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -55,8 +56,8 @@ public sealed class MergeChange
     public TreeItem? TheirRootDeletedParent { get; }
 
     private bool AddedOrEdited => (Ancestor is null && (Theirs is not null || Ours is not null)) ||
-                                  (Ancestor is not null && Theirs is not null && !Compare(Ours, Merged)) ||
-                                  (Ancestor is not null && Ours is not null && !Compare(Ours, Merged));
+                                  (Ancestor is not null && Theirs is not null && !Compare(Ours, Merged).AreEqual) ||
+                                  (Ancestor is not null && Ours is not null && !Compare(Ours, Merged).AreEqual);
 
     private bool IsTreeConflict => (AddedOrEdited || AnyRename) && (IsDeletion || OurRootDeletedParent is not null || TheirRootDeletedParent is not null);
 
@@ -195,7 +196,7 @@ public sealed class MergeChange
         else if (IsDeletion)
         {
             var nonNull = Theirs ?? Ours;
-            Status = nonNull != null && !Compare(Ancestor, nonNull) ?
+            Status = nonNull != null && !Compare(Ancestor, nonNull).AreEqual ?
                 ItemMergeStatus.TreeConflict :
                 ItemMergeStatus.Delete;
         }
@@ -207,7 +208,7 @@ public sealed class MergeChange
         {
             Status = ItemMergeStatus.Rename;
         }
-        else if (Compare(Ours, Merged))
+        else if (Compare(Ours, Merged).AreEqual)
         {
             Status = ItemMergeStatus.NoChange;
         }
@@ -232,21 +233,21 @@ public sealed class MergeChange
         if (StillExists)
         {
             // Both values are equal -> no conflict
-            if (Compare(ourValue, theirValue))
+            if (Compare(ourValue, theirValue).AreEqual)
             {
                 setter(Merged, ourValue);
                 return true;
             }
 
             // Only changed in their changes -> no conflict
-            if (Ancestor != null && Compare(ancestorValue, ourValue))
+            if (Ancestor != null && Compare(ancestorValue, ourValue).AreEqual)
             {
                 setter(Merged, theirValue);
                 return true;
             }
 
             // Only changed in our changes -> no conflict
-            if (Ancestor != null && Compare(ancestorValue, theirValue))
+            if (Ancestor != null && Compare(ancestorValue, theirValue).AreEqual)
             {
                 setter(Merged, ourValue);
                 return true;
@@ -276,6 +277,8 @@ public sealed class MergeChange
         }
     }
 
-    private bool Compare(object? ancestorValue, object? theirValue) =>
-        Comparer.CompareInternal(ancestorValue, theirValue, Policy, out var _);
+    private ComparisonResult Compare(object? ancestorValue, object? theirValue)
+    {
+        return Comparer.CompareInternal(ancestorValue, theirValue, Policy);
+    }
 }
