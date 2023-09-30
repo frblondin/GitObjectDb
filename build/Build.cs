@@ -81,6 +81,8 @@ class Build : NukeBuild
     static AbsolutePath NugetDirectory => OutputDirectory / "nuget";
     static AbsolutePath ChangeLogFile => RootDirectory / "CHANGELOG.md";
 
+    [Parameter(Name = "GITHUB_HEAD_REF")] readonly string GitHubHeadRef;
+
     [Parameter] string ArtifactsType { get; } = "*.nupkg";
     [Parameter] string ExcludedArtifactsType { get; } = "symbols.nupkg";
 
@@ -234,8 +236,9 @@ class Build : NukeBuild
     Target PublishToGithub => _ => _
        .Description($"Publishing to GitHub for Development only.")
        .Requires(() => Configuration.Equals(Configuration.Release))
-       .OnlyWhenStatic(() => GitHubActions.Instance != null && string.IsNullOrEmpty(GitHubActions.Instance.HeadRef) && // Not from a fork
-                             (Repository.IsOnDevelopBranch() || GitHubActions.Instance.IsPullRequest))
+       .OnlyWhenStatic(() => GitHubActions.Instance != null &&
+                             GitHubHeadRef != null &&
+                             (GitHubHeadRef.StartsWith("dev") || GitHubHeadRef.StartsWith("feature")))
        .Executes(() =>
        {
            GlobFiles(NugetDirectory, ArtifactsType)
