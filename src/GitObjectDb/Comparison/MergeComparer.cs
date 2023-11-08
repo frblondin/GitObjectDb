@@ -24,23 +24,13 @@ internal class MergeComparer : IMergeComparer
             var oldPath = their.Old?.Path;
             var newPath = their.New?.Path;
             yield return new(policy,
-                             ancestor: their.Old,
-                             ours: localChanges.FirstOrDefault(c => c.Status != ChangeStatus.Delete && their.Old!.Path!.Equals(c.Old?.Path))?.New ?? their.Old,
-                             theirs: their.New,
-                             ourRootDeletedParent: (from c in localChanges.Deleted
-                                                    where IsNestedChildOf(oldPath, c.Old?.Path) ||
-                                                            IsNestedChildOf(newPath, c.Old?.Path) ||
-                                                            IsNestedChildOf(oldPath, c.New?.Path) ||
-                                                            IsNestedChildOf(newPath, c.New?.Path)
-                                                    orderby c.Old?.Path?.FolderPath.Length ascending
-                                                    select c.Old).FirstOrDefault(),
-                             theirRootDeletedParent: (from c in toBeMergedIntoLocal.Deleted
-                                                      where IsNestedChildOf(oldPath, c.Old?.Path) ||
-                                                          IsNestedChildOf(newPath, c.Old?.Path) ||
-                                                          IsNestedChildOf(oldPath, c.New?.Path) ||
-                                                          IsNestedChildOf(newPath, c.New?.Path)
-                                                      orderby c.Old?.Path?.FolderPath.Length ascending
-                                                      select c.Old).FirstOrDefault());
+                ancestor: their.Old,
+                ours: localChanges.FirstOrDefault(c =>
+                    (their.Old?.Path!.Equals(c.Old?.Path) ?? false) ||
+                    (their.New?.Path!.Equals(c.New?.Path) ?? false))?.New ?? their.Old,
+                theirs: their.New,
+                ourRootDeletedParent: SearchForRootDeletion(localChanges.Deleted, oldPath, newPath),
+                theirRootDeletedParent: SearchForRootDeletion(toBeMergedIntoLocal.Deleted, oldPath, newPath));
 
             // Search for local edits/adds on parents that have been removed from theirs
             if (their.Status == ChangeStatus.Delete)
@@ -59,8 +49,14 @@ internal class MergeComparer : IMergeComparer
         }
     }
 
-    static bool IsNestedChildOf(DataPath? path, DataPath? parentPath) =>
+    private static TreeItem? SearchForRootDeletion(IEnumerable<Change> deletions, DataPath? oldPath, DataPath? newPath) =>
+        (from c in deletions
+            where IsNestedChildOf(oldPath, c.Old?.Path) || IsNestedChildOf(newPath, c.Old?.Path)
+            orderby c.Old?.Path?.FolderPath.Length ascending // We want the closest parent from root
+            select c.Old).FirstOrDefault();
+
+    private static bool IsNestedChildOf(DataPath? path, DataPath? parentPath) =>
         path is not null &&
         parentPath is not null &&
-        path.FolderPath.StartsWith(parentPath?.FolderPath, StringComparison.Ordinal);
+        path.FolderPath.StartsWith(parentPath.FolderPath, StringComparison.Ordinal);
 }

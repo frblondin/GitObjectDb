@@ -19,7 +19,7 @@ public record Node : TreeItem
         : base(original)
     {
         // We want to copy all property values except TreeId
-        (Id, EmbeddedResource, RemoteResource) = (original.Id, original.EmbeddedResource, original.RemoteResource);
+        (Id, RemoteResource) = (original.Id, original.RemoteResource);
     }
 
     /// <summary>Gets the unique node identifier.</summary>
@@ -28,10 +28,6 @@ public record Node : TreeItem
     /// <summary>Gets the id of the Git tree containing this node.</summary>
     [IgnoreDataMember]
     public ObjectId? TreeId { get; init; }
-
-    /// <summary>Gets the embedded resource.</summary>
-    [IgnoreDataMember]
-    public string? EmbeddedResource { get; init; }
 
     /// <summary>
     /// Gets the remote repository containing node resources, as a

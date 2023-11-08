@@ -110,7 +110,7 @@ internal class TransformationComposer : ITransformationComposerWithCommit
     {
         if (parent is not null)
         {
-            ThrowIfWrongParentPath(parent);
+            ThrowIfWrongParentPath(parent, connection);
 
             var newPath = parent.AddChild(node, connection.Model, connection.Serializer.FileExtension);
             ThrowIfWrongExistingPath(node, newPath);
@@ -120,9 +120,9 @@ internal class TransformationComposer : ITransformationComposerWithCommit
     }
 
     [ExcludeFromCodeCoverage]
-    private static void ThrowIfWrongParentPath(DataPath parent)
+    private static void ThrowIfWrongParentPath(DataPath parent, IConnection connection)
     {
-        if (!parent.IsNode || !parent.UseNodeFolders)
+        if (!parent.IsNode(connection.Serializer) || !parent.UseNodeFolders)
         {
             throw new GitObjectDbException("Parent path has not been set.");
         }

@@ -56,7 +56,6 @@ internal sealed partial class Connection
                 .Select(i => i.Item.Value)
                 .OfType<TItem>()
                 .OrderBy(i => i.Path)
-            .AsSequential()
             .ToCommitEnumerable(commit.Id);
     }
 
@@ -133,7 +132,6 @@ internal sealed partial class Connection
             .AsParallel()
                 .Select(i => i.Resource.Value)
                 .OrderBy(i => i.Path)
-            .AsSequential()
             .ToCommitEnumerable(commit.Id);
     }
 

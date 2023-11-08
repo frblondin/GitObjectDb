@@ -93,7 +93,7 @@ public class DataGenerator
             {
                 composer.CreateOrUpdate(new Constant
                 {
-                    EmbeddedResource = fixture.Create<string>(),
+                    Value = fixture.Create<string>(),
                 }, parent: table);
             });
         }

@@ -148,9 +148,9 @@ internal class ModuleCommands
         }
     }
 
-    internal void RemoveRecursively(DataPath path)
+    internal void RemoveRecursively(DataPath path, INodeSerializer serializer)
     {
-        if (path.IsNode && path.UseNodeFolders)
+        if (path.IsNode(serializer) && path.UseNodeFolders)
         {
             var toRemove = _modules.Keys
                 .Where(m => m.StartsWith(path.FolderPath, StringComparison.OrdinalIgnoreCase))

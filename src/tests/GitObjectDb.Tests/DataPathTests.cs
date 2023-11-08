@@ -12,13 +12,13 @@ public class DataPathTests : DisposeArguments
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
     public void GetParentNode(IConnection sut, Application application, Table table)
     {
-        Assert.That(table.Path.GetParentNode(sut.Serializer.FileExtension), Is.EqualTo(application.Path));
+        Assert.That(table.Path.GetParentNode(sut.Serializer), Is.EqualTo(application.Path));
     }
 
     [Test]
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
     public void GetParentNodeForLeaves(IConnection sut, Table table, Constant constant)
     {
-        Assert.That(constant.Path.GetParentNode(sut.Serializer.FileExtension), Is.EqualTo(table.Path));
+        Assert.That(constant.Path.GetParentNode(sut.Serializer), Is.EqualTo(table.Path));
     }
 }

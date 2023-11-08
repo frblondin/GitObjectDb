@@ -51,7 +51,6 @@ internal partial class NodeSerializer : INodeSerializer
         {
             var emitter = new NodeReferenceEmitter(writer, node);
             Serializer.Serialize(emitter, node);
-            WriteEmbeddedResource(emitter, node);
         }
         stream.Seek(0L, SeekOrigin.Begin);
     }
@@ -65,8 +64,7 @@ internal partial class NodeSerializer : INodeSerializer
         using var parser = new NodeReferenceParser(reader, referenceResolver);
         var result = Deserializer.Deserialize<Node>(parser);
 
-        var embeddedResource = ReadEmbeddedResource(stream);
-        Model.UpdateBaseProperties(result, treeId, path, embeddedResource);
+        Model.UpdateBaseProperties(result, treeId, path);
 
         result = UpdateIfDeprecated(parser, result);
 

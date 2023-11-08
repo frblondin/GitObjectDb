@@ -44,8 +44,7 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
             .AsParallel()
                 .Select(i => (i.path, i.item.Value))
                 .Where(i => Matches(i.Value, queryAccessor.Model, parms))
-                .OrderBy(i => i.path)
-            .AsSequential();
+                .OrderBy(i => i.path);
     }
 
     private static bool Matches(TreeItem item, IDataModel model, Parameters parms)

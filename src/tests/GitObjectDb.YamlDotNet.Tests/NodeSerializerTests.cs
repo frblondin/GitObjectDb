@@ -13,7 +13,7 @@ public partial class NodeSerializerTests
 {
     [Test]
     [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization))]
-    public void EmbeddedResourceGetPreserved(IFixture fixture)
+    public void SimpleValueGetPreserved(IFixture fixture)
     {
         // Arrange
         var model = new ConventionBaseModelBuilder()
@@ -24,20 +24,21 @@ public partial class NodeSerializerTests
         // Arrange
         var value = new SomeNode
         {
-            EmbeddedResource = "\nSome\nValue containing Special chars such as #, /*, */, or //.\n",
+            Value = "\nSome\nValue containing Special chars such as #, /*, */, or //.\n",
             Path = new DataPath("Nodes", "foo.yaml", false),
         };
 
         // Act
         var nodeSerializer = fixture.Create<INodeSerializer>();
         var serialized = nodeSerializer.Serialize(value);
-        var deserialized = nodeSerializer.Deserialize(serialized, ObjectId.Zero, null, _ => throw new NotImplementedException());
+        var deserialized = (SomeNode)nodeSerializer.Deserialize(serialized, ObjectId.Zero, null, _ => throw new NotImplementedException());
 
         // Assert
-        Assert.That(deserialized.EmbeddedResource, Is.EqualTo(value.EmbeddedResource));
+        Assert.That(deserialized.Value, Is.EqualTo(value.Value));
     }
 
     private record SomeNode : Node
     {
+        required public string Value { get; init; }
     }
 }

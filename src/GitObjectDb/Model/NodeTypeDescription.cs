@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
 
 namespace GitObjectDb.Model;
 
@@ -29,6 +30,7 @@ public sealed class NodeTypeDescription : IEquatable<NodeTypeDescription>
 
         SearchableProperties = GetSearchableProperties(type).ToImmutableList();
         SerializableProperties = GetSerializableProperties(type).ToImmutableList();
+        StoredAsSeparateFilesProperties = GetStoredAsSeparateFilesProperties(type);
         UseNodeFolders = useNodeFolders ??
                          GitFolderAttribute.Get(type)?.UseNodeFolders ??
                          GitFolderAttribute.DefaultUseNodeFoldersValue;
@@ -45,6 +47,9 @@ public sealed class NodeTypeDescription : IEquatable<NodeTypeDescription>
 
     /// <summary>Gets the list of serializable properties.</summary>
     public IList<PropertyInfo> SerializableProperties { get; }
+
+    /// <summary>Gets the list of serializable properties.</summary>
+    public IList<(PropertyInfo Property, string Extension)> StoredAsSeparateFilesProperties { get; }
 
     /// <summary>Gets the children that this node can contain.</summary>
     public IList<NodeTypeDescription> Children => _children.AsReadOnly();
@@ -82,7 +87,43 @@ public sealed class NodeTypeDescription : IEquatable<NodeTypeDescription>
         return type.GetProperties().Where(IsSerializable);
 
         static bool IsSerializable(PropertyInfo property) =>
-            property.GetCustomAttribute<IgnoreDataMemberAttribute>(true) is null;
+            property.GetCustomAttribute<IgnoreDataMemberAttribute>(true) is null &&
+            property.GetCustomAttribute<StoreAsSeparateFileAttribute>(true) is null;
+    }
+
+    private static IList<(PropertyInfo Property, string Extension)> GetStoredAsSeparateFilesProperties(Type type)
+    {
+        var result = (from property in type.GetProperties()
+            let attribute = property.GetCustomAttribute<StoreAsSeparateFileAttribute>(true)
+            where property.GetCustomAttribute<IgnoreDataMemberAttribute>(true) is null &&
+                  attribute is not null
+            select (property, attribute.Extension)).ToList().AsReadOnly();
+
+        foreach (var (property, extension) in result)
+        {
+            ValidateStoreAsSeparateFileProperty(property, extension);
+        }
+
+        return result;
+    }
+
+    private static void ValidateStoreAsSeparateFileProperty(PropertyInfo property, string extension)
+    {
+        if (property.PropertyType != typeof(string))
+        {
+            throw new GitObjectDbException($"Property {property} decorated with attribute " +
+                                           $"{nameof(StoreAsSeparateFileAttribute)} must be of type string.");
+        }
+        if (property.GetCustomAttributes(true).Any(a => a.GetType().Name == "RequiredMemberAttribute"))
+        {
+            throw new GitObjectDbException($"Property {property} decorated with attribute " +
+                                           $"{nameof(StoreAsSeparateFileAttribute)} cannot be required.");
+        }
+        if (!Regex.IsMatch(extension, "^[a-z]+$"))
+        {
+            throw new GitObjectDbException($"Attribute {nameof(StoreAsSeparateFileAttribute)} applied to property " +
+                                           $"{property} must use an extension with only lower-case characters.");
+        }
     }
 
     internal void AddChild(NodeTypeDescription nodeType)

@@ -48,6 +48,8 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
         _queryResources = serviceProvider.GetRequiredService<IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>>>();
         _searchItems = serviceProvider.GetRequiredService<IQuery<SearchItems.Parameters, IEnumerable<(DataPath Path, TreeItem Item)>>>();
         _comparer = serviceProvider.GetRequiredService<IComparerInternal>();
+
+        ValidateModel();
     }
 
     public IRepository Repository { get; }
@@ -136,5 +138,25 @@ internal sealed partial class Connection : IConnectionInternal, ISubmoduleProvid
             repository.Value.Dispose();
         }
         _repositories.Clear();
+    }
+
+    private void ValidateModel()
+    {
+        foreach (var nodeDescription in Model.NodeTypes)
+        {
+            ValidateNodeType(nodeDescription);
+        }
+    }
+
+    private void ValidateNodeType(NodeTypeDescription nodeType)
+    {
+        foreach (var info in nodeType.StoredAsSeparateFilesProperties)
+        {
+            if (info.Extension.Equals(Serializer.FileExtension, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new GitObjectDbException($"Attribute {nameof(StoreAsSeparateFileAttribute)} applied to property " +
+                                               $"{info.Property} must use an extension which is different from serializer file extension.");
+            }
+        }
     }
 }

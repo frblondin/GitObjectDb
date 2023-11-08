@@ -7,6 +7,8 @@ namespace Models.Software;
 [GitFolder(UseNodeFolders = false)]
 public record Constant : Node
 {
+    [StoreAsSeparateFile]
+    public string Value { get; init; }
 }
 
 public static class IConnectionConstantExtensions

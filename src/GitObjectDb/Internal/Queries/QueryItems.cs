@@ -1,7 +1,5 @@
 using LibGit2Sharp;
-using Microsoft.Extensions.Caching.Memory;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,7 +23,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
         var entries = new Stack<Parameters>();
 
         // Fetch direct resources
-        if (IncludeResources(parms))
+        if (IncludeResources(parms, queryAccessor.Serializer))
         {
             var node = (Node)LoadItem(queryAccessor, parms).Value;
             var resources = GetResources(queryAccessor, node, parms);
@@ -46,7 +44,7 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
                 yield return (entryParams.ParentPath!, lazyItem);
             }
 
-            if (IncludeResources(entryParams) && entryParams.IsRecursive)
+            if (IncludeResources(entryParams, queryAccessor.Serializer) && entryParams.IsRecursive)
             {
                 var resources = GetResources(queryAccessor, (Node)lazyItem.Value, entryParams);
                 foreach (var resource in resources)
@@ -72,9 +70,9 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
         _queryResources.Execute(queryAccessor,
                                 new QueryResources.Parameters(parms.Tree, parms.RelativeTree, node));
 
-    private static bool IncludeResources(Parameters parms) =>
+    private static bool IncludeResources(Parameters parms, INodeSerializer serializer) =>
         (parms.Type == null || parms.Type == typeof(Resource) || parms.Type == typeof(TreeItem)) &&
-        parms.ParentPath is not null && parms.ParentPath.IsNode;
+        parms.ParentPath is not null && parms.ParentPath.IsNode(serializer);
 
     private static bool IsOfType(IQueryAccessor queryAccessor, DataPath path, Type? type)
     {

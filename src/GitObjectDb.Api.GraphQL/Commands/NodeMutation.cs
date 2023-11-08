@@ -37,8 +37,8 @@ internal static partial class NodeMutation
         try
         {
             var node = GetNodeArgument<TNode>(context, mutationContext);
-            var fileExtension = mutationContext.QueryAccessor.Serializer.FileExtension;
-            var parentPath = node.Path!.IsRootNode ? default : node.Path!.GetParentNode(fileExtension);
+            var serializer = mutationContext.QueryAccessor.Serializer;
+            var parentPath = node.Path!.IsRootNode ? default : node.Path!.GetParentNode(serializer);
             var result = mutationContext.Transformations.CreateOrUpdate(node, parentPath);
 
             mutationContext.ModifiedNodesByPath[result.Path!] = result;

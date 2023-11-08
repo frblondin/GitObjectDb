@@ -65,6 +65,8 @@ public partial class IndexEntry : IRealmObject
     /// <summary>Gets the <see cref="DataPath"/> of the entry.</summary>
     public DataPath? Path => DataPath.TryParse(PathAsString, out var result) ? result : null;
 
+    public string? Type { get; internal set; }
+
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     [PrimaryKey]
     [Indexed]
@@ -82,4 +84,8 @@ public partial class IndexEntry : IRealmObject
 
     /// <summary>Gets entry content, if any.</summary>
     public byte[]? Data { get; internal set; }
+
+    /// <summary>Gets entry content, if any.</summary>
+    public IDictionary<string, string> ExternalPropertyValues { get; } =
+        new Dictionary<string, string>(StringComparer.Ordinal);
 }

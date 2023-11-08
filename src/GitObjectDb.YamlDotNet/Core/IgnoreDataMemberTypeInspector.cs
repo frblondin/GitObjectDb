@@ -1,3 +1,4 @@
+using GitObjectDb.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,5 +19,7 @@ internal class IgnoreDataMemberTypeInspector : TypeInspectorSkeleton
     public override IEnumerable<IPropertyDescriptor> GetProperties(Type type, object? container) =>
         _innerTypeDescriptor
         .GetProperties(type, container)
-        .Where(p => p.GetCustomAttribute<IgnoreDataMemberAttribute>() == null);
+        .Where(p =>
+            p.GetCustomAttribute<IgnoreDataMemberAttribute>() == null &&
+            p.GetCustomAttribute<StoreAsSeparateFileAttribute>() == null);
 }

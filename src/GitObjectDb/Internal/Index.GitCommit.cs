@@ -1,9 +1,12 @@
 using GitObjectDb.Internal.Commands;
 using LibGit2Sharp;
 using Realms;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Text;
 using static GitObjectDb.Internal.Commands.CommitCommand;
 using static GitObjectDb.Internal.Commands.GitUpdateCommand;
 
@@ -36,8 +39,8 @@ internal partial class Index
     private static ModuleCommands GetModuleFromIndexOrTree(Realm realm, Tree tree)
     {
         var entry = realm.All<IndexEntry>()
-            .FirstOrDefault(e => e.PathAsString.Equals(ModuleCommands.ModuleFile, System.StringComparison.Ordinal));
-        return entry is not null ?
+            .FirstOrDefault(e => e.PathAsString.Equals(ModuleCommands.ModuleFile, StringComparison.Ordinal));
+        return entry?.Data is not null ?
             new ModuleCommands(new MemoryStream(entry.Data)) :
             new ModuleCommands(tree);
     }
@@ -60,7 +63,7 @@ internal partial class Index
                             Tree tree,
                             ModuleCommands modules,
                             StreamWriter writer,
-                            List<string> index)
+                            IList<string> index)
     {
         if (entry.Path is null)
         {
@@ -68,19 +71,45 @@ internal partial class Index
         }
         if (entry.Delete)
         {
-            var action = GitUpdateCommand.Delete(entry.Path);
+            var action = GitUpdateCommand.Delete(entry.Path, _connection.Serializer);
             action.Invoke(tree, modules, _connection.Serializer, writer, index);
         }
         else
         {
-            using var stream = new MemoryStream(entry.Data);
+            using var stream = new MemoryStream(entry.Data!);
             AddBlob(entry.Path!.FilePath, stream, writer, index);
+            CreateOrUpdatePropertiesStoredAsSeparateFiles(entry, writer, index);
         }
-        if (entry.Path.IsNode)
+        if (entry.Path.IsNode(_connection.Serializer))
         {
             var link = entry.RemoteResourceRepository is not null && entry.RemoteResourceSha is not null ?
                 new ResourceLink(entry.RemoteResourceRepository, entry.RemoteResourceSha) : null;
             CreateOrUpdateNodeRemoteResource(entry.Path, link, tree, index, modules);
+        }
+    }
+
+    private void CreateOrUpdatePropertiesStoredAsSeparateFiles(IndexEntry entry,
+        StreamWriter writer,
+        ICollection<string> commitIndex)
+    {
+        var type = Type.GetType(entry.Type!);
+        if (type is null || !typeof(Node).IsAssignableFrom(type))
+        {
+            return;
+        }
+        foreach (var info in _connection.Model.GetDescription(type).StoredAsSeparateFilesProperties)
+        {
+            var path = new DataPath(entry.Path!.FolderPath,
+                $"{Path.GetFileNameWithoutExtension(entry.Path!.FileName)}.{info.Property.Name}.{info.Extension}",
+                false);
+            if (!entry.ExternalPropertyValues.TryGetValue(info.Property.Name, out var value))
+            {
+                GitUpdateCommand.Delete(path, _connection.Serializer);
+            }
+            else
+            {
+                AddBlob(path, new MemoryStream(Encoding.Default.GetBytes(value)), writer, commitIndex);
+            }
         }
     }
 }

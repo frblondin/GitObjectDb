@@ -1,27 +1,19 @@
-using Fasterflect;
 using GitObjectDb.Model;
 using GitObjectDb.SystemTextJson.Converters;
-using GitObjectDb.SystemTextJson.Tools;
-using GitObjectDb.Tools;
 using LibGit2Sharp;
 using Microsoft.Extensions.Options;
 using Microsoft.IO;
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace GitObjectDb.SystemTextJson;
 
-internal partial class NodeSerializer : INodeSerializer
+internal class NodeSerializer : INodeSerializer
 {
-    private const string CommentStringToEscape = "*/";
-    private const string CommentStringToUnescape = "ø/";
     private readonly RecyclableMemoryStreamManager _streamManager;
     private readonly JsonWriterOptions _writerOptions = new()
     {
@@ -71,7 +63,6 @@ internal partial class NodeSerializer : INodeSerializer
     {
         using var writer = new Utf8JsonWriter(stream, _writerOptions);
         JsonSerializer.Serialize(writer, node, Options);
-        WriteEmbeddedResource(node, writer);
     }
 
     public Node Deserialize(Stream stream,
@@ -95,8 +86,7 @@ internal partial class NodeSerializer : INodeSerializer
                     CommentHandling = JsonCommentHandling.Skip,
                 });
                 var result = JsonSerializer.Deserialize<Node>(document, Options)!;
-                var embeddedResource = ReadEmbeddedResource(new(bytes, 0, length));
-                Model.UpdateBaseProperties(result, treeId, path, embeddedResource);
+                Model.UpdateBaseProperties(result, treeId, path);
 
                 var newType = Model.GetNewTypeIfDeprecated(result.GetType());
                 if (newType is not null)
