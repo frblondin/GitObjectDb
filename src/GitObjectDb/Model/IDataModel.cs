@@ -48,6 +48,5 @@ public interface IDataModel
     /// <param name="node">The node to update.</param>
     /// <param name="treeId">The id of the tree where the stream is originated from.</param>
     /// <param name="path">The new path value.</param>
-    /// <param name="embeddedResource">The embedded resource value.</param>
-    void UpdateBaseProperties(Node node, ObjectId? treeId, DataPath? path, string? embeddedResource);
+    void UpdateBaseProperties(Node node, ObjectId? treeId, DataPath? path);
 }

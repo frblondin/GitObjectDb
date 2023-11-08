@@ -20,6 +20,6 @@ public sealed class GitFolderAttribute : Attribute
     /// <summary>Gets a value indicating whether node should be stored in a nested folder (FolderName/NodeId/data.json) or not (FolderName/NodeId.json).</summary>
     public bool UseNodeFolders { get; init; } = DefaultUseNodeFoldersValue;
 
-    internal static GitFolderAttribute Get(Type type) =>
-        _cache.GetOrAdd(type, type => type.GetCustomAttribute<GitFolderAttribute>(true));
+    internal static GitFolderAttribute? Get(Type type) =>
+        _cache.GetOrAdd(type, t => t.GetCustomAttribute<GitFolderAttribute>(true));
 }

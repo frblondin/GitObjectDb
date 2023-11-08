@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace GitObjectDb;
 
@@ -71,7 +72,8 @@ internal class TreeValidation : ITreeValidation
         private void ValidateNodeCollectionChildrenNotUsingNodeFolder(TreeEntry entry,
                                                                       Stack<string> path)
         {
-            foreach (var item in entry.Target.Peel<Tree>())
+            var tree = entry.Target.Peel<Tree>();
+            foreach (var item in tree)
             {
                 path.Push(item.Name);
                 switch (item.TargetType)
@@ -81,8 +83,14 @@ internal class TreeValidation : ITreeValidation
                         ValidateNodeId(nodeId);
                         break;
                     case TreeEntryTargetType.Blob:
-                        throw new GitObjectDbValidationException($"A node collection with {nameof(GitFolderAttribute.UseNodeFolders)} = false " +
-                            $"should only contain nodes of type '<ParentNodeId>.json'. Blob entry {item.Name}' was not expected.");
+                        var propertyNodeId = Regex.Replace(item.Name, @"^(\w+)\.\w+\.\w+", "$1");
+                        var expectedNodeBlobName = $"{propertyNodeId}.{_serializer.FileExtension}";
+                        if (tree[expectedNodeBlobName] == null)
+                        {
+                            throw new GitObjectDbValidationException($"The property value {item.Path} does not refer " +
+                                                                     $"to an existing node {expectedNodeBlobName}.");
+                        }
+                        break;
                     case TreeEntryTargetType.Tree:
                     case TreeEntryTargetType.GitLink:
                         throw new GitObjectDbValidationException($"A tree or link was not expected in a node collection that does " +

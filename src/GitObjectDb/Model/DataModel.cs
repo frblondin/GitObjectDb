@@ -15,9 +15,6 @@ internal class DataModel : IDataModel
     private static readonly MemberSetter _treeIdSetter = Reflect.PropertySetter(
         ExpressionReflector.GetProperty<Node>(n => n.TreeId));
 
-    private static readonly MemberSetter _embeddedResourceSetter = Reflect.PropertySetter(
-        ExpressionReflector.GetProperty<Node>(n => n.EmbeddedResource));
-
     private readonly ILookup<string, NodeTypeDescription> _folderNames;
     private readonly Dictionary<Type, Type> _deprecatedTypes;
 
@@ -102,14 +99,13 @@ internal class DataModel : IDataModel
         {
             throw new GitObjectDbException($"Updated node does not have the same id.");
         }
-        UpdateBaseProperties(updated, deprecated.TreeId, deprecated.Path, deprecated.EmbeddedResource);
+        UpdateBaseProperties(updated, deprecated.TreeId, deprecated.Path);
         return updated;
     }
 
-    public void UpdateBaseProperties(Node node, ObjectId? treeId, DataPath? path, string? embeddedResource)
+    public void UpdateBaseProperties(Node node, ObjectId? treeId, DataPath? path)
     {
         node.Path = path;
         _treeIdSetter.Invoke(node, treeId);
-        _embeddedResourceSetter.Invoke(node, embeddedResource);
     }
 }

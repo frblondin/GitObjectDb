@@ -28,9 +28,9 @@ public class IndexCommandTests
 
         // Assert
         var changes = comparer.Compare(connection,
-                                       connection.Repository.Lookup<Commit>("main~1"),
-                                       connection.Repository.Head.Tip,
-                                       connection.Model.DefaultComparisonPolicy);
+            connection.Repository.Lookup<Commit>("main~1"),
+            connection.Repository.Head.Tip,
+            connection.Model.DefaultComparisonPolicy);
         var expectedPath = $"{application.Path.FolderPath}/Pages/{newTableId}/{newTableId}.json";
         Assert.Multiple(() =>
         {
@@ -135,7 +135,6 @@ public class IndexCommandTests
     public void RenamingGitFoldersIsNotSupported(IFixture fixture, Table table, string message, Signature signature)
     {
         // Arrange
-        var comparer = fixture.Create<Comparer>();
         using var connection = fixture.Create<IConnectionInternal>();
 
         // Act
@@ -172,9 +171,40 @@ public class IndexCommandTests
 
         // Act
         var changes = comparer.Compare(connection,
-                                       connection.Repository.Lookup<Commit>("main~1"),
-                                       connection.Repository.Head.Tip,
-                                       connection.Model.DefaultComparisonPolicy);
+            connection.Repository.Lookup<Commit>("main~1"),
+            connection.Repository.Head.Tip,
+            connection.Model.DefaultComparisonPolicy);
+        Assert.That(changes, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(changes.Modified.OfType<Change.NodeChange>().Single().Differences, Has.Count.EqualTo(1));
+            Assert.That(changes.Added, Is.Empty);
+            Assert.That(changes.Deleted, Is.Empty);
+            Assert.That(new FileInfo(((Internal.Index)index).IndexStoragePath),
+                        Has.Property(nameof(FileInfo.Exists)).False);
+        });
+    }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
+    public void EditPropertyStoredAsSeparateFile(IFixture fixture, Constant constant, string value, string message, Signature signature)
+    {
+        // Arrange
+        var comparer = fixture.Create<Comparer>();
+        using var connection = fixture.Create<IConnectionInternal>();
+
+        // Act
+        var index = connection.GetIndex("main", c => c.CreateOrUpdate(constant with
+        {
+            Value = value,
+        }));
+        index.Commit(new(message, signature, signature));
+
+        // Act
+        var changes = comparer.Compare(connection,
+            connection.Repository.Lookup<Commit>("main~1"),
+            connection.Repository.Head.Tip,
+            connection.Model.DefaultComparisonPolicy);
         Assert.That(changes, Has.Count.EqualTo(1));
         Assert.Multiple(() =>
         {

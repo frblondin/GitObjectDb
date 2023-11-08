@@ -38,6 +38,9 @@ Here's a simple example:
         public string Name { get; set; }
 
         public string Description { get; set; }
+
+        [StoreAsSeparateFile(Extension = "txt")]
+        public string RichContent { get; set; }
     }
     ```
 2. Manipulate objects as follows:
@@ -57,25 +60,26 @@ Here's a simple example:
 var node = new SomeNode
 {
     SomeProperty = "Value stored as json",
-    EmbeddedResource = "Value stored as raw text in same Git blob",
+    RichContent = "Value stored as raw text in separate Git blob, next to primary one",
 }:
 ```
 ... gets stored in Git as follows:
+* zerzrzrz.json
 ```json
 {
   "$type": "Sample.SomeNode",
   "id": "zerzrzrz",
   "someProperty": "Value stored as json"
 }
-/*
-Value stored as raw text in same Git blob
-*/
+```
+* zerzrzrz.RichContent.txt
+```text
+Value stored many dynamic resources in separate Git blob, next to primary one
 ```
 You can also store resources as separate files:
 ```csharp
 new Resource(node, "Some/Folder", "File.txt", new Resource.Data("Value stored in a separate file in <node path>/Resources/Some/Folder/File.txt"));
 ```
-
 
 ## Branching
 

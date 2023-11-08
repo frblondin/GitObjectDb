@@ -1,3 +1,4 @@
+using Fasterflect;
 using GitObjectDb.Injection;
 using GitObjectDb.Internal.Commands;
 using GitObjectDb.Internal.Queries;
@@ -7,7 +8,7 @@ using Realms;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using static GitObjectDb.Internal.Commands.GitUpdateCommand;
@@ -18,7 +19,7 @@ internal partial class Index : IIndex
     private readonly IConnectionInternal _connection;
     private readonly IQuery<LoadItem.Parameters, TreeItem?> _loader;
 
-    private int _nestedCount = 0;
+    private int _nestedCount;
     private Realm? _realm;
 
     [FactoryDelegateConstructor(typeof(Factories.IndexFactory))]
@@ -81,7 +82,7 @@ internal partial class Index : IIndex
     {
         var branch = _connection.Repository.Branches[BranchName] ??
             throw new GitObjectDbException($"Branch {BranchName} does not exist.");
-        var result = branch!.Tip;
+        var result = branch.Tip;
         var existingTip = CommitId;
         if (existingTip is not null && existingTip != result.Id)
         {
@@ -94,7 +95,7 @@ internal partial class Index : IIndex
     {
         var branch = _connection.Repository.Branches[BranchName] ??
             throw new GitObjectDbException($"Branch {BranchName} does not exist.");
-        DoRealmAction(realm => realm.Write(() => IncrementVersion(realm, branch!.Tip.Id)));
+        DoRealmAction(realm => realm.Write(() => IncrementVersion(realm, branch.Tip.Id)));
     }
 
     public TNode CreateOrUpdate<TNode>(TNode node, Node? parent)
@@ -114,7 +115,7 @@ internal partial class Index : IIndex
 
     public void Rename(TreeItem item, DataPath newPath)
     {
-        var newItem = ValidateRename(item, newPath);
+        var newItem = ValidateRename(item, newPath, _connection.Serializer);
 
         Delete(item);
         UpsertOrDeleteItem(newItem, default, false);
@@ -164,11 +165,14 @@ internal partial class Index : IIndex
         var entry = new IndexEntry
         {
             PathAsString = path.FilePath,
+            Type = item.GetType().AssemblyQualifiedName,
             Delete = delete,
             RemoteResourceRepository = remoteResource?.Repository,
             RemoteResourceSha = remoteResource?.Sha,
             Data = data,
         };
+        AddPropertyStoredAsSeparateFiles(node, entry);
+
         DoRealmAction(realm =>
         {
             realm.Write(() =>
@@ -179,6 +183,24 @@ internal partial class Index : IIndex
         });
 
         return item;
+    }
+
+    private void AddPropertyStoredAsSeparateFiles(Node? node, IndexEntry entry)
+    {
+        if (node == null)
+        {
+            return;
+        }
+
+        foreach (var property in _connection.Model.GetDescription(node.GetType()).StoredAsSeparateFilesProperties
+                     .Select(info => info.Property))
+        {
+            var value = Reflect.PropertyGetter(property).Invoke(node)?.ToString();
+            if (value != null)
+            {
+                entry.ExternalPropertyValues[property.Name] = value;
+            }
+        }
     }
 
     private static void IncrementVersion(Realm realm, ObjectId commitId)
@@ -215,7 +237,7 @@ internal partial class Index : IIndex
     public IndexEntry? TryLoadEntry(DataPath path) => DoRealmAction(realm =>
         TryLoadEntry(path, realm));
 
-    private static IndexEntry TryLoadEntry(DataPath path, Realm realm) =>
+    private static IndexEntry? TryLoadEntry(DataPath path, Realm realm) =>
         realm.All<IndexEntry>().FirstOrDefault(e => e.PathAsString.Equals((string?)path.FilePath, StringComparison.Ordinal));
 
     public TItem? TryLoadItem<TItem>(DataPath path, bool onlyIndex = false)

@@ -18,7 +18,7 @@ public record ComparisonPolicy
     private static readonly RootComparer _rootComparer = RootComparerFactory.GetRootComparer();
 
     private static ISet<string> WhiteList { get; } = new HashSet<string>(
-        new[] { nameof(Node.EmbeddedResource), nameof(TreeItem.Path) },
+        new[] { nameof(TreeItem.Path) },
         System.StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Gets ignored node properties.</summary>
@@ -59,6 +59,7 @@ public record ComparisonPolicy
 
         static bool IgnoreProperty((NodeTypeDescription TypeDescription, PropertyInfo Property) data) =>
             !data.TypeDescription.SerializableProperties.Contains(data.Property) &&
+            !data.TypeDescription.StoredAsSeparateFilesProperties.Any(info => info.Property == data.Property) &&
             !WhiteList.Contains(data.Property.Name);
     }
 }

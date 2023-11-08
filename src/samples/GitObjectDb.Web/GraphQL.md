@@ -8,7 +8,7 @@
       name,
       constants {
        ...fields
-        embeddedResource
+        value
       }
       fields {
        ...fields

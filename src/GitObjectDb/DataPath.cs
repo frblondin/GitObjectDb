@@ -48,16 +48,17 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
     public string[] FolderParts { get; }
 
     /// <summary>Gets a value indicating whether the path represents a path to a node (e.g. not a resource).</summary>
-    public bool IsNode => !_isInResourceFolderRegex.IsMatch(FolderPath);
-
-    /// <summary>Gets a value indicating whether the path represents a path to a node (e.g. not a resource).</summary>
-    public bool IsRootNode => IsNode && FolderParts.Length <= (UseNodeFolders ? 2 : 1);
+    public bool IsRootNode => FolderParts.Length <= (UseNodeFolders ? 2 : 1);
 
     /// <summary>
     /// Gets a value indicating whether node should be stored in a nested
     /// folder (FolderName/NodeId/data.json) or not (FolderName/NodeId.json).
     /// </summary>
     public bool UseNodeFolders { get; }
+
+    /// <summary>Gets a value indicating whether the path represents a path to a resource
+    /// (e.g. not a node or file used for external properties).</summary>
+    public bool IsResource => _isInResourceFolderRegex.IsMatch(FolderPath);
 
     /// <summary>
     /// Indicates whether the values of two specified <see cref="DataPath" /> objects are equal.
@@ -238,12 +239,12 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
         StringComparer.Ordinal.Compare(FilePath, other.FilePath);
 
     /// <summary>Gets the parent node path.</summary>
-    /// <param name="fileExtension">The extension of serialized files (json, yaml...).</param>
+    /// <param name="serializer">The serializer used to convert nodes.</param>
     /// <returns>The parent node path.</returns>
-    public DataPath GetParentNode(string fileExtension)
+    public DataPath GetParentNode(INodeSerializer serializer)
     {
         var levelCount = UseNodeFolders ? 2 : 1;
-        int position = IsNode ?
+        int position = IsNode(serializer) ?
                        FolderParts.Length - levelCount :
                        Array.FindIndex(FolderParts,
                                        p => StringComparer.Ordinal.Equals(p, FileSystemStorage.ResourceFolder));
@@ -251,7 +252,7 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
         {
             throw new InvalidOperationException($"Path doesn't refer to a resource.");
         }
-        return new DataPath(string.Join("/", FolderParts.Take(position)), $"{FolderParts[position - 1]}.{fileExtension}", true);
+        return new DataPath(string.Join("/", FolderParts.Take(position)), $"{FolderParts[position - 1]}.{serializer.FileExtension}", true);
     }
 
     internal DataPath CreateResourcePath(string folderPath, string file)
@@ -270,4 +271,12 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
             throw new GitObjectDbException("The path contains reserved folder names;");
         }
     }
+
+    /// <summary>Gets a value indicating whether the path represents a path to a node
+    /// (e.g. not a resource or file used for external properties).</summary>
+    /// <param name="serializer">The serializer used to convert nodes.</param>
+    /// <returns><c>true</c> if the path points to a node, <c>false</c> otherwise.</returns>
+    public bool IsNode(INodeSerializer serializer) =>
+        !_isInResourceFolderRegex.IsMatch(FolderPath) &&
+        FileName.EndsWith(serializer.FileExtension);
 }

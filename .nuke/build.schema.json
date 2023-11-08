@@ -30,6 +30,9 @@
         "ExcludedArtifactsType": {
           "type": "string"
         },
+        "GITHUB_HEAD_REF": {
+          "type": "string"
+        },
         "Help": {
           "type": "boolean",
           "description": "Shows the help text for this build assembly"

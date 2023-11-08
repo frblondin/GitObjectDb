@@ -11,14 +11,14 @@ mutation {
   zoneType: createOrganizationType(node: {
     id: "zone", label: "Zone"
   })
-  
+
   siteX: createOrganization(node: {
     id: "siteX"
     label: "Site X"
     type: "Types/site.json"
     timeZone: "UTC;0;(UTC) Coordinated Universal Time;Coordinated Universal Time;Coordinated Universal Time;;"
   })
-  
+
   na: createOrganization(node: {
     id: "northAmerica"
     label: "NorthAmerica"
@@ -56,7 +56,7 @@ mutation {
     author: "Me",
     email: "me@myself.com"
   )
-  
+
   updateAlfa: createOrganization(node: {
     id: "alfa"
     label: "Site Alfa"
@@ -69,7 +69,7 @@ mutation {
     type: "Types/zone.json"
     graphicalOrganizationStructureId: "huhuhu"
   }, parentId: "usa")
-  
+
   updateCommit: commit(
     message: "Update GOS ids",
     author: "Me",
@@ -89,14 +89,12 @@ mutation {
       label
       graphicalOrganizationStructureId
       timeZone
-      embeddedResource
       path
     }
     new {
       label
       graphicalOrganizationStructureId
       timeZone
-      embeddedResource
       path
     }
   }

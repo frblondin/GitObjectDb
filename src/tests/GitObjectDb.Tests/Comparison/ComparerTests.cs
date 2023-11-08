@@ -1,9 +1,9 @@
-using System.Collections.Immutable;
 using GitObjectDb.Comparison;
 using GitObjectDb.Model;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
+using System.Collections.Immutable;
 
 namespace GitObjectDb.Tests.Comparison;
 
@@ -11,36 +11,19 @@ public class ComparerTests
 {
     [Test]
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
-    public void EmbeddedResourceChangesGetDetected(IComparer sut, UniqueId id, string oldValue, string newValue)
+    public void StoreAsSeparateFilePropertyChangesGetDetected(IComparer sut, UniqueId id, string oldValue, string newValue)
     {
         // Arrange
         var model = new ConventionBaseModelBuilder().RegisterType<SomeNode>().Build();
 
         // Act
         var result = sut.Compare(
-            new SomeNode { Id = id, EmbeddedResource = oldValue },
-            new SomeNode { Id = id, EmbeddedResource = newValue },
+            new SomeNode { Id = id, Value = oldValue },
+            new SomeNode { Id = id, Value = newValue },
             model.DefaultComparisonPolicy);
 
         // Assert
         Assert.That(result.Differences, Has.Exactly(1).Items);
-    }
-
-    [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
-    public void EmbeddedResourceUnchangedGetIgnored(IComparer sut, UniqueId id, string value)
-    {
-        // Arrange
-        var model = new ConventionBaseModelBuilder().RegisterType<SomeNode>().Build();
-
-        // Act
-        var result = sut.Compare(
-            new SomeNode { Id = id, EmbeddedResource = value },
-            new SomeNode { Id = id, EmbeddedResource = value },
-            model.DefaultComparisonPolicy);
-
-        // Assert
-        Assert.That(result.Differences, Is.Empty);
     }
 
     [Test]
@@ -208,6 +191,7 @@ public class ComparerTests
 
     private record SomeNode : Node
     {
+        [StoreAsSeparateFile]
         public string Value { get; init; }
     }
 

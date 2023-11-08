@@ -1,19 +1,23 @@
 using GitObjectDb.Internal.Queries;
 using KellermanSoftware.CompareNetObjects;
 using LibGit2Sharp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 namespace GitObjectDb.Comparison;
 
 internal class Comparer : IComparer, IComparerInternal
 {
     private readonly IQuery<LoadItem.Parameters, TreeItem?> _nodeLoader;
+    private readonly INodeSerializer _serializer;
 
-    public Comparer(IQuery<LoadItem.Parameters, TreeItem?> nodeLoader)
+    public Comparer(IQuery<LoadItem.Parameters, TreeItem?> nodeLoader, INodeSerializer serializer)
     {
         _nodeLoader = nodeLoader;
+        _serializer = serializer;
     }
 
     public ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy)
@@ -27,47 +31,83 @@ internal class Comparer : IComparer, IComparerInternal
                                     ComparisonPolicy? policy = null)
     {
         using var changes = connection.Repository.Diff.Compare<Patch>(old.Tree, @new.Tree);
+        var avoidDuplicates = new HashSet<string>(StringComparer.Ordinal);
         var result = new ChangeCollection(@new);
         foreach (var change in changes)
         {
-            var treeChanges = Compare(connection, old.Tree, @new.Tree, change, policy);
-            result.AddRange(treeChanges.Where(c => c is not null)!);
+            var transformedChange = Compare(connection, old.Tree, @new.Tree, change, avoidDuplicates, policy);
+            if (transformedChange is not null)
+            {
+                result.Add(transformedChange);
+            }
         }
         return result;
     }
 
-    public IEnumerable<Change?> Compare(IQueryAccessor queryAccessor,
+    public Change? Compare(IQueryAccessor queryAccessor,
                                         Tree oldTree,
                                         Tree newTree,
                                         PatchEntryChanges change,
+                                        ISet<string> avoidDuplicates,
                                         ComparisonPolicy? policy)
     {
-        if (change.Status == ChangeKind.Modified)
+        if (IsNodePropertyStoredAsFile(change.OldPath, out var oldNodePath) |
+            IsNodePropertyStoredAsFile(change.Path, out var newNodePath))
         {
-            yield return CreateChange(CreateNode(oldTree, change.OldPath),
-                                      CreateNode(newTree, change.Path),
-                                      ChangeStatus.Edit);
+            if (avoidDuplicates.Contains(oldNodePath!))
+            {
+                return null;
+            }
+
+            avoidDuplicates.Add(oldNodePath!);
+            avoidDuplicates.Add(newNodePath!);
+            return TurnExternalPropertyIntoNodeChange();
         }
-        else if (change.Status == ChangeKind.Added)
+
+        return change.Status switch
         {
-            yield return CreateChange(default, CreateNode(newTree, change.Path), ChangeStatus.Add);
-        }
-        else if (change.Status == ChangeKind.Deleted)
-        {
-            yield return CreateChange(CreateNode(oldTree, change.OldPath), default, ChangeStatus.Delete);
-        }
-        else if (change.Status == ChangeKind.Renamed)
-        {
-            yield return CreateChange(CreateNode(oldTree, change.OldPath),
-                                      CreateNode(newTree, change.Path),
-                                      ChangeStatus.Rename);
-        }
+            ChangeKind.Modified => CreateChange(Load(oldTree, change.OldPath),
+                Load(newTree, change.Path),
+                ChangeStatus.Edit),
+            ChangeKind.Added => CreateChange(default, Load(newTree, change.Path), ChangeStatus.Add),
+            ChangeKind.Deleted => CreateChange(Load(oldTree, change.OldPath), default, ChangeStatus.Delete),
+            ChangeKind.Renamed => CreateChange(Load(oldTree, change.OldPath),
+                Load(newTree, change.Path),
+                ChangeStatus.Rename),
+            _ => null,
+        };
         Change? CreateChange(TreeItem? old, TreeItem? @new, ChangeStatus status) => Change.Create(
             change, old, @new, status, policy ?? queryAccessor.Model.DefaultComparisonPolicy);
-        TreeItem? CreateNode(Tree tree, string path) =>
-            _nodeLoader.Execute(
-                queryAccessor,
-                new(tree, Index: null, DataPath.Parse(path)));
+        TreeItem? Load(Tree tree, string path) => _nodeLoader.Execute(
+            queryAccessor,
+            new(tree, Index: null, DataPath.Parse(path)));
+
+        Change? TurnExternalPropertyIntoNodeChange()
+        {
+            var oldNode = oldNodePath is not null ? Load(oldTree, oldNodePath) : null;
+            var newNode = newNodePath is not null ? Load(newTree, newNodePath) : null;
+            var status = change.Status switch
+            {
+                _ when oldNodePath is null => ChangeStatus.Add,
+                _ when newNodePath is null => ChangeStatus.Delete,
+                ChangeKind.Renamed => ChangeStatus.Rename,
+                _ => ChangeStatus.Edit,
+            };
+            return CreateChange(oldNode, newNode, status);
+        }
+    }
+
+    private bool IsNodePropertyStoredAsFile(string path, out string? nodePath)
+    {
+        var match = Regex.Match(path, @"^(?<folder>.*)/(?<fileName>\w+)\.\w+\.\w+");
+        if (match.Success)
+        {
+            var fileName = $"{match.Result("${fileName}")}.{_serializer.FileExtension}";
+            nodePath = $"{match.Result("${folder}")}/{fileName}";
+            return true;
+        }
+        nodePath = null;
+        return false;
     }
 
     internal static ComparisonResult CompareInternal(object? expectedObject,

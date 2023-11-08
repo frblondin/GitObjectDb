@@ -1,3 +1,4 @@
+using System;
 using AutoFixture;
 using FakeItEasy;
 using GitObjectDb.Comparison;
@@ -15,6 +16,7 @@ using Models.Software;
 using NUnit.Framework;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace GitObjectDb.Tests.Commands;
 
@@ -124,6 +126,27 @@ public class CommitCommandTests
 
     [Test]
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+    public void DeletingNodeRemovesExternallyStoredPropertyFiles(IFixture fixture, Constant constant, string message, Signature signature)
+    {
+        // Arrange
+        var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
+        var sut = fixture.Create<ICommitCommand>();
+        using var connection = fixture.Create<IConnectionInternal>();
+
+        // Act
+        var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
+        composer.Delete(constant);
+        sut.Commit(composer, new(message, signature, signature));
+
+        // Assert
+        var folder = connection.Repository.Branches["main"].Tip[constant.Path!.FolderPath].Target.Peel<Tree>();
+        Assert.That(folder,
+            Has.Exactly(0).Matches<TreeEntry>(entry =>
+                entry.Name.StartsWith(constant.Id.ToString(), StringComparison.OrdinalIgnoreCase)));
+    }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
     public void RenamingNonGitFoldersIsSupported(IFixture fixture, Field field, string message, Signature signature)
     {
         // Arrange
@@ -202,6 +225,39 @@ public class CommitCommandTests
             Assert.That(changes.Added, Is.Empty);
             Assert.That(changes.Deleted, Is.Empty);
         });
+    }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+    public void EditNodeRemovesObsoleteExternallyStoredPropertyFiles(IFixture fixture, Constant constant, string message, Signature signature)
+    {
+        // Arrange
+        var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
+        var sut = fixture.Create<ICommitCommand>();
+        using var connection = fixture.Create<IConnectionInternal>();
+        var definition = TreeDefinition.From(connection.Repository.Branches["main"].Tip);
+        var obsoletePropertyPath = $"{constant.Path!.FolderPath}/{constant.Id}.ObsoletePropertyName.txt";
+        definition.Add(
+            obsoletePropertyPath,
+            connection.Repository.ObjectDatabase.CreateBlob(
+                new MemoryStream(Encoding.Default.GetBytes("Some content"))),
+            Mode.NonExecutableFile);
+        var tree = connection.Repository.ObjectDatabase.CreateTree(definition);
+        var commit = connection.Repository.ObjectDatabase.CreateCommit(
+            signature, signature, message,
+            tree,
+            new[] { connection.Repository.Branches["main"].Tip },
+            false);
+        connection.Repository.Refs.UpdateTarget(
+            connection.Repository.Branches["main"].Reference, commit.Id, message);
+
+        // Act
+        var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
+        composer.CreateOrUpdate(constant with { Value = constant.Value + "Updated" });
+        sut.Commit(composer, new(message, signature, signature));
+
+        // Assert
+        Assert.That(connection.Repository.Branches["main"].Tip[obsoletePropertyPath], Is.Null);
     }
 
     private class InternalMocks : ICustomization

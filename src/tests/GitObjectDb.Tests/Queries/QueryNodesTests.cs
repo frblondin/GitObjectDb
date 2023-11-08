@@ -62,10 +62,10 @@ public class QueryNodesTests : DisposeArguments
 
     [Test]
     [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
-    public void EmbeddedResourceGetsLoaded(Constant constant)
+    public void StoreAsSeparateFilePropertiesGetsLoaded(Constant constant)
     {
         // Assert
-        Assert.That(constant.EmbeddedResource, Is.Not.Null);
+        Assert.That(constant.Value, Is.Not.Null);
     }
 
     [Test]
