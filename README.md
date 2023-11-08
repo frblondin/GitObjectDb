@@ -28,19 +28,19 @@ Here's a simple example:
     [GitFolder("Applications")]
     public record Application : Node
     {
-        public string Name { get; set; }
+        public string Name { get; init; }
 
-        public string Description { get; set; }
+        public string Description { get; init; }
     }
     [GitFolder("Pages")]
     public record Table : Node
     {
-        public string Name { get; set; }
+        public string Name { get; init; }
 
-        public string Description { get; set; }
+        public string Description { get; init; }
 
         [StoreAsSeparateFile(Extension = "txt")]
-        public string RichContent { get; set; }
+        public string? RichContent { get; init; }
     }
     ```
 2. Manipulate objects as follows:
