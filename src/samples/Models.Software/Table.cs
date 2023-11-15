@@ -15,6 +15,10 @@ public record Table : Node
 
     /// <summary>Gets the description of the table.</summary>
     public string? Description { get; init; }
+
+    /// <summary>Gets long text value stored in separate blob.</summary>
+    [StoreAsSeparateFile(Extension = "someextension")]
+    public string? LongTextStoredInSeparateBlob { get; init; }
 }
 
 public static class IConnectionTableExtensions

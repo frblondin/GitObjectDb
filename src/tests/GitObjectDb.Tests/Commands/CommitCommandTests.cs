@@ -1,8 +1,6 @@
-using System;
 using AutoFixture;
 using FakeItEasy;
 using GitObjectDb.Comparison;
-using GitObjectDb.Injection;
 using GitObjectDb.Internal;
 using GitObjectDb.Internal.Commands;
 using GitObjectDb.Model;
@@ -14,6 +12,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Models.Software;
 using NUnit.Framework;
+using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -224,6 +223,37 @@ public class CommitCommandTests
             Assert.That(changes.Modified.OfType<Change.NodeChange>().Single().Differences, Has.Count.EqualTo(1));
             Assert.That(changes.Added, Is.Empty);
             Assert.That(changes.Deleted, Is.Empty);
+        });
+    }
+
+    [Test]
+    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization), typeof(InternalMocks))]
+    public void EditNodeAddsExternallyStoredPropertyFiles(IFixture fixture, Table table, string value, string message, Signature signature)
+    {
+        // Arrange
+        var comparer = fixture.Create<Comparer>();
+        var gitUpdateCommand = fixture.Create<IGitUpdateCommand>();
+        var sut = fixture.Create<ICommitCommand>();
+        using var connection = fixture.Create<IConnectionInternal>();
+
+        // Act
+        var composer = new TransformationComposer(connection, "main", gitUpdateCommand, sut);
+        composer.CreateOrUpdate(table with { LongTextStoredInSeparateBlob = value });
+        sut.Commit(composer, new(message, signature, signature));
+
+        // Assert
+        var changes = comparer.Compare(connection,
+            connection.Repository.Lookup<Commit>("main~1"),
+            connection.Repository.Head.Tip,
+            connection.Model.DefaultComparisonPolicy);
+        Assert.That(changes, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(changes.Modified.OfType<Change.NodeChange>().Single().Differences, Has.Count.EqualTo(1));
+            Assert.That(changes.Added, Is.Empty);
+            Assert.That(changes.Deleted, Is.Empty);
+            Assert.That(changes.Modified.OfType<Change.NodeChange>().Single().New,
+                Is.InstanceOf<Table>().With.Property(nameof(Table.LongTextStoredInSeparateBlob)).EqualTo(value));
         });
     }
 
