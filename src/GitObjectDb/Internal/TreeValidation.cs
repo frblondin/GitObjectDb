@@ -83,13 +83,7 @@ internal class TreeValidation : ITreeValidation
                         ValidateNodeId(nodeId);
                         break;
                     case TreeEntryTargetType.Blob:
-                        var propertyNodeId = Regex.Replace(item.Name, @"^(\w+)\.\w+\.\w+", "$1");
-                        var expectedNodeBlobName = $"{propertyNodeId}.{_serializer.FileExtension}";
-                        if (tree[expectedNodeBlobName] == null)
-                        {
-                            throw new GitObjectDbValidationException($"The property value {item.Path} does not refer " +
-                                                                     $"to an existing node {expectedNodeBlobName}.");
-                        }
+                        ValidateBlobIsExistingNodePropertyValue(item, tree);
                         break;
                     case TreeEntryTargetType.Tree:
                     case TreeEntryTargetType.GitLink:
@@ -99,6 +93,17 @@ internal class TreeValidation : ITreeValidation
                         throw new NotSupportedException($"{item.TargetType} is not supported.");
                 }
                 path.Pop();
+            }
+        }
+
+        private void ValidateBlobIsExistingNodePropertyValue(TreeEntry item, Tree tree)
+        {
+            var propertyNodeId = Regex.Replace(item.Name, @"^(\w+)\.\w+\.\w+", "$1");
+            var expectedNodeBlobName = $"{propertyNodeId}.{_serializer.FileExtension}";
+            if (tree[expectedNodeBlobName] == null)
+            {
+                throw new GitObjectDbValidationException($"The blob {item.Path} does not refer to a valid node property" +
+                                                         $"to an existing node {expectedNodeBlobName}.");
             }
         }
 
@@ -170,10 +175,8 @@ internal class TreeValidation : ITreeValidation
                         result = true;
                         break;
                     case TreeEntryTargetType.Blob:
-                        throw new GitObjectDbValidationException(
-                            $"A node folder should only contain a file named " +
-                            $"'<ParentNodeId>.{_serializer.FileExtension}'. " +
-                            $"Blob entry '{item.Name}' was not expected.");
+                        ValidateBlobIsExistingNodePropertyValue(item, nodeFolderTree);
+                        break;
                     case TreeEntryTargetType.GitLink:
                         throw new GitObjectDbValidationException($"A link folder is only valid as a resource. " +
                             $"Git link '{item.Name}' was not expected.");
