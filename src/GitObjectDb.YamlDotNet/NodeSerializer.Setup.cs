@@ -11,7 +11,7 @@ using NodeFactory = GitObjectDb.YamlDotNet.Core.NodeFactory;
 
 namespace GitObjectDb.YamlDotNet;
 
-internal partial class NodeSerializer : INodeSerializer
+public partial class NodeSerializer : INodeSerializer
 {
     private static ISerializer CreateSerializer(IDataModel model,
                                                 INamingConvention namingConvention,
