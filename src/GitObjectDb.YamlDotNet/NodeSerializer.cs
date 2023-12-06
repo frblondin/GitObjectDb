@@ -13,12 +13,13 @@ using YamlDotNet.Serialization;
 
 namespace GitObjectDb.YamlDotNet;
 
-internal partial class NodeSerializer : INodeSerializer
+/// <summary>Yaml implementation of node serializer.</summary>
+public partial class NodeSerializer : INodeSerializer
 {
     internal const string ReferenceTag = "!$Reference";
     private readonly RecyclableMemoryStreamManager _streamManager;
 
-    public NodeSerializer(IDataModel model,
+    internal NodeSerializer(IDataModel model,
                           INamingConvention namingConvention,
                           Action<SerializerBuilder>? configureSerializer = null,
                           Action<DeserializerBuilder>? configureDeserializer = null)
@@ -30,14 +31,18 @@ internal partial class NodeSerializer : INodeSerializer
         Deserializer = CreateDeserializer(model, namingConvention, configureDeserializer);
     }
 
-    public IDataModel Model { get; }
+    internal IDataModel Model { get; }
 
-    public ISerializer Serializer { get; set; }
+    /// <summary>Gets the Yaml serialize.</summary>
+    public ISerializer Serializer { get; }
 
-    public IDeserializer Deserializer { get; set; }
+    /// <summary>Gets the Yaml deserialize.</summary>
+    public IDeserializer Deserializer { get; }
 
+    /// <inheritdoc/>
     public string FileExtension => "yaml";
 
+    /// <inheritdoc/>
     public Stream Serialize(Node node)
     {
         var result = _streamManager.GetStream();
@@ -45,6 +50,7 @@ internal partial class NodeSerializer : INodeSerializer
         return result;
     }
 
+    /// <inheritdoc/>
     public void Serialize(Node node, Stream stream)
     {
         using (var writer = new StreamWriter(stream, Encoding.UTF8, 1024, leaveOpen: true))
@@ -55,6 +61,7 @@ internal partial class NodeSerializer : INodeSerializer
         stream.Seek(0L, SeekOrigin.Begin);
     }
 
+    /// <inheritdoc/>
     public Node Deserialize(Stream stream,
                             ObjectId treeId,
                             DataPath path,
@@ -91,6 +98,7 @@ internal partial class NodeSerializer : INodeSerializer
         return result;
     }
 
+    /// <inheritdoc/>
     public string EscapeRegExPattern(string pattern)
     {
         CheckForInvalidCharacters(pattern);

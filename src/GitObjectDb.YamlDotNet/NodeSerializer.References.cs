@@ -9,7 +9,7 @@ using System.Reflection;
 
 namespace GitObjectDb.YamlDotNet;
 
-internal partial class NodeSerializer : INodeSerializer
+public partial class NodeSerializer : INodeSerializer
 {
     private void ResolveReferences(NodeReferenceParser parser)
     {
