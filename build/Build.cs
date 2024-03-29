@@ -39,20 +39,20 @@ using Project = Nuke.Common.ProjectModel.Project;
     GitHubActionsImage.UbuntuLatest,
     JavaDistribution = GitHubActionJavaDistribution.Temurin,
     JavaVersion = "17",
-    OnPushBranches = new[]
-    {
+    OnPushBranches =
+    [
         "main",
         "dev",
         "releases/**",
-    },
-    OnPullRequestBranches = new[]
-    {
+    ],
+    OnPullRequestBranches =
+    [
         "main",
         "releases/**",
-    },
+    ],
     
-    InvokedTargets = new[] { nameof(Pack) },
-    ImportSecrets = new[] { "GITHUB_TOKEN", "SONAR_TOKEN", nameof(NuGetApiKey) },
+    InvokedTargets = [nameof(Pack)],
+    ImportSecrets = ["GITHUB_TOKEN", "SONAR_TOKEN", nameof(NuGetApiKey)],
     FetchDepth = 0)]
 class Build : NukeBuild
 {
@@ -107,8 +107,8 @@ class Build : NukeBuild
     Target Clean => _ => _
         .Executes(() =>
         {
-            SourceDirectory.GlobDirectories("**/bin", "**/obj").ForEach(DeleteDirectory);
-            EnsureCleanDirectory(OutputDirectory);
+            SourceDirectory.GlobDirectories("**/bin", "**/obj").ForEach(d => d.DeleteDirectory());
+            OutputDirectory.CreateOrCleanDirectory();
         });
 
     Target StartSonarqube => _ => _
@@ -164,21 +164,21 @@ class Build : NukeBuild
         .DependsOn(Compile)
         .Executes(() =>
         {
-            var args = new DotNetTestSettings()
-                .SetProjectFile(Solution)
-                .SetConfiguration(Configuration)
-                .EnableNoBuild()
-                .EnableNoRestore()
-                .SetLoggers("trx")
-                .SetProcessArgumentConfigurator(arguments => arguments
-                    .Add("-m:1")) // Make sure only one assembly gets tested at a time for coverage collect
-                .SetResultsDirectory(TestDirectory)
-                .GetProcessArguments()
-                .RenderForExecution();
-            var dotnetCoveragePath = ToolPathResolver.GetPackageExecutable("dotnet-coverage", "dotnet-coverage.dll");
-            using var process = StartProcess(
-                "dotnet",
-                @$"{dotnetCoveragePath} collect ""dotnet {args}"" -s {SourceDirectory / "CoverageConfig.xml"} -f xml -o ""{CoverageResult / "coverage.xml"}""");
+            using var process = StartProcess(new DotNetCollectSettings()
+                .SetTarget($"dotnet {new DotNetTestSettings()
+                    .SetProjectFile(Solution)
+                    .SetConfiguration(Configuration)
+                    .EnableNoBuild()
+                    .EnableNoRestore()
+                    .SetLoggers("trx")
+                    .SetProcessArgumentConfigurator(arguments => arguments
+                        .Add("-m:1")) // Make sure only one assembly gets tested at a time for coverage collect
+                    .SetResultsDirectory(TestDirectory)
+                    .GetProcessArguments()
+                    .RenderForExecution()}")
+                .SetConfigFile(SourceDirectory / "CoverageConfig.xml")
+                .SetFormat("xml")
+                .SetOutput(CoverageResult / "coverage.xml"));
             process.AssertZeroExitCode();
         });
 
@@ -219,7 +219,7 @@ class Build : NukeBuild
                 .Where(HasProjectBeenModifiedSinceLastTag)
                 .ForEach(project =>
                     DotNetPack(s => s
-                        .SetProject(Solution.GetProject(project))
+                        .SetProject(project)
                         .SetConfiguration(Configuration)
                         .SetVersion(GitVersion.NuGetPackageVersion)
                         .EnableNoBuild()
@@ -241,8 +241,8 @@ class Build : NukeBuild
                              (GitHubHeadRef.StartsWith("dev") || GitHubHeadRef.StartsWith("feature")))
        .Executes(() =>
        {
-           GlobFiles(NugetDirectory, ArtifactsType)
-               .Where(x => !x.EndsWith(ExcludedArtifactsType))
+           NugetDirectory.GlobFiles(ArtifactsType)
+               .Where(x => !x.Name.EndsWith(ExcludedArtifactsType))
                .ForEach(x =>
                {
                    DotNetNuGetPush(s => s
@@ -260,8 +260,8 @@ class Build : NukeBuild
        .OnlyWhenStatic(() => Repository.IsOnMainOrMasterBranch())
        .Executes(() =>
        {
-           GlobFiles(NugetDirectory, ArtifactsType)
-               .Where(x => !x.EndsWith(ExcludedArtifactsType))
+           NugetDirectory.GlobFiles(ArtifactsType)
+               .Where(x => !x.Name.EndsWith(ExcludedArtifactsType))
                .ForEach(x =>
                {
                    DotNetNuGetPush(s => s
@@ -303,8 +303,8 @@ class Build : NukeBuild
               .Repository
               .Release.Create(owner, name, newRelease);
 
-           GlobFiles(NugetDirectory, ArtifactsType)
-              .Where(x => !x.EndsWith(ExcludedArtifactsType))
+           NugetDirectory.GlobFiles(ArtifactsType)
+              .Where(x => !x.Name.EndsWith(ExcludedArtifactsType))
               .ForEach(async x => await UploadReleaseAssetToGithub(createdRelease, x));
 
            await GitHubTasks.GitHubClient
