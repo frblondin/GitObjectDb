@@ -34,4 +34,11 @@
     <Compile Include="$(SolutionDir)src\GitObjectDb\Tools\TypeExtensions.cs" Link="Tools\TypeExtensions.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="Microsoft.SourceLink.GitHub">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
 </Project>

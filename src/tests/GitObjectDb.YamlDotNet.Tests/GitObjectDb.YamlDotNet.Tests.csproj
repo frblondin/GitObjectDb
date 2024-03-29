@@ -24,4 +24,11 @@
     <Compile Include="$(SolutionDir)src\tests\GitObjectDb.SystemTextJson.Tests\Customization\ReferenceCustomization.cs" Link="Customization\ReferenceCustomization.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="Microsoft.SourceLink.GitHub">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
 </Project>
