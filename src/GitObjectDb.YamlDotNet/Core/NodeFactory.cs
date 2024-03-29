@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.IO;
 using YamlDotNet.Serialization;
 
@@ -27,4 +28,25 @@ internal class NodeFactory : IObjectFactory
 
         return result;
     }
+
+    public object? CreatePrimitive(Type type) =>
+        _inner.CreatePrimitive(type);
+
+    public bool GetDictionary(IObjectDescriptor descriptor, out IDictionary? dictionary, out Type[]? genericArguments) =>
+        _inner.GetDictionary(descriptor, out dictionary, out genericArguments);
+
+    public Type GetValueType(Type type) =>
+        _inner.GetValueType(type);
+
+    public void ExecuteOnDeserializing(object value) =>
+        _inner.ExecuteOnDeserializing(value);
+
+    public void ExecuteOnDeserialized(object value) =>
+        _inner.ExecuteOnDeserialized(value);
+
+    public void ExecuteOnSerializing(object value) =>
+        _inner.ExecuteOnSerializing(value);
+
+    public void ExecuteOnSerialized(object value) =>
+        _inner.ExecuteOnSerialized(value);
 }
