@@ -165,7 +165,7 @@ internal partial class Index : IIndex
         var entry = new IndexEntry
         {
             PathAsString = path.FilePath,
-            Type = item.GetType().AssemblyQualifiedName,
+            Type = item.GetType().AssemblyQualifiedName!,
             Delete = delete,
             RemoteResourceRepository = remoteResource?.Repository,
             RemoteResourceSha = remoteResource?.Sha,

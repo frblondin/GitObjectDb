@@ -49,7 +49,7 @@
     <PackageVersion Include="PowerAssert" Version="1.0.85" />
     <PackageVersion Include="protobuf-net.Grpc" Version="1.0.179" />
     <PackageVersion Include="protobuf-net.Grpc.AspNetCore" Version="1.0.179" />
-    <PackageVersion Include="Realm" Version="10.20.0" />
+    <PackageVersion Include="Realm" Version="11.7.0" />
     <PackageVersion Include="RequiredMemberAttribute" Version="1.0.0" />
     <PackageVersion Include="SourceLink.Copy.PdbFiles" Version="2.8.3" />
     <PackageVersion Include="SourceLink.Create.CommandLine" Version="2.8.3" />
