@@ -21,6 +21,10 @@
     <PackageReference Include="GraphQL.MicrosoftDI" />
     <PackageReference Include="GraphQL.SystemTextJson" />
     <PackageReference Include="Namotion.Reflection" />
+    <PackageReference Include="Nerdbank.GitVersioning">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
