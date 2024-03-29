@@ -92,17 +92,17 @@ internal partial class Index
         StreamWriter writer,
         ICollection<string> commitIndex)
     {
-        var type = Type.GetType(entry.Type!);
+        var type = Type.GetType(entry.Type);
         if (type is null || !typeof(Node).IsAssignableFrom(type))
         {
             return;
         }
-        foreach (var info in _connection.Model.GetDescription(type).StoredAsSeparateFilesProperties)
+        foreach (var (property, extension) in _connection.Model.GetDescription(type).StoredAsSeparateFilesProperties)
         {
             var path = new DataPath(entry.Path!.FolderPath,
-                $"{Path.GetFileNameWithoutExtension(entry.Path!.FileName)}.{info.Property.Name}.{info.Extension}",
+                $"{Path.GetFileNameWithoutExtension(entry.Path!.FileName)}.{property.Name}.{extension}",
                 false);
-            if (!entry.ExternalPropertyValues.TryGetValue(info.Property.Name, out var value))
+            if (!entry.ExternalPropertyValues.TryGetValue(property.Name, out var value))
             {
                 GitUpdateCommand.Delete(path, _connection.Serializer);
             }

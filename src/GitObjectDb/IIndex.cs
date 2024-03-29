@@ -60,18 +60,16 @@ public interface IIndex : ITransformationComposer, IEnumerable<IndexEntry>
 }
 
 /// <summary>Description of an entry in an index.</summary>
-public partial class IndexEntry : IRealmObject
+public partial class IndexEntry : RealmObject
 {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     /// <summary>Gets the <see cref="DataPath"/> of the entry.</summary>
     public DataPath? Path => DataPath.TryParse(PathAsString, out var result) ? result : null;
 
-    public string? Type { get; internal set; }
+    public string Type { get; internal set; }
 
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     [PrimaryKey]
-    [Indexed]
     internal string PathAsString { get; set; }
-#pragma warning restore CS8618
 
     /// <summary>Gets a value indicating whether the item gets deleted.</summary>
     public bool Delete { get; internal set; }
@@ -86,6 +84,6 @@ public partial class IndexEntry : IRealmObject
     public byte[]? Data { get; internal set; }
 
     /// <summary>Gets entry content, if any.</summary>
-    public IDictionary<string, string> ExternalPropertyValues { get; } =
-        new Dictionary<string, string>(StringComparer.Ordinal);
+    public IDictionary<string, string> ExternalPropertyValues { get; }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 }
