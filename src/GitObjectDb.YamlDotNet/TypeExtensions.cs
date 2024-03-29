@@ -57,7 +57,7 @@ public static class TypeExtensions
         else if (type.IsArray)
         {
             return string.Format("Array({0})",
-                type.GetElementType().GetYamlName());
+                type.GetElementType()!.GetYamlName());
         }
         return type.GetShortName();
     }
@@ -79,8 +79,8 @@ public static class TypeExtensions
         }
         if (type.IsGenericType)
         {
-            return type.FullName.Substring(0, type.FullName.IndexOf("`"));
+            return type.FullName!.Substring(0, type.FullName.IndexOf("`"));
         }
-        return type.FullName;
+        return type.FullName!;
     }
 }

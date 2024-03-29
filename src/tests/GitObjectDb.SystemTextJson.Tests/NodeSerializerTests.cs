@@ -39,6 +39,6 @@ public partial class NodeSerializerTests
 
     private record SomeNode : Node
     {
-        required public string? Value { get; init; }
+        required public string Value { get; init; }
     }
 }

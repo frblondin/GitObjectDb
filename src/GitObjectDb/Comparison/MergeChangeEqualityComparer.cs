@@ -11,25 +11,26 @@ internal sealed class MergeChangeEqualityComparer : IEqualityComparer<MergeChang
 
     public static MergeChangeEqualityComparer Instance { get; } = new MergeChangeEqualityComparer();
 
-    public bool Equals(MergeChange x, MergeChange y)
+    public bool Equals(MergeChange? x, MergeChange? y)
     {
         var xItem = ExtracItemData(x);
         var yItem = ExtracItemData(y);
-        return xItem.Equals(yItem);
+        return xItem == yItem || (xItem?.Equals(yItem) ?? false);
     }
 
     public int GetHashCode(MergeChange obj)
     {
-        return ExtracItemData(obj).GetHashCode();
+        return ExtracItemData(obj)?.GetHashCode() ?? 0;
     }
 
-    private static object ExtracItemData(MergeChange obj)
+    private static object? ExtracItemData(MergeChange? obj)
     {
-        var item = obj.Theirs ?? obj.Ours ?? obj.Ancestor;
+        var item = obj?.Theirs ?? obj?.Ours ?? obj?.Ancestor;
         return item switch
         {
             Node node => node.Id,
             Resource resource => resource.ThrowIfNoPath(),
+            null => null,
             _ => throw new NotSupportedException(),
         };
     }

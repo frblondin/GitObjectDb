@@ -227,7 +227,7 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
         StringComparer.Ordinal.GetHashCode(FilePath);
 
     /// <inheritdoc/>
-    public override bool Equals(object obj) =>
+    public override bool Equals(object? obj) =>
         Equals(obj as DataPath);
 
     /// <inheritdoc/>
@@ -235,8 +235,8 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
         string.Equals(FilePath, other?.FilePath, StringComparison.Ordinal);
 
     /// <inheritdoc/>
-    public int CompareTo(DataPath other) =>
-        StringComparer.Ordinal.Compare(FilePath, other.FilePath);
+    public int CompareTo(DataPath? other) =>
+        StringComparer.Ordinal.Compare(FilePath, other?.FilePath);
 
     /// <summary>Gets the parent node path.</summary>
     /// <param name="serializer">The serializer used to convert nodes.</param>

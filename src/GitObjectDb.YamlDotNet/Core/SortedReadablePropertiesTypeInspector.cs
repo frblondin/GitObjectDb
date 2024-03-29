@@ -34,7 +34,7 @@ internal class SortedReadablePropertiesTypeInspector : TypeInspectorSkeleton
         property.GetGetMethod(true)!.GetParameters().Length == 0;
 
     private static (int HierarchyDepth, string Name) GetOrder(PropertyInfo property) =>
-        (GetHierarchyDepth(property.DeclaringType), property.Name);
+        (GetHierarchyDepth(property.DeclaringType!), property.Name);
 
     private static int GetHierarchyDepth(Type type)
     {
@@ -77,11 +77,11 @@ internal class SortedReadablePropertiesTypeInspector : TypeInspectorSkeleton
             _propertyInfo.SetValue(target, value, null);
         }
 
-        public T GetCustomAttribute<T>()
+        public T? GetCustomAttribute<T>()
             where T : Attribute
         {
             var attributes = Attribute.GetCustomAttributes(_propertyInfo, typeof(T));
-            return (T)attributes.FirstOrDefault();
+            return (T?)attributes.FirstOrDefault();
         }
 
         public IObjectDescriptor Read(object target)

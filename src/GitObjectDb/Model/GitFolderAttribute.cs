@@ -9,7 +9,7 @@ namespace GitObjectDb.Model;
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
 public sealed class GitFolderAttribute : Attribute
 {
-    private static readonly ConcurrentDictionary<Type, GitFolderAttribute> _cache = new();
+    private static readonly ConcurrentDictionary<Type, GitFolderAttribute?> _cache = new();
 
     /// <summary>Gets a value indicating whether the default value of <see cref="UseNodeFolders"/> should be true.</summary>
     public static bool DefaultUseNodeFoldersValue { get; } = true;

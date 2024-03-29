@@ -26,7 +26,7 @@ public static class NodeFactory
     private static Func<UniqueId, Node> CreateFactory(Type type)
     {
         var idArg = Parameter(typeof(UniqueId), "id");
-        var constructor = type.GetConstructor(Type.EmptyTypes);
+        var constructor = type.GetConstructor(Type.EmptyTypes)!;
         var expression = Lambda<Func<UniqueId, Node>>(
             MemberInit(
                 New(constructor),

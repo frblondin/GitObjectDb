@@ -131,7 +131,7 @@ internal class Comparer : IComparer, IComparerInternal
             {
                 MaxDifferences = int.MaxValue,
                 SkipInvalidIndexers = true,
-                MembersToIgnore = policy.IgnoredProperties.Select(p => $"{p.DeclaringType.Name}.{p.Name}").ToList(),
+                MembersToIgnore = policy.IgnoredProperties.Select(p => $"{p.DeclaringType!.Name}.{p.Name}").ToList(),
                 AttributesToIgnore = policy.AttributesToIgnore.ToList(),
                 TreatStringEmptyAndNullTheSame = policy.TreatStringEmptyAndNullTheSame,
                 IgnoreStringLeadingTrailingWhitespace = policy.IgnoreStringLeadingTrailingWhitespace,
