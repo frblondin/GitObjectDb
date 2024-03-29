@@ -39,7 +39,7 @@ public class QueryTestBase<TDocumentBuilder>
     });
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-    public IServiceProvider ServiceProvider { get; private set; }
+    public ServiceProvider ServiceProvider { get; private set; }
 
     public IDocumentExecuter Executer { get; private set; }
 
@@ -84,6 +84,7 @@ public class QueryTestBase<TDocumentBuilder>
     {
         var path = Connection.Repository.Info.Path;
         Connection.Dispose();
+        ServiceProvider.Dispose();
 
         DirectoryUtils.Delete(path, continueOnError: true);
     }

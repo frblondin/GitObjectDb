@@ -12,29 +12,21 @@ namespace GitObjectDb.Api.GraphQL.Tests;
 
 public class LoadTestBase : QueryTestBase
 {
-    private readonly IClientFactory<IDocumentExecuter> _clientFactory =
-        ClientFactory.Create("graphql_executer_factory", (_, _) => Task.FromResult(CreateExecuter()));
-
-    protected IStep CreateGraphQLStep(string name, string query, TimeSpan? timeout = null) => Step.Create(
-        name,
-        clientFactory: _clientFactory,
-        execute: async context =>
+    protected Func<Task<Response<object>>> CreateGraphQLStep(string query, IDocumentExecuter executer) => async () =>
+    {
+        var result = await executer.ExecuteAsync(options =>
         {
-            var result = await context.Client.ExecuteAsync(options =>
-            {
-                options.Schema = Schema;
-                options.Query = query;
-                options.CancellationToken = context.CancellationToken;
-                options.UserContext = new Dictionary<string, object?>();
-                options.RequestServices = ServiceProvider;
-            }).ConfigureAwait(false);
-            return result.Errors?.Any() ?? true ?
-                   Response.Ok() :
-                   Response.Fail(result.Errors!.First().Message);
-        },
-        timeout);
+            options.Schema = Schema;
+            options.Query = query;
+            options.UserContext = new Dictionary<string, object?>();
+            options.RequestServices = ServiceProvider;
+        }).ConfigureAwait(false);
+        return result.Errors?.Any() ?? true ?
+                Response.Ok() :
+                Response.Fail(message: result.Errors!.First().Message);
+    };
 
-    protected static void RunScenarios(params Scenario[] scenarios)
+    protected static void RunScenarios(params ScenarioProps[] scenarios)
     {
         // creates ping plugin that brings additional reporting data
         var pingPluginConfig = PingPluginConfig.CreateDefault(new[] { "nbomber.com" });

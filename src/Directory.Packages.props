@@ -4,15 +4,15 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="AutoFixture" Version="4.18.0" />
+    <PackageVersion Include="AutoFixture" Version="4.18.1" />
     <PackageVersion Include="AutoFixture.Idioms" Version="4.17.0" />
-    <PackageVersion Include="AutoFixture.NUnit3" Version="4.18.0" />
+    <PackageVersion Include="AutoFixture.NUnit3" Version="4.18.1" />
     <PackageVersion Include="AutoMapper" Version="12.0.0" />
     <PackageVersion Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
-    <PackageVersion Include="Bogus" Version="34.0.2" />
+    <PackageVersion Include="Bogus" Version="35.5.0" />
     <PackageVersion Include="CompareNETObjects" Version="4.78.0" />
     <PackageVersion Include="Dapper" Version="2.0.123" />
-    <PackageVersion Include="FakeItEasy" Version="7.3.1" />
+    <PackageVersion Include="FakeItEasy" Version="8.1.0" />
     <PackageVersion Include="fasterflect.reflect" Version="3.1.0" />
     <PackageVersion Include="GraphQL" Version="7.2.2" />
     <PackageVersion Include="GraphQL.DataLoader" Version="7.2.2" />
@@ -34,17 +34,17 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="7.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
     <PackageVersion Include="Microsoft.IO.RecyclableMemoryStream" Version="2.2.1" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.1.1" />
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.15.1" />
     <PackageVersion Include="Namotion.Reflection" Version="2.1.1" />
-    <PackageVersion Include="NBomber" Version="3.3.0" />
-    <PackageVersion Include="NBomber.Http" Version="3.0.3" />
+    <PackageVersion Include="NBomber" Version="5.5.0" />
+    <PackageVersion Include="NBomber.Http" Version="5.0.1" />
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.6.133" />
-    <PackageVersion Include="NUnit" Version="3.13.3" />
-    <PackageVersion Include="NUnit.Analyzers" Version="3.6.1" />
-    <PackageVersion Include="NUnit3TestAdapter" Version="4.4.2" />
+    <PackageVersion Include="NUnit" Version="4.1.0" />
+    <PackageVersion Include="NUnit.Analyzers" Version="4.1.0" />
+    <PackageVersion Include="NUnit3TestAdapter" Version="4.5.0" />
     <PackageVersion Include="ObjectsComparer" Version="1.4.1" />
     <PackageVersion Include="PowerAssert" Version="1.0.85" />
     <PackageVersion Include="protobuf-net.Grpc" Version="1.0.179" />
