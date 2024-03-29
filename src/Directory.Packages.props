@@ -14,17 +14,17 @@
     <PackageVersion Include="Dapper" Version="2.0.123" />
     <PackageVersion Include="FakeItEasy" Version="8.1.0" />
     <PackageVersion Include="fasterflect.reflect" Version="3.1.0" />
-    <PackageVersion Include="GraphQL" Version="7.2.2" />
-    <PackageVersion Include="GraphQL.DataLoader" Version="7.2.2" />
-    <PackageVersion Include="GraphQL.MemoryCache" Version="7.2.2" />
-    <PackageVersion Include="GraphQL.MicrosoftDI" Version="7.2.2" />
-    <PackageVersion Include="GraphQL.Server.Ui.Altair" Version="7.2.0" />
-    <PackageVersion Include="GraphQL.SystemTextJson" Version="7.2.2" />
-    <PackageVersion Include="Grpc.Net.Client" Version="2.51.0" />
+    <PackageVersion Include="GraphQL" Version="7.8.0" />
+    <PackageVersion Include="GraphQL.DataLoader" Version="7.8.0" />
+    <PackageVersion Include="GraphQL.MemoryCache" Version="7.8.0" />
+    <PackageVersion Include="GraphQL.MicrosoftDI" Version="7.8.0" />
+    <PackageVersion Include="GraphQL.Server.Ui.Altair" Version="7.7.1" />
+    <PackageVersion Include="GraphQL.SystemTextJson" Version="7.8.0" />
+    <PackageVersion Include="Grpc.Net.Client" Version="2.61.0" />
     <PackageVersion Include="IsExternalInit" Version="1.0.3" />
     <PackageVersion Include="LibGit2Sharp" Version="0.30.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.OData" Version="8.0.11" />
-    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="7.0.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.OData" Version="8.2.5" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="8.0.3" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
     <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
@@ -38,7 +38,7 @@
     <PackageVersion Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.15.1" />
-    <PackageVersion Include="Namotion.Reflection" Version="2.1.1" />
+    <PackageVersion Include="Namotion.Reflection" Version="3.1.1" />
     <PackageVersion Include="NBomber" Version="5.5.0" />
     <PackageVersion Include="NBomber.Http" Version="5.0.1" />
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.6.133" />
@@ -47,15 +47,15 @@
     <PackageVersion Include="NUnit3TestAdapter" Version="4.5.0" />
     <PackageVersion Include="ObjectsComparer" Version="1.4.1" />
     <PackageVersion Include="PowerAssert" Version="1.0.85" />
-    <PackageVersion Include="protobuf-net.Grpc" Version="1.0.179" />
-    <PackageVersion Include="protobuf-net.Grpc.AspNetCore" Version="1.0.179" />
+    <PackageVersion Include="protobuf-net.Grpc" Version="1.1.1" />
+    <PackageVersion Include="protobuf-net.Grpc.AspNetCore" Version="1.1.1" />
     <PackageVersion Include="Realm" Version="11.7.0" />
     <PackageVersion Include="RequiredMemberAttribute" Version="1.0.0" />
     <PackageVersion Include="SourceLink.Copy.PdbFiles" Version="2.8.3" />
     <PackageVersion Include="SourceLink.Create.CommandLine" Version="2.8.3" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.406" />
     <PackageVersion Include="SharpZipLib" Version="1.3.3" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
     <PackageVersion Include="System.CommandLine.Hosting" Version="0.4.0-alpha.22114.1" />
     <PackageVersion Include="System.CommandLine.NamingConventionBinder" Version="2.0.0-beta3.22114.1" />
