@@ -79,7 +79,7 @@ public static class FactoryDelegateProviderExtensions
         return services.AddSingleton(delegateType, (Func<IServiceProvider, object>)invoker.Compile());
 
         bool IsTypeCompatible(Type type) =>
-            delegateType.GetMethod("Invoke").ReturnType.IsAssignableFrom(type) &&
+            delegateType.GetMethod("Invoke")!.ReturnType.IsAssignableFrom(type) &&
             type.GetTypeInfo().DeclaredConstructors.Any(IsDecoratedWithFactoryDelegateConstructorAttribute);
 
         bool IsDecoratedWithFactoryDelegateConstructorAttribute(ConstructorInfo constructor) =>
@@ -133,7 +133,7 @@ public static class FactoryDelegateProviderExtensions
 
     private static (IList<ParameterExpression> Parameters, Type[] ArgumentTypes, Type ReturnType) GetDelegateData(Type delegateType)
     {
-        var invokeMethod = delegateType.GetMethod("Invoke");
+        var invokeMethod = delegateType.GetMethod("Invoke")!;
         return ((from p in invokeMethod.GetParameters()
                  select Expression.Parameter(p.ParameterType, p.Name)).ToList(),
                 (from p in invokeMethod.GetParameters()

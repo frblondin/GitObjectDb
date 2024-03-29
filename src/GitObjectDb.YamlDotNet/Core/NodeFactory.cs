@@ -18,9 +18,9 @@ internal class NodeFactory : IObjectFactory
         CreateNode(type) :
         _inner.Create(type);
 
-    private static object CreateNode(Type type)
+    private static Node CreateNode(Type type)
     {
-        var result = (Node)Activator.CreateInstance(type);
+        var result = (Node)Activator.CreateInstance(type)!;
 
         // Make sure that nested lookups will find node to avoid stack overflows
         NodeReferenceParser.CurrentInstance.Nodes.Add(result);

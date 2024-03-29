@@ -11,7 +11,9 @@ namespace GitObjectDb;
 /// </summary>
 public struct UniqueId : IComparable<UniqueId>, IEquatable<UniqueId>
 {
+#if NET48_OR_GREATER
     private static readonly RNGCryptoServiceProvider _rngCryptoServiceProvider = new();
+#endif
 
 #pragma warning disable IDE1006 // Naming Styles
 
@@ -101,8 +103,12 @@ public struct UniqueId : IComparable<UniqueId>, IEquatable<UniqueId>
 
     private static char[] CreateNewCharArray()
     {
+#if NET48_OR_GREATER
         var buffer = new byte[ShaDefaultLength];
         _rngCryptoServiceProvider.GetBytes(buffer);
+#else
+        var buffer = RandomNumberGenerator.GetBytes(ShaDefaultLength);
+#endif
 
         var result = new char[ShaDefaultLength];
         for (var pos = 0; pos < ShaDefaultLength; pos++)
@@ -156,7 +162,7 @@ public struct UniqueId : IComparable<UniqueId>, IEquatable<UniqueId>
     public bool Equals(UniqueId other) => StringComparer.Ordinal.Equals(_sha, other._sha);
 
     /// <inheritdoc/>
-    public override bool Equals(object obj) => obj is UniqueId id && Equals(id);
+    public override bool Equals(object? obj) => obj is UniqueId id && Equals(id);
 
     /// <inheritdoc/>
     public override int GetHashCode() => _sha != null ? StringComparer.Ordinal.GetHashCode(_sha) : 0;

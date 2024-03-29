@@ -41,7 +41,7 @@ internal static class ExpressionReflector
     internal static ConstructorInfo GetConstructor<TSource>(Expression<Func<TSource>> expression)
     {
         var found = Visitor<NewExpression>.Lookup(expression);
-        return found.Constructor;
+        return found.Constructor!;
     }
 
     /// <summary>Extracts the <see cref="PropertyInfo"/> out of the expression.</summary>
@@ -79,7 +79,7 @@ internal static class ExpressionReflector
                 throw new GitObjectDbException($"Unable to find an expression of type {typeof(TExpression).Name} in expression.");
         }
 
-        public override Expression? Visit(Expression node)
+        public override Expression? Visit(Expression? node)
         {
             switch (node)
             {

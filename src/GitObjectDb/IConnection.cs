@@ -65,7 +65,7 @@ public interface IConnection : IQueryAccessor, IDisposable
     /// </summary>
     /// <param name="branchName">The branch to cherry-pick into.</param>
     /// <param name="committish">The commit to cherry-pick.</param>
-    /// <param name="committer">The <see cref="Signature"/> of who is performing the cherry pick.</param>
+    /// <param name="committer">The user who is performing the cherry pick.</param>
     /// <param name="policy">The cherry-pick policy.</param>
     /// <returns>The result of the cherry-pick operation.</returns>
     ICherryPick CherryPick(string branchName,

@@ -53,12 +53,12 @@ internal class NodeReference : IValuePromise
     /// </summary>
     public class NodeReferenceFakeConverter : TypeConverter
     {
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) =>
-            destinationType.IsNode();
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) =>
+            destinationType?.IsNode() ?? false;
 
-        public override object ConvertTo(ITypeDescriptorContext context,
-                                         CultureInfo culture,
-                                         object value,
+        public override object? ConvertTo(ITypeDescriptorContext? context,
+                                         CultureInfo? culture,
+                                         object? value,
                                          Type destinationType) => value;
     }
 }

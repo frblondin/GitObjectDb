@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 namespace GitObjectDb.Api.GraphQL.Loaders;
 
 internal abstract class GitObjectDbDataLoaderBase<TKey, TResult> : DataLoaderBase<TKey, TResult>
+    where TKey : notnull
 {
     private readonly IMemoryCache _memoryCache;
     private readonly CacheEntryStrategyProvider _cacheStrategy;

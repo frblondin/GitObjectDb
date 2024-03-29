@@ -14,7 +14,7 @@ internal abstract class EnumerableFactory
     {
         return _factories.GetOrAdd(elementType,
             static t => (EnumerableFactory)Activator.CreateInstance(
-                typeof(EnumerableFactory<>).MakeGenericType(t)));
+                typeof(EnumerableFactory<>).MakeGenericType(t))!);
     }
 
     internal abstract object Create(Type type, IEnumerable values);

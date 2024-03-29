@@ -64,7 +64,7 @@ internal class NodeTypeInfoResolver : DefaultJsonTypeInfoResolver
                              where !modelType.IsAbstract
                              select modelType)
         {
-            derivedTypes.Add(new(type, type.FullName));
+            derivedTypes.Add(new(type, type.FullName!));
         }
     }
 }
