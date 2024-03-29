@@ -23,31 +23,39 @@ public class LoadTests : LoadTestBase
     [Test]
     public void ReadConcurrentAccesses()
     {
-        var step = CreateGraphQLStep("GetDelta", @"
+        var executer = CreateExecuter();
+        var scenario = Scenario
+            .Create(nameof(ReadConcurrentAccesses), async context =>
             {
-              organizationsDelta(start: ""HEAD~4"") {
-                updatedAt
-                deleted
-                old {
-                  graphicalOrganizationStructureId
-                }
-                new {
-                  graphicalOrganizationStructureId
-                }
-              }
-            }");
-
-        var scenario = ScenarioBuilder
-            .CreateScenario(nameof(ReadConcurrentAccesses), step, Step.CreatePause(TimeSpan.FromSeconds(1)))
+                await Step.Run("GetDelta", context, CreateGraphQLStep(@"
+                {
+                  organizationsDelta(start: ""HEAD~4"") {
+                    updatedAt
+                    deleted
+                    old {
+                      graphicalOrganizationStructureId
+                    }
+                    new {
+                      graphicalOrganizationStructureId
+                    }
+                  }
+                }", executer));
+                await Step.Run("Pause", context, async () =>
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(1));
+                    return Response.Ok();
+                });
+                return Response.Ok();
+            })
             .WithInit(InitializeRepository)
             .WithLoadSimulations(
-                Simulation.RampConstant(copies: 10_000, during: TimeSpan.FromSeconds(10)),
+                Simulation.RampingConstant(copies: 10_000, during: TimeSpan.FromSeconds(10)),
                 Simulation.KeepConstant(copies: 10_000, during: TimeSpan.FromSeconds(20)));
 
         RunScenarios(scenario);
     }
 
-    private Task InitializeRepository(IScenarioContext context)
+    private Task InitializeRepository(IScenarioInitContext context)
     {
         var generator = new DataGenerator(Connection, TotalNodeCount, 5);
         generator.CreateInitData();
