@@ -31,7 +31,7 @@ internal class CommitCommand : ICommitCommand
             description.MergeParent).ToList();
         return Commit(composer.Connection,
                       info => ApplyTransformations(composer.Connection,
-                                                   composer.Transformations,
+                                                   composer.Transformations.Values,
                                                    branch?.Tip,
                                                    info.Writer,
                                                    info.Index,

@@ -1,6 +1,6 @@
 using LibGit2Sharp;
 using System;
-using System.Collections.Immutable;
+using System.Collections.Generic;
 
 namespace GitObjectDb;
 
@@ -57,8 +57,8 @@ public interface ITransformationComposer
 /// <summary>Represents a series of node transformations.</summary>
 public interface ITransformationComposerWithCommit : ITransformationComposer
 {
-    /// <summary>Gets the list of transformations.</summary>
-    IImmutableList<ITransformation> Transformations { get; }
+    /// <summary>Gets all defined transformations.</summary>
+    IReadOnlyDictionary<DataPath, ITransformation> Transformations { get; }
 
     /// <summary>Applies the transformation and store them in a new commit.</summary>
     /// <param name="description">The commit description.</param>
