@@ -62,7 +62,7 @@
     <PackageVersion Include="System.Data.SqlClient" Version="4.8.3" />
     <PackageVersion Include="System.IO.Compression.ZipFile" Version="6.0.0" />
     <PackageVersion Include="System.Runtime.Caching" Version="8.0.0" />
-    <PackageVersion Include="System.Text.Json" Version="8.0.3" />
+    <PackageVersion Include="System.Text.Json" Version="8.0.5" />
     <PackageVersion Include="YamlDotNet" Version="15.1.2" />
   </ItemGroup>
 </Project>
