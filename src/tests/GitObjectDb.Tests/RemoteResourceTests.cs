@@ -89,34 +89,6 @@ public class RemoteResourceTests : DisposeArguments
         }).ToList());
     }
 
-    [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void CannotMixEmbeddedAndRemoteResources(IConnection connection, Application application, string content, string message, Signature committer)
-    {
-        // Arrange
-        var (path, tip) = CreateResourceRepository(connection, content, message, committer);
-
-        // Act
-        var applicationWithLinkedResources = application with
-        {
-            RemoteResource = new(path, tip),
-        };
-        var changes = connection.Update("main", c =>
-        {
-            c.CreateOrUpdate(applicationWithLinkedResources);
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
-            var resource = new Resource(application,
-                                        $"Path{UniqueId.CreateNew()}",
-                                        $"File{UniqueId.CreateNew()}.txt",
-                                        new Resource.Data(stream));
-            c.CreateOrUpdate(resource);
-        });
-
-        // Assert
-        Assert.Throws<GitObjectDbValidationException>(
-            () => changes.Commit(new(message, committer, committer)));
-    }
-
     private static (string Path, string Tip) CreateResourceRepository(IConnection connection, string content, string message, Signature committer)
     {
         var path = Path.Combine(connection.Repository.Info.Path, Guid.NewGuid().ToString());

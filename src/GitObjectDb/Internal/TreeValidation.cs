@@ -211,25 +211,12 @@ internal class TreeValidation : ITreeValidation
                 ThrowGitLinkOrResourceFolderNotExpected();
                 return;
             }
-
-            ThrowIfMixingEmbeddedAndLinkedResources(path);
         }
 
         private static void ThrowGitLinkOrResourceFolderNotExpected()
         {
             throw new GitObjectDbValidationException(
                 $"A resource folder or link was not expected to be found in a node collection.");
-        }
-
-        private void ThrowIfMixingEmbeddedAndLinkedResources(Stack<string> path)
-        {
-            var gitPath = string.Join("/", path.Reverse());
-            var module = _modules[gitPath];
-            if (module is not null)
-            {
-                throw new GitObjectDbValidationException(
-                    $"Cannot mix embedded and linked resources for the same node {gitPath}");
-            }
         }
 
         private void ValidateLinkResources(Stack<string> path)
