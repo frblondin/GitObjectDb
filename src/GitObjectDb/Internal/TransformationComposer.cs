@@ -16,7 +16,6 @@ internal class TransformationComposer : ITransformationComposerWithCommit
 {
     private readonly IGitUpdateCommand _gitUpdateFactory;
     private readonly ICommitCommand _commitCommand;
-    private readonly ConcurrentDictionary<DataPath, ITransformation> _transformations = new();
 
     [FactoryDelegateConstructor(typeof(Factories.TransformationComposerFactory))]
     public TransformationComposer(IConnectionInternal connection,
@@ -34,7 +33,8 @@ internal class TransformationComposer : ITransformationComposerWithCommit
 
     public string BranchName { get; }
 
-    public IReadOnlyDictionary<DataPath, ITransformation> Transformations => _transformations;
+    public IDictionary<DataPath, ITransformation> Transformations { get; } =
+        new ConcurrentDictionary<DataPath, ITransformation>();
 
     public Commit Commit(CommitDescription description,
                          Action<ITransformation>? beforeProcessing = null) =>
@@ -65,7 +65,7 @@ internal class TransformationComposer : ITransformationComposerWithCommit
             item,
             _gitUpdateFactory.Rename(item, newPath),
             $"Renaming {item.Path} to {newPath}.");
-        _transformations[newPath] = transformation;
+        Transformations[newPath] = transformation;
     }
 
     public void Delete<TItem>(TItem item)
@@ -81,7 +81,7 @@ internal class TransformationComposer : ITransformationComposerWithCommit
             default,
             _gitUpdateFactory.Delete(path),
             $"Removing {path}.");
-        _transformations[path] = transformation;
+        Transformations[path] = transformation;
     }
 
     protected TItem CreateOrUpdateItem<TItem>(TItem item, DataPath? parent = null)
@@ -103,7 +103,7 @@ internal class TransformationComposer : ITransformationComposerWithCommit
             item,
             _gitUpdateFactory.CreateOrUpdate(item),
             $"Adding or updating {path}.");
-        _transformations[path] = transformation;
+        Transformations[path] = transformation;
 
         return item;
     }

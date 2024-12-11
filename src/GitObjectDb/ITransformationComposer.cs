@@ -58,7 +58,7 @@ public interface ITransformationComposer
 public interface ITransformationComposerWithCommit : ITransformationComposer
 {
     /// <summary>Gets all defined transformations.</summary>
-    IReadOnlyDictionary<DataPath, ITransformation> Transformations { get; }
+    IDictionary<DataPath, ITransformation> Transformations { get; }
 
     /// <summary>Applies the transformation and store them in a new commit.</summary>
     /// <param name="description">The commit description.</param>
