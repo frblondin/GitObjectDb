@@ -1,7 +1,10 @@
 {
   "$schema": "https://raw.githubusercontent.com/AArnott/Nerdbank.GitVersioning/master/src/NerdBank.GitVersioning/version.schema.json",
-  "version": "0.2-alpha",
+  "version": "0.3-alpha",
   "assemblyVersion": {
+    "precision": "build"
+  },
+  "nugetPackageVersion": {
     "precision": "build"
   },
   "publicReleaseRefSpec": [
