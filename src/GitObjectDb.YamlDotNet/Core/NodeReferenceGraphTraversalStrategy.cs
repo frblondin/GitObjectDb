@@ -24,10 +24,12 @@ internal class NodeReferenceGraphTraversalStrategy : FullObjectGraphTraversalStr
                                                 namingConvention,
                                                 new DefaultObjectFactory());
 
-    protected override void TraverseObject<TContext>(IObjectDescriptor value,
+    protected override void TraverseObject<TContext>(IPropertyDescriptor? propertyDescriptor,
+                                                     IObjectDescriptor value,
                                                      IObjectGraphVisitor<TContext> visitor,
                                                      TContext context,
-                                                     Stack<ObjectPathSegment> path)
+                                                     Stack<ObjectPathSegment> path,
+                                                     ObjectSerializer serializer)
     {
         if (value.Value is Node node &&
             context is NodeReferenceEmitter nodeEmitter &&
@@ -35,11 +37,11 @@ internal class NodeReferenceGraphTraversalStrategy : FullObjectGraphTraversalStr
         {
             var reference = new NodeReference { Path = node.Path };
             var description = new ObjectDescriptor(reference, reference.GetType(), reference.GetType());
-            base.TraverseObject(description, visitor, context, path);
+            base.TraverseObject(propertyDescriptor, description, visitor, context, path, serializer);
         }
         else
         {
-            base.TraverseObject(value, visitor, context, path);
+            base.TraverseObject(propertyDescriptor, value, visitor, context, path, serializer);
         }
     }
 }

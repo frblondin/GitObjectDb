@@ -31,6 +31,7 @@ using static Nuke.Common.Tooling.ProcessTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.Tools.ReportGenerator.ReportGeneratorTasks;
 using static System.Net.WebRequestMethods;
+using static DotNetCollectTasks;
 using Project = Nuke.Common.ProjectModel.Project;
 
 [ShutdownDotNetAfterServerBuild]
@@ -64,8 +65,6 @@ class Build : NukeBuild
 
     public static int Main() => Execute<Build>(x => x.Pack);
 
-    const string NetFramework = "net7.0";
-
     [NerdbankGitVersioning(UpdateBuildNumber = true)] readonly NerdbankGitVersioning GitVersion;
     [GitRepository] readonly GitRepository Repository;
     [Solution(SuppressBuildProjectCheck = true)] readonly Solution Solution;
@@ -74,6 +73,7 @@ class Build : NukeBuild
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
     static AbsolutePath SourceDirectory => RootDirectory / "src";
+    static AbsolutePath PackagePropFile => SourceDirectory / "Directory.Packages.props";
     static AbsolutePath OutputDirectory => RootDirectory / "output";
     static AbsolutePath NerdbankGitVersioningDirectory => OutputDirectory / "NerdbankGitVersioning";
     static AbsolutePath TestDirectory => OutputDirectory / "tests";
@@ -96,7 +96,7 @@ class Build : NukeBuild
     [Parameter] string SonarHostUrl { get; } = "https://sonarcloud.io";
     [Parameter] string SonarOrganization { get; } = "frblondin-github";
     [Parameter] string SonarqubeProjectKey { get; } = "GitObjectDb";
-    [Parameter(Name = "SONAR_TOKEN")] readonly string SonarLogin;
+    [Parameter, Secret] readonly string SonarToken;
 
     string GitHubNugetFeed => GitHubActions.Instance != null
         ? $"https://nuget.pkg.github.com/{GitHubActions.Instance.RepositoryOwner}/index.json"
@@ -113,7 +113,7 @@ class Build : NukeBuild
 
     Target StartSonarqube => _ => _
         .DependsOn(Clean)
-        .OnlyWhenStatic(() => !string.IsNullOrWhiteSpace(SonarLogin))
+        .OnlyWhenStatic(() => !string.IsNullOrWhiteSpace(SonarToken))
         .WhenSkipped(DependencyBehavior.Execute)
         .AssuredAfterFailure()
         .Executes(() =>
@@ -123,12 +123,12 @@ class Build : NukeBuild
                 settings = settings
                     .SetServer(SonarHostUrl)
                     .SetOrganization(SonarOrganization)
-                    .SetLogin(SonarLogin)
-                    .SetFramework("net5.0")
+                    .SetToken(SonarToken)
                     .SetName(SonarqubeProjectKey)
                     .SetProjectKey(SonarqubeProjectKey)
                     .SetVersion(GitVersion.AssemblyVersion)
                     .EnableExcludeTestProjects()
+                    .AddAdditionalParameter("sonar.scanner.scanAll", "false")
                     .AddVisualStudioCoveragePaths(CoverageResult / "coverage.xml")
                     .AddCoverageExclusions("**/tests/**/*.*, **/samples/**/*.*")
                     .AddSourceExclusions("**/tests/**, **/samples/**")
@@ -164,22 +164,19 @@ class Build : NukeBuild
         .DependsOn(Compile)
         .Executes(() =>
         {
-            using var process = StartProcess(new DotNetCollectSettings()
-                .SetTarget($"dotnet {new DotNetTestSettings()
+            Collect(new DotNetCollectSettings()
+                .SetProcessToolPath(NuGetToolPathResolver.GetPackageExecutable("dotnet-coverage", "dotnet-coverage.dll"))
+                .SetTarget(new DotNetTestSettings()
                     .SetProjectFile(Solution)
                     .SetConfiguration(Configuration)
                     .EnableNoBuild()
                     .EnableNoRestore()
                     .SetLoggers("trx")
-                    .SetProcessArgumentConfigurator(arguments => arguments
-                        .Add("-m:1")) // Make sure only one assembly gets tested at a time for coverage collect
-                    .SetResultsDirectory(TestDirectory)
-                    .GetProcessArguments()
-                    .RenderForExecution()}")
+                    .AddProcessAdditionalArguments("-m:1") // Make sure only one assembly gets tested at a time for coverage collect
+                    .SetResultsDirectory(TestDirectory))
                 .SetConfigFile(SourceDirectory / "CoverageConfig.xml")
                 .SetFormat("xml")
                 .SetOutput(CoverageResult / "coverage.xml"));
-            process.AssertZeroExitCode();
         });
 
     Target CoverageReport => _ => _
@@ -190,20 +187,18 @@ class Build : NukeBuild
         .Executes(() =>
         {
             ReportGenerator(s => s
-                .SetFramework("net6.0")
                 .SetReports(CoverageResult / "coverage.xml")
                 .SetTargetDirectory(CoverageResult));
         });
 
     Target EndSonarqube => _ => _
         .DependsOn(CoverageReport)
-        .OnlyWhenStatic(() => !string.IsNullOrWhiteSpace(SonarLogin))
+        .OnlyWhenStatic(() => !string.IsNullOrWhiteSpace(SonarToken))
         .WhenSkipped(DependencyBehavior.Execute)
         .Executes(() =>
         {
             SonarScannerTasks.SonarScannerEnd(c => c
-                .SetLogin(SonarLogin)
-                .SetFramework("net5.0"));
+                .SetToken(SonarToken));
         });
 
     Target Pack => _ => _
@@ -213,6 +208,11 @@ class Build : NukeBuild
         .Executes(() =>
         {
             var modifiedFilesSinceLastTag = GitChangeLogTasks.ChangedFilesSinceLastTag();
+            var modifiedPackages =
+                (from line in GitChangeLogTasks.GetModifiedLinesSinceLastTag(PackagePropFile)
+                 let match = Regex.Match(line, @"<PackageVersion\s+[^>]*Include\s*=\s*""([^""]*)""")
+                 where match.Success
+                 select match.Groups[1].Value).ToList();
 
             Solution.AllProjects
                 .Where(p => p.GetProperty<string>("PackageType") == "Dependency")
@@ -229,7 +229,9 @@ class Build : NukeBuild
             bool HasProjectBeenModifiedSinceLastTag(Project project)
             {
                 var gitPath = project.Path.ToGitPath(RootDirectory);
-                return modifiedFilesSinceLastTag.Any(f => f.StartsWith(gitPath));
+                var projectContent = System.IO.File.ReadAllText(project.Path);
+                return modifiedFilesSinceLastTag.Any(f => f.StartsWith(gitPath)) ||
+                       modifiedPackages.Any(package => projectContent.Contains(package));
             }
         });
 
@@ -257,7 +259,8 @@ class Build : NukeBuild
     Target PublishToNuGet => _ => _
        .Description($"Publishing to NuGet with the version.")
        .Requires(() => Configuration.Equals(Configuration.Release))
-       .OnlyWhenStatic(() => Repository.IsOnMainOrMasterBranch())
+       .OnlyWhenStatic(() => GitHubActions.Instance != null &&
+                             Repository.IsOnMainOrMasterBranch())
        .Executes(() =>
        {
            NugetDirectory.GlobFiles(ArtifactsType)
@@ -276,7 +279,8 @@ class Build : NukeBuild
     Target CreateRelease => _ => _
        .Description($"Creating release for the publishable version.")
        .Requires(() => Configuration.Equals(Configuration.Release))
-       .OnlyWhenStatic(() => GitHubActions.Instance != null && Repository.IsOnMainOrMasterBranch())
+       .OnlyWhenStatic(() => GitHubActions.Instance != null &&
+                             Repository.IsOnMainOrMasterBranch())
        .Executes(async () =>
        {
            GitHubTasks.GitHubClient = new GitHubClient(
@@ -305,7 +309,7 @@ class Build : NukeBuild
 
            NugetDirectory.GlobFiles(ArtifactsType)
               .Where(x => !x.Name.EndsWith(ExcludedArtifactsType))
-              .ForEach(async x => await UploadReleaseAssetToGithub(createdRelease, x));
+              .ForEach(async x => await UploadReleaseAssetToGitHub(createdRelease, x));
 
            await GitHubTasks.GitHubClient
               .Repository.Release
@@ -319,7 +323,7 @@ class Build : NukeBuild
        });
 
 
-    private static async Task UploadReleaseAssetToGithub(Release release, string asset)
+    private static async Task UploadReleaseAssetToGitHub(Release release, string asset)
     {
         await using var artifactStream = System.IO.File.OpenRead(asset);
         var fileName = System.IO.Path.GetFileName(asset);

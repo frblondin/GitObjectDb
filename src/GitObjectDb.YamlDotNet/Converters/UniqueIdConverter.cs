@@ -9,13 +9,13 @@ internal class UniqueIdConverter : IYamlTypeConverter
 {
     public bool Accepts(Type type) => type == typeof(UniqueId);
 
-    public object? ReadYaml(IParser parser, Type type)
+    public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
     {
         var value = parser.Consume<Scalar>().Value;
         return new UniqueId(value);
     }
 
-    public void WriteYaml(IEmitter emitter, object? value, Type type)
+    public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
     {
         var id = (UniqueId)value!;
         var scalar = new Scalar(AnchorName.Empty,

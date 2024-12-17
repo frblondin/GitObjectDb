@@ -7,7 +7,7 @@ namespace GitObjectDb.Api.GraphQL.GraphModel;
 
 public class GitObjectDbSchema : Schema
 {
-    public GitObjectDbSchema(IDataModel model, IOptions<GitObjectDbGraphQLOptions> options)
+    public GitObjectDbSchema(IDataModel model, IOptions<GitObjectDbGraphQLOptions> options, NodeInputDtoTypeEmitter dtoTypeEmitter)
     {
         Model = model;
 
@@ -15,7 +15,7 @@ public class GitObjectDbSchema : Schema
         options.Value.ConfigureSchema?.Invoke(this);
 
         Query = new GitObjectDbQuery(this);
-        Mutation = new GitObjectDbMutation(this);
+        Mutation = new GitObjectDbMutation(this, dtoTypeEmitter);
     }
 
     public IDataModel Model { get; }

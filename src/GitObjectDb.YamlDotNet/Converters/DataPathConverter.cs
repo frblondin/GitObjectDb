@@ -9,13 +9,13 @@ internal class DataPathConverter : IYamlTypeConverter
 {
     public bool Accepts(Type type) => type == typeof(DataPath);
 
-    public object? ReadYaml(IParser parser, Type type)
+    public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
     {
         var value = parser.Consume<Scalar>().Value;
         return DataPath.Parse(value);
     }
 
-    public void WriteYaml(IEmitter emitter, object? value, Type type)
+    public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
     {
         var path = (DataPath)value!;
         var scalar = new Scalar(AnchorName.Empty,

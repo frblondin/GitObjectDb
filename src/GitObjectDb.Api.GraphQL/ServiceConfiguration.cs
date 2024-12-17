@@ -34,6 +34,7 @@ public static class ServiceConfiguration
             .AddSingleton(typeof(NodeDataLoader<>))
             .AddSingleton(typeof(NodeDeltaDataLoader<>))
             .AddSingleton<DataLoaderDocumentListener>()
+            .AddSingleton<NodeInputDtoTypeEmitter>()
             .Configure(configure);
     }
 

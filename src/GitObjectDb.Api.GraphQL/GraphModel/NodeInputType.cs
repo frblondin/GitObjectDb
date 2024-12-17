@@ -1,4 +1,4 @@
-using GitObjectDb.Api.GraphQL.Tools;
+using GitObjectDb.Api.GraphQL.Model;
 using GraphQL;
 using GraphQL.Types;
 using Namotion.Reflection;
@@ -6,16 +6,16 @@ using System.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
 
-public class NodeInputType<TNode> : InputObjectGraphType<TNode>, INodeType<GitObjectDbMutation>
-    where TNode : Node
+public class NodeInputType<TDto> : InputObjectGraphType<TDto>, INodeType<GitObjectDbMutation>
+    where TDto : NodeInputDto
 {
     public NodeInputType()
     {
-        Name = typeof(TNode).Name.Replace("`", string.Empty) + "Input";
-        Description = typeof(TNode).GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false });
-
-        AddReferences();
+        Name = NodeType.Name.Replace("`", string.Empty) + "Input";
+        Description = NodeType.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false });
     }
+
+    public static Type NodeType { get; } = typeof(TDto).BaseType!.GetGenericArguments()[0];
 
     void INodeType<GitObjectDbMutation>.AddFieldsThroughReflection(GitObjectDbMutation mutation)
     {
@@ -24,49 +24,16 @@ public class NodeInputType<TNode> : InputObjectGraphType<TNode>, INodeType<GitOb
 
     private void AddScalarProperties(GitObjectDbMutation mutation)
     {
-        foreach (var property in typeof(TNode).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        foreach (var property in typeof(TDto).GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
-            if (property.PropertyType.IsNode() ||
-                property.PropertyType.IsNodeEnumerable(out var _) ||
-                !property.PropertyType.IsValidClrTypeForGraph(mutation.Schema))
+            if (!property.PropertyType.IsValidClrTypeForGraph(mutation.Schema))
             {
                 continue;
             }
             var type = property.PropertyType.GetGraphTypeFromType(isNullable: true, TypeMappingMode.InputType);
-            var summary = property.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false });
+            var matchingNodeProperty = NodeType.GetProperty(property.Name);
+            var summary = matchingNodeProperty?.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false });
             Field(property.Name, type).Description(summary);
         }
     }
-
-    private void AddReferences()
-    {
-        foreach (var property in typeof(TNode).GetProperties(BindingFlags.Instance | BindingFlags.Public))
-        {
-            if (Fields.Any(f => f.Name.Equals(property.Name, StringComparison.OrdinalIgnoreCase)))
-            {
-                continue;
-            }
-
-            if (property.PropertyType.IsAssignableTo(typeof(Node)))
-            {
-                AddSingleReference(property);
-            }
-            if (property.PropertyType.IsNodeEnumerable(out var _))
-            {
-                AddMultiReference(property);
-            }
-        }
-    }
-
-    private void AddSingleReference(MemberInfo member) =>
-        Field<GraphQLClrInputTypeReference<string>>(member.Name)
-        .Description(
-            typeof(TNode).GetProperty(member.Name)?.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }) ??
-            member.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }));
-
-    private void AddMultiReference(MemberInfo member) =>
-        Field<ListGraphType<GraphQLClrInputTypeReference<string>>>(member.Name)
-        .Description(
-            typeof(TNode).GetProperty(member.Name)?.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }) ??
-            member.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }));
 }

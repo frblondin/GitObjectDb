@@ -22,8 +22,8 @@ public partial class NodeSerializer : INodeSerializer
                                             DefaultValuesHandling.OmitEmptyCollections)
             .DisableAliases()
             .WithTypeInspector(inner => new IgnoreDataMemberTypeInspector(inner))
-            .WithTypeInspector(inner => new SortedReadablePropertiesTypeInspector(inner,
-                                                                                  new DynamicTypeResolver()), w => w.OnBottom())
+            .WithTypeInspector(inner => new SortedReadablePropertiesTypeInspector(new DynamicTypeResolver(), false),
+                               w => w.OnBottom())
             .WithObjectGraphTraversalStrategyFactory(
                 NodeReferenceGraphTraversalStrategy.CreateFactory(namingConvention));
 
