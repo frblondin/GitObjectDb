@@ -16,7 +16,8 @@ internal class NodeReferenceDeserializer : INodeDeserializer
     public bool Deserialize(IParser reader,
                             Type expectedType,
                             Func<IParser, Type, object?> nestedObjectDeserializer,
-                            out object? value)
+                            out object? value,
+                            ObjectDeserializer rootDeserializer)
     {
         var preventReEntrant = PreventReEntrant;
         if (!preventReEntrant.Contains(reader) &&

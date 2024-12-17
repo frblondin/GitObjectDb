@@ -34,7 +34,7 @@ internal static class IResolveFieldContextExtensions
                 {
                     return id;
                 }
-                var value = (string?)argValue.Value.GetPropertyValue(typeof(string));
+                var value = (string?)argValue.Value;
                 result = parentContext.ComputeCommitId(value);
                 break;
             }

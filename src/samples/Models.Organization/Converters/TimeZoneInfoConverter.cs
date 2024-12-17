@@ -17,13 +17,13 @@ public class TimeZoneInfoConverter : JsonConverter<TimeZoneInfo>, IYamlTypeConve
     public override void Write(Utf8JsonWriter writer, TimeZoneInfo value, JsonSerializerOptions options) =>
         writer.WriteStringValue(value.ToSerializedString());
 
-    public object? ReadYaml(IParser parser, Type type)
+    public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
     {
         var value = parser.Consume<Scalar>().Value;
         return TimeZoneInfo.FromSerializedString(value);
     }
 
-    public void WriteYaml(IEmitter emitter, object? value, Type type)
+    public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
     {
         var id = (TimeZoneInfo)value!;
         var scalar = new Scalar(AnchorName.Empty,

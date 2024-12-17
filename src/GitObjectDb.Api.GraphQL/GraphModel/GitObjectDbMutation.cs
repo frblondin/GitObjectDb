@@ -1,6 +1,5 @@
 using Fasterflect;
 using GitObjectDb.Api.GraphQL.Commands;
-using GitObjectDb.Api.GraphQL.Converters;
 using GitObjectDb.Model;
 using GraphQL;
 using GraphQL.Types;
@@ -20,12 +19,14 @@ public class GitObjectDbMutation : ObjectGraphType
     internal const string MessageArgument = "message";
 
     private readonly Dictionary<NodeTypeDescription, INodeType<GitObjectDbMutation>> _typeToGraphType = new();
+    private readonly NodeInputDtoTypeEmitter _dtoTypeEmitter;
 
-    public GitObjectDbMutation(GitObjectDbSchema schema)
+    public GitObjectDbMutation(GitObjectDbSchema schema, NodeInputDtoTypeEmitter dtoTypeEmitter)
     {
         Name = "Mutation";
         Description = "Mutates GitObjectDb data.";
         Schema = schema;
+        _dtoTypeEmitter = dtoTypeEmitter;
 
         foreach (var description in schema.Model.NodeTypes)
         {
@@ -66,17 +67,15 @@ public class GitObjectDbMutation : ObjectGraphType
                 },
                 new QueryArgument<DataPathGraphType> { Name = ParentPathArgument },
                 new QueryArgument<UniqueIdGraphType> { Name = ParentIdArgument })
-            .Resolve(NodeMutation.CreateAddOrUpdate(description));
-
-        // Registers the transformation of a path to a node
-        ValueConverter.Register(typeof(string), description.Type, PathToNodeConverter.Convert);
+            .Resolve(NodeMutation.CreateAddOrUpdate(description, inputType.GetType().GetGenericArguments()[0]));
     }
 
     internal INodeType<GitObjectDbMutation> GetOrCreateNodeGraphType(NodeTypeDescription description)
     {
         if (!_typeToGraphType.TryGetValue(description, out var result))
         {
-            var schemaType = typeof(NodeInputType<>).MakeGenericType(description.Type);
+            var dto = _dtoTypeEmitter.TypeToInputDto[description.Type].AsType();
+            var schemaType = typeof(NodeInputType<>).MakeGenericType(dto);
             var factory = Reflect.Constructor(schemaType);
             _typeToGraphType[description] = result = (INodeType<GitObjectDbMutation>)factory.Invoke();
 

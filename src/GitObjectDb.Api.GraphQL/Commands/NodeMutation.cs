@@ -1,12 +1,12 @@
 using Fasterflect;
 using GitObjectDb.Api.GraphQL.GraphModel;
+using GitObjectDb.Api.GraphQL.Model;
 using GitObjectDb.Api.GraphQL.Tools;
 using GitObjectDb.Model;
 using GraphQL;
 using GraphQL.Execution;
 using GraphQLParser.AST;
 using LibGit2Sharp;
-using Models.Organization;
 using System.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.Commands;
@@ -14,7 +14,7 @@ internal static partial class NodeMutation
 {
     private const string NodeMutationVariableName = $"${nameof(NodeMutation)}";
 
-    internal static Func<IResolveFieldContext<object?>, object?> CreateAddOrUpdate(NodeTypeDescription description)
+    internal static Func<IResolveFieldContext<object?>, object?> CreateAddOrUpdate(NodeTypeDescription description, Type dtoType)
     {
         var method = ExpressionReflector.GetMethod(() => AddOrUpdate<Node>(default!), returnGenericDefinition: true);
         return new(
@@ -109,10 +109,50 @@ internal static partial class NodeMutation
     private static TNode GetNodeArgument<TNode>(IResolveFieldContext context, Context mutationContext)
         where TNode : Node
     {
-        var @new = context.GetArgument<TNode>(GitObjectDbMutation.NodeArgument);
+        var dto = context.GetArgument<NodeInputDto<TNode>>(GitObjectDbMutation.NodeArgument);
+        var modifiedMembers = GetModifiedMembers(context);
+        var @new = ConvertDtoToNode(dto, mutationContext, modifiedMembers);
         @new.Path = GetPath(@new, mutationContext.Connection.Model, context, mutationContext);
         var existing = (TNode?)mutationContext.TryResolve(@new.Path);
-        return Merge(existing, @new, GetModifiedMembers(context));
+        return Merge(existing, @new, modifiedMembers);
+    }
+
+    private static TNode ConvertDtoToNode<TNode>(NodeInputDto<TNode> dto, Context mutationContext, IEnumerable<GraphQLObjectField> modifiedMembers)
+        where TNode : Node
+    {
+        var dtoType = dto.GetType();
+        var result = (TNode)Activator.CreateInstance(typeof(TNode))!;
+        foreach (var field in modifiedMembers)
+        {
+            var property = GetProperty<TNode>(field);
+
+            if (property is not null && property.CanWrite)
+            {
+                var value = GetDtoPropertyValue(dto, dtoType, property, mutationContext);
+                Reflect.Setter(property).Invoke(result, value);
+            }
+        }
+        return result;
+    }
+
+    private static object? GetDtoPropertyValue<TNode>(NodeInputDto<TNode> dto, Type dtoType, PropertyInfo property, Context mutationContext)
+        where TNode : Node
+    {
+        var value = Reflect.Getter(dtoType, property.Name).Invoke(dto);
+        if (property.PropertyType.IsAssignableTo(typeof(Node)))
+        {
+            value = value is DataPath path ?
+                mutationContext.TryResolve(path) :
+                null;
+        }
+        if (property.PropertyType.IsEnumerable(t => t.IsAssignableTo(typeof(Node)), out var _))
+        {
+            value = value is IEnumerable<DataPath> paths ?
+                paths.Select(p => mutationContext.TryResolve(p)).ToList() :
+                null;
+        }
+
+        return value;
     }
 
     private static DataPath GetPath<TNode>(TNode node, IDataModel model, IResolveFieldContext context, Context mutationContext)
@@ -138,7 +178,7 @@ internal static partial class NodeMutation
         return DataPath.Root(node, model, fileExtension);
     }
 
-    private static IEnumerable<GraphQLObjectField> GetModifiedMembers(IResolveFieldContext context)
+    private static List<GraphQLObjectField> GetModifiedMembers(IResolveFieldContext context)
     {
         if (context.FieldAst.Arguments is null ||
             context.FieldDefinition.Arguments is null)
@@ -164,7 +204,7 @@ internal static partial class NodeMutation
         var result = (TNode)Reflect.Method(typeof(TNode), "<Clone>$").Invoke(original);
         foreach (var field in modifiedMembers)
         {
-            var property = GetProperty(field);
+            var property = GetProperty<TNode>(field);
 
             if (property is not null && property.CanWrite)
             {
@@ -173,17 +213,17 @@ internal static partial class NodeMutation
             }
         }
         return result;
+    }
 
-        static PropertyInfo? GetProperty(GraphQLObjectField value)
+    private static PropertyInfo? GetProperty<TNode>(GraphQLObjectField value)
+    {
+        try
         {
-            try
-            {
-                return typeof(TNode).GetProperty(value.Name.StringValue, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-            }
-            catch (AmbiguousMatchException)
-            {
-                return typeof(TNode).GetProperty(value.Name.StringValue, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            }
+            return typeof(TNode).GetProperty(value.Name.StringValue, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+        }
+        catch (AmbiguousMatchException)
+        {
+            return typeof(TNode).GetProperty(value.Name.StringValue, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
         }
     }
 

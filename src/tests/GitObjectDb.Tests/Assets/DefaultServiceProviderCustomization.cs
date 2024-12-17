@@ -7,7 +7,6 @@ using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Models.Software;
-using Realms.Sync;
 using System;
 using YamlDotNet.Serialization.NamingConventions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;

@@ -21,7 +21,7 @@ internal static class GitChangeLogTasks
             .ToList() : null;
         Serilog.Log.Information("Found {ModifiedFilesCount} changes since last tag", result?.Count);
 
-        return result;
+        return result ?? Enumerable.Empty<string>();
     }
 
     public static IEnumerable<string> CommitsSinceLastTag()
@@ -39,5 +39,23 @@ internal static class GitChangeLogTasks
         Serilog.Log.Information("Found {ModifiedFilesCount} changes since last tag", result?.Count);
 
         return result;
+    }
+
+    public static IEnumerable<string> GetModifiedLinesSinceLastTag(string path)
+    {
+        var lastTag = GitTasks
+            .Git("describe --tags --abbrev=0")
+            .Select(x => x.Text)
+            .FirstOrDefault();
+        Serilog.Log.Information("Found most recent tag '{LastTag}'", lastTag);
+
+        var result = lastTag != null ? GitTasks
+            .Git($"diff {lastTag}..HEAD -- {path}")
+            .Where(x => x.Text.StartsWith("+"))
+            .Select(x => x.Text.Substring(1).Trim())
+            .ToList() : null;
+        Serilog.Log.Information("Found {ModifiedLinesCount} changes since last tag in file {path}", result?.Count, path);
+
+        return result ?? Enumerable.Empty<string>();
     }
 }
