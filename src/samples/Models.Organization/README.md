@@ -2,6 +2,8 @@
 
 ```
 mutation {
+  checkout(branch: "main")
+
   siteType: createOrganizationType(node: {
     id: "site", label: "Site"
   })
@@ -16,7 +18,7 @@ mutation {
     id: "siteX"
     label: "Site X"
     type: "Types/site.json"
-    timeZone: "UTC;0;(UTC) Coordinated Universal Time;Coordinated Universal Time;Coordinated Universal Time;;"
+    timeZone: Etc_GMT_plus_1
   })
 
   na: createOrganization(node: {

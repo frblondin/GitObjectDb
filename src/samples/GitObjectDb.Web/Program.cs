@@ -3,8 +3,11 @@ using GraphQL;
 using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
 using Models.Organization.Converters;
+using NodaTime;
 using ProtoBuf.Grpc.Server;
 using System.IO.Compression;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 #pragma warning disable SA1516 // ElementsMustBeSeparatedByBlankLine
 
@@ -17,12 +20,14 @@ switch (repositoryType)
         builder.Services
             .AddMemoryCache()
             .AddGitObjectDb()
-            .AddGitObjectDbSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter()))
+            .AddGitObjectDbYamlDotNet(CamelCaseNamingConvention.Instance,
+                                      builder => AddConverters(builder),
+                                      builder => AddConverters(builder))
             .AddOrganizationModel()
             .AddGitObjectDbOData()
             .AddGitObjectDbGraphQLSchema(options =>
             {
-                options.ConfigureSchema = s => s.RegisterTypeMapping<TimeZoneInfo, TimeZoneInfoGraphType>();
+                options.ConfigureSchema = s => s.RegisterTypeMapping<DateTimeZone, DateTimeZoneGraphType>();
                 options.CacheEntryStrategy = CacheStrategy;
             })
             .AddGraphQL(builder => builder
@@ -61,12 +66,16 @@ switch (repositoryType)
                 signature = new Signature("foo", "foo@acme.com", DateTimeOffset.Now);
                 software.Connection
                     .Update("main", c => c.CreateOrUpdate(application with { Description = "New description" }))
-                    .Commit(new("Update appication", signature, signature));
+                    .Commit(new("Update application", signature, signature));
             });
         break;
     default:
         throw new NotSupportedException($"'{repositoryType}' is not supported.");
 }
+
+static void AddConverters<TBuilder>(BuilderSkeleton<TBuilder> builder)
+    where TBuilder : BuilderSkeleton<TBuilder> =>
+    builder.WithTypeConverter(new DateTimeZoneConverter(Organization.TimeZoneProvider));
 
 static void CacheStrategy(ICacheEntry entry) => entry.SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1));
 

@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Models.Organization;
 using Models.Organization.Converters;
+using NodaTime.Serialization.SystemTextJson;
 using NUnit.Framework;
 using ProtoBuf.Grpc.Server;
 using System;
@@ -67,7 +68,7 @@ internal class TestServerCustomization : ICustomization, ISpecimenBuilder
                     .AddConsole())
                 .AddMemoryCache()
                 .AddGitObjectDb()
-                .AddGitObjectDbSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter()))
+                .AddGitObjectDbSystemTextJson(o => o.ConfigureForNodaTime(Organization.TimeZoneProvider))
                 .AddOrganizationModel()
                 .AddGitObjectDbConnection(
                     TestContext.CurrentContext.Test.ID,

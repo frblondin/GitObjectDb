@@ -77,8 +77,12 @@ namespace GitObjectDb.Api.GraphQL.Tests {
         ///    id: &quot;siteX&quot;
         ///    label: &quot;Site X&quot;
         ///    type: &quot;Types/site.json&quot;
-        ///    timeZone: &quot;UTC;0;(UTC) Coordinated Universal Time;Coordinated Universal Time;Coordinated Universal Time;;&quot;
-        ///  } [rest of string was truncated]&quot;;.
+        ///    timeZone: Etc_GMT_plus_1
+        ///  })
+        ///  
+        ///  na: createOrganization(node: {
+        ///    id: &quot;northAmerica&quot;
+        ///    label: &quot;North [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateData {
             get {
