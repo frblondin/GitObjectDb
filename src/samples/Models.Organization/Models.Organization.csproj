@@ -15,9 +15,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="NodaTime" />
+    <PackageReference Include="NodaTime.Serialization.SystemTextJson" />
     <PackageReference Include="System.Text.Json" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>

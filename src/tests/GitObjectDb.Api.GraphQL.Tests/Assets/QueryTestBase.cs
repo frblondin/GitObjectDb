@@ -12,7 +12,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Models.Organization;
-using Models.Organization.Converters;
+using NodaTime;
+using NodaTime.Serialization.SystemTextJson;
 using NUnit.Framework;
 using System;
 using System.Linq;
@@ -56,10 +57,10 @@ public class QueryTestBase<TDocumentBuilder>
             .AddOrganizationModel()
             .AddMemoryCache()
             .AddGitObjectDb()
-            .AddGitObjectDbSystemTextJson(o => o.Converters.Add(new TimeZoneInfoConverter()))
+            .AddGitObjectDbSystemTextJson(o => o.ConfigureForNodaTime(Organization.TimeZoneProvider))
             .AddGitObjectDbGraphQLSchema(o =>
             {
-                o.ConfigureSchema = s => s.RegisterTypeMapping<TimeZoneInfo, TimeZoneInfoGraphType>();
+                o.ConfigureSchema = s => s.RegisterTypeMapping<DateTimeZone, DateTimeZoneGraphType>();
                 o.CacheEntryStrategy = e => e.SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1));
             })
             .AddGraphQL(builder => builder.AddSystemTextJson())

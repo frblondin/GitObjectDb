@@ -78,7 +78,7 @@ public class MutationTests : QueryTestBase
                 id: ""siteX""
                 label: ""Site X""
                 type: ""Types/site.json""
-                timeZone: ""UTC;0;(UTC) Coordinated Universal Time;Coordinated Universal Time;Coordinated Universal Time;;""
+                timeZone: Etc_GMT_plus_1
               })
               initialCommit: commit(
                 message: ""Initial commit"",

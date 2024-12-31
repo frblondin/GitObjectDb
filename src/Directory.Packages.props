@@ -42,6 +42,8 @@
     <PackageVersion Include="NBomber" Version="5.8.2" />
     <PackageVersion Include="NBomber.Http" Version="5.2.1" />
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.7.112" />
+    <PackageVersion Include="NodaTime" Version="3.2.0" />
+    <PackageVersion Include="NodaTime.Serialization.SystemTextJson" Version="1.2.0" />
     <PackageVersion Include="NUnit" Version="4.3.0" />
     <PackageVersion Include="NUnit.Analyzers" Version="4.4.0" />
     <PackageVersion Include="NUnit3TestAdapter" Version="4.6.0" />
