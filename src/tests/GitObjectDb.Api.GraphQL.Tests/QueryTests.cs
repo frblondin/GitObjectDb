@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace GitObjectDb.Api.GraphQL.Assets;
+namespace GitObjectDb.Api.GraphQL.Tests;
 
 public class QueryTests : QueryTestBase
 {

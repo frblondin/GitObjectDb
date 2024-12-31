@@ -3,11 +3,11 @@ using GitObjectDb.Api.GraphQL.Loaders;
 using GitObjectDb.Model;
 using GraphQL;
 using GraphQL.DataLoader;
-using GraphQL.Introspection;
+using GraphQL.Execution;
 using GraphQL.Resolvers;
 using GraphQL.Types;
+using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
-using Models.Organization;
 using Namotion.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
