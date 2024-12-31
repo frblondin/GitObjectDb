@@ -1,5 +1,4 @@
 using GitObjectDb.Model;
-using GraphQL.Introspection;
 using GraphQL.Types;
 using Microsoft.Extensions.Options;
 

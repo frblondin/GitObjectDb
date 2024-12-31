@@ -2,7 +2,7 @@ using GraphQL.Types;
 using GraphQLParser.AST;
 using LibGit2Sharp;
 
-namespace Models.Organization;
+namespace GitObjectDb.Api.GraphQL.GraphModel;
 
 public class ObjectIdGraphType : ScalarGraphType
 {

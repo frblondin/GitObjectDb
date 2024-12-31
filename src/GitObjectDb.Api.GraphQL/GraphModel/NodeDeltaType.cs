@@ -1,7 +1,6 @@
 using GitObjectDb.Api.GraphQL.Model;
 using GitObjectDb.Api.GraphQL.Tools;
 using GraphQL.Types;
-using Models.Organization;
 using Namotion.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;

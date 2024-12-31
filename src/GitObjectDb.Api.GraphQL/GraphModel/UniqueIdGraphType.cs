@@ -1,8 +1,7 @@
-using GitObjectDb;
 using GraphQL.Types;
 using GraphQLParser.AST;
 
-namespace Models.Organization;
+namespace GitObjectDb.Api.GraphQL.GraphModel;
 
 public class UniqueIdGraphType : ScalarGraphType
 {

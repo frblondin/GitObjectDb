@@ -4,7 +4,6 @@ using GitObjectDb.Tests.Assets.Tools;
 using GraphQL;
 using GraphQL.Execution;
 using GraphQL.SystemTextJson;
-using GraphQL.Transport;
 using GraphQL.Types;
 using GraphQL.Validation;
 using GraphQLParser.Exceptions;

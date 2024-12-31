@@ -1,9 +1,7 @@
 using Fasterflect;
 using GitObjectDb.Api.GraphQL.Commands;
 using GitObjectDb.Model;
-using GraphQL;
 using GraphQL.Types;
-using Models.Organization;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
 

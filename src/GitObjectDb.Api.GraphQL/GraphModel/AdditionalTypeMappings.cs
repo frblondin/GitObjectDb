@@ -3,7 +3,6 @@ using GraphQL;
 using GraphQL.DataLoader;
 using GraphQL.Types;
 using LibGit2Sharp;
-using Models.Organization;
 
 namespace GitObjectDb.Api.GraphQL.GraphModel;
 internal static class AdditionalTypeMappings
