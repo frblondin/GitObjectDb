@@ -65,7 +65,6 @@ public static class ServiceConfiguration
     private static void ConfigureCommands(IServiceCollection source)
     {
         source.AddSingleton<ICommitCommand, CommitCommand>();
-        source.AddSingleton<IIndex, Internal.Index>();
         source.AddSingleton<IGitUpdateCommand, GitUpdateCommand>();
     }
 }
