@@ -16,14 +16,14 @@ using static GitObjectDb.Internal.Commands.GitUpdateCommand;
 namespace GitObjectDb.Internal;
 internal partial class Index : IIndex
 {
-    private readonly IConnectionInternal _connection;
+    private readonly IConnection _connection;
     private readonly IQuery<LoadItem.Parameters, TreeItem?> _loader;
 
     private int _nestedCount;
     private Realm? _realm;
 
     [FactoryDelegateConstructor(typeof(Factories.IndexFactory))]
-    public Index(IConnectionInternal connection,
+    public Index(IConnection connection,
                  string branchName,
                  ICommitCommand commitCommand,
                  IQuery<LoadItem.Parameters, TreeItem?> loader)
