@@ -6,7 +6,6 @@ using System.Text.RegularExpressions;
 
 namespace GitObjectDb.Tests.Assets.Tools;
 
-#if NET6_0_OR_GREATER
 internal static class DeferredTestCaseBuilder
 {
     private static readonly Regex _insertSpacesBetweenWords = new(@"([a-z])([A-Z])(?![A-Z])", RegexOptions.Compiled);
@@ -33,4 +32,3 @@ internal static class DeferredTestCaseBuilder
         return testMethod;
     }
 }
-#endif

@@ -9,7 +9,6 @@ using System.Threading;
 
 namespace GitObjectDb.Tests.Assets.Tools;
 
-#if NET6_0_OR_GREATER
 internal class DeferredTestMethod : TestMethod
 {
     // Should be readonly, but LazyInitializer doesn't have 'in' modifier for the lock.
@@ -24,12 +23,6 @@ internal class DeferredTestMethod : TestMethod
 
     public IEnumerable<object> DeferredArguments { get; set; }
 
-    public override object[] Arguments
-    {
-        get
-        {
-            return LazyInitializer.EnsureInitialized(ref _lockedArguments, ref _argsInitialized, ref _staticLock, () => DeferredArguments.ToArray());
-        }
-    }
+    public override object[] Arguments =>
+        LazyInitializer.EnsureInitialized(ref _lockedArguments, ref _argsInitialized, ref _staticLock, () => [.. DeferredArguments]);
 }
-#endif

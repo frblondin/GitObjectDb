@@ -10,8 +10,6 @@ public sealed class InlineAutoDataCustomizationsAttribute : InlineAutoDataAttrib
     public InlineAutoDataCustomizationsAttribute(Type[] customizationTypes, params object[] arguments)
         : base(() => AutoDataCustomizationsAttribute.CreateFixture(customizationTypes), arguments)
     {
-#if NET6_0_OR_GREATER
         TestMethodBuilder = new DeferredArgumentTestMethodBuilder();
-#endif
     }
 }
