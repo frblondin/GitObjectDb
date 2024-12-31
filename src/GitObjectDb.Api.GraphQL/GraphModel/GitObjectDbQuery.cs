@@ -23,6 +23,9 @@ public partial class GitObjectDbQuery : ObjectGraphType
     internal const string DeltaStartCommit = "start";
     internal const string DeltaEndCommit = "end";
 
+    internal const string HistoryStartCommit = "start";
+    internal const string HistoryEndCommit = "end";
+
     private readonly Dictionary<NodeTypeDescription, INodeType<GitObjectDbQuery>> _typeToGraphType = [];
     private readonly Dictionary<NodeTypeDescription, INodeDeltaType> _typeToDeltaGraphType = [];
 
@@ -41,22 +44,15 @@ public partial class GitObjectDbQuery : ObjectGraphType
             AddCollectionField(this, description.Type, description.Name);
             AddCollectionDeltaField(this, description);
         }
+        AddHistoryField();
     }
 
     public GitObjectDbSchema Schema { get; }
 
-    internal IGraphType GetOrCreateGraphType(Type nodeType)
-    {
-        if (nodeType == typeof(Node))
-        {
-            return new NodeInterface();
-        }
-        else
-        {
-            var description = Schema.Model.NodeTypes.First(d => d.Type == nodeType);
-            return GetOrCreateNodeGraphType(description);
-        }
-    }
+    internal IGraphType GetOrCreateGraphType(Type nodeType) =>
+        nodeType == typeof(Node) ?
+        new NodeInterface() :
+        GetOrCreateNodeGraphType(Schema.Model.NodeTypes.First(d => d.Type == nodeType));
 
     internal INodeType<GitObjectDbQuery> GetOrCreateNodeGraphType(NodeTypeDescription description)
     {
@@ -131,4 +127,24 @@ public partial class GitObjectDbQuery : ObjectGraphType
             }),
         });
     }
+
+    private void AddHistoryField() =>
+        Field<ListGraphType<CommitType>>("History")
+        .Description("Gets the history of changes in repository.")
+        .Arguments(
+        [
+            new QueryArgument<NonNullGraphType<StringGraphType>> { Name = HistoryStartCommit, Description = "Start committish of history lookup." },
+            new QueryArgument<NonNullGraphType<StringGraphType>> { Name = HistoryEndCommit, Description = "End committish of history lookup." },
+        ])
+        .Resolve(context =>
+        {
+            var connection = context.RequestServices?.GetRequiredService<IConnection>() ??
+                throw new RequestError("No connection context set.");
+            return connection.Repository.Commits.QueryBy(new CommitFilter
+            {
+                SortBy = CommitSortStrategies.Topological | CommitSortStrategies.Reverse,
+                ExcludeReachableFrom = context.GetArgument<string>(HistoryStartCommit),
+                IncludeReachableFrom = context.GetArgument<string>(HistoryEndCommit),
+            });
+        });
 }

@@ -88,6 +88,26 @@ public class QueryTests : QueryTestBase
         });
     }
 
+    [Test]
+    public async Task ReadHistory()
+    {
+        // Arrange
+        var query = @"
+            {
+              history(start: ""main~1"", end: ""main"") {
+                message
+              }
+            }";
+
+        // Act
+        var result = await AssertQuerySuccessAsync(query);
+        var writtenResult = JsonDocument.Parse(Serializer.Serialize(result)).RootElement;
+
+        // Assert
+        var message = writtenResult.GetFromPath<string>("data.history[0].message");
+        Assert.That(message, Is.EqualTo("Update GOS ids"));
+    }
+
     [SetUp]
     public async Task AddContent()
     {
