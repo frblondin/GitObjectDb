@@ -120,6 +120,7 @@ public class QueryTestBase<TDocumentBuilder>
         });
         var request = await controller.GraphQLAsync().ConfigureAwait(false);
         var runResult = ((ExecutionResultActionResult)request).ExecutionResult;
+        AssertQuerySuccess(runResult);
 
         if (expectedExecutionResultOrJson is not null)
         {
@@ -140,12 +141,16 @@ public class QueryTestBase<TDocumentBuilder>
                         Does.Match(expectedResult.Replace(Commit, @"\w+")),
                         () => additionalInfo);
         }
-        else if (runResult.Errors?.Any() ?? false)
-        {
-            throw new ExecutionError(string.Join('\n', runResult.Errors!.Select(e => e.Message)));
-        }
 
         return runResult;
+    }
+
+    protected void AssertQuerySuccess(ExecutionResult result)
+    {
+        if (result.Errors?.Any() ?? false)
+        {
+            throw new ExecutionError(string.Join('\n', result.Errors!.Select(e => e.Message)));
+        }
     }
 
     private static ExecutionResult CreateQueryResult(string result,

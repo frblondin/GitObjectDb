@@ -91,12 +91,13 @@ public class QueryTests : QueryTestBase
     [SetUp]
     public async Task AddContent()
     {
-        await Executer.ExecuteAsync(options =>
+        var result = await Executer.ExecuteAsync(options =>
         {
             options.Schema = Schema;
-            options.Query = Tests.Resource.CreateData;
+            options.Query = Resource.CreateData;
             options.UserContext = new Dictionary<string, object?>();
             options.RequestServices = ServiceProvider;
         }).ConfigureAwait(false);
+        AssertQuerySuccess(result);
     }
 }
