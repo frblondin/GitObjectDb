@@ -31,17 +31,17 @@ public class GitObjectDbMutation : ObjectGraphType
             AddNodeField(description);
         }
         Field<StringGraphType>("Checkout")
-            .Description("Checkout a branch.")
+            .Description("Checkouts an existing branch from its name.")
             .Arguments(
                 new QueryArgument<NonNullGraphType<StringGraphType>> { Name = BranchArgument })
             .Resolve(NodeMutation.Checkout);
         Field<DataPathGraphType>("DeleteNode")
-            .Description("Delete an existing node.")
+            .Description("Deletes an existing node from its path.")
             .Arguments(
                 new QueryArgument<NonNullGraphType<DataPathGraphType>> { Name = PathArgument })
             .Resolve(NodeMutation.Delete);
         Field<ObjectIdGraphType>("Commit")
-            .Description("Commit all previous changes.")
+            .Description("Commits all previous changes.")
             .Arguments(
                 new QueryArgument<NonNullGraphType<StringGraphType>> { Name = MessageArgument },
                 new QueryArgument<NonNullGraphType<StringGraphType>> { Name = AuthorArgument },
@@ -56,7 +56,7 @@ public class GitObjectDbMutation : ObjectGraphType
         var inputType = GetOrCreateNodeGraphType(description);
 
         Field<DataPathGraphType>($"Create{description.Type.Name}")
-            .Description($"Creates {description.Name}.")
+            .Description($"Creates or updates a {description.Name} node in repository.")
             .Arguments(
                 new QueryArgument(typeof(NonNullGraphType<>).MakeGenericType(inputType.GetType()))
                 {
