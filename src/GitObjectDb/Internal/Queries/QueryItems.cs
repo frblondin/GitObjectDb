@@ -6,18 +6,10 @@ using System.Linq;
 
 namespace GitObjectDb.Internal.Queries;
 
-internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath Path, Lazy<TreeItem> Item)>>
+internal class QueryItems(IQuery<LoadItem.Parameters, TreeItem?> loader,
+                          IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> queryResources)
+    : IQuery<QueryItems.Parameters, IEnumerable<(DataPath Path, Lazy<TreeItem> Item)>>
 {
-    private readonly IQuery<LoadItem.Parameters, TreeItem?> _loader;
-    private readonly IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> _queryResources;
-
-    public QueryItems(IQuery<LoadItem.Parameters, TreeItem?> loader,
-                      IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> queryResources)
-    {
-        _loader = loader;
-        _queryResources = queryResources;
-    }
-
     public IEnumerable<(DataPath Path, Lazy<TreeItem> Item)> Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
         var entries = new Stack<Parameters>();
@@ -61,13 +53,13 @@ internal class QueryItems : IQuery<QueryItems.Parameters, IEnumerable<(DataPath 
     }
 
     private Lazy<TreeItem> LoadItem(IQueryAccessor queryAccessor, Parameters parms) =>
-        new(() => _loader.Execute(queryAccessor,
+        new(() => loader.Execute(queryAccessor,
                                   new LoadItem.Parameters(parms.Tree, parms.Index, parms.ParentPath!))!);
 
     private IEnumerable<(DataPath Path, Lazy<Resource> Resource)> GetResources(IQueryAccessor queryAccessor,
                                                                                Node node,
                                                                                Parameters parms) =>
-        _queryResources.Execute(queryAccessor,
+        queryResources.Execute(queryAccessor,
                                 new QueryResources.Parameters(parms.Tree, parms.RelativeTree, node));
 
     private static bool IncludeResources(Parameters parms, INodeSerializer serializer) =>

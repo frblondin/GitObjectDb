@@ -10,9 +10,7 @@ public sealed class AutoDataCustomizationsAttribute : AutoDataAttribute
     public AutoDataCustomizationsAttribute(params Type[] customizationTypes)
         : base(() => CreateFixture(customizationTypes))
     {
-#if NET6_0_OR_GREATER
         TestMethodBuilder = new DeferredArgumentTestMethodBuilder();
-#endif
     }
 
     internal static IFixture CreateFixture(params Type[] customizationTypes)

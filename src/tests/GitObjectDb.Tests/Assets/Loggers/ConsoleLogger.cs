@@ -48,11 +48,7 @@ public class ConsoleLogger : ILogger
         _scopeProvider?.ForEachScope((scope, sb) =>
             {
                 var empty = sb.Length == 0;
-#if NET6_0_OR_GREATER
                 var message = scope?.ToString().Replace("\n", string.Empty, StringComparison.OrdinalIgnoreCase) ?? string.Empty;
-#else
-                var message = scope?.ToString().Replace("\n", string.Empty) ?? string.Empty;
-#endif
                 sb.Append(empty ? "=> " : " => ").Append(message);
             }, stringBuilder);
     }

@@ -9,17 +9,11 @@ using System.Linq;
 
 namespace GitObjectDb.Internal.Queries;
 
-internal class LoadItem : IQuery<LoadItem.Parameters, TreeItem?>
+internal class LoadItem(IDataModel model, INodeSerializer serializer)
+    : IQuery<LoadItem.Parameters, TreeItem?>
 {
+    private const long ItemSizeInCache = 1L;
     private static readonly object _referenceLock = new();
-    private readonly IDataModel _model;
-    private readonly INodeSerializer _serializer;
-
-    public LoadItem(IDataModel model, INodeSerializer serializer)
-    {
-        _model = model;
-        _serializer = serializer;
-    }
 
     public TreeItem? Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
@@ -35,7 +29,7 @@ internal class LoadItem : IQuery<LoadItem.Parameters, TreeItem?>
                 return null;
             }
 
-            return parms.Path.IsNode(_serializer) ?
+            return parms.Path.IsNode(serializer) ?
                 LoadNode(queryAccessor, parms, streamProvider) :
                 LoadResource(parms, new(() => streamProvider.Invoke().Stream));
         }
@@ -103,7 +97,7 @@ internal class LoadItem : IQuery<LoadItem.Parameters, TreeItem?>
     /// the same key. In this case, the factory can be called simultaneously and two different instances can be returned.
     /// This method uses a reentrant locking mechanism.
     /// </summary>
-    private TreeItem? GetOrCreateInCacheWithNoRacingCondition(IMemoryCache cache,
+    private static TreeItem? GetOrCreateInCacheWithNoRacingCondition(IMemoryCache cache,
         object key,
         Func<ICacheEntry, Func<EntryData>?, TreeItem?>? loader,
         Func<EntryData>? content)
@@ -115,6 +109,7 @@ internal class LoadItem : IQuery<LoadItem.Parameters, TreeItem?>
                 if (!cache.TryGetValue(key, out result))
                 {
                     using var entry = cache.CreateEntry(key);
+                    entry.SetSize(ItemSizeInCache);
                     result = entry.Value = loader?.Invoke(entry, content);
                 }
             }
@@ -133,7 +128,7 @@ internal class LoadItem : IQuery<LoadItem.Parameters, TreeItem?>
             p => Execute(queryAccessor, parms with { Path = p }) ??
                  throw new GitObjectDbException($"The entry for path {p} does not exist."));
 
-        foreach (var property in _model.GetDescription(result.GetType()).StoredAsSeparateFilesProperties
+        foreach (var property in model.GetDescription(result.GetType()).StoredAsSeparateFilesProperties
                      .Select(info => info.Property))
         {
             if (data.PropertyStoredAsFileValues?.TryGetValue(property.Name, out var value) ?? false)

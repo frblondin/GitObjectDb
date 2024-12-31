@@ -8,15 +8,9 @@ using System.Linq;
 
 namespace GitObjectDb.Internal.Queries;
 
-internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPath Path, TreeItem Item)>>
+internal class SearchItems(IQuery<LoadItem.Parameters, TreeItem?> loader)
+    : IQuery<SearchItems.Parameters, IEnumerable<(DataPath Path, TreeItem Item)>>
 {
-    private readonly IQuery<LoadItem.Parameters, TreeItem?> _loader;
-
-    public SearchItems(IQuery<LoadItem.Parameters, TreeItem?> loader)
-    {
-        _loader = loader;
-    }
-
     public IEnumerable<(DataPath Path, TreeItem Item)> Execute(IQueryAccessor queryAccessor, Parameters parms)
     {
         var regex = queryAccessor.Serializer.EscapeRegExPattern(parms.Pattern);
@@ -38,7 +32,7 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
                         where data is not null
                         let colon = data.IndexOf(':')
                         where DataPath.TryParse(data.Substring(colon + 1), out path)
-                        let item = new Lazy<TreeItem>(() => _loader.Execute(queryAccessor, new LoadItem.Parameters(parms.Tree, Index: null, path!))!)
+                        let item = new Lazy<TreeItem>(() => loader.Execute(queryAccessor, new LoadItem.Parameters(parms.Tree, Index: null, path!))!)
                         select (path, item);
         return lazyItems
             .AsParallel()
@@ -80,8 +74,7 @@ internal class SearchItems : IQuery<SearchItems.Parameters, IEnumerable<(DataPat
     }
 
     private static bool Matches(string? value, string pattern, StringComparison comparison) =>
-        value is not null &&
-        value.ToString().IndexOf(pattern, comparison) != -1;
+        value?.Contains(pattern, comparison) ?? false;
 
     internal record struct Parameters(IConnection Connection,
                                       Tree Tree,

@@ -23,8 +23,8 @@ public partial class GitObjectDbQuery : ObjectGraphType
     internal const string DeltaStartCommit = "start";
     internal const string DeltaEndCommit = "end";
 
-    private readonly Dictionary<NodeTypeDescription, INodeType<GitObjectDbQuery>> _typeToGraphType = new();
-    private readonly Dictionary<NodeTypeDescription, INodeDeltaType> _typeToDeltaGraphType = new();
+    private readonly Dictionary<NodeTypeDescription, INodeType<GitObjectDbQuery>> _typeToGraphType = [];
+    private readonly Dictionary<NodeTypeDescription, INodeDeltaType> _typeToDeltaGraphType = [];
 
     public GitObjectDbQuery(GitObjectDbSchema schema)
     {

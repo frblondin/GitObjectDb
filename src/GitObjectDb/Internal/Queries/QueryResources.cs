@@ -6,15 +6,9 @@ using System.Linq;
 
 namespace GitObjectDb.Internal.Queries;
 
-internal class QueryResources : IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>>
+internal class QueryResources(IQuery<QuerySubModules.Parameters, Commit> querySubModules)
+    : IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>>
 {
-    private readonly IQuery<QuerySubModules.Parameters, Commit> _querySubModules;
-
-    public QueryResources(IQuery<QuerySubModules.Parameters, Commit> querySubModules)
-    {
-        _querySubModules = querySubModules;
-    }
-
     public IEnumerable<(DataPath Path, Lazy<Resource> Resource)> Execute(IQueryAccessor queryAccessor,
                                                                          Parameters parms)
     {
@@ -42,7 +36,7 @@ internal class QueryResources : IQuery<QueryResources.Parameters, IEnumerable<(D
                                                                                           Parameters parms,
                                                                                           DataPath nodePath)
     {
-        var commit = _querySubModules.Execute(queryAccessor, new(parms.Node));
+        var commit = querySubModules.Execute(queryAccessor, new(parms.Node));
         var traversed = commit.Tree.Traverse($"{nodePath.FolderPath}/{FileSystemStorage.ResourceFolder}");
         return ResolveResources(traversed);
     }

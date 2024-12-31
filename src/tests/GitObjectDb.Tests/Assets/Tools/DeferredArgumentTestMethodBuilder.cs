@@ -7,7 +7,6 @@ using System.Linq;
 
 namespace GitObjectDb.Tests.Assets.Tools;
 
-#if NET6_0_OR_GREATER
 internal class DeferredArgumentTestMethodBuilder : ITestMethodBuilder
 {
     /// <summary>We're saved because `parameterValues` is inherently deferred in its execution.</summary>
@@ -23,12 +22,12 @@ internal class DeferredArgumentTestMethodBuilder : ITestMethodBuilder
                                                 parameterValues);
 
     private static object[] GetDisplayParameters(IMethodInfo method, IEnumerable<object> deferredParams, int autoDataStartIndex) =>
-        deferredParams.Take(autoDataStartIndex) // Only take parameter values that are not managed by AutoFixture
-                      .Concat(
-                          method.GetParameters()
-                          .Skip(autoDataStartIndex)
-                          .Select(p => new TypeNameRenderer(p.ParameterType)))
-                      .ToArray();
+    [
+        .. deferredParams.Take(autoDataStartIndex),
+        .. method.GetParameters()
+        .Skip(autoDataStartIndex)
+        .Select(p => new TypeNameRenderer(p.ParameterType)),
+    ];
 
     private class TypeNameRenderer
     {
@@ -39,4 +38,3 @@ internal class DeferredArgumentTestMethodBuilder : ITestMethodBuilder
         public override string ToString() => "auto<" + _argType.Name + ">";
     }
 }
-#endif
