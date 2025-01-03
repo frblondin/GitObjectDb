@@ -1,6 +1,6 @@
 using GraphQL.Types;
 
-namespace GitObjectDb.Api.GraphQL.GraphModel;
+namespace GitObjectDb.Api.GraphQL.Graph.Objects;
 
 internal interface INodeType<in T> : IGraphType
 {

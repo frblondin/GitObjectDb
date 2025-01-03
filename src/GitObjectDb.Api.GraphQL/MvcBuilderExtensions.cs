@@ -1,8 +1,5 @@
-using GraphQL;
-using GraphQL.DI;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace GitObjectDb.Api.GraphQL;
 
@@ -11,7 +8,6 @@ public static class MvcBuilderExtensions
 {
     /// <summary>Adds support of GraphQL queries.</summary>
     /// <param name="source">The source.</param>
-    /// <param name="configure">The GraphQL configuration delegate.</param>
     /// <returns>The source <see cref="IMvcBuilder"/>.</returns>
     public static IMvcBuilder AddGitObjectDbGraphQLControllers(this IMvcBuilder source)
     {

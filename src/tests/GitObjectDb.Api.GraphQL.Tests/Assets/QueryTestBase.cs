@@ -1,5 +1,4 @@
 using GitObjectDb.Api.GraphQL.Assets;
-using GitObjectDb.Api.GraphQL.GraphModel;
 using GitObjectDb.Tests.Assets.Tools;
 using GraphQL;
 using GraphQL.Execution;
@@ -45,7 +44,7 @@ public class QueryTestBase<TDocumentBuilder>
 
     public IConnection Connection { get; private set; }
 
-    public GitObjectDbSchema Schema { get; private set; }
+    public Graph.Schema Schema { get; private set; }
 #pragma warning restore CS8618
 
     [SetUp]
@@ -62,11 +61,11 @@ public class QueryTestBase<TDocumentBuilder>
                 o.ConfigureSchema = s => s.RegisterTypeMapping<DateTimeZone, DateTimeZoneGraphType>();
                 o.CacheEntryStrategy = e => e.SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1));
             })
-            .AddGraphQL(builder => builder.AddSystemTextJson())
+            .AddGraphQL(builder => builder.AddDataLoader().AddSystemTextJson())
             .AddGitObjectDbConnection(UniqueId.CreateNew().ToString())
             .AddTransient<NodeController>()
             .BuildServiceProvider();
-        Schema = (GitObjectDbSchema)ServiceProvider.GetRequiredService<ISchema>();
+        Schema = (Graph.Schema)ServiceProvider.GetRequiredService<ISchema>();
         Connection = ServiceProvider.GetRequiredService<IConnection>();
     }
 
@@ -127,7 +126,7 @@ public class QueryTestBase<TDocumentBuilder>
             var writtenResult = Serializer.Serialize(runResult);
             var additionalInfo = string.Empty;
 
-            if (runResult.Errors?.Any() == true)
+            if (runResult.Errors?.Count > 0)
             {
                 additionalInfo += string.Join(Environment.NewLine, runResult.Errors
                     .Where(x => x.InnerException is GraphQLSyntaxErrorException)
@@ -147,7 +146,7 @@ public class QueryTestBase<TDocumentBuilder>
 
     protected void AssertQuerySuccess(ExecutionResult result)
     {
-        if (result.Errors?.Any() ?? false)
+        if (result.Errors?.Count > 0)
         {
             throw new ExecutionError(string.Join('\n', result.Errors!.Select(e => e.Message)));
         }

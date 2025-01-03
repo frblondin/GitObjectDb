@@ -1,14 +1,9 @@
-using GitObjectDb.Api.GraphQL.GraphModel;
-using GitObjectDb.Api.GraphQL.Loaders;
-using GitObjectDb.Model;
+using GitObjectDb.Api.GraphQL.Graph.Objects;
+using GitObjectDb.Api.GraphQL.Queries;
 using GraphQL;
-using GraphQL.DataLoader;
-using GraphQL.DI;
+using GraphQL.Resolvers;
 using GraphQL.Types;
-using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
-using ServiceLifetime = Microsoft.Extensions.DependencyInjection.ServiceLifetime;
 
 namespace GitObjectDb.Api.GraphQL;
 
@@ -28,14 +23,26 @@ public static class ServiceConfiguration
             throw new NotSupportedException("GitObjectDbGraphQL has already been registered.");
         }
 
-        return source
-            .AddSingleton<ISchema, GitObjectDbSchema>()
-            .AddSingleton<IDataLoaderContextAccessor, DataLoaderContextAccessor>()
-            .AddSingleton(typeof(NodeDataLoader<>))
-            .AddSingleton(typeof(NodeDeltaDataLoader<>))
-            .AddSingleton<DataLoaderDocumentListener>()
+        source
+            .AddSingleton<ISchema, Graph.Schema>()
             .AddSingleton<NodeInputDtoTypeEmitter>()
+            .AddCompatibleTypesAsSingletons(typeof(CachedResultLoaderBase<,>))
+            .AddCompatibleTypesAsSingletons(typeof(IFieldResolver))
             .Configure(configure);
+
+        return source;
+    }
+
+    private static IServiceCollection AddCompatibleTypesAsSingletons(this IServiceCollection source, Type compatibleType)
+    {
+        Func<Type, bool> predicate = compatibleType.IsGenericTypeDefinition ?
+            type => (type.BaseType?.IsGenericType ?? false) && type.BaseType.GetGenericTypeDefinition() == compatibleType :
+            type => compatibleType.IsAssignableFrom(type);
+        foreach (var type in typeof(ServiceConfiguration).Assembly.GetTypes().Where(predicate))
+        {
+            source.AddSingleton(type);
+        }
+        return source;
     }
 
     /// <summary>Gets whether GitObjectDbApi has already been registered.</summary>

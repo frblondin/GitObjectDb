@@ -1,4 +1,4 @@
-using GitObjectDb.Api.GraphQL.GraphModel;
+using GitObjectDb.Api.GraphQL.Graph;
 using GraphQL;
 using GraphQL.Execution;
 using LibGit2Sharp;
@@ -7,12 +7,12 @@ using Microsoft.Extensions.DependencyInjection;
 namespace GitObjectDb.Api.GraphQL.Tools;
 internal static class IResolveFieldContextExtensions
 {
-    internal static TType? GetArgumentFromParentContexts<TType>(this IResolveFieldContext context, string name, TType defaultValue = default!)
+    internal static TType GetArgumentFromParentContexts<TType>(this IResolveFieldContext context, string name, TType defaultValue = default!)
     {
         var parentContext = context;
         while (parentContext is not null)
         {
-            var value = context.GetArgument<TType>(name);
+            var value = context.GetArgument<TType?>(name);
             if (value is not null)
             {
                 return value;
@@ -22,7 +22,7 @@ internal static class IResolveFieldContextExtensions
         return defaultValue;
     }
 
-    internal static ObjectId GetCommitId(this IResolveFieldContext context, string argumentName = GitObjectDbQuery.CommittishArgument)
+    internal static ObjectId GetCommitId(this IResolveFieldContext context, string argumentName = Query.CommittishArgument)
     {
         var parentContext = context;
         ObjectId? result = default;

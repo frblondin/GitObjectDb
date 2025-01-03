@@ -2,12 +2,11 @@ using GitObjectDb.Api.GraphQL.Model;
 using GitObjectDb.Api.GraphQL.Tools;
 using GitObjectDb.Model;
 using GitObjectDb.Tools;
-using LibGit2Sharp;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace GitObjectDb.Api.GraphQL.GraphModel;
+namespace GitObjectDb.Api.GraphQL.Graph.Objects;
 
 /// <summary>Emits data transfer types from a <see cref="IDataModel"/>.</summary>
 public sealed class NodeInputDtoTypeEmitter
@@ -50,10 +49,8 @@ public sealed class NodeInputDtoTypeEmitter
     private (NodeTypeDescription Type, TypeBuilder Dto) EmitDto(NodeTypeDescription type)
     {
         var result = ModuleBuilder.DefineType($"{typeof(NodeInputDto).Namespace}.{GetTypeName(type.Type)}InputDto",
-                                              TypeAttributes.Public |
-                                              TypeAttributes.Class |
-                                              TypeAttributes.AutoClass |
-                                              TypeAttributes.AnsiClass |
+                                              TypeAttributes.Public | TypeAttributes.Class |
+                                              TypeAttributes.AutoClass | TypeAttributes.AnsiClass |
                                               TypeAttributes.BeforeFieldInit |
                                               TypeAttributes.AutoLayout,
                                               typeof(NodeInputDto<>).MakeGenericType(type.Type));
@@ -107,47 +104,42 @@ public sealed class NodeInputDtoTypeEmitter
                                                     PropertyAttributes.HasDefault,
                                                     newTargetType,
                                                     null);
-
-        EmitDtoPropertyGetter(result, property, newTargetType, fieldBuilder, propertyBuilder);
-        EmitDtoPropertySetter(result, property, newTargetType, fieldBuilder, propertyBuilder);
+        EmitDtoPropertyGetter(result, fieldBuilder, propertyBuilder);
+        EmitDtoPropertySetter(result, fieldBuilder, propertyBuilder);
     }
 
     private static void EmitDtoPropertyGetter(TypeBuilder result,
-                                              PropertyInfo property,
-                                              Type newTargetType,
                                               FieldInfo field,
-                                              PropertyBuilder propertyBuilder)
+                                              PropertyBuilder property)
     {
         var getter = result.DefineMethod($"get_{property.Name}",
                                          MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
-                                         newTargetType,
+                                         property.PropertyType,
                                          Type.EmptyTypes);
 
-        var getterIL = getter.GetILGenerator();
-        getterIL.Emit(OpCodes.Ldarg_0);
-        getterIL.Emit(OpCodes.Ldfld, field);
-        getterIL.Emit(OpCodes.Ret);
+        var il = getter.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Ldfld, field);
+        il.Emit(OpCodes.Ret);
 
-        propertyBuilder.SetGetMethod(getter);
+        property.SetGetMethod(getter);
     }
 
     private static void EmitDtoPropertySetter(TypeBuilder result,
-                                              PropertyInfo property,
-                                              Type newTargetType,
                                               FieldInfo field,
-                                              PropertyBuilder propertyBuilder)
+                                              PropertyBuilder property)
     {
         var setter = result.DefineMethod($"set_{property.Name}",
                                          MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
                                          null,
-                                         new[] { newTargetType });
+                                         [property.PropertyType]);
 
-        var setterIL = setter.GetILGenerator();
-        setterIL.Emit(OpCodes.Ldarg_0);
-        setterIL.Emit(OpCodes.Ldarg_1);
-        setterIL.Emit(OpCodes.Stfld, field);
-        setterIL.Emit(OpCodes.Ret);
+        var il = setter.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Ldarg_1);
+        il.Emit(OpCodes.Stfld, field);
+        il.Emit(OpCodes.Ret);
 
-        propertyBuilder.SetSetMethod(setter);
+        property.SetSetMethod(setter);
     }
 }

@@ -1,7 +1,11 @@
-using GitObjectDb.Api.GraphQL.Loaders;
 using GraphQL.Types;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace GitObjectDb.Api.GraphQL;
+
+/// <summary>Provides a storage strategy of an entry stored in the cache.</summary>
+/// <param name="entry">The cache entry to be stored in the cache.</param>
+public delegate void CacheEntryStrategyProvider(ICacheEntry entry);
 
 /// <summary>Used to configure additional GraphQL behavior.</summary>
 public class GitObjectDbGraphQLOptions
