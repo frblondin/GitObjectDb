@@ -5,21 +5,21 @@ using System.Net;
 
 namespace GitObjectDb.Api.GraphQL;
 
-public class ExecutionResultActionResult : IActionResult
+/// <summary>Represents an action result that contains an <see cref="ExecutionResult"/>.</summary>
+public class ExecutionResultActionResult(ExecutionResult executionResult) : IActionResult
 {
-    public ExecutionResultActionResult(ExecutionResult executionResult)
-    {
-        ExecutionResult = executionResult;
-    }
+    /// <summary>Gets the execution result.</summary>
+    public ExecutionResult ExecutionResult { get; } = executionResult;
 
-    public ExecutionResult ExecutionResult { get; }
-
+    /// <summary>Executes the result operation of the action method asynchronously.</summary>
+    /// <param name="context">The context in which the result is executed.</param>
+    /// <returns>A task that represents the asynchronous execute operation.</returns>
     public async Task ExecuteResultAsync(ActionContext context)
     {
         var writer = context.HttpContext.RequestServices.GetRequiredService<IGraphQLSerializer>();
         var response = context.HttpContext.Response;
         response.ContentType = "application/json";
-        response.StatusCode = ExecutionResult.Data == null && ExecutionResult.Errors?.Any() == true ?
+        response.StatusCode = ExecutionResult.Data == null && ExecutionResult.Errors?.Count > 0 ?
             (int)HttpStatusCode.BadRequest :
             (int)HttpStatusCode.OK;
         await writer.WriteAsync(response.Body, ExecutionResult, context.HttpContext.RequestAborted);

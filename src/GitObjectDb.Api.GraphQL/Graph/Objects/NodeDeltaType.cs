@@ -1,13 +1,18 @@
+using GitObjectDb.Api.GraphQL.Graph;
+using GitObjectDb.Api.GraphQL.Graph.Scalars;
 using GitObjectDb.Api.GraphQL.Model;
 using GitObjectDb.Api.GraphQL.Tools;
 using GraphQL.Types;
 using Namotion.Reflection;
 
-namespace GitObjectDb.Api.GraphQL.GraphModel;
+namespace GitObjectDb.Api.GraphQL.Graph.Objects;
 
-internal class NodeDeltaType<TNode> : ObjectGraphType<DeltaDto<TNode>>, INodeDeltaType
+/// <summary>Represents a GraphQL type for node deltas.</summary>
+/// <typeparam name="TNode">The type of the node.</typeparam>
+public class NodeDeltaType<TNode> : ObjectGraphType<DeltaDto<TNode>>, INodeDeltaType
     where TNode : Node
 {
+    /// <summary>Initializes a new instance of the <see cref="NodeDeltaType{TNode}"/> class.</summary>
     public NodeDeltaType()
     {
         var typeName = typeof(TNode).Name.Replace("`", string.Empty);
@@ -23,7 +28,7 @@ internal class NodeDeltaType<TNode> : ObjectGraphType<DeltaDto<TNode>>, INodeDel
             .Description(deletedProperty.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }));
     }
 
-    void INodeDeltaType.AddNodeReference(GitObjectDbQuery query)
+    void INodeDeltaType.AddNodeReference(Query query)
     {
         var type = query.GetOrCreateGraphType(typeof(TNode));
 

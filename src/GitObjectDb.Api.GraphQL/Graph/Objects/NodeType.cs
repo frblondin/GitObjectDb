@@ -1,69 +1,56 @@
 using Fasterflect;
-using GitObjectDb.Api.GraphQL.Loaders;
+using GitObjectDb.Api.GraphQL.Graph;
+using GitObjectDb.Api.GraphQL.Graph.Scalars;
+using GitObjectDb.Api.GraphQL.Queries;
 using GitObjectDb.Api.GraphQL.Tools;
 using GraphQL;
 using GraphQL.Execution;
 using GraphQL.Resolvers;
 using GraphQL.Types;
-using LibGit2Sharp;
-using Microsoft.Extensions.DependencyInjection;
 using Namotion.Reflection;
 using System.Reflection;
 
-namespace GitObjectDb.Api.GraphQL.GraphModel;
+namespace GitObjectDb.Api.GraphQL.Graph.Objects;
 
-public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<GitObjectDbQuery>
+/// <summary>Represents a GraphQL node type.</summary>
+/// <typeparam name="TNode">The type of the node.</typeparam>
+public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<Query>
     where TNode : Node
 {
+    /// <summary>Initializes a new instance of the <see cref="NodeType{TNode}"/> class.</summary>
     public NodeType()
     {
         Name = typeof(TNode).Name.Replace("`", string.Empty);
         Description = typeof(TNode).GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false });
 
-        Interface<NodeInterface>();
+        Interface<NodeInterfaceType>();
 
         AddChildrenField();
         AddHistoryField();
     }
 
     private void AddChildrenField() =>
-        NodeInterface.CreateChildrenField(this)
-        .Resolve(context =>
-        {
-            var loader = context.RequestServices?.GetRequiredService<NodeDataLoader<Node>>() ??
-                throw new ExecutionError("No request context set.");
-            return loader.LoadAsync(new NodeDataLoaderKey(context));
-        });
+        NodeInterfaceType.CreateChildrenField(this)
+        .ResolveThroughDI().UsingLoader<NodeDataLoaderKey, NodeLoader<Node>>();
 
     private void AddHistoryField() =>
-        NodeInterface.CreateHistoryField(this)
-        .Resolve(context =>
-        {
-            var commitId = context.GetCommitId();
-            var queryAccessor = context.RequestServices?.GetRequiredService<IQueryAccessor>() ??
-                throw new RequestError("No request context set.");
+        NodeInterfaceType.CreateHistoryField(this)
+        .ResolveThroughDI().UsingLoader<NodeHistoryQueryKey, NodeHistoryLoader>();
 
-            return context.Source.Path is null ?
-                Enumerable.Empty<Commit>() :
-                queryAccessor
-                    .GetCommits(commitId.Sha, context.Source!)
-                    .Select(e => e.Commit);
-        });
-
-    void INodeType<GitObjectDbQuery>.AddFieldsThroughReflection(GitObjectDbQuery query)
+    void INodeType<Query>.AddFieldsThroughReflection(Query query)
     {
         AddScalarProperties(query);
         AddReferences(query);
         AddChildren(query);
     }
 
-    private void AddScalarProperties(GitObjectDbQuery query)
+    private void AddScalarProperties(Query query)
     {
         foreach (var property in typeof(TNode).GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
             if (property.PropertyType.IsNode() ||
                 property.PropertyType.IsNodeEnumerable(out var _) ||
-                !property.PropertyType.IsValidClrTypeForGraph(query.Schema))
+                !property.PropertyType.IsValidScalarForGraph(query.Schema))
             {
                 continue;
             }
@@ -76,7 +63,7 @@ public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<GitObjectDbQuer
         }
     }
 
-    private void AddReferences(GitObjectDbQuery query)
+    private void AddReferences(Query query)
     {
         foreach (var property in typeof(TNode).GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
@@ -96,7 +83,7 @@ public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<GitObjectDbQuer
         }
     }
 
-    private void AddSingleReference(GitObjectDbQuery query, PropertyInfo property)
+    private void AddSingleReference(Query query, PropertyInfo property)
     {
         var type = query.GetOrCreateGraphType(property.PropertyType);
         var getter = Reflect.PropertyGetter(property);
@@ -112,7 +99,7 @@ public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<GitObjectDbQuer
             }));
     }
 
-    private void AddMultiReference(GitObjectDbQuery query, PropertyInfo property, Type nodeType)
+    private void AddMultiReference(Query query, PropertyInfo property, Type nodeType)
     {
         var type = query.GetOrCreateGraphType(nodeType);
         var getter = Reflect.PropertyGetter(property);
@@ -128,12 +115,12 @@ public class NodeType<TNode> : ObjectGraphType<TNode>, INodeType<GitObjectDbQuer
             }));
     }
 
-    private void AddChildren(GitObjectDbQuery query)
+    private void AddChildren(Query query)
     {
         var description = query.Schema.Model.GetDescription(typeof(TNode));
         foreach (var childType in description.Children)
         {
-            query.AddCollectionField(this, childType.Type, childType.Name);
+            query.AddNodeListField(this, childType);
         }
     }
 }

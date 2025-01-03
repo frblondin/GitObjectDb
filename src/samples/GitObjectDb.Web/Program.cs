@@ -31,6 +31,7 @@ switch (repositoryType)
                 options.CacheEntryStrategy = CacheStrategy;
             })
             .AddGraphQL(builder => builder
+                .AddDataLoader()
                 .UseApolloTracing(true)
                 .AddSystemTextJson()
                 .UseMemoryCache(options =>
@@ -49,6 +50,7 @@ switch (repositoryType)
             .AddGitObjectDbOData()
             .AddGitObjectDbGraphQLSchema(builder => builder.CacheEntryStrategy = CacheStrategy)
             .AddGraphQL(builder => builder
+                .AddDataLoader()
                 .UseApolloTracing(true)
                 .AddSystemTextJson()
                 .UseMemoryCache(options =>

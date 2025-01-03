@@ -4,31 +4,18 @@ namespace GitObjectDb.Api.GraphQL.Model;
 
 /// <summary>Represents changes that occurred to a <see cref="Node"/>.</summary>
 /// <typeparam name="TNode">The type of the <see cref="Node"/>.</typeparam>
-public class DeltaDto<TNode>
-    where TNode : Node
-{
-    /// <summary>Initializes a new instance of the <see cref="DeltaDto{TNodeDto}"/> class.</summary>
-    /// <param name="old">The old state of the node.</param>
-    /// <param name="new">The new state of the node.</param>
-    /// <param name="commitId">The latest commit id.</param>
-    /// <param name="deleted">Whether the node has been deleted.</param>
-    public DeltaDto(TNode? old, TNode? @new, ObjectId commitId, bool deleted)
-    {
-        Old = old;
-        New = @new;
-        UpdatedAt = commitId;
-        Deleted = deleted;
-    }
+/// <remarks>Initializes a new instance of the <see cref="DeltaDto{TNodeDto}"/> class.</remarks>
+/// <param name="Old">The old state of the node.</param>
+/// <param name="New">The new state of the node.</param>
+/// <param name="UpdatedAt">The latest commit id.</param>
+/// <param name="Deleted">Whether the node has been deleted.</param>
+#pragma warning disable SA1402 // File may only contain a single type
+public record DeltaDto<TNode>(TNode? Old, TNode? New, ObjectId UpdatedAt, bool Deleted)
+    : DeltaDto(UpdatedAt, Deleted)
+    where TNode : Node;
 
-    /// <summary>Gets the old state of the node.</summary>
-    public TNode? Old { get; }
-
-    /// <summary>Gets the new state of the node.</summary>
-    public TNode? New { get; }
-
-    /// <summary>Gets the latest commit id.</summary>
-    public ObjectId UpdatedAt { get; }
-
-    /// <summary>Gets a value indicating whether the node has been deleted.</summary>
-    public bool Deleted { get; }
-}
+/// <summary>Represents changes that occurred to a <see cref="Node"/>.</summary>
+/// <remarks>Initializes a new instance of the <see cref="DeltaDto"/> class.</remarks>
+/// <param name="CommitId">The latest commit id.</param>
+/// <param name="Deleted">Whether the node has been deleted.</param>
+public abstract record DeltaDto(ObjectId CommitId, bool Deleted);
