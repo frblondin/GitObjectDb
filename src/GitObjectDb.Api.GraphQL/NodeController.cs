@@ -9,37 +9,33 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GitObjectDb.Api.GraphQL;
 
+/// <summary>Controller for handling GraphQL requests.</summary>
+/// <remarks>Initializes a new instance of the <see cref="NodeController"/> class.</remarks>
+/// <param name="documentExecuter">The document executer.</param>
+/// <param name="schema">The GraphQL schema.</param>
+/// <param name="serializer">The GraphQL text serializer.</param>
+/// <param name="listener">The data loader document listener.</param>
 [ApiController]
 [Route("api")]
-public class NodeController : Controller
+public class NodeController(IDocumentExecuter documentExecuter,
+                            ISchema schema,
+                            IGraphQLTextSerializer serializer,
+                            DataLoaderDocumentListener listener)
+    : Controller
 {
-    private readonly IDocumentExecuter _documentExecuter;
-    private readonly ISchema _schema;
-    private readonly IGraphQLTextSerializer _serializer;
-    private readonly DataLoaderDocumentListener _listener;
-
-    public NodeController(IDocumentExecuter documentExecuter, ISchema schema, IGraphQLTextSerializer serializer, DataLoaderDocumentListener listener)
-    {
-        _documentExecuter = documentExecuter;
-        _schema = schema;
-        _serializer = serializer;
-        _listener = listener;
-    }
-
+    /// <summary>Handles GraphQL GET requests.</summary>
+    /// <param name="query">The GraphQL query.</param>
+    /// <param name="operationName">The operation name.</param>
+    /// <returns>The result of the GraphQL query.</returns>
     [HttpGet]
     [ActionName("graphql")]
-    public Task<IActionResult> GraphQLGetAsync(string query, string? operationName)
-    {
-        if (HttpContext.WebSockets.IsWebSocketRequest)
-        {
-            return Task.FromResult<IActionResult>(BadRequest());
-        }
-        else
-        {
-            return ExecuteGraphQLRequestAsync(BuildRequest(query, operationName));
-        }
-    }
+    public Task<IActionResult> GraphQLGetAsync(string query, string? operationName) =>
+        HttpContext.WebSockets.IsWebSocketRequest ?
+        Task.FromResult<IActionResult>(BadRequest()) :
+        ExecuteGraphQLRequestAsync(BuildRequest(query, operationName));
 
+    /// <summary>Handles GraphQL POST requests.</summary>
+    /// <returns>The result of the GraphQL query.</returns>
     [HttpPost("graphql")]
     public async Task<IActionResult> GraphQLAsync()
     {
@@ -51,7 +47,7 @@ public class NodeController : Controller
         }
         else if (HttpContext.Request.HasJsonContentType())
         {
-            var request = await _serializer.ReadAsync<GraphQLRequest>(HttpContext.Request.Body,
+            var request = await serializer.ReadAsync<GraphQLRequest>(HttpContext.Request.Body,
                                                                       HttpContext.RequestAborted);
             return await ExecuteGraphQLRequestAsync(request);
         }
@@ -66,20 +62,23 @@ public class NodeController : Controller
 
     private GraphQLRequest BuildRequest(string query, string? operationName, string? variables = null,
                                         string? extensions = null) => new()
-    {
-        Query = query == string.Empty ? null : query,
-        OperationName = operationName == string.Empty ? null : operationName,
-        Variables = _serializer.Deserialize<Inputs>(variables == string.Empty ? null : variables),
-        Extensions = _serializer.Deserialize<Inputs>(extensions == string.Empty ? null : extensions),
-    };
+                                        {
+                                            Query = query == string.Empty ? null : query,
+                                            OperationName = operationName == string.Empty ? null : operationName,
+                                            Variables = serializer.Deserialize<Inputs>(variables == string.Empty ? null : variables),
+                                            Extensions = serializer.Deserialize<Inputs>(extensions == string.Empty ? null : extensions),
+                                        };
 
+    /// <summary>Executes the GraphQL request.</summary>
+    /// <param name="request">The GraphQL request.</param>
+    /// <returns>The result of the GraphQL query.</returns>
     public async Task<IActionResult> ExecuteGraphQLRequestAsync(GraphQLRequest? request)
     {
         try
         {
-            var result = await _documentExecuter.ExecuteAsync(s =>
+            var result = await documentExecuter.ExecuteAsync(s =>
             {
-                s.Schema = _schema;
+                s.Schema = schema;
                 s.Query = request?.Query;
                 s.Variables = request?.Variables;
                 s.OperationName = request?.OperationName;
@@ -90,7 +89,7 @@ public class NodeController : Controller
                 };
                 s.UnhandledExceptionDelegate = WaitHandleCannotBeOpenedException;
                 s.CancellationToken = HttpContext.RequestAborted;
-                s.Listeners.Add(_listener);
+                s.Listeners.Add(listener);
             });
 
             return new ExecutionResultActionResult(result);

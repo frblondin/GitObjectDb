@@ -1,7 +1,7 @@
 using GraphQL.Types;
 using LibGit2Sharp;
 
-namespace GitObjectDb.Api.GraphQL.GraphModel;
+namespace GitObjectDb.Api.GraphQL.Graph.Objects;
 
 internal class CommitType : ObjectGraphType<Commit>
 {

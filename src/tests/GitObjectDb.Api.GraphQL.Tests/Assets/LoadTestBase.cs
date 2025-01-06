@@ -21,9 +21,9 @@ public class LoadTestBase : QueryTestBase
             options.UserContext = new Dictionary<string, object?>();
             options.RequestServices = ServiceProvider;
         }).ConfigureAwait(false);
-        return result.Errors?.Any() ?? true ?
-                Response.Ok() :
-                Response.Fail(message: result.Errors!.First().Message);
+        return result.Errors?.Count == 0 ?
+            Response.Ok() :
+            Response.Fail(message: string.Join('\n', result.Errors!.Select(e => e.Message)));
     };
 
     protected static void RunScenarios(params ScenarioProps[] scenarios)

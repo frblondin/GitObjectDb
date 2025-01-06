@@ -1,19 +1,20 @@
 using GraphQL.Types;
 using GraphQLParser.AST;
+using LibGit2Sharp;
 
-namespace GitObjectDb.Api.GraphQL.GraphModel;
+namespace GitObjectDb.Api.GraphQL.Graph.Scalars;
 
-public class DataPathGraphType : ScalarGraphType
+internal class ObjectIdGraphType : ScalarGraphType
 {
-    public DataPathGraphType()
+    public ObjectIdGraphType()
     {
-        Description = "Represents a path in GitObjectDb.";
+        Description = "Represents a unique id in GitObjectDb.";
     }
 
     /// <inheritdoc />
     public override object? ParseLiteral(GraphQLValue value) => value switch
     {
-        GraphQLStringValue stringValue => DataPath.Parse((string)stringValue.Value),
+        GraphQLStringValue stringValue => new ObjectId((string)stringValue.Value),
         GraphQLNullValue _ => null,
         _ => ThrowLiteralConversionError(value, null),
     };
@@ -21,8 +22,8 @@ public class DataPathGraphType : ScalarGraphType
     /// <inheritdoc />
     public override object? ParseValue(object? value) => value switch
     {
-        DataPath _ => value,
-        string s => DataPath.Parse(s),
+        ObjectId _ => value,
+        string s => new ObjectId(s),
         null => null,
         _ => ThrowValueConversionError(value),
     };
@@ -30,7 +31,7 @@ public class DataPathGraphType : ScalarGraphType
     /// <inheritdoc />
     public override object? Serialize(object? value) => value switch
     {
-        DataPath path => path.ToString(),
+        ObjectId id => id.ToString(),
         null => null,
         _ => ThrowSerializationError(value),
     };
