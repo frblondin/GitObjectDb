@@ -117,7 +117,7 @@ public partial class Query : ObjectGraphType
             .FieldType);
 
     private void AddHistoryField() =>
-        Field<ListGraphType<CommitType>>("History")
+        Field<ListGraphType<CommitType>, IEnumerable<Commit>>("History")
             .Description("Gets the history of changes in repository.")
             .Arguments(
             [
