@@ -151,7 +151,7 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
     /// parameter is <see langword="null" />, is an empty string (""), or does not contain a valid
     /// string representation of a sha. This parameter is passed uninitialized.</param>
     /// <returns><see langword="true" /> if the <paramref name="path" /> parameter was converted successfully; otherwise, <see langword="false" />.</returns>
-    public static bool TryParse(string path, out DataPath? result)
+    public static bool TryParse(string path, [NotNullWhen(true)] out DataPath? result)
     {
         var separator = path.LastIndexOf('/');
         var folder = path.Substring(0, separator);

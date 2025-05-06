@@ -104,7 +104,7 @@ internal class Comparer : IComparer, IComparerInternal
         {
             var fileName = $"{match.Result("${fileName}")}.{_serializer.FileExtension}";
             nodePath = $"{match.Result("${folder}")}/{fileName}";
-            return true;
+            return DataPath.TryParse(nodePath, out var parsed) && parsed.IsNode(_serializer);
         }
         nodePath = null;
         return false;
