@@ -1,4 +1,4 @@
-using LibGit2Sharp;
+using GitDotNet;
 using ProtoBuf;
 
 namespace GitObjectDb.Api.ProtoBuf.Model;
@@ -14,7 +14,7 @@ public class NodeQueryReply<TNode> : INodeQueryReply
     {
     }
 
-    internal NodeQueryReply(IEnumerable<NodeData>? nodeContents, ObjectId? treeId, IEnumerable<TNode>? nodes)
+    internal NodeQueryReply(IEnumerable<NodeData>? nodeContents, HashId? treeId, IEnumerable<TNode>? nodes)
     {
         ((INodeQueryReply)this).NodeContents = nodeContents;
         TreeId = treeId;
@@ -24,15 +24,15 @@ public class NodeQueryReply<TNode> : INodeQueryReply
     [ProtoMember(1)]
     IEnumerable<NodeData>? INodeQueryReply.NodeContents { get; set; }
 
-    /// <summary>Gets or sets the <see cref="ObjectId"/> of the tree containing returned nodes.</summary>
+    /// <summary>Gets or sets the <see cref="HashId"/> of the tree containing returned nodes.</summary>
     [ProtoMember(2)]
-    public ObjectId? TreeId { get; set; }
+    public HashId? TreeId { get; set; }
 
     /// <summary>Gets or sets the nodes returned by the query result.</summary>
     [ProtoMember(3)]
     public IEnumerable<TNode>? Nodes { get; set; }
 
-    Dictionary<(DataPath Path, ObjectId TreeId), Node> INodeQueryReply.Cache { get; } = new();
+    Dictionary<(DataPath Path, HashId TreeId), Node> INodeQueryReply.Cache { get; } = new();
 
 #pragma warning disable CA1822 // Mark members as static
 #pragma warning disable IDE0051 // Remove unused private members
@@ -53,11 +53,11 @@ public class NodeQueryReply<TNode> : INodeQueryReply
 
 /// <summary>Contains compressed serialized data of <see cref="Node"/> items.</summary>
 /// <param name="Path">Gets or sets the path of the node.</param>
-/// <param name="TreeId">Gets or sets the <see cref="ObjectId"/> of the tree containing the node.</param>
+/// <param name="TreeId">Gets or sets the <see cref="HashId"/> of the tree containing the node.</param>
 /// <param name="Data">Gets or sets the compressed serialized data of the node.</param>
 [ProtoContract]
 public record NodeData([property: ProtoMember(1)] DataPath? Path,
-                       [property: ProtoMember(2)] ObjectId? TreeId,
+                       [property: ProtoMember(2)] HashId? TreeId,
                        [property: ProtoMember(3)] byte[]? Data)
 {
     private NodeData()

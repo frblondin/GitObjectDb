@@ -1,197 +1,189 @@
+using GitDotNet;
 using GitObjectDb.Comparison;
-using LibGit2Sharp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Internal;
 
 internal sealed partial class Connection
 {
     // Use lazy for concurrent dictionary thread safety
-    private readonly ConcurrentDictionary<DataPath, Lazy<Repository>> _repositories = new();
+    private readonly ConcurrentDictionary<DataPath, Lazy<IGitConnection>> _repositories = new();
 
-    public TItem? Lookup<TItem>(string committish,
-                                DataPath path)
+    public async Task<TItem?> LookupAsync<TItem>(CommitEntry commit, DataPath path)
         where TItem : TreeItem
     {
-        var (commit, _) = TryGetTree(committish, path);
-        return commit.Tree[path.FilePath] is null ?
+        var tree = await commit.GetRootTreeAsync().ConfigureAwait(false);
+        return await tree.GetFromPathAsync(path.FilePath).ConfigureAwait(false) is null ?
             default :
-            (TItem)_loader.Execute(this, new(commit.Tree, Index: null, path))!;
+            await _loader.ExecuteAsync(this, new(tree, Index: null, path)).ConfigureAwait(false) as TItem;
     }
 
-    public TItem? Lookup<TItem>(string committish,
-                                UniqueId id)
+    public async Task<TItem?> LookupAsync<TItem>(CommitEntry commit, UniqueId id)
         where TItem : TreeItem
     {
-        var (commit, path) = TryGetTree(committish, id);
+        var path = await TryGetTreeAsync(commit, id).ConfigureAwait(false);
         return path is null ?
             default :
-            (TItem)_loader.Execute(this, new(commit.Tree, Index: null, path))!;
+            await _loader.ExecuteAsync(this,
+            new(await commit.GetRootTreeAsync().ConfigureAwait(false), Index: null, path)).ConfigureAwait(false) as TItem;
     }
 
-    public ICommitEnumerable<TItem> GetItems<TItem>(string committish,
-                                                    Node? parent = null,
-                                                    bool isRecursive = false)
+    public async IAsyncEnumerable<TItem> GetItemsAsync<TItem>(CommitEntry commit,
+        Node? parent = null,
+        bool isRecursive = false,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
         where TItem : TreeItem
     {
-        var (commit, relativeTree) = TryGetTree(committish, parent?.Path);
-
-        if (relativeTree is null)
+        var relativeTree = await TryGetTreeAsync(commit, parent?.Path).ConfigureAwait(false);
+        if (relativeTree is not null)
         {
-            return CommitEnumerable.Empty<TItem>(commit.Id);
+            var result = _queryItems.ExecuteAsync(this,
+                new(await commit.GetRootTreeAsync().ConfigureAwait(false),
+                relativeTree,
+                Index: null,
+                typeof(TItem),
+                parent?.Path,
+                isRecursive), cancellationToken).ConfigureAwait(false);
+            await foreach (var item in result)
+            {
+                if (item.Item is TItem typed)
+                {
+                    yield return typed;
+                }
+            }
         }
-
-        return _queryItems
-            .Execute(this, new(commit.Tree,
-                               relativeTree,
-                               Index: null,
-                               typeof(TItem),
-                               parent?.Path,
-                               isRecursive))
-            .AsParallel()
-                .Select(i => i.Item.Value)
-                .OfType<TItem>()
-                .OrderBy(i => i.Path)
-            .ToCommitEnumerable(commit.Id);
     }
 
-    public ICommitEnumerable<TNode> GetNodes<TNode>(string committish,
-                                                    Node? parent = null,
-                                                    bool isRecursive = false)
-        where TNode : Node
-    {
-        return GetItems<TNode>(committish, parent, isRecursive);
-    }
+    public IAsyncEnumerable<TNode> GetNodesAsync<TNode>(CommitEntry commit,
+        Node? parent = null,
+        bool isRecursive = false,
+        CancellationToken cancellationToken = default)
+        where TNode : Node =>
+        GetItemsAsync<TNode>(commit, parent, isRecursive, cancellationToken);
 
-    public IEnumerable<DataPath> GetPaths(string committish,
-                                          DataPath? parentPath = null,
-                                          bool isRecursive = false)
-    {
-        return GetPaths<TreeItem>(committish, parentPath, isRecursive);
-    }
+    public IAsyncEnumerable<DataPath> GetPathsAsync(CommitEntry commit,
+        DataPath? parentPath = null,
+        bool isRecursive = false,
+        CancellationToken cancellationToken = default) =>
+        GetPathsAsync<TreeItem>(commit, parentPath, isRecursive, cancellationToken);
 
-    public IEnumerable<DataPath> GetPaths<TItem>(string committish,
-                                                 DataPath? parentPath = null,
-                                                 bool isRecursive = false)
+    public async IAsyncEnumerable<DataPath> GetPathsAsync<TItem>(CommitEntry commit,
+        DataPath? parentPath = null,
+        bool isRecursive = false,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
         where TItem : TreeItem
     {
-        var (commit, relativeTree) = TryGetTree(committish, parentPath);
-
-        if (relativeTree is null)
+        var relativeTree = await TryGetTreeAsync(commit, parentPath).ConfigureAwait(false);
+        if (relativeTree is not null)
         {
-            return Enumerable.Empty<DataPath>();
+            var result = _queryItems.ExecuteAsync(this, new(await commit.GetRootTreeAsync().ConfigureAwait(false),
+                relativeTree,
+                Index: null,
+                typeof(TItem),
+                parentPath,
+                isRecursive),
+                cancellationToken).Select(i => i.Path);
+            await foreach (var entry in result)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                yield return entry;
+            }
         }
-
-        return _queryItems.Execute(this,
-                                   new(commit.Tree,
-                                       relativeTree,
-                                       Index: null,
-                                       typeof(TItem),
-                                       parentPath,
-                                       isRecursive)).Select(i => i.Path);
     }
 
-    public IEnumerable<TreeItem> Search(string committish,
-                                         string pattern,
-                                         DataPath? parentPath = null,
-                                         bool ignoreCase = false,
-                                         bool recurseSubModules = false)
+    public async IAsyncEnumerable<TreeItem> SearchAsync(CommitEntry commit,
+        string pattern,
+        DataPath? parentPath = null,
+        bool ignoreCase = false,
+        bool recurseSubModules = false,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var (commit, _) = TryGetTree(committish, parentPath);
-        return _searchItems
-            .Execute(this, new(this,
-                               commit.Tree,
-                               pattern,
-                               parentPath,
-                               committish,
-                               ignoreCase,
-                               recurseSubModules))
-            .Select(i => i.Item);
-    }
-
-    public ICommitEnumerable<Resource> GetResources(string committish, Node node)
-    {
-        if (node.Path is null)
+        var result = _searchItems.ExecuteAsync(this, new(this,
+            await commit.GetRootTreeAsync().ConfigureAwait(false),
+            pattern,
+            parentPath,
+            commit,
+            ignoreCase,
+            recurseSubModules),
+            cancellationToken).ConfigureAwait(false);
+        await foreach (var entry in result)
         {
-            throw new ArgumentNullException(nameof(node), $"{nameof(Node.Path)} is null.");
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return entry.Item;
         }
+    }
 
-        var (commit, relativeTree) = TryGetTree(committish, node.Path);
-
-        if (relativeTree is null)
+    public async IAsyncEnumerable<Resource> GetResourcesAsync(CommitEntry commit, Node node, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var relativeTree = await TryGetTreeAsync(commit, node.ThrowIfNoPath()).ConfigureAwait(false);
+        if (relativeTree is not null)
         {
-            return CommitEnumerable.Empty<Resource>(commit.Id);
+            var result = _queryResources.ExecuteAsync(this,
+                new(await commit.GetRootTreeAsync().ConfigureAwait(false), relativeTree, node), cancellationToken).ConfigureAwait(false);
+            await foreach (var entry in result)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                yield return entry.Resource;
+            }
         }
-
-        return _queryResources
-            .Execute(this, new(commit.Tree, relativeTree, node))
-            .AsParallel()
-                .Select(i => i.Resource.Value)
-                .OrderBy(i => i.Path)
-            .ToCommitEnumerable(commit.Id);
     }
 
-    public ChangeCollection Compare(string startCommittish,
-                                    string committish,
-                                    ComparisonPolicy? policy = null)
+    public async Task<ChangeCollection> CompareAsync(string startCommittish,
+        string committish,
+        ComparisonPolicy? policy = null)
     {
-        var (old, _) = TryGetTree(committish: startCommittish);
-        var (@new, _) = TryGetTree(committish: committish);
-        return _comparer.Compare(this, old, @new, policy ?? Model.DefaultComparisonPolicy);
+        var old = await Repository.GetCommittishAsync(startCommittish).ConfigureAwait(false);
+        var @new = await Repository.GetCommittishAsync(committish).ConfigureAwait(false);
+        return await _comparer.CompareAsync(this, old, @new, policy ?? Model.DefaultComparisonPolicy).ConfigureAwait(false);
     }
 
-    public IEnumerable<LogEntry> GetCommits(string committish, TreeItem item)
-    {
-        var filePath = item.ThrowIfNoPath().FilePath;
-        var filter = new CommitFilter
-        {
-            IncludeReachableFrom = committish,
-        };
-        return Repository.Commits.QueryBy(filePath, filter);
-    }
+    public IAsyncEnumerable<LogEntry> GetLogsAsync(CommitEntry commit, TreeItem item, CancellationToken cancellationToken = default) =>
+        Repository.GetLogAsync(
+            commit.Id.ToString(),
+            LogOptions.Default with { Path = item.ThrowIfNoPath().FilePath },
+            cancellationToken);
 
-    private (Commit Commit, Tree? RelativePath) TryGetTree(string committish, DataPath? path = null)
+    private static async Task<TreeEntry?> TryGetTreeAsync(CommitEntry commit, DataPath? path = null)
     {
-        var commit = (Commit)Repository.Lookup(committish) ??
-            throw new GitObjectDbInvalidCommitException();
+        var root = await commit.GetRootTreeAsync().ConfigureAwait(false);
         if (path is null || string.IsNullOrEmpty(path.FolderPath))
         {
-            return (commit, commit.Tree);
+            return root;
         }
         else
         {
-            var tree = commit.Tree[path.FolderPath];
-            return (commit, tree?.Target.Peel<Tree>());
+            var tree = await root.GetFromPathAsync(path.FolderPath).ConfigureAwait(false);
+            return tree != null ? await tree.GetEntryAsync<TreeEntry>().ConfigureAwait(false) : null;
         }
     }
 
-    private (Commit Commit, DataPath? Path) TryGetTree(string committish, UniqueId id)
+    private async Task<DataPath?> TryGetTreeAsync(CommitEntry commit, UniqueId id)
     {
-        var commit = (Commit)Repository.Lookup(committish) ??
-            throw new GitObjectDbInvalidCommitException();
-
         var stack = new Stack<string>();
-        var path = Search(commit.Tree, $"{id}.{Serializer.FileExtension}", stack) ?
+        var root = await commit.GetRootTreeAsync().ConfigureAwait(false);
+        return await SearchAsync(root, $"{id}.{Serializer.FileExtension}", stack).ConfigureAwait(false) ?
             DataPath.Parse(string.Join("/", stack.Reverse())) :
             null;
-        return (commit, path);
 
-        static bool Search(Tree tree, string blobName, Stack<string> path)
+        static async Task<bool> SearchAsync(TreeEntry tree, string blobName, Stack<string> path)
         {
-            foreach (var item in tree)
+            foreach (var item in tree.Children)
             {
                 path.Push(item.Name);
-                if (item.TargetType == TreeEntryTargetType.Blob && item.Name == blobName)
+                if (item.Mode.Type == ObjectType.RegularFile && item.Name == blobName)
                 {
                     return true;
                 }
-                if (item.TargetType == TreeEntryTargetType.Tree &&
+                if (item.Mode.Type == ObjectType.Tree &&
                     !FileSystemStorage.IsResourceName(item.Name) &&
-                    Search(item.Target.Peel<Tree>(), blobName, path))
+                    await SearchAsync(await item.GetEntryAsync<TreeEntry>(), blobName, path).ConfigureAwait(false))
                 {
                     return true;
                 }
@@ -201,25 +193,24 @@ internal sealed partial class Connection
         }
     }
 
-    Repository ISubmoduleProvider.GetOrCreateSubmoduleRepository(DataPath path,
-                                                                 string url)
+    IGitConnection ISubmoduleProvider.GetOrCreateSubmoduleRepository(DataPath path, string url)
     {
         var folderPath = Path.Combine(Repository.Info.Path,
                                       "modules",
                                       path.FolderPath,
                                       FileSystemStorage.ResourceFolder);
         return _repositories.GetOrAdd(path,
-                                      new Lazy<Repository>(CreateOrLoad)).Value;
-        Repository CreateOrLoad() =>
-            LibGit2Sharp.Repository.IsValid(folderPath) ? Load() : Create();
+            new Lazy<IGitConnection>(CreateOrLoad)).Value;
+        IGitConnection CreateOrLoad() =>
+            GitConnection.IsValid(folderPath) ? Load() : Create();
 
-        Repository Load() =>
-            new(folderPath);
+        IGitConnection Load() =>
+            _connectionFactory(folderPath);
 
-        Repository Create()
+        IGitConnection Create()
         {
             Directory.CreateDirectory(folderPath);
-            LibGit2Sharp.Repository.Clone(url, folderPath, new()
+            GitConnection.Clone(folderPath, url, new()
             {
                 IsBare = true,
             });

@@ -1,6 +1,6 @@
+using GitDotNet;
 using GitObjectDb.Model;
 using GitObjectDb.Tools;
-using LibGit2Sharp;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -91,7 +91,7 @@ internal sealed class DtoTypeEmitter
 
     private static void EmitDtoFromNodeConstructor(TypeBuilder result)
     {
-        var parameters = new[] { typeof(Node), typeof(ObjectId) };
+        var parameters = new[] { typeof(Node), typeof(HashId) };
 #pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
         var baseConstructor = typeof(NodeDto).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance,
                                                              null,

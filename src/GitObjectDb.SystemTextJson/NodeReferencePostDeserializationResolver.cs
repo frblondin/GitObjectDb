@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.SystemTextJson;
 
@@ -20,7 +21,7 @@ namespace GitObjectDb.SystemTextJson;
 /// <see cref="NodeReferenceHandler.DataContext"/>.</description>
 /// </item>
 /// <item>
-/// <term><see cref="ResolveReferencesFromPaths(NodeReferenceHandler.DataContext, INodeSerializer.ItemLoader)"/></term>
+/// <term><see cref="ResolveReferencesFromPathsAsync(NodeReferenceHandler.DataContext, INodeSerializer.ItemLoader)"/></term>
 /// <description>Resolves (deserialize) references recursively.</description>
 /// </item>
 /// </list>
@@ -28,7 +29,6 @@ namespace GitObjectDb.SystemTextJson;
 internal class NodeReferencePostDeserializationResolver
 {
     private const string RefPropertyName = "$ref";
-    private const string ValuesPropertyName = "$values";
 
     private readonly NodeSerializer _serializer;
     private readonly Dictionary<DataPath, List<ReferenceData>> _referencesToBeResolved = new();
@@ -77,8 +77,7 @@ internal class NodeReferencePostDeserializationResolver
     {
         var name = _serializer.Options.PropertyNamingPolicy?.ConvertName(property.Name) ??
             property.Name;
-        if (document.RootElement.TryGetProperty(name, out var element) &&
-            element.TryGetProperty(ValuesPropertyName, out var array) &&
+        if (document.RootElement.TryGetProperty(name, out var array) &&
             array.ValueKind == JsonValueKind.Array)
         {
             var values = from objectElement in array.EnumerateArray()
@@ -98,8 +97,8 @@ internal class NodeReferencePostDeserializationResolver
         return data;
     }
 
-    internal void ResolveReferencesFromPaths(NodeReferenceHandler.DataContext context,
-                                             INodeSerializer.ItemLoader referenceResolver)
+    internal async Task ResolveReferencesFromPathsAsync(NodeReferenceHandler.DataContext context,
+        INodeSerializer.ItemLoader referenceResolver)
     {
         while (_referencesToBeResolved.Count > 0)
         {
@@ -109,48 +108,49 @@ internal class NodeReferencePostDeserializationResolver
             {
                 if (property.PropertyType.IsNode())
                 {
-                    ResolveSingleReferenceFromPath(node, property, values.Single(), context, referenceResolver);
+                    await ResolveSingleReferenceFromPathAsync(node, property, values.Single(), context, referenceResolver);
                 }
                 else if (property.PropertyType.IsNodeEnumerable(out var elementType))
                 {
-                    ResolveMultiReferencesFromPaths(node, property, values, elementType!, context, referenceResolver);
+                    await ResolveMultiReferencesFromPathsAsync(node, property, values, elementType!, context, referenceResolver);
                 }
             }
             _referencesToBeResolved.Remove(kvp.Key);
         }
     }
 
-    private static void ResolveSingleReferenceFromPath(TreeItem node,
-                                                       PropertyInfo property,
-                                                       DataPath path,
-                                                       NodeReferenceHandler.DataContext context,
-                                                       INodeSerializer.ItemLoader referenceResolver)
+    private static async Task ResolveSingleReferenceFromPathAsync(TreeItem node,
+        PropertyInfo property,
+        DataPath path,
+        NodeReferenceHandler.DataContext context,
+        INodeSerializer.ItemLoader referenceResolver)
     {
-        var reference = ResolveReferenceFromContext(path, context, referenceResolver);
+        var reference = await ResolveReferenceFromContextAsync(path, context, referenceResolver);
         var setter = Reflect.PropertySetter(property);
         setter(node, reference);
     }
 
-    private static void ResolveMultiReferencesFromPaths(TreeItem node,
-                                                        PropertyInfo property,
-                                                        List<DataPath> paths,
-                                                        Type elementType,
-                                                        NodeReferenceHandler.DataContext context,
-                                                        INodeSerializer.ItemLoader referenceResolver)
+    private static async Task ResolveMultiReferencesFromPathsAsync(TreeItem node,
+        PropertyInfo property,
+        List<DataPath> paths,
+        Type elementType,
+        NodeReferenceHandler.DataContext context,
+        INodeSerializer.ItemLoader referenceResolver)
     {
-        var references = paths.Select(p => ResolveReferenceFromContext(p, context, referenceResolver));
-        var value = EnumerableFactory.Get(elementType).Create(property.PropertyType, references);
+        var references = paths.Select(p => ResolveReferenceFromContextAsync(p, context, referenceResolver));
+        await Task.WhenAll(references);
+        var value = EnumerableFactory.Get(elementType).Create(property.PropertyType, references.Select(t => t.Result));
         var setter = Reflect.PropertySetter(property);
         setter(node, value);
     }
 
-    private static Node ResolveReferenceFromContext(DataPath path,
-                                                    NodeReferenceHandler.DataContext context,
-                                                    INodeSerializer.ItemLoader referenceResolver)
+    private static async Task<Node> ResolveReferenceFromContextAsync(DataPath path,
+        NodeReferenceHandler.DataContext context,
+        INodeSerializer.ItemLoader referenceResolver)
     {
         if (!context.Resolver.Items.TryGetValue(path, out var reference))
         {
-            context.Resolver.Items[path] = reference = referenceResolver(path);
+            context.Resolver.Items[path] = reference = await referenceResolver(path);
         }
 
         return (Node)reference;

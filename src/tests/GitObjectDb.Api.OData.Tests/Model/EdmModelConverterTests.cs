@@ -12,9 +12,12 @@ namespace GitObjectDb.Api.OData.Tests.Model;
 public class EdmModelConverterTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
-    public void QuerySimpleNodes(IEnumerable<Type> dtoTypes)
+    public void QuerySimpleNodes()
     {
+        // Arrange
+        var fixture = new Fixture().Customize(new Customization());
+        var dtoTypes = fixture.Create<IEnumerable<Type>>();
+
         // Act
         var edmModel = dtoTypes.ConvertToEdm();
 

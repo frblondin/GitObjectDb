@@ -44,7 +44,7 @@ internal class Mutation : ObjectGraphType
             .Arguments(
                 NewArg<NonNullGraphType<DataPathGraphType>>(PathArgument, "The path of the node to delete."))
             .ResolveThroughDI().UsingResolver<DeleteMutation>();
-        Field<ObjectIdGraphType>("Commit")
+        Field<HashIdGraphType>("Commit")
             .Description("Commits all previous changes.")
             .Arguments(
                 NewArg<NonNullGraphType<StringGraphType>>(MessageArgument, "The commit message."),

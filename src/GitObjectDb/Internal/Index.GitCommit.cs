@@ -1,12 +1,12 @@
+using GitDotNet;
 using GitObjectDb.Internal.Commands;
-using LibGit2Sharp;
 using Realms;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using static GitObjectDb.Internal.Commands.CommitCommand;
 using static GitObjectDb.Internal.Commands.GitUpdateCommand;
 
@@ -15,55 +15,59 @@ internal partial class Index
 {
     private readonly ICommitCommand _commitCommand;
 
-    public Commit Commit(CommitDescription description)
+    public async Task<CommitEntry> CommitAsync(CommitDescription description)
     {
-        var predecessor = GetAndVerifyBranchTip();
+        var predecessor = await GetAndVerifyBranchTipAsync().ConfigureAwait(false);
         var parents = GetParents(description, predecessor);
-        var result = DoRealmAction(realm => Commit(description, realm, predecessor, parents));
+        var result = await CommitAsync(description, predecessor, parents).ConfigureAwait(false);
         Reset();
         return result;
     }
 
-    private Commit Commit(CommitDescription description, Realm realm, Commit predecessor, List<Commit> parents)
+    private async Task<CommitEntry> CommitAsync(CommitDescription description, CommitEntry predecessor, List<CommitEntry> parents)
     {
-        var tree = predecessor.Tree;
-        var modules = GetModuleFromIndexOrTree(realm, tree);
-        var result = _commitCommand.Commit(_connection,
-                                           i => ApplyEntries(i, realm, predecessor.Tree, modules),
-                                           BranchName,
-                                           parents,
-                                           description);
+        var tree = await predecessor.GetRootTreeAsync().ConfigureAwait(false);
+        var modules = await GetModuleFromIndexOrTreeAsync(tree).ConfigureAwait(false);
+        var result = await _commitCommand.CommitAsync(_connection,
+            composer => ApplyEntriesAsync(composer, tree, modules),
+            BranchName,
+            parents,
+            description).ConfigureAwait(false);
         return result;
     }
 
-    private static ModuleCommands GetModuleFromIndexOrTree(Realm realm, Tree tree)
+    private async Task<ModuleCommands> GetModuleFromIndexOrTreeAsync(TreeEntry tree)
     {
-        var entry = realm.All<IndexEntry>()
+        using var realm = Realm.GetInstance(Configuration);
+        var entry = realm.All<IndexEntry>().AsEnumerable()
             .FirstOrDefault(e => e.PathAsString.Equals(ModuleCommands.ModuleFile, StringComparison.Ordinal));
         return entry?.Data is not null ?
             new ModuleCommands(new MemoryStream(entry.Data)) :
-            new ModuleCommands(tree);
+            await ModuleCommands.GetAsync(tree).ConfigureAwait(false);
     }
 
-    private void ApplyEntries(ImportFileArguments info, Realm realm, Tree tree, ModuleCommands modules)
+    private async Task<ITransformationComposer> ApplyEntriesAsync(
+        ITransformationComposer composer, TreeEntry tree, ModuleCommands modules)
     {
-        foreach (var entry in realm.All<IndexEntry>())
+        using var realm = Realm.GetInstance(Configuration);
+        var allEntries = realm.All<IndexEntry>().AsEnumerable().Select(e => e.Freeze()).ToList();
+        foreach (var entry in allEntries)
         {
-            ApplyEntry(entry, tree, modules, info.Writer, info.Index);
+            await ApplyEntryAsync(entry.Freeze(), tree, modules, composer).ConfigureAwait(false);
         }
 
         if (modules.HasAnyChange)
         {
-            using var stream = modules.CreateStream();
-            AddBlob(ModuleCommands.ModuleFile, stream, info.Writer, info.Index);
+            var stream = modules.CreateStream();
+            composer.AddOrUpdate(ModuleCommands.ModuleFile, stream);
         }
+        return composer;
     }
 
-    private void ApplyEntry(IndexEntry entry,
-                            Tree tree,
-                            ModuleCommands modules,
-                            StreamWriter writer,
-                            IList<string> index)
+    private async Task ApplyEntryAsync(IndexEntry entry,
+        TreeEntry tree,
+        ModuleCommands modules,
+        ITransformationComposer composer)
     {
         if (entry.Path is null)
         {
@@ -72,25 +76,23 @@ internal partial class Index
         if (entry.Delete)
         {
             var action = GitUpdateCommand.Delete(entry.Path, _connection.Serializer);
-            action.Invoke(tree, modules, _connection.Serializer, writer, index);
+            await action.Invoke(tree, modules, _connection.Serializer, composer).ConfigureAwait(false);
         }
         else
         {
-            using var stream = new MemoryStream(entry.Data!);
-            AddBlob(entry.Path!.FilePath, stream, writer, index);
-            CreateOrUpdatePropertiesStoredAsSeparateFiles(entry, writer, index);
+            composer.AddOrUpdate(entry.Path!.FilePath, entry.Data!);
+            CreateOrUpdatePropertiesStoredAsSeparateFiles(entry, composer);
         }
         if (entry.Path.IsNode(_connection.Serializer))
         {
             var link = entry.RemoteResourceRepository is not null && entry.RemoteResourceSha is not null ?
                 new ResourceLink(entry.RemoteResourceRepository, entry.RemoteResourceSha) : null;
-            CreateOrUpdateNodeRemoteResource(entry.Path, link, tree, index, modules);
+            await CreateOrUpdateNodeRemoteResourceAsync(entry.Path, link, tree, composer, modules).ConfigureAwait(false);
         }
     }
 
     private void CreateOrUpdatePropertiesStoredAsSeparateFiles(IndexEntry entry,
-        StreamWriter writer,
-        ICollection<string> commitIndex)
+        ITransformationComposer composer)
     {
         var type = Type.GetType(entry.Type);
         if (type is null || !typeof(Node).IsAssignableFrom(type))
@@ -104,11 +106,11 @@ internal partial class Index
                 false);
             if (!entry.ExternalPropertyValues.TryGetValue(property.Name, out var value))
             {
-                GitUpdateCommand.Delete(path, _connection.Serializer);
+                composer.Remove(path.FilePath);
             }
             else
             {
-                AddBlob(path, new MemoryStream(Encoding.Default.GetBytes(value)), writer, commitIndex);
+                composer.AddOrUpdate(path.FilePath, Encoding.Default.GetBytes(value));
             }
         }
     }

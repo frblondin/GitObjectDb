@@ -1,79 +1,92 @@
 using AutoFixture;
+using GitDotNet;
 using GitObjectDb.Model;
-using LibGit2Sharp;
+using GitObjectDb.Tests.Assets.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Models.Software;
+using NUnit.Framework;
 using System;
+using System.Collections.Concurrent;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests.Assets.Data.Software;
 
-public class SoftwareCustomization : ICustomization
+public class SoftwareCustomization(string repositoryPath) : IAsyncCustomization
 {
+    private static readonly ConcurrentDictionary<string, string> _templates = new();
+
     public SoftwareCustomization()
-        : this(DataGenerator.DefaultApplicationCount, DataGenerator.DefaultTablePerApplicationCount, DataGenerator.DefaultFieldPerTableCount, DataGenerator.DefaultConstantPerTableCount, DataGenerator.DefaultResourcePerTableCount)
+        : this(null)
     {
     }
 
-    public SoftwareCustomization(string repositoryPath)
-        : this(DataGenerator.DefaultApplicationCount, DataGenerator.DefaultTablePerApplicationCount, DataGenerator.DefaultFieldPerTableCount, DataGenerator.DefaultConstantPerTableCount, DataGenerator.DefaultResourcePerTableCount, repositoryPath)
+    public string RepositoryPath => repositoryPath;
+
+    public virtual int ApplicationCount => DataGenerator.DefaultApplicationCount;
+
+    public virtual int TablePerApplicationCount => DataGenerator.DefaultTablePerApplicationCount;
+
+    public virtual int FieldPerTableCount => DataGenerator.DefaultTablePerApplicationCount;
+
+    public virtual int ConstantPerTableCount => DataGenerator.DefaultTablePerApplicationCount;
+
+    public virtual int ResourcePerTableCount => DataGenerator.DefaultTablePerApplicationCount;
+
+    public async Task CustomizeAsync(IFixture fixture)
     {
-    }
+        var serviceProvider = fixture.Create<IServiceProvider>();
+        var model = serviceProvider.GetRequiredService<IDataModel>();
+        var connection = CreateConnection(fixture, serviceProvider, model);
+        var tip = await connection.Repository.GetCommittishAsync("main");
 
-    public SoftwareCustomization(int applicationCount, int tablePerApplicationCount, int fieldPerTableCount, int constantPerTableCount, int resourcePerTableCount, string repositoryPath = null)
-    {
-        ApplicationCount = applicationCount;
-        TablePerApplicationCount = tablePerApplicationCount;
-        FieldPerTableCount = fieldPerTableCount;
-        ConstantPerTableCount = constantPerTableCount;
-        ResourcePerTableCount = resourcePerTableCount;
-        RepositoryPath = repositoryPath;
-    }
+        fixture.Register(() => connection);
+        fixture.Register<IConnection>(() => connection);
+        fixture.Register(() => connection.Repository);
 
-    public string RepositoryPath { get; }
-
-    public int ApplicationCount { get; }
-
-    public int TablePerApplicationCount { get; }
-
-    public int FieldPerTableCount { get; }
-
-    public int ConstantPerTableCount { get; }
-
-    public int ResourcePerTableCount { get; }
-
-    public void Customize(IFixture fixture)
-    {
-        var connection = new Lazy<IConnectionInternal>(() =>
-        {
-            var serviceProvider = fixture.Create<IServiceProvider>();
-            var model = serviceProvider.GetRequiredService<IDataModel>();
-            return CreateConnection(fixture, serviceProvider, model);
-        });
-
-        fixture.Register(() => connection.Value);
-        fixture.Register<IConnection>(() => connection.Value);
-        fixture.Register(() => connection.Value.Repository);
-
-        fixture.LazyRegister(() => connection.Value.GetApplications().Last());
-        fixture.LazyRegister(() => connection.Value.GetTables(fixture.Create<Application>()).Last());
-        fixture.LazyRegister(() => connection.Value.GetFields(fixture.Create<Table>()).Last());
-        fixture.LazyRegister(() => connection.Value.GetConstants(fixture.Create<Table>()).Last());
-        fixture.LazyRegister(() => connection.Value.GetResources("main", fixture.Create<Table>()).Last());
+        fixture.LazyRegister(() => connection.GetApplications(tip).Last());
+        fixture.LazyRegister(() => connection.GetTables(tip, fixture.Create<Application>()).Last());
+        fixture.LazyRegister(() => connection.GetFields(tip, fixture.Create<Table>()).Last());
+        fixture.LazyRegister(() => connection.GetConstants(tip, fixture.Create<Table>()).Last());
+        fixture.LazyRegister(() => connection.GetResourcesAsync(tip, fixture.Create<Table>()).ToEnumerable().OrderBy(r => r.Path).Last());
     }
 
     private IConnectionInternal CreateConnection(IFixture fixture, IServiceProvider serviceProvider, IDataModel model)
     {
-        var path = RepositoryPath ?? GitObjectDbFixture.GetAvailableFolderPath();
-        var alreadyExists = Repository.IsValid(path);
         var repositoryFactory = serviceProvider.GetRequiredService<ConnectionFactory>();
-        var result = (IConnectionInternal)repositoryFactory(path, model);
-        if (!alreadyExists)
+        var path = RepositoryPath;
+        if (path == null)
         {
-            var software = new DataGenerator(result, ApplicationCount, TablePerApplicationCount, FieldPerTableCount, ConstantPerTableCount, ResourcePerTableCount);
-            software.CreateData(fixture.Create<string>(), fixture.Create<Signature>());
+            path = GitObjectDbFixture.GetAvailableFolderPath();
+            var template = GetTemplatePath(fixture, fixture.Create<IServiceProvider>(), fixture.Create<IDataModel>());
+            var alreadyExists = GitConnection.IsValid(path);
+            if (!alreadyExists)
+            {
+                DirectoryUtils.CopyFilesRecursively(template, path);
+            }
         }
-        return result;
+        return (IConnectionInternal)repositoryFactory(path, model);
+    }
+
+    private string GetTemplatePath(IFixture fixture, IServiceProvider serviceProvider, IDataModel model)
+    {
+        var serializer = serviceProvider.GetRequiredService<INodeSerializer>();
+        lock (_templates)
+        {
+            return _templates.GetOrAdd($"{GetType().Name}_{serializer.FileExtension}", CreateTemplate);
+        }
+        string CreateTemplate(string key)
+        {
+            var path = Path.Combine(TestContext.CurrentContext.WorkDirectory, "Templates", key);
+            DirectoryUtils.Delete(path, false);
+
+            var repositoryFactory = serviceProvider.GetRequiredService<ConnectionFactory>();
+            using var repository = (IConnectionInternal)repositoryFactory(path, model);
+            var software = new DataGenerator(repository, ApplicationCount, TablePerApplicationCount, FieldPerTableCount, ConstantPerTableCount, ResourcePerTableCount);
+            AsyncHelper.RunSync(() => software.CreateDataAsync("Commit message", fixture.Create<Signature>()));
+            return path;
+        }
     }
 }

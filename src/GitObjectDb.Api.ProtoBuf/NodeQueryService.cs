@@ -1,10 +1,11 @@
 using Fasterflect;
+using GitDotNet;
 using GitObjectDb.Api.ProtoBuf.Model;
 using GitObjectDb.Comparison;
 using GitObjectDb.Tools;
-using LibGit2Sharp;
 using ProtoBuf.Grpc;
 using System.Reflection;
+using Change = GitObjectDb.Comparison.Change;
 
 namespace GitObjectDb.Api.ProtoBuf;
 internal class NodeQueryService<TNode> : INodeQueryService<TNode>
@@ -17,37 +18,36 @@ internal class NodeQueryService<TNode> : INodeQueryService<TNode>
         _connection = connection;
     }
 
-    public Task<NodeQueryReply<TNode>> QueryNodesAsync(NodeQueryRequest request, CallContext context = default)
+    public async Task<NodeQueryReply<TNode>> QueryNodesAsync(NodeQueryRequest request, CallContext context = default)
     {
-        var commit = _connection.Repository.Lookup<Commit>(request.Committish) ??
+        var commit = (request.Committish != null ? await _connection.Repository.GetCommittishAsync(request.Committish) : null) ??
             throw new GitObjectDbInvalidCommitException();
-        var treeId = commit.Tree.Id;
-        return QueryNodesAsync(request, treeId);
+        var tree = await commit.GetRootTreeAsync();
+        return await QueryNodesAsync(request, tree.Id);
     }
 
-    internal Task<NodeQueryReply<TNode>> QueryNodesAsync(NodeQueryRequest request, ObjectId treeId)
+    internal async Task<NodeQueryReply<TNode>> QueryNodesAsync(NodeQueryRequest request, HashId treeId)
     {
         request.Validate();
+        var commit = await _connection.Repository.GetCommittishAsync(request.Committish!);
         var parent = request.ParentPath is not null ?
-            _connection.Lookup<Node>(request.Committish!, request.ParentPath) :
+            await _connection.LookupAsync<Node>(commit, request.ParentPath) :
             null;
-        var result = _connection.GetNodes<TNode>(request.Committish!, parent, request.IsRecursive).ToList();
-        var nodeContents = SerializeNodeDataRecursively(result, new());
-        return Task.FromResult(
-            new NodeQueryReply<TNode>(nodeContents, treeId, result));
+        var result = _connection.GetNodesAsync<TNode>(commit, parent, request.IsRecursive).ToEnumerable().ToList();
+        var nodeContents = SerializeNodeDataRecursively(result, []);
+        return new NodeQueryReply<TNode>(nodeContents, treeId, result);
     }
 
-    public Task<NodeDeltaQueryReply<TNode>> QueryNodeDeltasAsync(NodeDeltaQueryRequest request, CallContext context = default)
+    public async Task<NodeDeltaQueryReply<TNode>> QueryNodeDeltasAsync(NodeDeltaQueryRequest request, CallContext context = default)
     {
         request.Validate();
 
-        var changes = _connection.Compare(request.Start!, request.End!);
+        var changes = await _connection.CompareAsync(request.Start!, request.End!);
         var result = from c in changes
                      where c.Old is TNode || c.New is TNode
                      select new NodeDelta<TNode>(c.Old as TNode, c.New as TNode, changes.End.Id, c.New is null);
         var nodeContents = SerializeNodeDataRecursively(changes.SelectMany(GetAllNodes).Distinct(), new());
-        return Task.FromResult(
-            new NodeDeltaQueryReply<TNode>(nodeContents, result));
+        return new NodeDeltaQueryReply<TNode>(nodeContents, result);
 
         static IEnumerable<Node> GetAllNodes(Change change)
         {
@@ -121,12 +121,12 @@ internal class NodeQueryService<TNode> : INodeQueryService<TNode>
         }
     }
 
-    internal record struct NodeReference(DataPath Path, ObjectId TreeId)
+    internal record struct NodeReference(DataPath Path, HashId TreeId)
     {
-        public static implicit operator (DataPath Path, ObjectId TreeId)(NodeReference value) =>
+        public static implicit operator (DataPath Path, HashId TreeId)(NodeReference value) =>
             (value.Path, value.TreeId);
 
-        public static implicit operator NodeReference((DataPath Path, ObjectId TreeId) value) =>
+        public static implicit operator NodeReference((DataPath Path, HashId TreeId) value) =>
             new(value.Path, value.TreeId);
     }
 }

@@ -1,24 +1,37 @@
+using AutoFixture;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
-using GitObjectDb.Tests.Assets.Tools;
 using Models.Software;
 using NUnit.Framework;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests;
 
-public class DataPathTests : DisposeArguments
+public class DataPathTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void GetParentNode(IConnection sut, Application application, Table table)
+    public async Task GetParentNode()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        var sut = fixture.Create<IConnection>();
+        var application = fixture.Create<Application>();
+        var table = fixture.Create<Table>();
+
+        // Act, Assert
         Assert.That(table.Path.GetParentNode(sut.Serializer), Is.EqualTo(application.Path));
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void GetParentNodeForLeaves(IConnection sut, Table table, Constant constant)
+    public async Task GetParentNodeForLeaves()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        var sut = fixture.Create<IConnection>();
+        var table = fixture.Create<Table>();
+        var constant = fixture.Create<Constant>();
+
+        // Act, Assert
         Assert.That(constant.Path.GetParentNode(sut.Serializer), Is.EqualTo(table.Path));
     }
 }

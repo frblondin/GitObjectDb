@@ -40,10 +40,7 @@ internal class ExecutionResultActionResultTests : QueryTestBase
         // Act
         await new ExecutionResultActionResult(new()
         {
-            Errors = new()
-            {
-                new ExecutionError("error"),
-            },
+            Errors = [new ExecutionError("error")],
         }).ExecuteResultAsync(context);
 
         // Arrange

@@ -9,6 +9,15 @@ internal static class ActivatorTools
 {
     internal static MethodBase FindPreferredMember(Type instanceType, Type[] argumentTypes, Type returnType, out int?[] parameterMap)
     {
+        return (MethodBase?)FindPreferredConstructor(instanceType, argumentTypes, out parameterMap) ??
+            FindPreferredStaticMethod(instanceType, argumentTypes, returnType, out parameterMap) ??
+            throw new InvalidOperationException($"A suitable constructor or static method for type '{instanceType.Name}' could not be located. " +
+                $"Ensure the type is concrete and services are registered for all parameters of a public constructor decorated " +
+                $"with {nameof(FactoryDelegateAttribute)}.");
+    }
+
+    private static ConstructorInfo? FindPreferredConstructor(Type instanceType, Type[] argumentTypes, out int?[] parameterMap)
+    {
         foreach (var constructor in instanceType.GetTypeInfo().DeclaredConstructors)
         {
             if (!constructor.IsStatic && constructor.IsDefined(typeof(FactoryDelegateAttribute), false))
@@ -21,6 +30,12 @@ internal static class ActivatorTools
                 return constructor;
             }
         }
+        parameterMap = [];
+        return null;
+    }
+
+    private static MethodInfo? FindPreferredStaticMethod(Type instanceType, Type[] argumentTypes, Type returnType, out int?[] parameterMap)
+    {
         foreach (var method in instanceType.GetTypeInfo().DeclaredMethods)
         {
             if (method.IsStatic && method.IsDefined(typeof(FactoryDelegateAttribute), false))
@@ -37,9 +52,8 @@ internal static class ActivatorTools
                 return method;
             }
         }
-        throw new InvalidOperationException($"A suitable constructor for type '{instanceType.Name}' could not be located. " +
-            $"Ensure the type is concrete and services are registered for all parameters of a public constructor decorated " +
-            $"with {nameof(FactoryDelegateAttribute)}.");
+        parameterMap = [];
+        return null;
     }
 
     private static bool TryCreateParameterMap(ParameterInfo[] constructorParameters, Type[] argumentTypes, out int?[] parameterMap)

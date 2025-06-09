@@ -1,22 +1,23 @@
-using AutoFixture.NUnit3;
-using GitObjectDb.Tests.Assets.Tools;
+using AutoFixture;
 using NUnit.Framework;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests;
 
 public class ResourceTests
 {
     [Test]
-    [AutoDataCustomizations]
-    public void StreamResourceValue(string value)
+    public async Task StreamResourceValue()
     {
         // Arrange
+        var fixture = new Fixture();
+        var value = fixture.Create<string>();
         var sut = new Resource.Data(value);
 
         // Act
-        using var stream = sut.GetContentStream();
+        using var stream = await sut.GetContentStreamAsync();
         using var reader = new StreamReader(stream, leaveOpen: true);
 
         // Assert
@@ -24,14 +25,15 @@ public class ResourceTests
     }
 
     [Test]
-    [AutoDataCustomizations]
-    public void StreamResourceValueSupportsRepositioning(string value)
+    public async Task StreamResourceValueSupportsRepositioning()
     {
         // Arrange
+        var fixture = new Fixture();
+        var value = fixture.Create<string>();
         var sut = new Resource.Data(value);
 
         // Act
-        using var stream = sut.GetContentStream();
+        using var stream = await sut.GetContentStreamAsync();
         using var reader = new StreamReader(stream, leaveOpen: true);
         reader.ReadToEnd();
         stream.Position = 0L;
@@ -41,14 +43,15 @@ public class ResourceTests
     }
 
     [Test]
-    [AutoDataCustomizations]
-    public void StreamResourceValueSupportsAbsoluteSeek(string value)
+    public async Task StreamResourceValueSupportsAbsoluteSeek()
     {
         // Arrange
+        var fixture = new Fixture();
+        var value = fixture.Create<string>();
         var sut = new Resource.Data(value);
 
         // Act
-        using var stream = sut.GetContentStream();
+        using var stream = await sut.GetContentStreamAsync();
         using var reader = new StreamReader(stream, leaveOpen: true);
         reader.ReadToEnd();
         stream.Seek(0L, SeekOrigin.Begin);
@@ -58,14 +61,15 @@ public class ResourceTests
     }
 
     [Test]
-    [AutoDataCustomizations]
-    public void StreamResourceValueThrowsExceptionForNonZeroSeek(string value)
+    public async Task StreamResourceValueThrowsExceptionForNonZeroSeek()
     {
         // Arrange
+        var fixture = new Fixture();
+        var value = fixture.Create<string>();
         var sut = new Resource.Data(value);
 
         // Act
-        using var stream = sut.GetContentStream();
+        using var stream = await sut.GetContentStreamAsync();
         stream.Position = 0L;
 
         // Assert

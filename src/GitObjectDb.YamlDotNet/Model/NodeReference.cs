@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 
 namespace GitObjectDb.YamlDotNet.Model;
@@ -25,7 +26,7 @@ internal class NodeReference : IValuePromise
 
     public Node? Reference { get; private set; }
 
-    public void ResolveReference()
+    public async Task ResolveReferenceAsync()
     {
         if (AlreadyResolved)
         {
@@ -36,7 +37,7 @@ internal class NodeReference : IValuePromise
         if (Path is not null)
         {
             Reference = currentParser.Nodes.FirstOrDefault(n => Path.Equals(n.Path)) ??
-                (Node)currentParser.ReferenceResolver.Invoke(Path);
+                (Node)await currentParser.ReferenceResolver.Invoke(Path);
 
             ValueAvailable?.Invoke(Reference);
         }

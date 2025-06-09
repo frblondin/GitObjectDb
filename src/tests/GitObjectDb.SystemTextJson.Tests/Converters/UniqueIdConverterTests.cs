@@ -1,7 +1,7 @@
+using AutoFixture;
 using GitObjectDb.Model;
 using GitObjectDb.SystemTextJson.Converters;
 using GitObjectDb.Tests.Assets;
-using GitObjectDb.Tests.Assets.Tools;
 using Microsoft.Extensions.Options;
 using NUnit.Framework;
 using System;
@@ -14,10 +14,11 @@ namespace GitObjectDb.SystemTextJson.Tests.Converters;
 public class UniqueIdConverterTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
-    public void ReadNode(UniqueId id)
+    public void ReadNode()
     {
         // Arrange
+        var fixure = new Fixture().Customize(new DefaultServiceProviderCustomization());
+        var id = fixure.Create<UniqueId>();
         var model = new ConventionBaseModelBuilder().Build();
         var serializer = new NodeSerializer(model, Options.Create(new JsonSerializerOptions()));
 
@@ -31,10 +32,11 @@ public class UniqueIdConverterTests
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
-    public void WriteNode(UniqueId id)
+    public void WriteNode()
     {
         // Arrange
+        var fixure = new Fixture().Customize(new DefaultServiceProviderCustomization());
+        var id = fixure.Create<UniqueId>();
         var model = new ConventionBaseModelBuilder().Build();
         var serializer = new NodeSerializer(model);
 

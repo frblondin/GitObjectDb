@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoFixture.NUnit3" />
+    <PackageReference Include="AutoFixture.NUnit4" />
     <PackageReference Include="Bogus" />
     <PackageReference Include="NUnit" />
     <PackageReference Include="NUnit.Analyzers">

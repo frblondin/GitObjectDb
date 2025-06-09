@@ -52,8 +52,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           NuGetApiKey: ${{ secrets.NUGET_API_KEY }}
+      - name: 'Publish: tests'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tests
+          path: output/tests
       - name: 'Publish: nuget'
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: nuget
           path: output/nuget

@@ -1,4 +1,3 @@
-using LibGit2Sharp;
 using System.Diagnostics.CodeAnalysis;
 
 namespace GitObjectDb.Comparison;
@@ -11,7 +10,7 @@ public abstract partial class Change
     /// <seealso cref="GitObjectDb.Comparison.Change" />
     public class ResourceChange : Change
     {
-        internal ResourceChange(ContentChanges changes, Resource? old, Resource? @new, ChangeStatus status)
+        internal ResourceChange(GitDotNet.Change changes, Resource? old, Resource? @new, ChangeStatus status)
             : base(old, @new, status)
         {
             Changes = changes;
@@ -27,13 +26,10 @@ public abstract partial class Change
 
         /// <summary>Gets the changes between the two resources.</summary>
         [ExcludeFromCodeCoverage]
-        public ContentChanges Changes { get; }
+        public GitDotNet.Change Changes { get; }
 
         /// <inheritdoc/>
         [ExcludeFromCodeCoverage]
-        public override string Message =>
-            Changes != null ?
-            $@"{{+{Changes.LinesAdded}, -{Changes.LinesDeleted}}}" :
-            Status.ToString();
+        public override string Message => Status.ToString();
     }
 }

@@ -1,7 +1,9 @@
+using GitDotNet;
 using GitObjectDb.Comparison;
-using LibGit2Sharp;
+using GitObjectDb.Model;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace GitObjectDb;
 
@@ -12,22 +14,22 @@ public interface IRebase
     Branch Branch { get; }
 
     /// <summary>Gets the upstream commit to be rebased into <see cref="Branch"/>.</summary>
-    Commit UpstreamCommit { get; }
+    CommitEntry UpstreamCommit { get; }
 
     /// <summary>Gets the merge policy.</summary>
     ComparisonPolicy Policy { get; }
 
     /// <summary>Gets the common commit between the two diverging branches.</summary>
-    Commit MergeBaseCommit { get; }
+    CommitEntry MergeBaseCommit { get; }
 
     /// <summary>Gets the commits that will be replayed during this rebase operation.</summary>
-    IImmutableList<Commit> ReplayedCommits { get; }
+    IImmutableList<CommitEntry> ReplayedCommits { get; }
 
     /// <summary>Gets the current commit index being processed in <see cref="ReplayedCommits"/>.</summary>
     int CurrentStep { get; }
 
     /// <summary>Gets the commits that were completed during the ongoing rebase operation.</summary>
-    IImmutableList<Commit> CompletedCommits { get; }
+    IImmutableList<CommitEntry> CompletedCommits { get; }
 
     /// <summary>Gets the current changes involved for replaying the current commit.</summary>
     IList<MergeChange> CurrentChanges { get; }
@@ -37,5 +39,5 @@ public interface IRebase
 
     /// <summary>Commits current changes and move to the next commit.</summary>
     /// <returns>The new status after continuing the rebase operation.</returns>
-    RebaseStatus Continue();
+    Task<RebaseStatus> ContinueAsync();
 }

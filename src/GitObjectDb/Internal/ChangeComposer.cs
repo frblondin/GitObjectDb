@@ -1,87 +1,79 @@
+using GitDotNet;
 using GitObjectDb.Injection;
 using GitObjectDb.Internal.Commands;
 using GitObjectDb.Tools;
-using LibGit2Sharp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Internal;
 
 [DebuggerDisplay("Transformations: {Transformations.Count}")]
-internal class TransformationComposer : ITransformationComposerWithCommit
+[method: FactoryDelegate(typeof(Factories.ChangeComposerFactory))]
+internal class ChangeComposer(IConnectionInternal connection,
+                              string branchName,
+                              IGitUpdateCommand gitUpdateFactory,
+                              ICommitCommand commitCommandFactory) : IChangeComposerWithCommit
 {
-    private readonly IGitUpdateCommand _gitUpdateFactory;
-    private readonly ICommitCommand _commitCommand;
+    public IConnectionInternal Connection { get; } = connection;
 
-    [FactoryDelegateConstructor(typeof(Factories.TransformationComposerFactory))]
-    public TransformationComposer(IConnectionInternal connection,
-                                  string branchName,
-                                  IGitUpdateCommand gitUpdateFactory,
-                                  ICommitCommand commitCommandFactory)
-    {
-        Connection = connection;
-        BranchName = branchName;
-        _gitUpdateFactory = gitUpdateFactory;
-        _commitCommand = commitCommandFactory;
-    }
-
-    public IConnectionInternal Connection { get; }
-
-    public string BranchName { get; }
+    public string BranchName { get; } = branchName;
 
     public IDictionary<DataPath, ITransformation> Transformations { get; } =
         new ConcurrentDictionary<DataPath, ITransformation>();
 
-    public Commit Commit(CommitDescription description,
-                         Action<ITransformation>? beforeProcessing = null) =>
-        _commitCommand.Commit(
+    public async Task<CommitEntry> CommitAsync(CommitDescription description,
+        Action<ITransformation>? beforeProcessing = null) =>
+        await commitCommandFactory.CommitAsync(
             this,
             description,
-            beforeProcessing: beforeProcessing);
+            beforeProcessing: beforeProcessing).ConfigureAwait(false);
 
-    public TNode CreateOrUpdate<TNode>(TNode node)
+    public Task<TNode> CreateOrUpdateAsync<TNode>(TNode node)
         where TNode : Node =>
-        CreateOrUpdateItem(node, default);
+        Task.FromResult(CreateOrUpdateItem(node, default));
 
-    public TNode CreateOrUpdate<TNode>(TNode node, DataPath? parent)
+    public Task<TNode> CreateOrUpdateAsync<TNode>(TNode node, DataPath? parent)
         where TNode : Node =>
-        CreateOrUpdateItem(node, parent);
+        Task.FromResult(CreateOrUpdateItem(node, parent));
 
-    public TNode CreateOrUpdate<TNode>(TNode node, Node? parent)
+    public Task<TNode> CreateOrUpdateAsync<TNode>(TNode node, Node? parent)
         where TNode : Node =>
-        CreateOrUpdateItem(node, parent?.Path);
+        Task.FromResult(CreateOrUpdateItem(node, parent?.Path));
 
-    public Resource CreateOrUpdate(Resource resource) =>
-        CreateOrUpdateItem(resource, default);
+    public Task<Resource> CreateOrUpdateAsync(Resource resource) =>
+        Task.FromResult(CreateOrUpdateItem(resource, default));
 
-    public void Rename(TreeItem item, DataPath newPath)
+    public Task RenameAsync(TreeItem item, DataPath newPath)
     {
         var transformation = new Transformation(
             newPath,
             item,
-            _gitUpdateFactory.Rename(item, newPath),
+            gitUpdateFactory.Rename(item, newPath),
             $"Renaming {item.Path} to {newPath}.");
         Transformations[newPath] = transformation;
+        return Task.CompletedTask;
     }
 
-    public void Delete<TItem>(TItem item)
+    public Task DeleteAsync<TItem>(TItem item)
         where TItem : TreeItem
     {
-        Revert(item.ThrowIfNoPath());
+        RevertAsync(item.ThrowIfNoPath());
+        return Task.CompletedTask;
     }
 
-    public void Revert(DataPath path)
+    public Task RevertAsync(DataPath path)
     {
         var transformation = new Transformation(
             path,
             default,
-            _gitUpdateFactory.Delete(path),
+            gitUpdateFactory.Delete(path),
             $"Removing {path}.");
         Transformations[path] = transformation;
+        return Task.CompletedTask;
     }
 
     protected TItem CreateOrUpdateItem<TItem>(TItem item, DataPath? parent = null)
@@ -101,7 +93,7 @@ internal class TransformationComposer : ITransformationComposerWithCommit
         var transformation = new Transformation(
             path,
             item,
-            _gitUpdateFactory.CreateOrUpdate(item),
+            gitUpdateFactory.CreateOrUpdate(item),
             $"Adding or updating {path}.");
         Transformations[path] = transformation;
 

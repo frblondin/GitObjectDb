@@ -1,4 +1,4 @@
-using LibGit2Sharp;
+using GitDotNet;
 
 namespace GitObjectDb.Api.GraphQL.Model;
 
@@ -10,7 +10,7 @@ namespace GitObjectDb.Api.GraphQL.Model;
 /// <param name="UpdatedAt">The latest commit id.</param>
 /// <param name="Deleted">Whether the node has been deleted.</param>
 #pragma warning disable SA1402 // File may only contain a single type
-public record DeltaDto<TNode>(TNode? Old, TNode? New, ObjectId UpdatedAt, bool Deleted)
+public record DeltaDto<TNode>(TNode? Old, TNode? New, HashId UpdatedAt, bool Deleted)
     : DeltaDto(UpdatedAt, Deleted)
     where TNode : Node;
 
@@ -18,4 +18,4 @@ public record DeltaDto<TNode>(TNode? Old, TNode? New, ObjectId UpdatedAt, bool D
 /// <remarks>Initializes a new instance of the <see cref="DeltaDto"/> class.</remarks>
 /// <param name="CommitId">The latest commit id.</param>
 /// <param name="Deleted">Whether the node has been deleted.</param>
-public abstract record DeltaDto(ObjectId CommitId, bool Deleted);
+public abstract record DeltaDto(HashId CommitId, bool Deleted);

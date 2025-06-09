@@ -1,23 +1,29 @@
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using AutoFixture;
 using FakeItEasy;
+using GitDotNet;
 using GitObjectDb.Api.ProtoBuf.Model;
 using GitObjectDb.Model;
 using GitObjectDb.SystemTextJson;
-using GitObjectDb.Tests.Assets.Tools;
-using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace GitObjectDb.Api.ProtoBuf.Tests;
 public class NodeQueryServiceTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
-    public async Task SupportsCyclicReferences(IConnection connection, string committish, ObjectId id)
+    public async Task SupportsCyclicReferences()
     {
+        // Arrange
+        var fixture = await new Fixture().CustomizeAsync<Customization>();
+        var connection = fixture.Create<IConnection>();
+        var commit = fixture.Create<CommitEntry>();
+        var id = fixture.Create<HashId>();
+
         // Act
-        var reply = (INodeQueryReply)await QueryCircularReferences(connection, committish, id);
+        var reply = (INodeQueryReply)await QueryCircularReferences(connection, commit, id);
         var content = reply.NodeContents!.ToList();
 
         // Assert
@@ -25,18 +31,18 @@ public class NodeQueryServiceTests
     }
 
 #pragma warning disable NUnit1028 // The non-test method is public
-    internal static async Task<NodeQueryReply<NodeWithReference>> QueryCircularReferences(IConnection connection, string committish, ObjectId id)
+    internal static async Task<NodeQueryReply<NodeWithReference>> QueryCircularReferences(IConnection connection, CommitEntry commit, HashId id)
 #pragma warning restore NUnit1028 // The non-test method is public
     {
         var node = CreateCircularReferences(id);
-        A.CallTo(() => connection.GetNodes<NodeWithReference>(committish, default, default))
-            .Returns(new[] { node }.ToCommitEnumerable(id));
+        A.CallTo(() => connection.GetNodesAsync<NodeWithReference>(commit, default, default, A<CancellationToken>._))
+            .Returns(new[] { node }.ToAsyncEnumerable());
         var sut = new NodeQueryService<NodeWithReference>(connection);
 
-        return await sut.QueryNodesAsync(new(committish), id);
+        return await sut.QueryNodesAsync(new(commit.Id.ToString()), id);
     }
 
-    private static NodeWithReference CreateCircularReferences(ObjectId id)
+    private static NodeWithReference CreateCircularReferences(HashId id)
     {
         var result = new NodeWithReference
         {
@@ -58,36 +64,38 @@ public class NodeQueryServiceTests
         public NodeWithReference? Reference { get; set; }
     }
 
-    internal class Customization : ICustomization
+    internal class Customization : IAsyncCustomization
     {
-        public void Customize(IFixture fixture)
+        public async Task CustomizeAsync(IFixture fixture)
         {
-            fixture.Inject(new ObjectId("8839a59286ccc17b01f280a2999d2fdac621eee6"));
-            var repository = CreateRepository(fixture);
+            var repository = await CreateRepositoryAsync(fixture);
             var model = CreateDataModel();
             var connection = CreateConnection(repository, model);
             fixture.Inject(connection);
         }
 
-        private static IRepository CreateRepository(IFixture fixture)
+        private static async Task<IGitConnection> CreateRepositoryAsync(IFixture fixture)
         {
-            var tree = A.Fake<Tree>();
-            A.CallTo(() => tree.Id)
-                .Returns(fixture.Create<ObjectId>());
-            var commit = A.Fake<Commit>();
-            A.CallTo(() => commit.Tree)
-                .Returns(tree);
-            return A.Fake<IRepository>(o =>
-                o.ConfigureFake(fake =>
-                    A.CallTo(() => fake.Lookup(default(string)))
-                        .Returns(commit)));
+            var connection = new ServiceCollection()
+                .AddMemoryCache()
+                .AddGitDotNet()
+                .BuildServiceProvider()
+                .GetRequiredService<GitConnectionProvider>()
+                .Invoke(".");
+            fixture.Inject(connection);
+            var commit = await connection.GetCommittishAsync("HEAD");
+            fixture.Inject(commit);
+            fixture.Inject(commit.Id);
+            var tree = await commit.GetRootTreeAsync();
+            fixture.Inject(tree);
+            return connection;
         }
 
         private static IDataModel CreateDataModel() => new ConventionBaseModelBuilder()
             .RegisterType<NodeWithReference>()
             .Build();
 
-        private static IConnection CreateConnection(IRepository repository, IDataModel model) =>
+        private static IConnection CreateConnection(IGitConnection repository, IDataModel model) =>
             A.Fake<IConnection>(o =>
                 o.ConfigureFake(fake =>
                 {

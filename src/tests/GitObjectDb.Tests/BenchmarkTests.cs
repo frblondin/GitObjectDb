@@ -2,9 +2,9 @@ using AutoFixture;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
 using GitObjectDb.Tests.Assets.Tools;
-using LibGit2Sharp;
 using NUnit.Framework;
 using System;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests;
 
@@ -12,12 +12,11 @@ public class BenchmarkTests
 {
     [Ignore("Only used to create large repository. Quite long, normal as we want the load time to be short not necessarily the creation time.")]
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
-    public void CreateLargeSoftwareRepository(IFixture fixture)
+    public async Task CreateLargeSoftwareRepository()
     {
         // Arrange
         DirectoryUtils.Delete(GitObjectDbFixture.SoftwareBenchmarkRepositoryPath, false);
-        fixture.Customize(new SoftwareBenchmarkCustomization());
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareBenchmarkCustomization>();
 
         // Act
         using var connection = fixture.Create<IConnection>();

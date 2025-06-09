@@ -14,9 +14,10 @@ internal class ServiceConfigurationTests
         // Act
         var serviceProvider = new ServiceCollection()
             .AddMemoryCache()
+            .AddGitDotNet()
             .AddSingleton(CreateDataModel(typeof(BasicModel).GetNestedTypes()))
             .AddGitObjectDb()
-            .AddSingleton(A.Fake<IQueryAccessor>())
+            .AddSingleton(A.Fake<IConnection>())
             .AddGitObjectDbOData()
             .BuildServiceProvider();
 

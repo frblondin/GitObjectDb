@@ -1,6 +1,6 @@
+using AutoFixture;
 using GitObjectDb.Model;
 using GitObjectDb.Tests.Assets;
-using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
 using System.Linq;
 using System.Reflection;
@@ -10,13 +10,18 @@ namespace GitObjectDb.Tests.Model;
 public class ConventionBaseModelBuilderTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
-    public void LoadsBasicConfiguration(ConventionBaseModelBuilder sut)
+    public void LoadsBasicConfiguration()
     {
+        // Arrange
+        var fixture = new Fixture().Customize(new DefaultServiceProviderCustomization());
+        var sut = fixture.Create<ConventionBaseModelBuilder>();
+
+        // Act
         var model = sut
             .RegisterAssemblyTypes(Assembly.GetExecutingAssembly(), t => t == typeof(SomeNode) || t == typeof(SomeChild))
             .Build();
 
+        // Assert
         Assert.That(model.NodeTypes, Has.Exactly(3).Items);
         Assert.Multiple(() =>
         {

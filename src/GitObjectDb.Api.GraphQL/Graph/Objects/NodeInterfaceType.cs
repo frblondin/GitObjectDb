@@ -1,8 +1,8 @@
+using GitDotNet;
 using GitObjectDb.Api.GraphQL.Graph.Scalars;
 using GraphQL;
 using GraphQL.Builders;
 using GraphQL.Types;
-using LibGit2Sharp;
 using Namotion.Reflection;
 using System.Reflection;
 
@@ -39,7 +39,7 @@ internal sealed class NodeInterfaceType : InterfaceGraphType<Node>
         graph.Field<ListGraphType<NodeInterfaceType>, IEnumerable<Node>>("Children")
         .Description("Gets the node children.");
 
-    internal static FieldBuilder<TSource, IEnumerable<Commit>> CreateHistoryField<TSource>(ComplexGraphType<TSource> graph) =>
-        graph.Field<ListGraphType<CommitType>, IEnumerable<Commit>>("History")
+    internal static FieldBuilder<TSource, IEnumerable<CommitEntry>> CreateHistoryField<TSource>(ComplexGraphType<TSource> graph) =>
+        graph.Field<ListGraphType<CommitType>, IEnumerable<CommitEntry>>("History")
         .Description("Gets the history of node changes.");
 }

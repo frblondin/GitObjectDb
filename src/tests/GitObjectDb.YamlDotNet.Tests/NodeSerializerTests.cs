@@ -1,21 +1,22 @@
 using AutoFixture;
+using GitDotNet;
 using GitObjectDb.Model;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
-using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.YamlDotNet.Tests;
 
 public partial class NodeSerializerTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization))]
-    public void SimpleValueGetPreserved(IFixture fixture)
+    public async Task SimpleValueGetPreserved()
     {
         // Arrange
+        var fixture = new Fixture().Customize(new DefaultYamlServiceProviderCustomization());
         var model = new ConventionBaseModelBuilder()
             .RegisterType<SomeNode>()
             .Build();
@@ -31,7 +32,7 @@ public partial class NodeSerializerTests
         // Act
         var nodeSerializer = fixture.Create<INodeSerializer>();
         var serialized = nodeSerializer.Serialize(value);
-        var deserialized = (SomeNode)nodeSerializer.Deserialize(serialized, ObjectId.Zero, null, _ => throw new NotImplementedException());
+        var deserialized = (SomeNode)await nodeSerializer.DeserializeAsync(serialized, HashId.Empty, null, _ => throw new NotImplementedException());
 
         // Assert
         Assert.That(deserialized.Value, Is.EqualTo(value.Value));

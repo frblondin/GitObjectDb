@@ -1,6 +1,5 @@
 using GitObjectDb.Model;
 using NUnit.Framework;
-using System;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 

@@ -1,62 +1,96 @@
 using AutoFixture;
+using GitDotNet;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
-using GitObjectDb.Tests.Assets.Tools;
-using LibGit2Sharp;
 using Models.Software;
 using NUnit.Framework;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests;
 
 public class TreeValidationTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void CannotCommitParentDeletionAndChildAddition(IFixture fixture, IConnection connection, Application application, Table table, string message, Signature signature)
+    public async Task CannotCommitParentDeletionAndChildAddition()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var application = fixture.Create<Application>();
+        var table = fixture.Create<Table>();
+        var message = fixture.Create<string>();
+        var signature = fixture.Create<Signature>();
+
+        // Delete parent
+        var removeParentChange = await connection.UpdateAsync("main", async c =>
+        {
+            await c.DeleteAsync(application);
+        });
+        await removeParentChange.CommitAsync(new(message, signature, signature));
+
         // Act, Assert
-        Assert.Throws<GitObjectDbValidationException>(() => connection
-            .Update("main", c =>
+        Assert.ThrowsAsync<GitObjectDbValidationException>(async () =>
+        {
+            var changes = await connection.UpdateAsync("main", async c =>
             {
-                c.Delete(application);
-                c.CreateOrUpdate(new Field { }, table);
-            })
-            .Commit(new(message, signature, signature)));
+                await c.CreateOrUpdateAsync(table);
+            });
+            await changes.CommitAsync(new(message, signature, signature));
+        });
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void CannotCommitChildWithInvalidPath(IConnection connection, string message, Signature signature)
+    public async Task CannotCommitChildWithInvalidPath()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var message = fixture.Create<string>();
+        var signature = fixture.Create<Signature>();
+
         // Act, Assert
-        Assert.Throws<GitObjectDbValidationException>(() => connection
-            .Update("main",
-                    c => c.CreateOrUpdate(new Field { Path = new DataPath("InvalidFolder", "invalidfile.json", true) }))
-            .Commit(new(message, signature, signature)));
+        Assert.ThrowsAsync<GitObjectDbValidationException>(async () =>
+        {
+            var changes = await connection.UpdateAsync("main", c => c.CreateOrUpdateAsync(new Field { Path = new DataPath("InvalidFolder", "invalidfile.json", true) }));
+            await changes.CommitAsync(new(message, signature, signature));
+        });
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void CannotCommitChildWithNoParent(IConnection connection, Application application, Field field, string message, Signature signature)
+    public async Task CannotCommitChildWithNoParent()
     {
-        // Arrange, delete parent
-        connection
-            .Update("main", c => c.Delete(application))
-            .Commit(new(message, signature, signature));
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var application = fixture.Create<Application>();
+        var field = fixture.Create<Field>();
+        var message = fixture.Create<string>();
+        var signature = fixture.Create<Signature>();
+
+        // Delete parent
+        var changes = await connection.UpdateAsync("main", c => c.DeleteAsync(application));
+        await changes.CommitAsync(new(message, signature, signature));
 
         // Act, edit child
-        Assert.Throws<GitObjectDbValidationException>(() => connection
-            .Update("main", c => c.CreateOrUpdate(field))
-            .Commit(new(message, signature, signature)));
+        Assert.ThrowsAsync<GitObjectDbValidationException>(async () =>
+        {
+            var changes = await connection.UpdateAsync("main", c => c.CreateOrUpdateAsync(field));
+            await changes.CommitAsync(new(message, signature, signature));
+        });
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void CanCommitTwoNodesWithSameId(IConnection connection, Field field, string message, Signature signature)
+    public async Task CanCommitTwoNodesWithSameId()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var field = fixture.Create<Field>();
+        var message = fixture.Create<string>();
+        var signature = fixture.Create<Signature>();
+
         // Act, Assert
-        connection
-            .Update("main", c => c.CreateOrUpdate(new Application { Id = field.Id }))
-            .Commit(new(message, signature, signature));
+        var changes = await connection.UpdateAsync("main", c => c.CreateOrUpdateAsync(new Application { Id = field.Id }));
+        await changes.CommitAsync(new(message, signature, signature));
     }
 }

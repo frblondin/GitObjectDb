@@ -1,6 +1,6 @@
-using GitObjectDb.Model;
-using LibGit2Sharp;
+using GitDotNet;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace GitObjectDb;
 
@@ -10,7 +10,7 @@ public interface INodeSerializer
     /// <summary>Represents a method that creates a <see cref="TreeItem"/> from a path.</summary>
     /// <param name="path">The path of item.</param>
     /// <returns>An item.</returns>
-    public delegate TreeItem ItemLoader(DataPath path);
+    public delegate Task<TreeItem> ItemLoader(DataPath path);
 
     /// <summary>Gets the extension of serialized files (json, yaml...).</summary>
     string FileExtension { get; }
@@ -23,10 +23,10 @@ public interface INodeSerializer
     /// <param name="path">Path of the Node.</param>
     /// <param name="referenceResolver">The delegate that returns referenced nodes.</param>
     /// <returns>A <see cref="Node"/> representation of the text value.</returns>
-    Node Deserialize(Stream stream,
-                     ObjectId treeId,
-                     DataPath path,
-                     ItemLoader referenceResolver);
+    Task<Node> DeserializeAsync(Stream stream,
+        HashId treeId,
+        DataPath path,
+        ItemLoader referenceResolver);
 
     /// <summary>
     /// Transforms the <paramref name="node"/> into a text representation.

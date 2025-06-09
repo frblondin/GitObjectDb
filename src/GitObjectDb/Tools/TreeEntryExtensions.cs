@@ -1,40 +1,42 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LibGit2Sharp;
+namespace GitDotNet;
 
 internal static class TreeEntryExtensions
 {
-    internal static IEnumerable<(TreeEntry Entry, string Path)> Traverse(this TreeEntry entry,
-                                                                         string path,
-                                                                         bool includeSelf = true)
+    internal static IAsyncEnumerable<(TreeEntryItem Entry, GitPath Path)> TraverseAsync(this TreeEntryItem entry,
+        GitPath path,
+        bool includeSelf = true)
     {
-        var entries = new Stack<(TreeEntry Entry, string Path)>();
+        var entries = new Stack<(TreeEntryItem Entry, GitPath Path)>();
         entries.Push((entry, path));
-        return AddNestedChildren(entries).Skip(includeSelf ? 0 : 1);
+        return AddNestedChildrenAsync(entries).Skip(includeSelf ? 0 : 1);
     }
 
-    internal static IEnumerable<(TreeEntry Entry, string Path)> Traverse(this Tree entry,
-                                                                         string path)
+    internal static IAsyncEnumerable<(TreeEntryItem Entry, GitPath Path)> TraverseAsync(this TreeEntry entry,
+        GitPath path)
     {
-        var entries = new Stack<(TreeEntry Entry, string Path)>();
-        foreach (var child in entry)
+        var entries = new Stack<(TreeEntryItem Entry, GitPath Path)>();
+        foreach (var child in entry.Children)
         {
             entries.Push((child, $"{path}/{child.Name}"));
         }
-        return AddNestedChildren(entries);
+        return AddNestedChildrenAsync(entries);
     }
 
-    private static IEnumerable<(TreeEntry Entry, string Path)> AddNestedChildren(Stack<(TreeEntry Entry, string Path)> entries)
+    private static async IAsyncEnumerable<(TreeEntryItem Entry, GitPath Path)> AddNestedChildrenAsync(
+        Stack<(TreeEntryItem Entry, GitPath Path)> entries)
     {
         while (entries.Count > 0)
         {
             var current = entries.Pop();
             yield return current;
 
-            if (current.Entry.TargetType == TreeEntryTargetType.Tree)
+            if (current.Entry.Mode.Type == ObjectType.Tree)
             {
-                foreach (var child in current.Entry.Target.Peel<Tree>())
+                var tree = await current.Entry.GetEntryAsync<TreeEntry>().ConfigureAwait(false);
+                foreach (var child in tree.Children)
                 {
                     entries.Push((child, $"{current.Path}/{child.Name}"));
                 }

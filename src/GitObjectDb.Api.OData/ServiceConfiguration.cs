@@ -29,7 +29,7 @@ public static class ServiceConfiguration
             s.ImplementationInstance is not null)?.ImplementationInstance as IDataModel ??
             throw new NotSupportedException($"{nameof(IDataModel)} has not bee registered.");
         source
-            .AddSingleton<DataProvider>()
+            .AddScoped<DataProvider>()
             .AddSingleton(new DtoTypeEmitter(model))
             .AddAutoMapper((s, c) => c.AddProfile(
                 new AutoMapperProfile(

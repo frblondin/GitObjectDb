@@ -1,6 +1,8 @@
+using GitDotNet;
 using GitObjectDb;
 using GitObjectDb.Model;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Models.Software;
 
@@ -23,6 +25,6 @@ public record Table : Node
 
 public static class IConnectionTableExtensions
 {
-    public static IEnumerable<Table> GetTables(this IConnection connection, Application application, string committish = "main") =>
-        connection.GetNodes<Table>(committish, application);
+    public static IEnumerable<Table> GetTables(this IConnection connection, CommitEntry commit, Application application) =>
+        connection.GetNodesAsync<Table>(commit, application).ToEnumerable().OrderBy(f => f.Id);
 }

@@ -1,6 +1,5 @@
-using GitObjectDb.Model;
+using AutoFixture;
 using GitObjectDb.Tests.Assets;
-using GitObjectDb.Tests.Assets.Tools;
 using GitObjectDb.YamlDotNet.Converters;
 using NUnit.Framework;
 using System;
@@ -13,10 +12,12 @@ namespace GitObjectDb.YamlDotNet.Tests.Converters;
 public class UniqueIdConverterTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
-    public void ReadNode(UniqueId id)
+    public void ReadNode()
     {
         // Arrange
+        var fixture = new Fixture().Customize(new DefaultServiceProviderCustomization());
+        var id = fixture.Create<UniqueId>();
+
         var sut = new UniqueIdConverter();
         using var stringReader = new StringReader($@"""{id}""");
         var parser = new Parser(stringReader);
@@ -31,10 +32,12 @@ public class UniqueIdConverterTests
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
-    public void WriteNode(UniqueId id)
+    public void WriteNode()
     {
         // Arrange
+        var fixture = new Fixture().Customize(new DefaultServiceProviderCustomization());
+        var id = fixture.Create<UniqueId>();
+
         var sut = new UniqueIdConverter();
         using var writer = new StringWriter();
         var emitter = new Emitter(writer);

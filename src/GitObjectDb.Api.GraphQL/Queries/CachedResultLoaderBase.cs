@@ -9,21 +9,19 @@ internal abstract class CachedResultLoaderBase<TKey, TResult>(IMemoryCache memor
     : DataLoaderBase<TKey, TResult>(false)
     where TKey : notnull
 {
-    protected override Task FetchAsync(IEnumerable<DataLoaderPair<TKey, TResult>> list, CancellationToken cancellationToken)
+    protected override async Task FetchAsync(IEnumerable<DataLoaderPair<TKey, TResult>> list, CancellationToken cancellationToken)
     {
         foreach (var loadPair in list)
         {
-            var result = memoryCache.GetOrCreate(loadPair.Key!, entry =>
+            var result = await memoryCache.GetOrCreateAsync(loadPair.Key!, async entry =>
             {
                 options.Value.CacheEntryStrategy(entry);
 
-                return Fetch(entry, loadPair.Key);
+                return await FetchAsync(entry, loadPair.Key);
             });
             loadPair.SetResult(result!);
         }
-
-        return Task.CompletedTask;
     }
 
-    protected abstract TResult Fetch(ICacheEntry cacheEntry, TKey key);
+    protected abstract Task<TResult> FetchAsync(ICacheEntry cacheEntry, TKey key);
 }

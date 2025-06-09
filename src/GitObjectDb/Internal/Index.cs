@@ -1,88 +1,112 @@
 using Fasterflect;
+using GitDotNet;
 using GitObjectDb.Injection;
 using GitObjectDb.Internal.Commands;
 using GitObjectDb.Internal.Queries;
 using GitObjectDb.Tools;
-using LibGit2Sharp;
 using Realms;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using static GitObjectDb.Internal.Commands.GitUpdateCommand;
 
 namespace GitObjectDb.Internal;
 internal partial class Index : IIndex
 {
     private readonly IConnection _connection;
-    private readonly IQuery<LoadItem.Parameters, TreeItem?> _loader;
+    private readonly IAsyncQuery<LoadItem.Parameters, TreeItem?> _loader;
 
-    private int _nestedCount;
-    private Realm? _realm;
-
-    [FactoryDelegateConstructor(typeof(Factories.IndexFactory))]
-    public Index(IConnection connection,
-                 string branchName,
-                 ICommitCommand commitCommand,
-                 IQuery<LoadItem.Parameters, TreeItem?> loader)
+    private Index(IConnection connection,
+        string branchName,
+        ICommitCommand commitCommand,
+        IAsyncQuery<LoadItem.Parameters, TreeItem?> loader)
     {
-        IndexStoragePath = Path.Combine(connection.Repository.Info.Path, $"{branchName.Replace("/", "__")}.index");
+        Configuration = new(Path.Combine(connection.Repository.Info.Path, $"{branchName.Replace("/", "__")}.index"));
         _connection = connection;
         BranchName = branchName;
         _commitCommand = commitCommand;
         _loader = loader;
-
-        GetAndVerifyBranchTip();
     }
 
-    internal string IndexStoragePath { get; }
+    internal RealmConfiguration Configuration { get; }
 
-    public ObjectId? CommitId => DoRealmAction(
-        realm => ObjectId.TryParse(realm.All<IndexInfoRealm>().FirstOrDefault()?.CommitId, out var result) ?
-            result! :
-            null);
+    public HashId? CommitId
+    {
+        get
+        {
+            using var realm = Realm.GetInstance(Configuration);
+            var info = realm.All<IndexInfoRealm>().AsEnumerable().FirstOrDefault();
+            return info?.CommitId != null && HashId.TryParse(info.CommitId, out var result) ? result : null;
+        }
+    }
 
-    public Guid? Version => DoRealmAction(
-        realm => realm.All<IndexInfoRealm>().FirstOrDefault()?.Version);
+    public Guid? Version
+    {
+        get
+        {
+            using var realm = Realm.GetInstance(Configuration);
+            return realm.All<IndexInfoRealm>().FirstOrDefault()?.Version;
+        }
+    }
 
     public string BranchName { get; }
 
-    public int Count => DoRealmAction(realm => realm.All<IndexEntry>().Count());
+    public int Count
+    {
+        get
+        {
+            using var realm = Realm.GetInstance(Configuration);
+            return realm.All<IndexEntry>().Count();
+        }
+    }
 
     public IndexEntry this[DataPath path] =>
         TryLoadEntry(path) ?? throw new KeyNotFoundException("Path could not be found.");
+
+    [FactoryDelegate(typeof(Factories.IndexFactory))]
+    public static async Task<IIndex> CreateAsync(IConnection connection,
+        string branchName,
+        ICommitCommand commitCommand,
+        IAsyncQuery<LoadItem.Parameters, TreeItem?> loader)
+    {
+        var result = new Index(connection, branchName, commitCommand, loader);
+        await result.GetAndVerifyBranchTipAsync().ConfigureAwait(false);
+        return result;
+    }
 
     public void Reset()
     {
         try
         {
-            if (_realm is null)
-            {
-                Realm.DeleteRealm(new RealmConfiguration(IndexStoragePath));
-            }
+            Realm.DeleteRealm(Configuration);
         }
         catch
         {
-            DoRealmAction(realm => realm.Write(() => realm.RemoveAll()));
+            using var realm = Realm.GetInstance(Configuration);
+            realm.Write(realm.RemoveAll);
         }
     }
 
-    public IEnumerator<IndexEntry> GetEnumerator() => DoRealmAction(realm => realm
-        .All<IndexEntry>()
-        .AsEnumerable() // Select is not supported by Realm queryable implementation
-        .Select(e => e.Freeze()) // Make entries accessible offline
-        .ToList() // Force projection of query
-        .GetEnumerator());
+    public IEnumerator<IndexEntry> GetEnumerator()
+    {
+        using var realm = Realm.GetInstance(Configuration);
+        return realm.All<IndexEntry>()
+            .AsEnumerable() // Select is not supported by Realm queryable implementation
+            .Select(e => e.Freeze()) // Make entries accessible offline
+            .ToList() // Force projection of query
+            .GetEnumerator();
+    }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    private Commit GetAndVerifyBranchTip()
+    private async Task<CommitEntry> GetAndVerifyBranchTipAsync()
     {
         var branch = _connection.Repository.Branches[BranchName] ??
             throw new GitObjectDbException($"Branch {BranchName} does not exist.");
-        var result = branch.Tip;
+        var result = await branch.GetTipAsync().ConfigureAwait(false);
         var existingTip = CommitId;
         if (existingTip is not null && existingTip != result.Id)
         {
@@ -91,61 +115,65 @@ internal partial class Index : IIndex
         return result;
     }
 
-    public void UpdateToBranchTip()
+    public async Task UpdateToBranchTipAsync()
     {
         var branch = _connection.Repository.Branches[BranchName] ??
             throw new GitObjectDbException($"Branch {BranchName} does not exist.");
-        DoRealmAction(realm => realm.Write(() => IncrementVersion(realm, branch.Tip.Id)));
+        var branchTip = await branch.GetTipAsync().ConfigureAwait(false);
+        using var realm = Realm.GetInstance(Configuration);
+        realm.Write(() => IncrementVersion(realm, branchTip.Id));
     }
 
-    public TNode CreateOrUpdate<TNode>(TNode node, Node? parent)
+    public async Task<TNode> CreateOrUpdateAsync<TNode>(TNode node, Node? parent)
         where TNode : Node =>
-        UpsertOrDeleteItem(node, parent?.ThrowIfNoPath(), delete: false);
+        await UpsertOrDeleteItemAsync(node, parent?.ThrowIfNoPath(), delete: false).ConfigureAwait(false);
 
-    public TNode CreateOrUpdate<TNode>(TNode node, DataPath? parent)
+    public async Task<TNode> CreateOrUpdateAsync<TNode>(TNode node, DataPath? parent)
         where TNode : Node =>
-        UpsertOrDeleteItem(node, parent, delete: false);
+        await UpsertOrDeleteItemAsync(node, parent, delete: false).ConfigureAwait(false);
 
-    public TNode CreateOrUpdate<TNode>(TNode node)
+    public async Task<TNode> CreateOrUpdateAsync<TNode>(TNode node)
         where TNode : Node =>
-        UpsertOrDeleteItem(node, null, delete: false);
+        await UpsertOrDeleteItemAsync(node, null, delete: false).ConfigureAwait(false);
 
-    public Resource CreateOrUpdate(Resource resource) =>
-        UpsertOrDeleteItem(resource, default, false);
+    public async Task<Resource> CreateOrUpdateAsync(Resource resource) =>
+        await UpsertOrDeleteItemAsync(resource, default, false).ConfigureAwait(false);
 
-    public void Rename(TreeItem item, DataPath newPath)
+    public async Task RenameAsync(TreeItem item, DataPath newPath)
     {
         var newItem = ValidateRename(item, newPath, _connection.Serializer);
 
-        Delete(item);
-        UpsertOrDeleteItem(newItem, default, false);
+        await DeleteAsync(item).ConfigureAwait(false);
+        await UpsertOrDeleteItemAsync(newItem, default, false).ConfigureAwait(false);
     }
 
-    public void Delete<TItem>(TItem item)
+    public async Task DeleteAsync<TItem>(TItem item)
         where TItem : TreeItem =>
-        UpsertOrDeleteItem(item, default, true);
+        await UpsertOrDeleteItemAsync(item, default, true).ConfigureAwait(false);
 
-    public void Revert(DataPath path)
+    public Task RevertAsync(DataPath path)
     {
-        var commit = GetAndVerifyBranchTip();
-        DoRealmAction(realm =>
+        if (CommitId == null)
         {
-            var entry = TryLoadEntry(path, realm);
-            if (entry is not null)
+            return Task.CompletedTask;
+        }
+        using var realm = Realm.GetInstance(Configuration);
+        var entry = TryLoadEntry(path, realm);
+        if (entry is not null)
+        {
+            realm.Write(() =>
             {
-                realm.Write(() =>
-                {
-                    realm.Remove(entry);
-                    IncrementVersion(realm, commit.Id);
-                });
-            }
-        });
+                realm.Remove(entry);
+                IncrementVersion(realm, CommitId);
+            });
+        }
+        return Task.CompletedTask;
     }
 
-    private TItem UpsertOrDeleteItem<TItem>(TItem item, DataPath? parent, bool delete)
+    private async Task<TItem> UpsertOrDeleteItemAsync<TItem>(TItem item, DataPath? parent, bool delete)
         where TItem : TreeItem
     {
-        var commit = GetAndVerifyBranchTip();
+        var commit = await GetAndVerifyBranchTipAsync().ConfigureAwait(false);
         var type = item.GetType();
         if (type.IsNode())
         {
@@ -155,13 +183,13 @@ internal partial class Index : IIndex
 
         var node = item as Node;
         var path = node is not null && !delete ?
-            TransformationComposer.UpdateNodePathIfNeeded(node, parent, _connection) :
+            ChangeComposer.UpdateNodePathIfNeeded(node, parent, _connection) :
             item.ThrowIfNoPath();
         var remoteResource = node is not null && !delete ?
             node.RemoteResource :
             null;
 
-        var data = GetEntryData(item, delete);
+        var data = await GetEntryDataAsync(item, delete).ConfigureAwait(false);
         var entry = new IndexEntry
         {
             PathAsString = path.FilePath,
@@ -173,13 +201,11 @@ internal partial class Index : IIndex
         };
         AddPropertyStoredAsSeparateFiles(node, entry);
 
-        DoRealmAction(realm =>
+        using var realm = Realm.GetInstance(Configuration);
+        realm.Write(() =>
         {
-            realm.Write(() =>
-            {
-                realm.Add(entry, update: true);
-                IncrementVersion(realm, commit.Id);
-            });
+            realm.Add(entry, update: true);
+            IncrementVersion(realm, commit.Id);
         });
 
         return item;
@@ -203,16 +229,16 @@ internal partial class Index : IIndex
         }
     }
 
-    private static void IncrementVersion(Realm realm, ObjectId commitId)
+    private static void IncrementVersion(Realm realm, HashId commitId)
     {
         realm.Add(new IndexInfoRealm()
         {
-            CommitId = commitId.Sha,
+            CommitId = commitId.ToString(),
             Version = Guid.NewGuid(),
         }, update: true);
     }
 
-    private byte[]? GetEntryData(TreeItem item, bool delete)
+    private async Task<byte[]?> GetEntryDataAsync(TreeItem item, bool delete)
     {
         if (delete)
         {
@@ -220,7 +246,7 @@ internal partial class Index : IIndex
         }
         else if (item is Resource resource)
         {
-            return resource.Embedded.GetBytes();
+            return await resource.Embedded.GetBytesAsync().ConfigureAwait(false);
         }
         else if (item is Node node)
         {
@@ -234,48 +260,31 @@ internal partial class Index : IIndex
         }
     }
 
-    public IndexEntry? TryLoadEntry(DataPath path) => DoRealmAction(realm =>
-        TryLoadEntry(path, realm));
+    public IndexEntry? TryLoadEntry(DataPath path)
+    {
+        using var realm = Realm.GetInstance(Configuration);
+        return TryLoadEntry(path, realm)?.Freeze();
+    }
 
     private static IndexEntry? TryLoadEntry(DataPath path, Realm realm) =>
         realm.All<IndexEntry>().FirstOrDefault(e => e.PathAsString.Equals((string?)path.FilePath, StringComparison.Ordinal));
 
-    public TItem? TryLoadItem<TItem>(DataPath path, bool onlyIndex = false)
-        where TItem : TreeItem => DoRealmAction(_ =>
-        !onlyIndex || TryLoadEntry(path) is not null ?
-        (TItem?)_loader.Execute(_connection, new(GetAndVerifyBranchTip().Tree, this, path)) :
-        null);
-
-    public TreeItem LoadItem(IndexEntry entry) => DoRealmAction(_ =>
-        _loader.Execute(_connection, new(GetAndVerifyBranchTip().Tree, this, entry.Path!)) ??
-        throw new GitObjectDbException($"The entry for path {entry.Path} does not exist."));
-
-    public void DoRealmAction(Action<Realm> action) => DoRealmAction<object?>(param =>
+    public async Task<TItem?> TryLoadItemAsync<TItem>(DataPath path, bool onlyIndex = false)
+        where TItem : TreeItem
     {
-        action(param);
-        return null;
-    });
+        var tip = await GetAndVerifyBranchTipAsync().ConfigureAwait(false);
+        var tree = await tip.GetRootTreeAsync().ConfigureAwait(false);
+        return !onlyIndex || TryLoadEntry(path) is not null ?
+            await _loader.ExecuteAsync(_connection, new(tree, this, path)).ConfigureAwait(false) as TItem :
+            null;
+    }
 
-    public TResult DoRealmAction<TResult>(Func<Realm, TResult> func)
+    public async Task<TreeItem> LoadItemAsync(IndexEntry entry)
     {
-        _realm ??= Realm.GetInstance(IndexStoragePath);
-        _nestedCount++;
-        try
-        {
-            return func(_realm);
-        }
-        finally
-        {
-            _nestedCount--;
-
-            if ( _nestedCount == 0 )
-            {
-                // Disposes the current instance and closes the native Realm if this is the last remaining
-                // instance holding a reference to it.
-                _realm.Dispose();
-                _realm = null;
-            }
-        }
+        var tip = await GetAndVerifyBranchTipAsync().ConfigureAwait(false);
+        var tree = await tip.GetRootTreeAsync().ConfigureAwait(false);
+        return await _loader.ExecuteAsync(_connection, new(tree, this, entry.Path!)).ConfigureAwait(false) ??
+           throw new GitObjectDbException($"The entry for path {entry.Path} does not exist.");
     }
 
     internal partial class IndexInfoRealm : IRealmObject

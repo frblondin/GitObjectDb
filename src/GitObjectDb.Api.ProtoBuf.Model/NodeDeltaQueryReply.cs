@@ -1,6 +1,5 @@
-using LibGit2Sharp;
+using GitDotNet;
 using ProtoBuf;
-using System.Runtime.Serialization;
 
 namespace GitObjectDb.Api.ProtoBuf.Model;
 
@@ -28,7 +27,7 @@ public class NodeDeltaQueryReply<TNode> : INodeQueryReply
     [ProtoMember(2)]
     public IEnumerable<NodeDelta<TNode>>? Changes { get; set; }
 
-    Dictionary<(DataPath Path, ObjectId TreeId), Node> INodeQueryReply.Cache { get; } = new();
+    Dictionary<(DataPath Path, HashId TreeId), Node> INodeQueryReply.Cache { get; } = new();
 
 #pragma warning disable CA1822 // Mark members as static
 #pragma warning disable IDE0051 // Remove unused private members
@@ -56,7 +55,7 @@ public class NodeDeltaQueryReply<TNode> : INodeQueryReply
 [ProtoContract]
 public record NodeDelta<TNode>([property: ProtoMember(1)] TNode? Old,
                                [property: ProtoMember(2)] TNode? New,
-                               [property: ProtoMember(3)] ObjectId? UpdatedAt,
+                               [property: ProtoMember(3)] HashId? UpdatedAt,
                                [property: ProtoMember(4)] bool Deleted)
     where TNode : Node
 {

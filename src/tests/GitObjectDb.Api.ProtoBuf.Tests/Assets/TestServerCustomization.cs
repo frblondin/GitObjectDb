@@ -1,8 +1,8 @@
 using AutoFixture;
 using AutoFixture.Kernel;
+using GitDotNet;
 using GitObjectDb.Api.ProtoBuf.Model;
 using Grpc.Net.Client;
-using LibGit2Sharp;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
@@ -67,12 +67,13 @@ internal class TestServerCustomization : ICustomization, ISpecimenBuilder
                     .SetMinimumLevel(LogLevel.Trace)
                     .AddConsole())
                 .AddMemoryCache()
+                .AddGitDotNet()
                 .AddGitObjectDb()
                 .AddGitObjectDbSystemTextJson(o => o.ConfigureForNodaTime(Organization.TimeZoneProvider))
                 .AddOrganizationModel()
                 .AddGitObjectDbConnection(
                     TestContext.CurrentContext.Test.ID,
-                    connection => new DataGenerator(connection, 5, 5).CreateInitData())
+                    connection => new DataGenerator(connection, 5, 5).CreateInitDataAsync())
                 .AddCodeFirstGrpc(config =>
                 {
                     config.ResponseCompressionLevel = CompressionLevel.Optimal;

@@ -1,54 +1,73 @@
+using AutoFixture;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
-using GitObjectDb.Tests.Assets.Tools;
 using Models.Software;
 using NUnit.Framework;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests.Queries;
 
-[Parallelizable(ParallelScope.Self | ParallelScope.Children)]
-public class QueryPathsTests : DisposeArguments
+public class QueryPathsTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
-    public void RootNodes(IConnection connection)
+    public async Task RootNodes()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareBenchmarkCustomization>();
+        var connection = fixture.Create<IConnection>();
+
         // Act
-        var result = connection.GetPaths("main").ToList();
+        var tip = await connection.Repository.GetCommittishAsync("main");
+        var result = connection.GetPathsAsync(tip).ToEnumerable().ToList();
 
         // Assert
         Assert.That(result, Has.Exactly(SoftwareBenchmarkCustomization.DefaultApplicationCount).Items);
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
-    public void TablesInApplication(IConnection connection, Application application)
+    public async Task TablesInApplication()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareBenchmarkCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var application = fixture.Create<Application>();
+
         // Act
-        var result = connection.GetPaths("main", parentPath: application.Path).ToList();
+        var tip = await connection.Repository.GetCommittishAsync("main");
+        var result = connection.GetPathsAsync(tip, parentPath: application.Path).ToEnumerable().ToList();
 
         // Assert
         Assert.That(result, Has.Exactly(SoftwareBenchmarkCustomization.DefaultTablePerApplicationCount).Items);
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
-    public void FieldsInApplicationRecursively(IConnection connection, Application application)
+    public async Task FieldsInApplicationRecursively()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareBenchmarkCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var application = fixture.Create<Application>();
+
         // Act
-        var result = connection.GetPaths<Field>("main", parentPath: application.Path, isRecursive: true).ToList();
+        var tip = await connection.Repository.GetCommittishAsync("main");
+        var result = connection.GetPathsAsync<Field>(tip, parentPath: application.Path, isRecursive: true).ToEnumerable().ToList();
 
         // Assert
         Assert.That(result, Has.Exactly(SoftwareBenchmarkCustomization.DefaultTablePerApplicationCount * SoftwareBenchmarkCustomization.DefaultFieldPerTableCount).Items);
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
-    public void ResourcesInTable(IConnection connection, Table table)
+    public async Task ResourcesInTable()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareBenchmarkCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var table = fixture.Create<Table>();
+
         // Act
-        var result = connection.GetPaths<Resource>("main", parentPath: table.Path, isRecursive: true).ToList();
+        var tip = await connection.Repository.GetCommittishAsync("main");
+        var result = connection.GetPathsAsync<Resource>(tip, parentPath: table.Path, isRecursive: true).ToEnumerable().ToList();
 
         // Assert
         Assert.That(result, Has.Exactly(SoftwareBenchmarkCustomization.DefaultResourcePerTableCount).Items);

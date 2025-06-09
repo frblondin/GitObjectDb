@@ -6,16 +6,17 @@ namespace GitObjectDb.Api.GraphQL.Mutations;
 
 internal class DeleteMutation : IFieldResolver
 {
-    public ValueTask<object?> ResolveAsync(IResolveFieldContext context)
+    public async ValueTask<object?> ResolveAsync(IResolveFieldContext context)
     {
         var mutationContext = MutationContext.GetCurrent(context);
 
         try
         {
             var path = context.GetArgument<DataPath>(Mutation.PathArgument);
-            mutationContext.Transformations.Revert(path);
+            var transformations = await mutationContext.GetTransformationsAsync();
+            await transformations.RevertAsync(path);
 
-            return ValueTask.FromResult((object?)path);
+            return path;
         }
         catch
         {

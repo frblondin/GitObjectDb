@@ -1,4 +1,4 @@
-using AutoFixture.NUnit3;
+using AutoFixture.NUnit4;
 using GitObjectDb.SystemTextJson.Tools;
 using NUnit.Framework;
 using System;

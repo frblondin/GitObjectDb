@@ -3,22 +3,15 @@ using GitObjectDb.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 namespace GitObjectDb.SystemTextJson;
 
-internal class NodeTypeInfoResolver : DefaultJsonTypeInfoResolver
+internal class NodeTypeInfoResolver(IDataModel model) : DefaultJsonTypeInfoResolver
 {
-    public NodeTypeInfoResolver(IDataModel model)
-    {
-        Model = model;
-    }
-
-    public IDataModel Model { get; }
+    public IDataModel Model { get; } = model;
 
     public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
     {

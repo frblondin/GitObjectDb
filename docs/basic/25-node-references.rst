@@ -16,5 +16,5 @@ Node references allows linking existing nodes in a repository.
 	}
 	// Nodes get loaded with their references (using a shared )
 	var cache = new Dictionary<DataPath, ITreeItem>();
-	var order = connection.GetNodes<Order>("main", referenceCache: cache).First();
+	var order = (await connection.GetNodesAsync<Order>("main", referenceCache: cache)).First();
 	Console.WriteLine(order.Client.Id);

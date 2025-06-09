@@ -9,19 +9,19 @@ internal sealed class MutationContext
     private const string NodeMutationVariableName = $"${nameof(MutationContext)}";
 
     private string? _branchName;
-    private ITransformationComposerWithCommit? _transformationComposer;
+    private IChangeComposerWithCommit? _transformationComposer;
 
     internal MutationContext(IServiceProvider serviceProvider)
     {
         Connection = serviceProvider.GetRequiredService<IConnection>();
-        QueryAccessor = serviceProvider.GetRequiredService<IQueryAccessor>();
+        QueryAccessor = serviceProvider.GetRequiredService<IConnection>();
     }
 
     internal static AsyncLocal<MutationContext?> Current { get; } = new();
 
     internal IConnection Connection { get; }
 
-    internal IQueryAccessor QueryAccessor { get; }
+    internal IConnection QueryAccessor { get; }
 
     internal string BranchName
     {
@@ -35,8 +35,6 @@ internal sealed class MutationContext
             _branchName = value;
         }
     }
-
-    internal ITransformationComposerWithCommit Transformations => _transformationComposer ??= Connection.Update(BranchName);
 
     internal IDictionary<DataPath, Node> ModifiedNodesByPath { get; } = new Dictionary<DataPath, Node>();
 
@@ -59,6 +57,8 @@ internal sealed class MutationContext
         return result;
     }
 
+    internal async Task<IChangeComposerWithCommit> GetTransformationsAsync() => _transformationComposer ??= await Connection.UpdateAsync(BranchName);
+
     internal void ThrowIfAnyException()
     {
         if (AnyException)
@@ -67,30 +67,26 @@ internal sealed class MutationContext
         }
     }
 
-    internal Node Convert(DataPath path) =>
-        TryResolve(path) ??
-        throw new GitObjectDbException($"The node '{path}' could not be found.");
-
-    internal Node? TryResolve(DataPath path)
+    internal async Task<Node?> TryResolveAsync(DataPath path)
     {
         if (ModifiedNodesByPath.TryGetValue(path, out var node))
         {
             return node;
         }
-        return Connection.Repository.Info.IsHeadUnborn ?
-            null :
-            Connection.Lookup<Node>(BranchName, path);
+        return Connection.Repository.Branches.TryGet(BranchName, out var branch) ?
+            await Connection.LookupAsync<Node>(await branch.GetTipAsync(), path) :
+            null;
     }
 
-    internal Node? TryResolve(UniqueId id)
+    internal async Task<Node?> TryResolveAsync(UniqueId id)
     {
         if (ModifiedNodesById.TryGetValue(id, out var node))
         {
             return node;
         }
-        return Connection.Repository.Info.IsHeadUnborn ?
-            null :
-            Connection.Lookup<Node>(BranchName, id);
+        return Connection.Repository.Branches.TryGet(BranchName, out var branch) ?
+            await Connection.LookupAsync<Node>(await branch.GetTipAsync(), id) :
+            null;
     }
 
     internal void Reset()

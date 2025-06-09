@@ -1,149 +1,200 @@
+using GitDotNet;
 using GitObjectDb.Internal.Commands;
 using GitObjectDb.Model;
-using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+
+#pragma warning disable SA1201 // Elements should appear in the correct order
 
 namespace GitObjectDb;
 
 internal class TreeValidation : ITreeValidation
 {
-    public void Validate(Tree tree, IDataModel model, INodeSerializer serializer)
+    public async Task ValidateAsync(TreeEntry tree, IDataModel model, INodeSerializer serializer)
     {
-        new TreeValidationVisitor(tree, model, serializer).Validate();
+        await new TreeValidationVisitor(tree, model, serializer).ValidateAsync().ConfigureAwait(false);
     }
 
-    private struct TreeValidationVisitor
+    private struct TreeValidationVisitor(TreeEntry tree, IDataModel model, INodeSerializer serializer)
     {
-        private readonly Tree _tree;
-        private readonly IDataModel _model;
-        private readonly INodeSerializer _serializer;
-        private readonly ModuleCommands _modules;
+        private readonly TreeEntry _tree = tree;
+        private readonly IDataModel _model = model;
+        private readonly INodeSerializer _serializer = serializer;
+        private ModuleCommands? _modules;
 
-        public TreeValidationVisitor(Tree tree, IDataModel model, INodeSerializer serializer)
+        /// <summary>
+        /// Defines the types of validation work that can be performed.
+        /// </summary>
+        private enum ValidationWorkType
         {
-            _tree = tree;
-            _model = model;
-            _serializer = serializer;
-            _modules = new ModuleCommands(_tree);
+            NodeCollection,
+            NodeFolder,
+            Resources,
         }
 
-        public void Validate()
+        /// <summary>
+        /// Represents a work item for iterative tree validation processing.
+        /// </summary>
+        private readonly record struct ValidationWorkItem(
+            TreeEntryItem Entry,
+            Stack<string> PathStack,
+            ValidationWorkType WorkType);
+
+        public async Task ValidateAsync()
         {
-            var path = new Stack<string>();
-            foreach (var item in _tree.Where(i => i.TargetType == TreeEntryTargetType.Tree))
+            _modules = await ModuleCommands.GetAsync(_tree).ConfigureAwait(false);
+
+            // Use iterative processing instead of recursion
+            var processingQueue = new Queue<ValidationWorkItem>();
+            var processedEntries = new HashSet<string>(); // Track processed entries by their full path to avoid infinite loops
+
+            // Initialize queue with root tree children
+            foreach (var item in _tree.Children.Where(i => i.Mode.Type == ObjectType.Tree))
             {
-                path.Push(item.Name);
-                ValidateNodeCollection(item, path);
-                path.Pop();
+                var pathStack = new Stack<string>();
+                pathStack.Push(item.Name);
+                var workItem = new ValidationWorkItem(
+                    Entry: item,
+                    PathStack: pathStack,
+                    WorkType: ValidationWorkType.NodeCollection);
+                processingQueue.Enqueue(workItem);
+            }
+
+            // Process queue iteratively
+            while (processingQueue.Count > 0)
+            {
+                var workItem = processingQueue.Dequeue();
+                var fullPath = string.Join("/", workItem.PathStack.Reverse());
+
+                // Skip if already processed to avoid infinite loops
+                if (processedEntries.Contains(fullPath))
+                {
+                    continue;
+                }
+                processedEntries.Add(fullPath);
+
+                switch (workItem.WorkType)
+                {
+                    case ValidationWorkType.NodeCollection:
+                        await ProcessNodeCollectionAsync(workItem, processingQueue).ConfigureAwait(false);
+                        break;
+                    case ValidationWorkType.NodeFolder:
+                        await ProcessNodeFolderAsync(workItem, processingQueue).ConfigureAwait(false);
+                        break;
+                    case ValidationWorkType.Resources:
+                        await ProcessResourcesAsync(workItem).ConfigureAwait(false);
+                        break;
+                }
             }
         }
 
-        private void ValidateNodeCollection(TreeEntry entry, Stack<string> path)
+        private async Task ProcessNodeCollectionAsync(ValidationWorkItem workItem, Queue<ValidationWorkItem> processingQueue)
         {
-            var types = _model.GetTypesMatchingFolderName(entry.Name);
+            var types = _model.GetTypesMatchingFolderName(workItem.Entry.Name);
             if (!types.Any())
             {
-                throw new GitObjectDbValidationException($"No type matching folder name '{entry.Name}' could be found.");
+                throw new GitObjectDbValidationException($"No type matching folder name '{workItem.Entry.Name}' could be found.");
             }
             var useNodeFolder = types.GroupBy(t => t.UseNodeFolders);
             ThrowIfDifferentNodeFolderValues(useNodeFolder);
-            ValidateNodeCollectionChildren(entry, useNodeFolder.Single().Key, path);
-        }
 
-        private void ValidateNodeCollectionChildren(TreeEntry entry,
-                                                    bool useNodeFolder,
-                                                    Stack<string> path)
-        {
-            if (useNodeFolder)
+            var useNodeFolders = useNodeFolder.Single().Key;
+
+            if (useNodeFolders)
             {
-                ValidateNodeCollectionChildrenUsingNodeFolder(entry, path);
+                await ProcessNodeCollectionChildrenUsingNodeFolderAsync(workItem, processingQueue).ConfigureAwait(false);
             }
             else
             {
-                ValidateNodeCollectionChildrenNotUsingNodeFolder(entry, path);
+                await ProcessNodeCollectionChildrenNotUsingNodeFolderAsync(workItem).ConfigureAwait(false);
             }
         }
 
-        private void ValidateNodeCollectionChildrenNotUsingNodeFolder(TreeEntry entry,
-                                                                      Stack<string> path)
+        private async Task ProcessNodeCollectionChildrenNotUsingNodeFolderAsync(ValidationWorkItem workItem)
         {
-            var tree = entry.Target.Peel<Tree>();
-            foreach (var item in tree)
+            var folder = await workItem.Entry.GetEntryAsync<TreeEntry>().ConfigureAwait(false);
+            foreach (var item in folder.Children)
             {
-                path.Push(item.Name);
-                switch (item.TargetType)
+                var newPath = new Stack<string>(workItem.PathStack.Reverse());
+                newPath.Push(item.Name);
+
+                switch (item.Mode.Type)
                 {
-                    case TreeEntryTargetType.Blob when item.Name.EndsWith($".{_serializer.FileExtension}", StringComparison.Ordinal):
+                    case ObjectType.RegularFile when item.Name.EndsWith($".{_serializer.FileExtension}", StringComparison.Ordinal):
                         var nodeId = Path.GetFileNameWithoutExtension(item.Name);
                         ValidateNodeId(nodeId);
                         break;
-                    case TreeEntryTargetType.Blob:
-                        ValidateBlobIsExistingNodePropertyValue(item, tree);
+                    case ObjectType.RegularFile:
+                        ValidateBlobIsExistingNodePropertyValue(item, folder);
                         break;
-                    case TreeEntryTargetType.Tree:
-                    case TreeEntryTargetType.GitLink:
+                    case ObjectType.Tree:
+                    case ObjectType.GitLink:
                         throw new GitObjectDbValidationException($"A tree or link was not expected in a node collection that does " +
                             $"not use {nameof(GitFolderAttribute.UseNodeFolders)}.");
                     default:
-                        throw new NotSupportedException($"{item.TargetType} is not supported.");
+                        throw new NotSupportedException($"{item.Mode.Type} is not supported.");
                 }
-                path.Pop();
             }
         }
 
-        private void ValidateBlobIsExistingNodePropertyValue(TreeEntry item, Tree tree)
+        private readonly void ValidateBlobIsExistingNodePropertyValue(TreeEntryItem item, TreeEntry tree)
         {
             var propertyNodeId = Regex.Replace(item.Name, @"^(\w+)\.\w+\.\w+", "$1");
             var expectedNodeBlobName = $"{propertyNodeId}.{_serializer.FileExtension}";
-            if (tree[expectedNodeBlobName] == null)
+            if (tree.Children.FirstOrDefault(x => x.Name == expectedNodeBlobName) == null)
             {
-                throw new GitObjectDbValidationException($"The blob {item.Path} does not refer to a valid node property" +
-                                                         $"to an existing node {expectedNodeBlobName}.");
+                throw new GitObjectDbValidationException($"The blob {item.Name} does not refer to a valid node property. " +
+                                                         $"Could not find an existing node {expectedNodeBlobName}.");
             }
         }
 
-        private void ValidateNodeCollectionChildrenUsingNodeFolder(TreeEntry entry,
-                                                                   Stack<string> path)
+        private static async Task ProcessNodeCollectionChildrenUsingNodeFolderAsync(ValidationWorkItem workItem, Queue<ValidationWorkItem> processingQueue)
         {
-            foreach (var item in entry.Target.Peel<Tree>())
+            var tree = await workItem.Entry.GetEntryAsync<TreeEntry>().ConfigureAwait(false);
+            foreach (var item in tree.Children)
             {
-                path.Push(item.Name);
-                switch (item.TargetType)
+                var newPath = new Stack<string>(workItem.PathStack.Reverse());
+                newPath.Push(item.Name);
+
+                switch (item.Mode.Type)
                 {
-                    case TreeEntryTargetType.Tree when !FileSystemStorage.IsResourceName(item.Name):
-                        ValidateNodeFolder(item, path);
+                    case ObjectType.Tree when !FileSystemStorage.IsResourceName(item.Name):
+                        var nodeWorkItem = new ValidationWorkItem(
+                            Entry: item,
+                            PathStack: newPath,
+                            WorkType: ValidationWorkType.NodeFolder);
+                        processingQueue.Enqueue(nodeWorkItem);
                         break;
-                    case TreeEntryTargetType.Blob:
+                    case ObjectType.RegularFile:
                         throw new GitObjectDbValidationException($"A blob was not expected to be found in a node collection " +
                             $"using {nameof(GitFolderAttribute.UseNodeFolders)}.");
-                    case TreeEntryTargetType.Tree when item.Name == FileSystemStorage.ResourceFolder:
-                    case TreeEntryTargetType.GitLink:
+                    case ObjectType.Tree when item.Name == FileSystemStorage.ResourceFolder:
+                    case ObjectType.GitLink:
                         ThrowGitLinkOrResourceFolderNotExpected();
                         return;
                     default:
-                        throw new NotSupportedException($"{item.TargetType} is not supported.");
+                        throw new NotSupportedException($"{item.Mode.Type} is not supported.");
                 }
-                path.Pop();
             }
         }
 
-        private void ValidateNodeFolder(TreeEntry nodeFolder, Stack<string> path)
+        private async Task ProcessNodeFolderAsync(ValidationWorkItem workItem, Queue<ValidationWorkItem> processingQueue)
         {
-            var nodeFolderTree = nodeFolder.Target.Peel<Tree>();
-            ValidateNodeId(nodeFolder.Name);
-            var nodeDataFileFound = ValidateNodeFolderItems(nodeFolder.Name, nodeFolderTree, path);
+            var nodeFolderTree = await workItem.Entry.GetEntryAsync<TreeEntry>().ConfigureAwait(false);
+            ValidateNodeId(workItem.Entry.Name);
+            var nodeDataFileFound = ProcessNodeFolderItems(workItem.Entry.Name, nodeFolderTree, workItem.PathStack, processingQueue);
             if (!nodeDataFileFound)
             {
-                throw new GitObjectDbValidationException($"Node data folder '{nodeFolder.Name}.json' could be found in {nodeFolder.Path}.");
+                throw new GitObjectDbValidationException($"Node data folder '{workItem.Entry.Name}.json' could be found in {string.Join('/', workItem.PathStack.Reverse())}.");
             }
         }
 
-        private void ValidateNodeId(string nodeId)
+        private readonly void ValidateNodeId(string nodeId)
         {
             if (!UniqueId.TryParse(nodeId, out var id))
             {
@@ -151,39 +202,46 @@ internal class TreeValidation : ITreeValidation
             }
         }
 
-        private bool ValidateNodeFolderItems(string id,
-                                             Tree nodeFolderTree,
-                                             Stack<string> path)
+        private bool ProcessNodeFolderItems(string id, TreeEntry nodeFolderTree, Stack<string> path, Queue<ValidationWorkItem> processingQueue)
         {
             var result = false;
-            foreach (var item in nodeFolderTree)
+            foreach (var item in nodeFolderTree.Children)
             {
-                path.Push(item.Name);
-                switch (item.TargetType)
+                var newPath = new Stack<string>(path.Reverse());
+                newPath.Push(item.Name);
+
+                switch (item.Mode.Type)
                 {
-                    case TreeEntryTargetType.Tree when FileSystemStorage.IsResourceName(item.Name):
-                        ValidateResources(item, path);
+                    case ObjectType.Tree when FileSystemStorage.IsResourceName(item.Name):
+                        var resourceWorkItem = new ValidationWorkItem(
+                            Entry: item,
+                            PathStack: newPath,
+                            WorkType: ValidationWorkType.Resources);
+                        processingQueue.Enqueue(resourceWorkItem);
                         break;
-                    case TreeEntryTargetType.GitLink when FileSystemStorage.IsResourceName(item.Name):
-                        ValidateLinkResources(path);
+                    case ObjectType.GitLink when FileSystemStorage.IsResourceName(item.Name):
+                        ValidateLinkResources(newPath);
                         break;
-                    case TreeEntryTargetType.Tree:
-                        ValidateNodeCollection(item, path);
+                    case ObjectType.Tree:
+                        var nodeCollectionWorkItem = new ValidationWorkItem(
+                            Entry: item,
+                            PathStack: newPath,
+                            WorkType: ValidationWorkType.NodeCollection);
+                        processingQueue.Enqueue(nodeCollectionWorkItem);
                         break;
-                    case TreeEntryTargetType.Blob
-                    when item.Name.Equals($"{id}.{_serializer.FileExtension}", StringComparison.Ordinal):
+                    case ObjectType.RegularFile
+                        when item.Name.Equals($"{id}.{_serializer.FileExtension}", StringComparison.Ordinal):
                         result = true;
                         break;
-                    case TreeEntryTargetType.Blob:
+                    case ObjectType.RegularFile:
                         ValidateBlobIsExistingNodePropertyValue(item, nodeFolderTree);
                         break;
-                    case TreeEntryTargetType.GitLink:
+                    case ObjectType.GitLink:
                         throw new GitObjectDbValidationException($"A link folder is only valid as a resource. " +
                             $"Git link '{item.Name}' was not expected.");
                     default:
-                        throw new NotSupportedException($"{item.TargetType} is not supported.");
+                        throw new NotSupportedException($"{item.Mode.Type} is not supported.");
                 }
-                path.Pop();
             }
             return result;
         }
@@ -198,18 +256,18 @@ internal class TreeValidation : ITreeValidation
             }
         }
 
-        private void ValidateResources(TreeEntry entry, Stack<string> path)
+        private static async Task ProcessResourcesAsync(ValidationWorkItem workItem)
         {
-            var gitPath = string.Join("/", path.Reverse());
-            var traversed = entry.Traverse(gitPath, includeSelf: false);
-            var hasForbiddenEntry = traversed.Any(e =>
-                e.Entry.TargetType == TreeEntryTargetType.GitLink ||
-                (e.Entry.TargetType == TreeEntryTargetType.Tree &&
-                 FileSystemStorage.IsResourceName(e.Entry.Name)));
-            if (hasForbiddenEntry)
+            var gitPath = string.Join("/", workItem.PathStack.Reverse());
+            var traversed = workItem.Entry.TraverseAsync(gitPath, includeSelf: false);
+            await foreach (var e in traversed.ConfigureAwait(false))
             {
-                ThrowGitLinkOrResourceFolderNotExpected();
-                return;
+                if (e.Entry.Mode.Type == ObjectType.GitLink ||
+                    (e.Entry.Mode.Type == ObjectType.Tree &&
+                    FileSystemStorage.IsResourceName(e.Entry.Name)))
+                {
+                    ThrowGitLinkOrResourceFolderNotExpected();
+                }
             }
         }
 
@@ -222,7 +280,7 @@ internal class TreeValidation : ITreeValidation
         private void ValidateLinkResources(Stack<string> path)
         {
             var gitPath = string.Join("/", path.Reverse());
-            var module = _modules[gitPath];
+            var module = _modules?[gitPath];
             if (module is null)
             {
                 throw new GitObjectDbValidationException(

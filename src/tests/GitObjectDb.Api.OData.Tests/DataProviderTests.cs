@@ -2,16 +2,19 @@ using AutoFixture;
 using AutoMapper;
 using FakeItEasy;
 using Fasterflect;
+using GitDotNet;
 using GitObjectDb.Api.OData.Model;
 using GitObjectDb.Api.OData.Tests.Model;
 using GitObjectDb.Tests.Assets.Tools;
-using LibGit2Sharp;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using static GitObjectDb.Api.OData.Tests.Model.BasicModel;
 
 namespace GitObjectDb.Api.OData.Tests;
@@ -19,19 +22,22 @@ namespace GitObjectDb.Api.OData.Tests;
 public class DataProviderTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
-    public void QuerySimpleNodes(SimpleNode[] nodes,
-                                 IQueryAccessor queryAccessor,
-                                 IApplicationPartTypeProvider typeProvider,
-                                 DataProvider dataProvider)
+    public async Task QuerySimpleNodes()
     {
         // Arrange
-        A.CallTo(() => queryAccessor.GetNodes<SimpleNode>(default, default, default))
-            .Returns(nodes.ToCommitEnumerable(ObjectId.Zero));
+        var fixture = new Fixture().Customize(new Customization());
+        var nodes = fixture.Create<SimpleNode[]>();
+        var connection = fixture.Create<IConnection>();
+        var commit = fixture.Create<CommitEntry>();
+        var typeProvider = fixture.Create<IApplicationPartTypeProvider>();
+        var dataProvider = fixture.Create<DataProvider>();
+
+        A.CallTo(() => connection.GetNodesAsync<SimpleNode>(commit, default, false, A<CancellationToken>._))
+            .Returns(nodes.ToAsyncEnumerable());
         var simpleNodeDto = GetDtoDescription<SimpleNode>(typeProvider, dataProvider);
 
         // Act
-        var result = dataProvider.GetNodes<SimpleNode>(simpleNodeDto, default).ToList();
+        var result = (await dataProvider.GetNodesAsync<SimpleNode>(simpleNodeDto, commit)).ToList();
 
         // Arrange
         Assert.That(result, Has.Exactly(nodes.Length).Items);
@@ -44,20 +50,22 @@ public class DataProviderTests
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
-    public void QueryNodesAndReferences(MultiReferenceNode[] nodes,
-                                        SimpleNode node,
-                                        IQueryAccessor queryAccessor,
-                                        IApplicationPartTypeProvider typeProvider,
-                                        DataProvider dataProvider)
+    public async Task QueryNodesAndReferences()
     {
         // Arrange
-        A.CallTo(() => queryAccessor.GetNodes<MultiReferenceNode>(default, default, default))
-            .Returns(nodes.ToCommitEnumerable(ObjectId.Zero));
+        var fixture = new Fixture().Customize(new Customization());
+        var nodes = fixture.Create<MultiReferenceNode[]>();
+        var commit = fixture.Create<CommitEntry>();
+        var connection = fixture.Create<IConnection>();
+        var typeProvider = fixture.Create<IApplicationPartTypeProvider>();
+        var dataProvider = fixture.Create<DataProvider>();
+
+        A.CallTo(() => connection.GetNodesAsync<MultiReferenceNode>(commit, default, default, A<CancellationToken>._))
+            .Returns(nodes.ToAsyncEnumerable());
         var multiReferenceNodeDto = GetDtoDescription<MultiReferenceNode>(typeProvider, dataProvider);
 
         // Act
-        var result = dataProvider.GetNodes<MultiReferenceNode>(multiReferenceNodeDto, default).ToList();
+        var result = (await dataProvider.GetNodesAsync<MultiReferenceNode>(multiReferenceNodeDto, commit)).ToList();
 
         // Arrange
         Assert.That(result, Has.Exactly(nodes.Length).Items);
@@ -73,22 +81,25 @@ public class DataProviderTests
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
-    public void QueryNodeChildren(SimpleNode node,
-                                  MultiReferenceNode[] children,
-                                  IQueryAccessor queryAccessor,
-                                  IApplicationPartTypeProvider typeProvider,
-                                  DataProvider dataProvider)
+    public async Task QueryNodeChildren()
     {
         // Arrange
-        A.CallTo(() => queryAccessor.GetNodes<SimpleNode>(default, default, default))
-            .Returns(Enumerable.Repeat(node, 1).ToCommitEnumerable(ObjectId.Zero));
-        A.CallTo(() => queryAccessor.GetNodes<Node>(ObjectId.Zero.Sha.ToString(), node, false))
-            .Returns(children.ToCommitEnumerable(ObjectId.Zero));
+        var fixture = new Fixture().Customize(new Customization());
+        var node = fixture.Create<SimpleNode>();
+        var commit = fixture.Create<CommitEntry>();
+        var children = fixture.Create<MultiReferenceNode[]>();
+        var queryAccessor = fixture.Create<IConnection>();
+        var typeProvider = fixture.Create<IApplicationPartTypeProvider>();
+        var dataProvider = fixture.Create<DataProvider>();
+
+        A.CallTo(() => queryAccessor.GetNodesAsync<SimpleNode>(commit, default, default, A<CancellationToken>._))
+            .Returns(Enumerable.Repeat(node, 1).ToAsyncEnumerable());
+        A.CallTo(() => queryAccessor.GetNodesAsync<Node>(A<CommitEntry>._, node, false, A<CancellationToken>._))
+            .Returns(children.ToAsyncEnumerable());
         var simpleNodeDto = GetDtoDescription<SimpleNode>(typeProvider, dataProvider);
 
         // Act
-        var result = dataProvider.GetNodes<SimpleNode>(simpleNodeDto, default).ToList();
+        var result = (await dataProvider.GetNodesAsync<SimpleNode>(simpleNodeDto, commit)).ToList();
         var resolvedChildren = result[0].Children.ToList();
 
         // Arrange
@@ -114,7 +125,8 @@ public class DataProviderTests
         public void Customize(IFixture fixture)
         {
             fixture.Register<ResourceLink>(() => null);
-            fixture.Register<ObjectId>(() => null);
+            fixture.Register<HashId>(() => null);
+            fixture.Inject(GetCommit());
 
             var emitter = new DtoTypeEmitter(CreateDataModel(typeof(BasicModel).GetNestedTypes()));
             var part = new GeneratedTypesApplicationPart(emitter);
@@ -122,10 +134,21 @@ public class DataProviderTests
             var mapper = new Mapper(
                 new MapperConfiguration(
                     c => c.AddProfile(new AutoMapperProfile(emitter.TypeDescriptions))));
-            var queryAccessor = A.Fake<IQueryAccessor>();
-            fixture.Inject(queryAccessor);
-            var dataProvider = new DataProvider(queryAccessor, mapper, new MemoryCache(Options.Create(new MemoryCacheOptions())));
+            var connection = A.Fake<IConnection>();
+            fixture.Inject(connection);
+            var dataProvider = new DataProvider(connection, mapper, new MemoryCache(Options.Create(new MemoryCacheOptions())));
             fixture.Inject(dataProvider);
+        }
+
+        private static CommitEntry GetCommit()
+        {
+            using var connection = new ServiceCollection()
+                .AddMemoryCache()
+                .AddGitDotNet()
+                .BuildServiceProvider()
+                .GetRequiredService<GitConnectionProvider>()
+                .Invoke(".");
+            return AsyncHelper.RunSync(() => connection.GetCommittishAsync("HEAD"));
         }
     }
 }

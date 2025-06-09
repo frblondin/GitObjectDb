@@ -10,7 +10,6 @@ namespace GitObjectDb.Api.OData.Tests.Model;
 public class DtoTypeEmitterTests
 {
     [Test]
-    [AutoDataCustomizations]
     public void SimpleNodeDtoGetsEmitted()
     {
         // Arrange
@@ -31,7 +30,6 @@ public class DtoTypeEmitterTests
     }
 
     [Test]
-    [AutoDataCustomizations]
     public void SingleReferenceDtoGetsEmitted()
     {
         // Arrange
@@ -53,7 +51,6 @@ public class DtoTypeEmitterTests
     }
 
     [Test]
-    [AutoDataCustomizations]
     public void MultiReferenceDtoGetsEmitted()
     {
         // Arrange
@@ -75,7 +72,6 @@ public class DtoTypeEmitterTests
     }
 
     [Test]
-    [AutoDataCustomizations]
     public void NonApiBrowsableNodesGetSkipped()
     {
         // Arrange

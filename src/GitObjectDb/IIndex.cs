@@ -1,18 +1,18 @@
-using LibGit2Sharp;
+using GitDotNet;
 using Realms;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Threading.Tasks;
 
 namespace GitObjectDb;
 
 /// <summary>
 /// The staging area to prepare and aggregate the changes that will be part of the next commit.
 /// </summary>
-public interface IIndex : ITransformationComposer, IEnumerable<IndexEntry>
+public interface IIndex : IChangeComposer, IEnumerable<IndexEntry>
 {
     /// <summary>Gets index target commit id.</summary>
-    LibGit2Sharp.ObjectId? CommitId { get; }
+    HashId? CommitId { get; }
 
     /// <summary>Gets the current unique version of index.</summary>
     public Guid? Version { get; }
@@ -33,12 +33,13 @@ public interface IIndex : ITransformationComposer, IEnumerable<IndexEntry>
     /// The index automatically ensures that the branch tip remains the same between the creation of the index
     /// until it gets committed. This method retarget the index to the new branch tip.
     /// </summary>
-    void UpdateToBranchTip();
+    /// <returns>Returns a Task representing the asynchronous operation.</returns>
+    Task UpdateToBranchTipAsync();
 
     /// <summary>Applies the transformation and store them in a new commit.</summary>
     /// <param name="description">The commit description.</param>
     /// <returns>The resulting commit.</returns>
-    Commit Commit(CommitDescription description);
+    Task<CommitEntry> CommitAsync(CommitDescription description);
 
     /// <summary>Gets an <see cref="IndexEntry"/> from index from its path, if any.</summary>
     /// <param name="path">The path of entry.</param>
@@ -50,13 +51,13 @@ public interface IIndex : ITransformationComposer, IEnumerable<IndexEntry>
     /// <param name="path">The path of entry.</param>
     /// <param name="onlyIndex">Sets whether only index entries should be requested.</param>
     /// <returns>The item from index.</returns>
-    TItem? TryLoadItem<TItem>(DataPath path, bool onlyIndex = false)
+    Task<TItem?> TryLoadItemAsync<TItem>(DataPath path, bool onlyIndex = false)
         where TItem : TreeItem;
 
     /// <summary>Gets an <see cref="TreeItem"/> from index from its path, if any.</summary>
     /// <param name="entry">The entry.</param>
     /// <returns>The item from index.</returns>
-    TreeItem LoadItem(IndexEntry entry);
+    Task<TreeItem> LoadItemAsync(IndexEntry entry);
 }
 
 /// <summary>Description of an entry in an index.</summary>

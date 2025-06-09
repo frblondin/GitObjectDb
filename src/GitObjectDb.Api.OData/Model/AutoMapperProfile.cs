@@ -1,7 +1,7 @@
 using AutoMapper;
 using Fasterflect;
+using GitDotNet;
 using GitObjectDb.Tools;
-using LibGit2Sharp;
 using System.Reflection;
 
 namespace GitObjectDb.Api.OData.Model;
@@ -13,7 +13,7 @@ namespace GitObjectDb.Api.OData.Model;
 internal class AutoMapperProfile : Profile
 {
     internal const string ChildResolver = nameof(ChildResolver);
-    internal const string CommitId = nameof(CommitId);
+    internal const string Commit = nameof(Commit);
 
     /// <summary>Initializes a new instance of the <see cref="AutoMapperProfile"/> class.</summary>
     /// <param name="types">The types for which mappings need to be defined.</param>
@@ -58,9 +58,9 @@ internal class AutoMapperProfile : Profile
         var mapping = CreateMap(description.NodeType.Type, description.DtoType)
             .ConstructUsing((src, context) =>
             {
-                var commitId = context.GetCommitId();
-                var factory = Reflect.Constructor(description.DtoType, typeof(Node), typeof(ObjectId));
-                return factory.Invoke(src, commitId);
+                var commit = context.GetCommit();
+                var factory = Reflect.Constructor(description.DtoType, typeof(Node), typeof(HashId));
+                return factory.Invoke(src, commit.Id);
             });
 
         MapReferenceProperties(description, mapping);
@@ -131,6 +131,6 @@ internal static class ResolutionContextExtensions
     internal static Func<Node, IEnumerable<Node>> GetChildResolver(this ResolutionContext context) =>
         (Func<Node, IEnumerable<Node>>)context.Items[AutoMapperProfile.ChildResolver];
 
-    internal static ObjectId GetCommitId(this ResolutionContext context) =>
-        (ObjectId)context.Items[AutoMapperProfile.CommitId];
+    internal static CommitEntry GetCommit(this ResolutionContext context) =>
+        (CommitEntry)context.Items[AutoMapperProfile.Commit];
 }

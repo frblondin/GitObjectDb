@@ -1,7 +1,7 @@
 using Fasterflect;
+using GitDotNet;
 using GitObjectDb.Comparison;
 using GitObjectDb.Tools;
-using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -103,7 +103,7 @@ internal class DataModel : IDataModel
         return updated;
     }
 
-    public void UpdateBaseProperties(Node node, ObjectId? treeId, DataPath? path)
+    public void UpdateBaseProperties(Node node, HashId? treeId, DataPath? path)
     {
         node.Path = path;
         _treeIdSetter.Invoke(node, treeId);

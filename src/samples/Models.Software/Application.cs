@@ -1,6 +1,8 @@
+using GitDotNet;
 using GitObjectDb;
 using GitObjectDb.Model;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Models.Software;
 
@@ -18,6 +20,6 @@ public record Application : Node
 
 public static class IConnectionApplicationExtensions
 {
-    public static IEnumerable<Application> GetApplications(this IConnection connection, string committish = "main") =>
-        connection.GetNodes<Application>(committish);
+    public static IEnumerable<Application> GetApplications(this IConnection connection, CommitEntry commit) =>
+        connection.GetNodesAsync<Application>(commit).ToEnumerable().OrderBy(f => f.Id);
 }

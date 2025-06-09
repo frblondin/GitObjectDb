@@ -155,7 +155,7 @@ public sealed class MergeChange
         }
     }
 
-    internal Delegate Transform(IGitUpdateCommand command)
+    internal ApplyUpdate Transform(IGitUpdateCommand command)
     {
         switch (Status)
         {

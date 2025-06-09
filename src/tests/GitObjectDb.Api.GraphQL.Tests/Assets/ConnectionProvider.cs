@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.IO;
-using System.Linq;
 
 namespace GitObjectDb.Api.GraphQL.Tests.Assets;
 
@@ -14,7 +13,7 @@ internal static class ConnectionProvider
     internal static IServiceCollection AddGitObjectDbConnection(this IServiceCollection services,
                                                                 string folder, Action<IConnection>? populateData = null) => services
         .AddSingleton(p => GetOrCreateConnection(p, folder, populateData))
-        .AddSingleton<IQueryAccessor>(s => s.GetRequiredService<IConnection>());
+        .AddSingleton<IDataProvider>(s => s.GetRequiredService<IConnection>());
 
     internal static IConnection GetOrCreateConnection(IServiceProvider provider, string folder, Action<IConnection>? populateData = null)
     {

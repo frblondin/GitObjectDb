@@ -1,15 +1,17 @@
 using GitObjectDb.Model;
-using LibGit2Sharp;
 
 namespace GitObjectDb.Web;
 
 internal static class ConnectionProvider
 {
-    internal static IServiceCollection AddGitObjectDbConnection(this IServiceCollection services, string folder, Action<IConnection>? populateData = null) => services
-        .AddSingleton(p => GetOrCreateConnection(p, folder, populateData))
-        .AddSingleton<IQueryAccessor>(s => s.GetRequiredService<IConnection>());
+    internal static async Task AddGitObjectDbConnectionAsync(this IServiceCollection services, string folder, Func<IConnection, Task>? populateData = null)
+    {
+        var connection = await GetOrCreateConnectionAsync(services.BuildServiceProvider(), folder, populateData);
+        services.AddScoped<IConnection>(s => connection);
+        services.AddScoped<IDataProvider>(s => connection);
+    }
 
-    internal static IConnection GetOrCreateConnection(IServiceProvider provider, string folder, Action<IConnection>? populateData = null)
+    private static async Task<IConnection> GetOrCreateConnectionAsync(IServiceProvider provider, string folder, Func<IConnection, Task>? populateData = null)
     {
         var assemblyDirectory = Path.GetDirectoryName(typeof(Program).Assembly.Location) ??
             throw new NotSupportedException("Assembly location could not be found.");
@@ -18,9 +20,9 @@ internal static class ConnectionProvider
         var model = provider.GetRequiredService<IDataModel>();
         var repositoryFactory = provider.GetRequiredService<ConnectionFactory>();
         var result = repositoryFactory(path, model);
-        if (!alreadyExists)
+        if (!alreadyExists && populateData != null)
         {
-            populateData?.Invoke(result);
+            await populateData.Invoke(result);
         }
         return result;
     }
