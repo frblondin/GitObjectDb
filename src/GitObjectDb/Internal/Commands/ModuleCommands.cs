@@ -1,10 +1,11 @@
-using LibGit2Sharp;
+using GitDotNet;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Internal.Commands;
 
@@ -29,11 +30,6 @@ internal class ModuleCommands
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private readonly Dictionary<string, ModuleDescription> _modules = new();
-
-    internal ModuleCommands(Tree? tree)
-        : this(tree?[ModuleFile]?.Target.Peel<Blob>().GetContentStream())
-    {
-    }
 
     internal ModuleCommands(Stream? stream)
     {
@@ -69,6 +65,13 @@ internal class ModuleCommands
                 HasAnyChange = true;
             }
         }
+    }
+
+    internal static async Task<ModuleCommands> GetAsync(TreeEntry? tree)
+    {
+        var moduleItem = tree?.Children.FirstOrDefault(x => x.Name == ModuleFile);
+        var moduleEntry = moduleItem != null ? await moduleItem.GetEntryAsync<BlobEntry>().ConfigureAwait(false) : null;
+        return new(moduleEntry?.OpenRead());
     }
 
     private void ReadFile(Stream? stream)
@@ -117,7 +120,7 @@ internal class ModuleCommands
         module = path = url = branch = null;
     }
 
-    public Stream CreateStream()
+    public MemoryStream CreateStream()
     {
         var result = new MemoryStream();
         using var writer = new StreamWriter(result, Encoding.UTF8, 1024, leaveOpen: true)

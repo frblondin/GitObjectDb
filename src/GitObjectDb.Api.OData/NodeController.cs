@@ -20,12 +20,11 @@ public class NodeController<TNode, TNodeDTO> : ODataController
     public DataProvider DataProvider { get; }
 
     [EnableQuery]
-    public IEnumerable<TNodeDTO> Get([FromODataUri] string committish,
-                                     [FromODataUri] string? parentPath = null,
-                                     [FromODataUri] bool isRecursive = false)
+    public async Task<IEnumerable<TNodeDTO>> Get([FromODataUri] string committish,
+        [FromODataUri] string? parentPath = null,
+        [FromODataUri] bool isRecursive = false)
     {
-        return DataProvider
-            .GetNodes<TNode>(_description, committish, parentPath, isRecursive)
-            .Cast<TNodeDTO>();
+        var nodes = await DataProvider.GetNodesAsync<TNode>(_description, committish, parentPath, isRecursive);
+        return nodes.Cast<TNodeDTO>();
     }
 }

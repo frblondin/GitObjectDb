@@ -2,29 +2,23 @@ using AutoFixture;
 using AutoFixture.Kernel;
 using Bogus;
 using Bogus.DataSets;
+using GitDotNet;
 using GitObjectDb.Tests.Assets.Loggers;
-using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Models.Software;
 using System;
+using System.Threading.Tasks;
 using YamlDotNet.Serialization.NamingConventions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace GitObjectDb.Tests.Assets;
 
-public class DefaultServiceProviderCustomization : ICustomization, ISpecimenBuilder
+public class DefaultServiceProviderCustomization(bool useYaml) : ICustomization, ISpecimenBuilder
 {
-    private readonly bool _useYaml;
-
     public DefaultServiceProviderCustomization()
         : this(false)
     {
-    }
-
-    public DefaultServiceProviderCustomization(bool useYaml)
-    {
-        _useYaml = useYaml;
     }
 
     public void Customize(IFixture fixture)
@@ -60,8 +54,9 @@ public class DefaultServiceProviderCustomization : ICustomization, ISpecimenBuil
                         .AddProvider(new ConsoleProvider()))
             .AddMemoryCache()
             .AddSoftwareModel()
+            .AddGitDotNet(o => o.RenameThreshold = 0.75f)
             .AddGitObjectDb();
-        if (_useYaml)
+        if (useYaml)
         {
             services.AddGitObjectDbYamlDotNet(CamelCaseNamingConvention.Instance);
         }

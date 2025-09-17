@@ -1,32 +1,32 @@
-using LibGit2Sharp;
+using GitDotNet;
 using ProtoBuf;
 
 namespace GitObjectDb.Api.ProtoBuf.Model.Surrogates;
 
 [ProtoContract]
-internal class ObjectIdSurrogate
+internal class HashIdSurrogate
 {
     [ProtoMember(1)]
     public string? Sha { get; init; }
 
-    public static implicit operator ObjectIdSurrogate?(ObjectId? value)
+    public static implicit operator HashIdSurrogate?(HashId? value)
     {
         if (value is null)
         {
             return null;
         }
-        return new ObjectIdSurrogate
+        return new HashIdSurrogate
         {
-            Sha = value.Sha,
+            Sha = value.ToString(),
         };
     }
 
-    public static implicit operator ObjectId?(ObjectIdSurrogate? value)
+    public static implicit operator HashId?(HashIdSurrogate? value)
     {
         if (value?.Sha is null)
         {
             return null;
         }
-        return new ObjectId(value.Sha);
+        return new HashId(value.Sha);
     }
 }

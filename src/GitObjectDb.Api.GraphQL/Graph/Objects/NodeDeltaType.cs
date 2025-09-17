@@ -20,7 +20,7 @@ public class NodeDeltaType<TNode> : ObjectGraphType<DeltaDto<TNode>>, INodeDelta
         Description = $"Represents changes for {typeName}.";
 
         var updatedAtProperty = ExpressionReflector.GetProperty<DeltaDto<TNode>>(d => d.UpdatedAt);
-        Field<ObjectIdGraphType>(updatedAtProperty.Name)
+        Field<HashIdGraphType>(updatedAtProperty.Name)
             .Description(updatedAtProperty.GetXmlDocsSummary(new() { ResolveExternalXmlDocs = false }));
 
         var deletedProperty = ExpressionReflector.GetProperty<DeltaDto<TNode>>(d => d.Deleted);

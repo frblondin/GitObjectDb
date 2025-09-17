@@ -1,22 +1,23 @@
 using AutoFixture;
+using GitDotNet;
 using GitObjectDb.Model;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
-using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.SystemTextJson.Tests;
 
 public partial class NodeSerializerTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
-    public void DeserializerUpdatesToUpperVersion(IFixture fixture)
+    public async Task DeserializerUpdatesToUpperVersion()
     {
         // Arrange
+        var fixture = new Fixture().Customize(new DefaultServiceProviderCustomization());
         var model = new ConventionBaseModelBuilder()
             .RegisterType<SomeNodeV1>()
             .RegisterType<SomeNodeV2>()
@@ -33,7 +34,7 @@ public partial class NodeSerializerTests
             Flags = (int)(BindingFlags.Public | BindingFlags.Instance),
         };
         var serialized = nodeSerializer.Serialize(node);
-        var deserialized = (SomeNodeV2)nodeSerializer.Deserialize(serialized, ObjectId.Zero, node.Path, _ => throw new NotImplementedException());
+        var deserialized = (SomeNodeV2)await nodeSerializer.DeserializeAsync(serialized, HashId.Empty, node.Path, _ => throw new NotImplementedException());
 
         // Assert
         Assert.That(deserialized.TypedFlags, Is.EqualTo(BindingFlags.Public | BindingFlags.Instance));

@@ -1,13 +1,8 @@
-using Bogus;
-using GraphQL;
-using LibGit2Sharp;
 using Models.Organization;
 using NBomber.Contracts;
 using NBomber.CSharp;
-using NBomber.Plugins.Network.Ping;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using IgnoreAttribute = NUnit.Framework.IgnoreAttribute;
 
@@ -58,11 +53,11 @@ public class LoadTests : LoadTestBase
     private Task InitializeRepository(IScenarioInitContext context)
     {
         var generator = new DataGenerator(Connection, TotalNodeCount, 5);
-        generator.CreateInitData();
+        generator.CreateInitDataAsync();
 
         for (int i = 0; i < CommitCount; i++)
         {
-            generator.UpdateRandomNodes(
+            generator.UpdateRandomNodesAsync(
                 UpdateNodeCountPerCommit,
                 n => n with { GraphicalOrganizationStructureId = UniqueId.CreateNew().ToString() },
                 $"New round of changes #{i}");

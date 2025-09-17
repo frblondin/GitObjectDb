@@ -1,4 +1,4 @@
-using LibGit2Sharp;
+using GitDotNet;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 
@@ -27,7 +27,7 @@ public record Node : TreeItem
 
     /// <summary>Gets the id of the Git tree containing this node.</summary>
     [IgnoreDataMember]
-    public ObjectId? TreeId { get; init; }
+    public HashId? TreeId { get; init; }
 
     /// <summary>
     /// Gets the remote repository containing node resources, as a

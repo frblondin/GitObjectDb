@@ -9,12 +9,14 @@ Just like with Git, GitObjectDb let you do these different operations.
 	//             \    ->  \   \
 	// newBranch:   C        C---x
 
-	connection
-		.Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
-		.Commit(new("B", signature, signature));
+	var mainUpdates = await connection.UpdateAsync("main", c => c.CreateOrUpdateAsync(table with { Description = newDescription }));
+	await mainUpdates.Commit(new("B", signature, signature));
 	connection.Repository.Branches.Add("newBranch", "main~1");
-	connection
-		.Update("newBranch", c => c.CreateOrUpdate(table with { Name = newName }))
-		.Commit(new("C", signature, signature));
+	var newBranchUpdates = await connection.UpdateAsync("newBranch", c => c.CreateOrUpdateAsync(table with { Name = newName }));
+	await newBranchUpdates.CommitAsync(new("C", signature, signature));
 
-	sut.Merge(upstreamCommittish: "main");
+	var merge = await sut.MergeAsync(branchName: "newBranch", upstreamCommittish: "main");
+	if (merge.Status = MergeStatus.Conflicts)
+	{
+		// ...
+	}

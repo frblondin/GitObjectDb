@@ -1,6 +1,6 @@
+using GitDotNet;
 using GitObjectDb.Api.ProtoBuf.Model.Surrogates;
 using GitObjectDb.Model;
-using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using ProtoBuf.Meta;
 
@@ -31,8 +31,8 @@ public static partial class IServiceProviderExtensions
         }
         _alreadyInitialized = true;
         var runtimeModel = RuntimeTypeModel.Default;
-        runtimeModel.Add(typeof(ObjectId), false)
-             .SetSurrogate(typeof(ObjectIdSurrogate));
+        runtimeModel.Add(typeof(HashId), false)
+             .SetSurrogate(typeof(HashIdSurrogate));
         runtimeModel.Add(typeof(DataPath), false)
              .SetSurrogate(typeof(DataPathSurrogate));
 

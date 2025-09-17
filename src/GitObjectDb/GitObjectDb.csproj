@@ -18,11 +18,12 @@
   <ItemGroup>
     <PackageReference Include="CompareNETObjects" />
     <PackageReference Include="fasterflect.reflect" />
+    <PackageReference Include="GitDotNet" />
+    <PackageReference Include="GitDotNet.Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="IsExternalInit">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="LibGit2Sharp" />
     <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

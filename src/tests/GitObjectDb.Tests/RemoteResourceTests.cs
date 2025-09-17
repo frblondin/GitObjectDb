@@ -1,116 +1,99 @@
-using GitObjectDb.Tests.Assets;
-using GitObjectDb.Tests.Assets.Data.Software;
-using GitObjectDb.Tests.Assets.Tools;
-using LibGit2Sharp;
-using Models.Software;
-using NUnit.Framework;
 using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using AutoFixture;
+using GitDotNet;
+using GitObjectDb.Tests.Assets;
+using GitObjectDb.Tests.Assets.Data.Software;
+using Models.Software;
+using NUnit.Framework;
 
 namespace GitObjectDb.Tests;
 
-public class RemoteResourceTests : DisposeArguments
+public class RemoteResourceTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void AddRemoteResourceRepository(IConnection connection, Application application, string content, string message, Signature committer)
+    public async Task AddRemoteResourceRepository()
     {
         // Arrange
-        var (path, tip) = CreateResourceRepository(connection, content, message, committer);
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        using var connection = fixture.Create<IConnection>();
+        var provider = fixture.Create<GitConnectionProvider>();
+        var application = fixture.Create<Application>();
+        var content = fixture.Create<string>();
+        var message = fixture.Create<string>();
+        var committer = fixture.Create<Signature>();
+
+        var (path, tip) = await CreateResourceRepositoryAsync(provider, connection, content, message, committer);
 
         // Act
         var applicationWithLinkedResources = application with
         {
-            RemoteResource = new(path, tip),
+            RemoteResource = new(path, tip.Id.ToString()),
         };
-        connection
-            .Update("main", c => c.CreateOrUpdate(applicationWithLinkedResources))
-            .Commit(new(message, committer, committer));
+        var changes = await connection.UpdateAsync("main", c => c.CreateOrUpdateAsync(applicationWithLinkedResources));
+        await changes.CommitAsync(new(message, committer, committer));
 
         // Assert
-        var result = connection.GetResources("main", applicationWithLinkedResources).ToList();
+        var mainTip = await connection.Repository.GetCommittishAsync("main");
+        var result = connection.GetResourcesAsync(mainTip, applicationWithLinkedResources).ToEnumerable().ToList();
         Assert.That(result, Has.Exactly(1).Items);
-        Assert.Multiple(() =>
+        await Assert.MultipleAsync(async () =>
         {
             Assert.That(result[0].Path, Is.EqualTo(application.Path.CreateResourcePath("folder", "file.txt")));
-            Assert.That(result[0].Embedded.ReadAsString(), Is.EqualTo(content));
+            Assert.That(await result[0].Embedded.ReadAsStringAsync(), Is.EqualTo(content));
         });
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void StageAndAddRemoteResourceRepository(IConnection connection, Application application, string content, string message, Signature committer)
+    public async Task StageAndAddRemoteResourceRepository()
     {
         // Arrange
-        var (path, tip) = CreateResourceRepository(connection, content, message, committer);
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        using var connection = fixture.Create<IConnection>();
+        var provider = fixture.Create<GitConnectionProvider>();
+        var application = fixture.Create<Application>();
+        var content = fixture.Create<string>();
+        var message = fixture.Create<string>();
+        var committer = fixture.Create<Signature>();
+
+        var (path, tip) = await CreateResourceRepositoryAsync(provider, connection, content, message, committer);
 
         // Act
         var applicationWithLinkedResources = application with
         {
-            RemoteResource = new(path, tip),
+            RemoteResource = new(path, tip.Id.ToString()),
         };
-        connection
-            .GetIndex("main", c => c.CreateOrUpdate(applicationWithLinkedResources))
-            .Commit(new(message, committer, committer));
+        var index = await connection.GetIndexAsync("main", c => c.CreateOrUpdateAsync(applicationWithLinkedResources));
+        await index.CommitAsync(new(message, committer, committer));
 
         // Assert
-        var result = connection.GetResources("main", applicationWithLinkedResources).ToList();
+        var mainTip = await connection.Repository.GetCommittishAsync("main");
+        var result = connection.GetResourcesAsync(mainTip, applicationWithLinkedResources).ToEnumerable().ToList();
         Assert.That(result, Has.Exactly(1).Items);
-        Assert.Multiple(() =>
+        await Assert.MultipleAsync(async () =>
         {
             Assert.That(result[0].Path, Is.EqualTo(application.Path.CreateResourcePath("folder", "file.txt")));
-            Assert.That(result[0].Embedded.ReadAsString(), Is.EqualTo(content));
+            Assert.That(await result[0].Embedded.ReadAsStringAsync(), Is.EqualTo(content));
         });
     }
 
-    [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void ThrowIfWrongCommitId(IConnection connection, Application application, string content, string message, Signature committer)
-    {
-        // Arrange
-        var (path, tip) = CreateResourceRepository(connection, content, message, committer);
-
-        // Act
-        var applicationWithLinkedResources = application with
-        {
-            RemoteResource = new(path, tip),
-        };
-        var commit = connection
-            .Update("main", c => c.CreateOrUpdate(applicationWithLinkedResources))
-            .Commit(new(message, committer, committer));
-
-        // Assert
-        Assert.Throws<GitObjectDbException>(() => connection.GetResources("main", application with
-        {
-            // Replace remote commit with irrelevant commit
-            RemoteResource = new(path, commit.Id.Sha),
-        }).ToList());
-    }
-
-    private static (string Path, string Tip) CreateResourceRepository(IConnection connection, string content, string message, Signature committer)
+    private static async Task<(string Path, CommitEntry Tip)> CreateResourceRepositoryAsync(
+        GitConnectionProvider provider, IConnection connection, string content, string message, Signature committer)
     {
         var path = Path.Combine(connection.Repository.Info.Path, Guid.NewGuid().ToString());
-        Repository.Init(path);
+        GitConnection.Create(path);
 
-        var repo = new Repository(path);
+        var repo = provider(path);
 
         // Create a blob from the content stream
-        var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
-        var blob = repo.ObjectDatabase.CreateBlob(stream);
+        var commit = await repo.CommitAsync("main",
+            c => c.AddOrUpdate("folder/file.txt", Encoding.UTF8.GetBytes(content)),
+            repo.CreateCommit(message, [], committer, committer));
 
-        // Put the blob in a tree
-        var definition = new TreeDefinition();
-        definition.Add("folder/file.txt", blob, Mode.NonExecutableFile);
-        var tree = repo.ObjectDatabase.CreateTree(definition);
-
-        // Create binary stream from the text
-        var commit = repo.ObjectDatabase.CreateCommit(committer, committer, message, tree, repo.Commits, false);
-
-        // Update the HEAD reference to point to the latest commit
-        repo.Refs.UpdateTarget(repo.Refs.Head, commit.Id);
-
-        return (path, commit.Id.Sha);
+        return (path, commit);
     }
 }

@@ -1,5 +1,5 @@
-using GitObjectDb.Api.ProtoBuf.Model;
-using LibGit2Sharp;
+using GitDotNet;
+using GitObjectDb.Api.ProtoBuf.Model.Tools;
 using ProtoBuf;
 
 namespace GitObjectDb.Api.ProtoBuf.Model.Surrogates;
@@ -11,7 +11,7 @@ internal class NodeSurrogate<TNode>
     public string? Path { get; init; }
 
     [ProtoMember(2)]
-    public ObjectId? TreeId { get; init; }
+    public HashId? TreeId { get; init; }
 
     public static implicit operator NodeSurrogate<TNode>?(TNode? value)
     {
@@ -50,13 +50,15 @@ internal class NodeSurrogate<TNode>
 
         Node GetNode(DataPath path)
         {
-            if (!currentReply.Cache.TryGetValue((path, treeId), out var result))
+            if (currentReply.Cache.TryGetValue((path, treeId), out var result))
             {
-                var content = currentReply.NodeContents.First(data => data.GetPathOrThrow().Equals(path) && data.TreeId == treeId);
-                using var stream = GetStream(content);
-                result = serializer.Deserialize(stream, treeId, path, GetNode);
-                currentReply.Cache[(path, treeId)] = result;
+                return result;
             }
+
+            var content = currentReply.NodeContents.First(data => data.GetPathOrThrow().Equals(path) && data.TreeId == treeId);
+            using var stream = GetStream(content);
+            result = AsyncHelper.RunSync(() => serializer.DeserializeAsync(stream, treeId, path, p => Task.FromResult<TreeItem>(GetNode(p))));
+            currentReply.Cache[(path, treeId)] = result;
             return result;
         }
     }

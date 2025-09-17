@@ -1,6 +1,8 @@
+using GitDotNet;
 using GitObjectDb.Comparison;
-using LibGit2Sharp;
+using GitObjectDb.Model;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GitObjectDb;
 
@@ -11,7 +13,7 @@ public interface ICherryPick
     Branch Branch { get; }
 
     /// <summary>Gets the upstream commit to be cherry picked.</summary>
-    Commit UpstreamCommit { get; }
+    CommitEntry UpstreamCommit { get; }
 
     /// <summary>Gets the merge policy.</summary>
     CherryPickPolicy Policy { get; }
@@ -25,12 +27,12 @@ public interface ICherryPick
     /// This can happen if: 1) The cherry pick resulted in conflicts.
     /// 2) The option to not commit on success is set.
     /// </summary>
-    Commit? CompletedCommit { get; }
+    CommitEntry? CompletedCommit { get; }
 
     /// <summary>Gets the status of the cherry pick.</summary>
     CherryPickStatus Status { get; }
 
     /// <summary>Commits current changes.</summary>
     /// <returns>The resulting commit of the cherry-pick operation.</returns>
-    CherryPickStatus CommitChanges();
+    Task<CherryPickStatus> CommitChangesAsync();
 }

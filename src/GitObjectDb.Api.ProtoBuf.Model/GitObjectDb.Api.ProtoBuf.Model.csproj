@@ -1,39 +1,39 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Description>Provides ProtoBuf data model to handle GitObjectDb Grpc requests.</Description>
-    <PackageType>Dependency</PackageType>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>embedded</DebugType>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <GenerateDocumentationFile>True</GenerateDocumentationFile>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Description>Provides ProtoBuf data model to handle GitObjectDb Grpc requests.</Description>
+        <PackageType>Dependency</PackageType>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>embedded</DebugType>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Nerdbank.GitVersioning">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="protobuf-net.Grpc" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Nerdbank.GitVersioning">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="protobuf-net.Grpc" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\GitObjectDb\GitObjectDb.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\GitObjectDb\GitObjectDb.csproj" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\..\GitObjectDb.png" Pack="true" PackagePath="\" />
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
-  </ItemGroup>
+    <ItemGroup>
+        <None Include="..\..\GitObjectDb.png" Pack="true" PackagePath="\" />
+        <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Update="Microsoft.SourceLink.GitHub">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Update="Microsoft.SourceLink.GitHub">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
 
 </Project>

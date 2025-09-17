@@ -1,4 +1,4 @@
-using LibGit2Sharp;
+using GitDotNet;
 
 namespace GitObjectDb.Api.ProtoBuf.Model;
 internal interface INodeQueryReply
@@ -7,7 +7,7 @@ internal interface INodeQueryReply
     IEnumerable<NodeData>? NodeContents { get; set; }
 
     /// <summary>Gets a cache to be used while processing deserialization of reply data.</summary>
-    Dictionary<(DataPath Path, ObjectId TreeId), Node> Cache { get; }
+    Dictionary<(DataPath Path, HashId TreeId), Node> Cache { get; }
 }
 
 internal static class NodeQueryReply

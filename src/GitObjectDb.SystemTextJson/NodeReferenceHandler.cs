@@ -1,9 +1,4 @@
-using GitObjectDb.Model;
-using LibGit2Sharp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+using GitDotNet;
 using System.Text.Json.Serialization;
 using System.Threading;
 
@@ -22,7 +17,7 @@ internal class NodeReferenceHandler : ReferenceHandler
 
     internal class DataContext
     {
-        public DataContext(NodeSerializer serializer, INodeSerializer.ItemLoader accessor, ObjectId treeId)
+        public DataContext(NodeSerializer serializer, INodeSerializer.ItemLoader accessor, HashId treeId)
         {
             Accessor = accessor;
             TreeId = treeId;
@@ -32,7 +27,7 @@ internal class NodeReferenceHandler : ReferenceHandler
 
         internal INodeSerializer.ItemLoader Accessor { get; }
 
-        internal ObjectId TreeId { get; }
+        internal HashId TreeId { get; }
 
         internal NodeReferenceResolver Resolver { get; set; }
 

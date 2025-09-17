@@ -25,7 +25,6 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Nuke.Common.CI.GitHubActions.Configuration;
 using static Nuke.Common.EnvironmentInfo;
-using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tooling.ProcessTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
@@ -54,6 +53,7 @@ using Project = Nuke.Common.ProjectModel.Project;
     
     InvokedTargets = [nameof(Pack)],
     ImportSecrets = ["GITHUB_TOKEN", "SONAR_TOKEN", nameof(NuGetApiKey)],
+    PublishCondition = "always()",
     FetchDepth = 0)]
 class Build : NukeBuild
 {
@@ -162,6 +162,7 @@ class Build : NukeBuild
 
     Target Test => _ => _
         .DependsOn(Compile)
+        .Produces(TestDirectory / "**/*.dmp")
         .Executes(() =>
         {
             Collect(new DotNetCollectSettings()
@@ -173,6 +174,9 @@ class Build : NukeBuild
                     .EnableNoRestore()
                     .SetLoggers("trx")
                     .AddProcessAdditionalArguments("-m:1") // Make sure only one assembly gets tested at a time for coverage collect
+                    .AddProcessAdditionalArguments("--timeout", "600000") // 10 minutes timeout per test
+                    .AddProcessAdditionalArguments("--blame-hang-timeout", "2m") // Kill hanging tests
+                    .AddProcessAdditionalArguments("--blame-hang-dump-type", "full") // Get full dump for hanging tests
                     .SetResultsDirectory(TestDirectory))
                 .SetConfigFile(SourceDirectory / "CoverageConfig.xml")
                 .SetFormat("xml")

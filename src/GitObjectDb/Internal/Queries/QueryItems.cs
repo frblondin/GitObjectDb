@@ -1,72 +1,78 @@
-using LibGit2Sharp;
+using GitDotNet;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Internal.Queries;
 
-internal class QueryItems(IQuery<LoadItem.Parameters, TreeItem?> loader,
-                          IQuery<QueryResources.Parameters, IEnumerable<(DataPath Path, Lazy<Resource> Resource)>> queryResources)
-    : IQuery<QueryItems.Parameters, IEnumerable<(DataPath Path, Lazy<TreeItem> Item)>>
+internal class QueryItems(IAsyncQuery<LoadItem.Parameters, TreeItem?> loader,
+                          IAsyncEnumerableQuery<QueryResources.Parameters, (DataPath Path, Resource Resource)> queryResources)
+    : IAsyncEnumerableQuery<QueryItems.Parameters, (DataPath Path, TreeItem Item)>
 {
-    public IEnumerable<(DataPath Path, Lazy<TreeItem> Item)> Execute(IQueryAccessor queryAccessor, Parameters parms)
+    public async IAsyncEnumerable<(DataPath Path, TreeItem Item)> ExecuteAsync(IConnection queryAccessor, Parameters parms,
+        [EnumeratorCancellation] CancellationToken token = default)
     {
         var entries = new Stack<Parameters>();
 
         // Fetch direct resources
         if (IncludeResources(parms, queryAccessor.Serializer))
         {
-            var node = (Node)LoadItem(queryAccessor, parms).Value;
+            var node = (Node)await LoadItemAsync(queryAccessor, parms).ConfigureAwait(false);
             var resources = GetResources(queryAccessor, node, parms);
-            foreach (var resource in resources)
+            await foreach (var resource in resources.ConfigureAwait(false))
             {
-                yield return (resource.Path, new Lazy<TreeItem>(() => resource.Resource.Value));
+                yield return (resource.Path, resource.Resource);
             }
         }
 
-        FetchDirectChildren(queryAccessor, parms, entries);
+        await FetchDirectChildrenAsync(queryAccessor, parms, entries).ConfigureAwait(false);
 
         while (entries.Count > 0)
         {
+            token.ThrowIfCancellationRequested();
+
             var entryParams = entries.Pop();
-            var lazyItem = LoadItem(queryAccessor, entryParams);
+            var item = await LoadItemAsync(queryAccessor, entryParams).ConfigureAwait(false);
             if (IsOfType(queryAccessor, entryParams.ParentPath!, parms.Type))
             {
-                yield return (entryParams.ParentPath!, lazyItem);
+                yield return (entryParams.ParentPath!, item);
             }
 
             if (IncludeResources(entryParams, queryAccessor.Serializer) && entryParams.IsRecursive)
             {
-                var resources = GetResources(queryAccessor, (Node)lazyItem.Value, entryParams);
-                foreach (var resource in resources)
+                var resources = GetResources(queryAccessor, (Node)item, entryParams);
+                await foreach (var resource in resources.ConfigureAwait(false))
                 {
-                    yield return (resource.Path, new Lazy<TreeItem>(() => resource.Resource.Value));
+                    yield return (resource.Path, resource.Resource);
                 }
             }
 
             if (parms.IsRecursive)
             {
-                FetchDirectChildren(queryAccessor, entryParams, entries);
+                await FetchDirectChildrenAsync(queryAccessor, entryParams, entries).ConfigureAwait(false);
             }
         }
     }
 
-    private Lazy<TreeItem> LoadItem(IQueryAccessor queryAccessor, Parameters parms) =>
-        new(() => loader.Execute(queryAccessor,
-                                  new LoadItem.Parameters(parms.Tree, parms.Index, parms.ParentPath!))!);
+    private async Task<TreeItem> LoadItemAsync(IConnection queryAccessor, Parameters parms) =>
+        (await loader.ExecuteAsync(queryAccessor,
+                             new LoadItem.Parameters(parms.Tree, parms.Index, parms.ParentPath!)).ConfigureAwait(false))!;
 
-    private IEnumerable<(DataPath Path, Lazy<Resource> Resource)> GetResources(IQueryAccessor queryAccessor,
+    private IAsyncEnumerable<(DataPath Path, Resource Resource)> GetResources(IConnection queryAccessor,
                                                                                Node node,
                                                                                Parameters parms) =>
-        queryResources.Execute(queryAccessor,
-                                new QueryResources.Parameters(parms.Tree, parms.RelativeTree, node));
+        queryResources.ExecuteAsync(queryAccessor,
+                               new QueryResources.Parameters(parms.Tree, parms.RelativeTree, node));
 
     private static bool IncludeResources(Parameters parms, INodeSerializer serializer) =>
         (parms.Type == null || parms.Type == typeof(Resource) || parms.Type == typeof(TreeItem)) &&
         parms.ParentPath is not null && parms.ParentPath.IsNode(serializer);
 
-    private static bool IsOfType(IQueryAccessor queryAccessor, DataPath path, Type? type)
+    private static bool IsOfType(IConnection queryAccessor, DataPath path, Type? type)
     {
         if (type == null || type == typeof(TreeItem) || type == typeof(Node))
         {
@@ -74,57 +80,65 @@ internal class QueryItems(IQuery<LoadItem.Parameters, TreeItem?> loader,
         }
         else
         {
-            var nodeFolderName = path.UseNodeFolders ?
-                                 path.FolderParts[path.FolderParts.Length - 2] :
-                                 path.FolderParts[path.FolderParts.Length - 1];
+            var nodeFolderName = path.UseNodeFolders ? path.FolderParts[^2] : path.FolderParts[^1];
             return queryAccessor.Model.GetTypesMatchingFolderName(nodeFolderName).Any(
                 typeDescription => type.IsAssignableFrom(typeDescription.Type));
         }
     }
 
-    private static void FetchDirectChildren(IQueryAccessor queryAccessor, Parameters parameters, Stack<Parameters> entries)
+    private static async Task FetchDirectChildrenAsync(IConnection queryAccessor, Parameters parameters, Stack<Parameters> entries)
     {
-        FetchDirectChildrenStoredInNestedFolder(queryAccessor, parameters, entries);
-        FetchDirectChildrenStoredWithoutNestedFolder(queryAccessor, parameters, entries);
+        await FetchDirectChildrenStoredInNestedFolderAsync(queryAccessor, parameters, entries).ConfigureAwait(false);
+        await FetchDirectChildrenStoredWithoutNestedFolderAsync(queryAccessor, parameters, entries).ConfigureAwait(false);
     }
 
-    private static void FetchDirectChildrenStoredWithoutNestedFolder(IQueryAccessor queryAccessor, Parameters parameters, Stack<Parameters> entries)
+    private static async Task FetchDirectChildrenStoredWithoutNestedFolderAsync(
+        IConnection queryAccessor, Parameters parameters, Stack<Parameters> entries)
     {
-        UniqueId id = default;
-        foreach (var info in from folderChildTree in parameters.RelativeTree.Where(e => e.TargetType == TreeEntryTargetType.Tree)
-                             where folderChildTree.Name != FileSystemStorage.ResourceFolder
-                             let nestedTree = folderChildTree.Target.Peel<Tree>()
-                             from childFile in nestedTree.Where(e => e.TargetType == TreeEntryTargetType.Blob)
-                             where UniqueId.TryParse(Path.GetFileNameWithoutExtension(childFile.Name), out id)
-                             let childPath =
-                                 parameters.ParentPath?.AddChild(folderChildTree.Name, id, false, queryAccessor.Serializer.FileExtension) ??
-                                 DataPath.Root(folderChildTree.Name, id, false, queryAccessor.Serializer.FileExtension)
-                             select parameters with { RelativeTree = nestedTree, ParentPath = childPath })
+        foreach (var childTree in from folderChildTree in parameters.RelativeTree.Children.Where(e => e.Mode.Type == ObjectType.Tree)
+                                  where folderChildTree.Name != FileSystemStorage.ResourceFolder
+                                  select folderChildTree)
         {
-            entries.Push(info);
+            var nestedTree = await childTree.GetEntryAsync<TreeEntry>().ConfigureAwait(false);
+            foreach (var child in nestedTree.Children.Where(e => e.Mode.Type == ObjectType.RegularFile))
+            {
+                if (UniqueId.TryParse(Path.GetFileNameWithoutExtension(child.Name), out var id))
+                {
+                    var childPath = parameters.ParentPath?.AddChild(childTree.Name, id, false, queryAccessor.Serializer.FileExtension) ??
+                        DataPath.Root(childTree.Name, id, false, queryAccessor.Serializer.FileExtension);
+                    entries.Push(parameters with { RelativeTree = nestedTree, ParentPath = childPath });
+                }
+            }
         }
     }
 
-    private static void FetchDirectChildrenStoredInNestedFolder(IQueryAccessor queryAccessor, Parameters parameters, Stack<Parameters> entries)
+    private static async Task FetchDirectChildrenStoredInNestedFolderAsync(IConnection queryAccessor, Parameters parameters, Stack<Parameters> entries)
     {
-        UniqueId id = default;
-        foreach (var info in from folderChildTree in parameters.RelativeTree.Where(e => e.TargetType == TreeEntryTargetType.Tree)
-                             where folderChildTree.Name != FileSystemStorage.ResourceFolder
-                             from childFolder in folderChildTree.Target.Peel<Tree>().Where(e => e.TargetType == TreeEntryTargetType.Tree)
-                             where UniqueId.TryParse(childFolder.Name, out id)
-                             let nestedTree = childFolder.Target.Peel<Tree>()
-                             where nestedTree.Any(e => e.Name == $"{id}.{queryAccessor.Serializer.FileExtension}")
-                             let childPath =
-                                 parameters.ParentPath?.AddChild(folderChildTree.Name, id, true, queryAccessor.Serializer.FileExtension) ??
-                                 DataPath.Root(folderChildTree.Name, id, true, queryAccessor.Serializer.FileExtension)
-                             select parameters with { RelativeTree = nestedTree, ParentPath = childPath })
+        foreach (var childTree in from childTree in parameters.RelativeTree.Children.Where(e => e.Mode.Type == ObjectType.Tree)
+                                  where childTree.Name != FileSystemStorage.ResourceFolder
+                                  select childTree)
         {
-            entries.Push(info);
+            var nestedTree = await childTree.GetEntryAsync<TreeEntry>().ConfigureAwait(false);
+            foreach (var nestedChildTree in from nestedChildTree in nestedTree.Children.Where(e => e.Mode.Type == ObjectType.Tree)
+                                            where nestedChildTree.Name != FileSystemStorage.ResourceFolder
+                                            select nestedChildTree)
+            {
+                if (UniqueId.TryParse(Path.GetFileNameWithoutExtension(nestedChildTree.Name), out var id))
+                {
+                    var nestedTree2 = await nestedChildTree.GetEntryAsync<TreeEntry>().ConfigureAwait(false);
+                    if (nestedTree2.Children.Any(e => e.Name == $"{id}.{queryAccessor.Serializer.FileExtension}"))
+                    {
+                        var childPath = parameters.ParentPath?.AddChild(childTree.Name, id, true, queryAccessor.Serializer.FileExtension) ??
+                            DataPath.Root(childTree.Name, id, true, queryAccessor.Serializer.FileExtension);
+                        entries.Push(parameters with { RelativeTree = nestedTree2, ParentPath = childPath });
+                    }
+                }
+            }
         }
     }
 
-    internal record struct Parameters(Tree Tree,
-                                      Tree RelativeTree,
+    internal record struct Parameters(TreeEntry Tree,
+                                      TreeEntry RelativeTree,
                                       IIndex? Index,
                                       Type? Type,
                                       DataPath? ParentPath,

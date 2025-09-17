@@ -1,22 +1,26 @@
+using AutoFixture;
+using GitDotNet;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
-using GitObjectDb.Tests.Assets.Tools;
-using LibGit2Sharp;
 using Models.Software;
 using NUnit.Framework;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests.Queries;
 
-[Parallelizable(ParallelScope.Self | ParallelScope.Children)]
-public class QueryNodesTests : DisposeArguments
+public class QueryNodesTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
-    public void RootNodes(IConnection connection)
+    public async Task RootNodes()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareBenchmarkCustomization>();
+        var connection = fixture.Create<IConnection>();
+
         // Act
-        var result = connection.GetNodes<Application>("main").ToList();
+        var tip = await connection.Repository.GetCommittishAsync("main");
+        var result = connection.GetNodesAsync<Application>(tip).ToEnumerable().ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(SoftwareBenchmarkCustomization.DefaultApplicationCount));
@@ -29,11 +33,16 @@ public class QueryNodesTests : DisposeArguments
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
-    public void TablesInApplication(IConnection connection, Application application)
+    public async Task TablesInApplication()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareBenchmarkCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var application = fixture.Create<Application>();
+
         // Act
-        var result = connection.GetNodes<Table>("main", parent: application).ToList();
+        var tip = await connection.Repository.GetCommittishAsync("main");
+        var result = connection.GetNodesAsync<Table>(tip, parent: application).ToEnumerable().ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(SoftwareBenchmarkCustomization.DefaultTablePerApplicationCount));
@@ -46,11 +55,15 @@ public class QueryNodesTests : DisposeArguments
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
-    public void OfType(IConnection connection)
+    public async Task OfType()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareBenchmarkCustomization>();
+        var connection = fixture.Create<IConnection>();
+
         // Act
-        var result = (from f in connection.GetNodes<Field>("main", isRecursive: true)
+        var tip = await connection.Repository.GetCommittishAsync("main");
+        var result = (from f in connection.GetNodesAsync<Field>(tip, isRecursive: true).ToEnumerable()
                       select f.Id).ToList();
 
         // Assert
@@ -61,80 +74,109 @@ public class QueryNodesTests : DisposeArguments
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
-    public void StoreAsSeparateFilePropertiesGetsLoaded(Constant constant)
+    public async Task StoreAsSeparateFilePropertiesGetsLoaded()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareBenchmarkCustomization>();
+        var constant = fixture.Create<Constant>();
+
         // Assert
         Assert.That(constant.Value, Is.Not.Null);
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
-    public void LookupByPass(IConnection connection, Table table)
-    {
-        // Act
-        var result = connection.Lookup<Table>("main", table.Path);
-
-        // Assert
-        Assert.That(result, Is.EqualTo(table));
-    }
-
-    [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
-    public void LookupById(IConnection connection, Table table)
-    {
-        // Act
-        var result = connection.Lookup<Table>("main", table.Path);
-
-        // Assert
-        Assert.That(result, Is.EqualTo(table));
-    }
-
-    [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void ModifiedReferenceEditedInIndexGetsResolved(IConnection connection, Field field, string newDescription)
+    public async Task LookupByPass()
     {
         // Arrange
-        var index = connection.GetIndex("main",
-            c => c.CreateOrUpdate(field.LinkedTable with { Description = newDescription }));
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareBenchmarkCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var table = fixture.Create<Table>();
 
         // Act
-        var resolvedField = index.TryLoadItem<Field>(field.Path);
+        var tip = await connection.Repository.GetCommittishAsync("main");
+        var result = await connection.LookupAsync<Table>(tip, table.Path);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(table));
+    }
+
+    [Test]
+    public async Task LookupById()
+    {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareBenchmarkCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var table = fixture.Create<Table>();
+
+        // Act
+        var tip = await connection.Repository.GetCommittishAsync("main");
+        var result = await connection.LookupAsync<Table>(tip, table.Path);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(table));
+    }
+
+    [Test]
+    public async Task ModifiedReferenceEditedInIndexGetsResolved()
+    {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var field = fixture.Create<Field>();
+        var newDescription = fixture.Create<string>();
+
+        var index = await connection.GetIndexAsync("main",
+            c => c.CreateOrUpdateAsync(field.LinkedTable with { Description = newDescription }));
+
+        // Act
+        var resolvedField = await index.TryLoadItemAsync<Field>(field.Path);
 
         // Assert
         Assert.That(resolvedField.LinkedTable.Description, Is.EqualTo(newDescription));
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void TryLoadItemGetsItemsFromIndex(IConnection connection, Field field, string newDescription)
+    public async Task TryLoadItemGetsItemsFromIndex()
     {
         // Arrange
-        var index = connection.GetIndex("main",
-            c => c.CreateOrUpdate(field.LinkedTable with { Description = newDescription }));
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var field = fixture.Create<Field>();
+        var newDescription = fixture.Create<string>();
+
+        var index = await connection.GetIndexAsync("main",
+            c => c.CreateOrUpdateAsync(field.LinkedTable with { Description = newDescription }));
 
         // Act
-        var resolvedTable = index.TryLoadItem<Table>(field.LinkedTable.Path);
+        var resolvedTable = await index.TryLoadItemAsync<Table>(field.LinkedTable.Path);
 
         // Assert
         Assert.That(resolvedTable.Description, Is.EqualTo(newDescription));
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void GetNodeHistory(IConnection connection, Field field, string newDescription, CommitDescription commitDescription)
+    public async Task GetNodeHistory()
     {
         // Arrange
-        var index = connection.GetIndex("main",
-            c => c.CreateOrUpdate(field with { Description = newDescription }))
-            .Commit(commitDescription);
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var field = fixture.Create<Field>();
+        var newDescription = fixture.Create<string>();
+        var commitDescription = fixture.Create<CommitDescription>();
+
+        var index = await connection.GetIndexAsync("main",
+            c => c.CreateOrUpdateAsync(field with { Description = newDescription }));
+        await index.CommitAsync(commitDescription);
 
         // Act
-        var commits = connection.GetCommits("main", field).ToList();
+        var tip = await connection.Repository.GetCommittishAsync("main");
+        var commits = await connection.GetLogsAsync(tip, field)
+            .SelectAwait(async entry => await entry.GetCommitAsync())
+            .ToListAsync();
 
         // Assert
         Assert.That(commits, Has.Count.EqualTo(2));
-        Assert.That(commits, Has.One.Items.Matches<LogEntry>(
-            c => c.Commit.Message.Equals(commitDescription.Message, System.StringComparison.Ordinal)));
+        Assert.That(commits, Has.One.Items.Matches<CommitEntry>(
+            c => c.Message.Equals(commitDescription.Message, System.StringComparison.Ordinal)));
     }
 }

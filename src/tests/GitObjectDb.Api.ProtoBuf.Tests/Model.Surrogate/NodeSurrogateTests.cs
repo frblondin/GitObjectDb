@@ -1,7 +1,7 @@
+using AutoFixture;
+using GitDotNet;
 using GitObjectDb.Api.ProtoBuf.Model;
 using GitObjectDb.Api.ProtoBuf.Model.Surrogates;
-using GitObjectDb.Tests.Assets.Tools;
-using LibGit2Sharp;
 using NUnit.Framework;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,11 +11,15 @@ namespace GitObjectDb.Api.ProtoBuf.Tests.Model.Surrogate;
 public class NodeSurrogateTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
-    public async Task DeserializeCircularReferences(IConnection connection, string committish, ObjectId id)
+    public async Task DeserializeCircularReferences()
     {
         // Arrange
-        var reply = await QueryCircularReferences(connection, committish, id);
+        var fixture = await new Fixture().CustomizeAsync<Customization>();
+        var connection = fixture.Create<IConnection>();
+        var commit = fixture.Create<CommitEntry>();
+        var id = fixture.Create<HashId>();
+
+        var reply = await QueryCircularReferences(connection, commit, id);
 
         // Act
         NodeQueryReply.Current = reply;

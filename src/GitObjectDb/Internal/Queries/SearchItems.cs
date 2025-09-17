@@ -1,53 +1,68 @@
 using Fasterflect;
+using GitDotNet;
 using GitObjectDb.Model;
 using GitObjectDb.Tools;
-using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Internal.Queries;
 
-internal class SearchItems(IQuery<LoadItem.Parameters, TreeItem?> loader)
-    : IQuery<SearchItems.Parameters, IEnumerable<(DataPath Path, TreeItem Item)>>
+internal class SearchItems(IAsyncQuery<LoadItem.Parameters, TreeItem?> loader)
+    : IAsyncEnumerableQuery<SearchItems.Parameters, (DataPath Path, TreeItem Item)>
 {
-    public IEnumerable<(DataPath Path, TreeItem Item)> Execute(IQueryAccessor queryAccessor, Parameters parms)
+    public async IAsyncEnumerable<(DataPath Path, TreeItem Item)> ExecuteAsync(IConnection queryAccessor,
+        Parameters parms, [EnumeratorCancellation] CancellationToken token = default)
     {
         var regex = queryAccessor.Serializer.EscapeRegExPattern(parms.Pattern);
         var arguments = $"grep --name-only " +
             $"{(parms.IgnoreCase ? "--ignore-case " : string.Empty)}" +
             $"{(parms.RecurseSubModules ? "--recurse-submodules " : string.Empty)}" +
             $"--extended-regexp \"{regex.Replace("\"", "\"\"")}\" " +
-            $"{parms.Committish} -- " +
+            $"{parms.Commit.Id} -- " +
             $"{(parms.ParentPath is not null ? $"'{parms.ParentPath.FolderPath}'" : string.Empty)}";
 
-        var result = new List<string?>();
-        GitCliCommand.Execute(parms.Connection.Repository.Info.Path,
-                              arguments,
-                              throwOnError: false,
-                              outputDataReceived: (_, e) => result.Add(e.Data));
-
-        DataPath? path = default;
-        var lazyItems = from data in result
-                        where data is not null
-                        let colon = data.IndexOf(':')
-                        where DataPath.TryParse(data.Substring(colon + 1), out path)
-                        let item = new Lazy<TreeItem>(() => loader.Execute(queryAccessor, new LoadItem.Parameters(parms.Tree, Index: null, path!))!)
-                        select (path, item);
-        return lazyItems
-            .AsParallel()
-                .Select(i => (i.path, i.item.Value))
-                .Where(i => Matches(i.Value, queryAccessor.Model, parms))
-                .OrderBy(i => i.path);
+        var channel = Channel.CreateUnbounded<string>();
+        var task = Task.Run(() =>
+        {
+            GitCliCommand.Execute(parms.Connection.Repository.Info.Path,
+                arguments,
+                throwOnError: false,
+                outputDataReceived: (_, e) =>
+                {
+                    if (e.Data != null)
+                    {
+                        channel.Writer.TryWrite(e.Data!);
+                    }
+                });
+            channel.Writer.Complete();
+        }, token).ConfigureAwait(false);
+        await foreach (var data in channel.Reader.ReadAllAsync(token).ConfigureAwait(false))
+        {
+            var colon = data?.IndexOf(':') ?? -1;
+            if (colon != -1 &&
+                DataPath.TryParse(data![(colon + 1)..], out var path))
+            {
+                var item = await loader.ExecuteAsync(queryAccessor, new LoadItem.Parameters(parms.Tree, Index: null, path!)).ConfigureAwait(false)!;
+                if (item != null && await MatchesAsync(item, queryAccessor.Model, parms).ConfigureAwait(false))
+                {
+                    yield return (path!, item);
+                }
+            }
+        }
+        await task;
     }
 
-    private static bool Matches(TreeItem item, IDataModel model, Parameters parms)
+    private static async Task<bool> MatchesAsync(TreeItem item, IDataModel model, Parameters parms)
     {
         var comparer = parms.IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         return item switch
         {
             Node node => Matches(node, model, parms, comparer),
-            Resource resource => Matches(resource, parms, comparer),
+            Resource resource => await MatchesAsync(resource, parms, comparer).ConfigureAwait(false),
             _ => throw new NotSupportedException($"{item.GetType()} is not supported."),
         };
     }
@@ -67,9 +82,9 @@ internal class SearchItems(IQuery<LoadItem.Parameters, TreeItem?> loader)
         return false;
     }
 
-    private static bool Matches(Resource resource, Parameters parms, StringComparison comparison)
+    private static async Task<bool> MatchesAsync(Resource resource, Parameters parms, StringComparison comparison)
     {
-        var value = resource.Embedded.ReadAsString();
+        var value = await resource.Embedded.ReadAsStringAsync().ConfigureAwait(false);
         return Matches(value, parms.Pattern, comparison);
     }
 
@@ -77,10 +92,10 @@ internal class SearchItems(IQuery<LoadItem.Parameters, TreeItem?> loader)
         value?.Contains(pattern, comparison) ?? false;
 
     internal record struct Parameters(IConnection Connection,
-                                      Tree Tree,
-                                      string Pattern,
-                                      DataPath? ParentPath,
-                                      string Committish,
-                                      bool IgnoreCase,
-                                      bool RecurseSubModules);
+        TreeEntry Tree,
+        string Pattern,
+        DataPath? ParentPath,
+        CommitEntry Commit,
+        bool IgnoreCase,
+        bool RecurseSubModules);
 }

@@ -1,4 +1,3 @@
-using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
 
 namespace GitObjectDb.Tests;
@@ -6,7 +5,6 @@ namespace GitObjectDb.Tests;
 public class FileSystemStorageTests
 {
     [Test]
-    [AutoDataCustomizations]
     public void ThrowIfAnyReservedName()
     {
         Assert.Multiple(() =>
@@ -19,7 +17,6 @@ public class FileSystemStorageTests
     }
 
     [Test]
-    [AutoDataCustomizations]
     public void DoesNotThrowIfNoReservedName()
     {
         Assert.DoesNotThrow(() => FileSystemStorage.ThrowIfAnyReservedName($"A/B/C.json"));

@@ -1,26 +1,26 @@
 using Fasterflect;
+using GitDotNet;
 using GitObjectDb.Model;
-using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Internal.Queries;
 
 internal class LoadItem(IDataModel model, INodeSerializer serializer)
-    : IQuery<LoadItem.Parameters, TreeItem?>
+    : IAsyncQuery<LoadItem.Parameters, TreeItem?>
 {
     private const long ItemSizeInCache = 1L;
-    private static readonly object _referenceLock = new();
 
-    public TreeItem? Execute(IQueryAccessor queryAccessor, Parameters parms)
+    public async Task<TreeItem?> ExecuteAsync(IConnection queryAccessor, Parameters parms)
     {
-        return TryLoadFromIndex(queryAccessor, parms, Load) ??
-               LoadFromTree(queryAccessor, parms, Load);
+        return await TryLoadFromIndexAsync(queryAccessor, parms, LoadAsync).ConfigureAwait(false) ??
+               await LoadFromTreeAsync(queryAccessor, parms, LoadAsync).ConfigureAwait(false);
 
-        TreeItem? Load(ICacheEntry entry, Func<EntryData>? streamProvider)
+        async Task<TreeItem?> LoadAsync(ICacheEntry entry, Func<Task<EntryData>>? streamProvider)
         {
             UpdateCacheEntryExpiration(entry);
 
@@ -29,16 +29,21 @@ internal class LoadItem(IDataModel model, INodeSerializer serializer)
                 return null;
             }
 
-            return parms.Path.IsNode(serializer) ?
-                LoadNode(queryAccessor, parms, streamProvider) :
-                LoadResource(parms, new(() => streamProvider.Invoke().Stream));
+            if (parms.Path.IsNode(serializer))
+            {
+                return await LoadNodeAsync(queryAccessor, parms, streamProvider).ConfigureAwait(false);
+            }
+            else
+            {
+                return LoadResource(parms, new(async () => (await streamProvider.Invoke().ConfigureAwait(false)).Stream));
+            }
         }
 
         void UpdateCacheEntryExpiration(ICacheEntry entry) =>
             entry.SetSlidingExpiration(parms.Index is not null ? TimeSpan.FromMinutes(5) : TimeSpan.FromMinutes(60));
     }
 
-    private TreeItem? TryLoadFromIndex(IQueryAccessor queryAccessor, Parameters parms, Func<ICacheEntry, Func<EntryData>?, TreeItem?> loader)
+    private async Task<TreeItem?> TryLoadFromIndexAsync(IConnection queryAccessor, Parameters parms, Func<ICacheEntry, Func<Task<EntryData>>?, Task<TreeItem?>> loader)
     {
         if (parms.Index?.Version != null)
         {
@@ -46,86 +51,80 @@ internal class LoadItem(IDataModel model, INodeSerializer serializer)
             if (indexEntry?.Data is not null)
             {
                 var loadParameters = new DataLoadFromIndexParameters(parms.Path, parms.Index.Version.Value);
-                return GetOrCreateInCacheWithNoRacingCondition(
+                return await GetOrCreateInCacheAsync(
                     queryAccessor.Cache,
                     loadParameters,
                     loader,
-                    GetContent);
-                EntryData GetContent() =>
-                    new(new MemoryStream(indexEntry.Data), indexEntry.ExternalPropertyValues);
+                    GetContent).ConfigureAwait(false);
+                Task<EntryData> GetContent() =>
+                    Task.FromResult(new EntryData(new MemoryStream(indexEntry.Data!), indexEntry.ExternalPropertyValues));
             }
         }
         return null;
     }
 
-    private TreeItem? LoadFromTree(IQueryAccessor queryAccessor, Parameters parms, Func<ICacheEntry, Func<EntryData>?, TreeItem?> loader)
+    private async Task<TreeItem?> LoadFromTreeAsync(IConnection queryAccessor, Parameters parms, Func<ICacheEntry, Func<Task<EntryData>>?, Task<TreeItem?>> loader)
     {
         var loadParameters = new DataLoadFromTreeParameters(parms.Path, parms.Tree.Id, parms.Index?.Version);
         var filePath = parms.Path.FilePath;
-        var treeEntry = parms.Tree[filePath];
-        return GetOrCreateInCacheWithNoRacingCondition(
+        var treeEntry = await parms.Tree.GetFromPathAsync(filePath).ConfigureAwait(false);
+        return await GetOrCreateInCacheAsync(
             queryAccessor.Cache,
             loadParameters,
             treeEntry is null ? null : loader,
-            GetContent);
+            GetContentAsync).ConfigureAwait(false);
 
-        EntryData GetContent()
+        async Task<EntryData> GetContentAsync()
         {
-            var blob = treeEntry!.Target.Peel<Blob>();
+            var blob = await treeEntry!.GetEntryAsync<BlobEntry>().ConfigureAwait(false);
             var prefix = $"{Path.GetFileNameWithoutExtension(parms.Path.FileName)}.";
-            var propertyStoredAsSeparateFileValues = parms.Tree[parms.Path.FolderPath].Target.Peel<Tree>()
-                .Where(f => f.TargetType == TreeEntryTargetType.Blob &&
-                            f.Name.StartsWith(prefix, StringComparison.Ordinal) &&
-                            f.Name.Count(c => c == '.') > 1)
-                .ToDictionary(ExtractPropertyName, ExtractPropertyValue);
-            return new(blob.GetContentStream(), propertyStoredAsSeparateFileValues);
-
-            static string ExtractPropertyName(TreeEntry entry)
-            {
-                var index = entry.Name.IndexOf('.');
-                return Path.GetFileNameWithoutExtension(entry.Name.Substring(index + 1));
-            }
-            static string ExtractPropertyValue(TreeEntry entry)
-            {
-                return entry.Target.Peel<Blob>().GetContentText();
-            }
+            var parentFolder = await parms.Tree.GetFromPathAsync(parms.Path.FolderPath).ConfigureAwait(false);
+            var parentFolderTree = await parentFolder!.GetEntryAsync<TreeEntry>().ConfigureAwait(false);
+            var chilren = parentFolderTree.Children
+                .Where(f => f.Mode.Type == ObjectType.RegularFile &&
+                       f.Name.StartsWith(prefix, StringComparison.Ordinal) &&
+                       f.Name.Count(c => c == '.') > 1);
+            return new(blob.OpenRead(), await ConvertToDictionaryAsync(chilren).ConfigureAwait(false));
         }
     }
 
-    /// <summary>
-    /// IMemoryCache doesn't protect against racing conditions, that is when two threads are calling GetOrCreate for
-    /// the same key. In this case, the factory can be called simultaneously and two different instances can be returned.
-    /// This method uses a reentrant locking mechanism.
-    /// </summary>
-    private static TreeItem? GetOrCreateInCacheWithNoRacingCondition(IMemoryCache cache,
+    private static async Task<IDictionary<string, string>> ConvertToDictionaryAsync(
+        IEnumerable<TreeEntryItem> entries)
+    {
+        var result = new Dictionary<string, string>();
+        foreach (var entry in entries)
+        {
+            var index = entry.Name.IndexOf('.');
+            var name = Path.GetFileNameWithoutExtension(entry.Name[(index + 1)..]);
+            var blob = await entry.GetEntryAsync<BlobEntry>().ConfigureAwait(false);
+            result[name] = blob.GetText()!;
+        }
+        return result;
+    }
+
+    private static async Task<TreeItem?> GetOrCreateInCacheAsync(IMemoryCache cache,
         object key,
-        Func<ICacheEntry, Func<EntryData>?, TreeItem?>? loader,
-        Func<EntryData>? content)
+        Func<ICacheEntry, Func<Task<EntryData>>?, Task<TreeItem?>>? loader,
+        Func<Task<EntryData>>? content)
     {
         if (!cache.TryGetValue(key, out var result))
         {
-            lock (_referenceLock)
-            {
-                if (!cache.TryGetValue(key, out result))
-                {
-                    using var entry = cache.CreateEntry(key);
-                    entry.SetSize(ItemSizeInCache);
-                    result = entry.Value = loader?.Invoke(entry, content);
-                }
-            }
+            using var entry = cache.CreateEntry(key);
+            entry.SetSize(ItemSizeInCache);
+            result = entry.Value = loader != null ? await loader!.Invoke(entry, content).ConfigureAwait(false) : null;
         }
 
         return (TreeItem?)result;
     }
 
-    private TreeItem LoadNode(IQueryAccessor queryAccessor, Parameters parms, Func<EntryData> streamProvider)
+    private async Task<TreeItem> LoadNodeAsync(IConnection queryAccessor, Parameters parms, Func<Task<EntryData>> streamProvider)
     {
-        var data = streamProvider.Invoke();
+        var data = await streamProvider.Invoke().ConfigureAwait(false);
         using var stream = data.Stream;
-        var result = queryAccessor.Serializer.Deserialize(stream,
+        var result = await queryAccessor.Serializer.DeserializeAsync(stream,
             parms.Tree.Id,
             parms.Path,
-            p => Execute(queryAccessor, parms with { Path = p }) ??
+            async p => await ExecuteAsync(queryAccessor, parms with { Path = p }).ConfigureAwait(false) ??
                  throw new GitObjectDbException($"The entry for path {p} does not exist."));
 
         foreach (var property in model.GetDescription(result.GetType()).StoredAsSeparateFilesProperties
@@ -143,9 +142,9 @@ internal class LoadItem(IDataModel model, INodeSerializer serializer)
     private static TreeItem LoadResource(Parameters parms, Resource.Data data) =>
         new Resource(parms.Path, data);
 
-    internal record struct Parameters(Tree Tree, IIndex? Index, DataPath Path);
+    internal record struct Parameters(TreeEntry Tree, IIndex? Index, DataPath Path);
 
-    private record struct DataLoadFromTreeParameters(DataPath Path, ObjectId TreeId, Guid? IndexVersion);
+    private record struct DataLoadFromTreeParameters(DataPath Path, HashId TreeId, Guid? IndexVersion);
 
     private record struct DataLoadFromIndexParameters(DataPath Path, Guid Guid);
 

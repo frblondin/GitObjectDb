@@ -1,133 +1,111 @@
 using Fasterflect;
+using GitDotNet;
 using GitObjectDb.Model;
-using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Internal.Commands;
 
-internal class GitUpdateCommand : IGitUpdateCommand
+internal class GitUpdateCommand(IDataModel model, INodeSerializer serializer) : IGitUpdateCommand
 {
-    private readonly IDataModel _model;
-    private readonly INodeSerializer _serializer;
-
-    public GitUpdateCommand(IDataModel model, INodeSerializer serializer)
-    {
-        _model = model;
-        _serializer = serializer;
-    }
-
     public ApplyUpdate CreateOrUpdate(TreeItem item) =>
-        (tree, modules, serializer, writer, commitIndex) =>
+        async (tree, modules, serializer, composer) =>
         {
             switch (item)
             {
                 case Node node:
-                    CreateOrUpdateNode(node, serializer, writer, commitIndex, tree, modules);
+                    await CreateOrUpdateNodeAsync(node, serializer, composer, tree, modules).ConfigureAwait(false);
                     break;
                 case Resource resource:
-                    CreateOrUpdateResource(resource, writer, commitIndex);
+                    await CreateOrUpdateResourceAsync(resource, composer).ConfigureAwait(false);
                     break;
                 default:
                     throw new NotSupportedException();
             }
         };
 
-    private void CreateOrUpdateNode(Node node,
-                                    INodeSerializer serializer,
-                                    StreamWriter writer,
-                                    ICollection<string> commitIndex,
-                                    Tree? tree,
-                                    ModuleCommands modules)
+    private async Task CreateOrUpdateNodeAsync(Node node,
+        INodeSerializer serializer,
+        ITransformationComposer composer,
+        TreeEntry? tree,
+        ModuleCommands modules)
     {
-        using var stream = serializer.Serialize(node);
-        AddBlob(node.Path!, stream, writer, commitIndex);
+        var stream = serializer.Serialize(node);
+        composer.AddOrUpdate(node.Path!.FilePath, stream);
 
-        CreateOrUpdatePropertiesStoredAsSeparateFiles(node, writer, tree, commitIndex);
-        CreateOrUpdateNodeRemoteResource(node.ThrowIfNoPath(), node.RemoteResource, tree, commitIndex, modules);
+        await CreateOrUpdatePropertiesStoredAsSeparateFilesAsync(node, composer, tree).ConfigureAwait(false);
+        await CreateOrUpdateNodeRemoteResourceAsync(node.ThrowIfNoPath(), node.RemoteResource, tree, composer, modules).ConfigureAwait(false);
     }
 
-    private void CreateOrUpdatePropertiesStoredAsSeparateFiles(Node node,
-        StreamWriter writer,
-        Tree? tree,
-        ICollection<string> commitIndex)
+    private async Task CreateOrUpdatePropertiesStoredAsSeparateFilesAsync(Node node,
+        ITransformationComposer composer,
+        TreeEntry? tree)
     {
         var nodePath = node.ThrowIfNoPath();
-        var typeDescription = _model.GetDescription(node.GetType());
-        foreach (var info in typeDescription.StoredAsSeparateFilesProperties)
+        var typeDescription = model.GetDescription(node.GetType());
+        foreach (var (property, extension) in typeDescription.StoredAsSeparateFilesProperties)
         {
             var path = new DataPath(nodePath.FolderPath,
-                $"{Path.GetFileNameWithoutExtension(nodePath.FileName)}.{info.Property.Name}.{info.Extension}",
+                $"{Path.GetFileNameWithoutExtension(nodePath.FileName)}.{property.Name}.{extension}",
                 false);
-            var value = (string?)Reflect.PropertyGetter(info.Property).Invoke(node);
+            var value = (string?)Reflect.PropertyGetter(property).Invoke(node);
             if (value is null)
             {
-                Delete(path, _serializer);
+                Delete(path, serializer);
             }
             else
             {
-                AddBlob(path, new MemoryStream(Encoding.Default.GetBytes(value)), writer, commitIndex);
+                composer.AddOrUpdate(path.FilePath, Encoding.Default.GetBytes(value));
             }
         }
 
-        DeletePropertyValuesStoredAsSeparateFolder(tree, commitIndex, nodePath, _serializer,
+        await DeletePropertyValuesStoredAsSeparateFolderAsync(tree, composer, nodePath, serializer,
             file => !typeDescription.StoredAsSeparateFilesProperties.Any(info =>
                 info.Property.Name.Equals(file.PropertyName, StringComparison.Ordinal) &&
-                info.Extension.Equals(file.Extension, StringComparison.Ordinal)));
+                info.Extension.Equals(file.Extension, StringComparison.Ordinal))).ConfigureAwait(false);
     }
 
-    internal static void CreateOrUpdateNodeRemoteResource(DataPath nodePath,
-                                                         ResourceLink? link,
-                                                         Tree? tree,
-                                                         ICollection<string> commitIndex,
-                                                         ModuleCommands modules)
+    internal static async Task CreateOrUpdateNodeRemoteResourceAsync(DataPath nodePath,
+        ResourceLink? link,
+        TreeEntry? tree,
+        ITransformationComposer composer,
+        ModuleCommands modules)
     {
         var resourcePath = $"{nodePath.FolderPath}/{FileSystemStorage.ResourceFolder}";
         if (link is not null)
         {
             modules[resourcePath] = new(resourcePath, link.Repository, null);
-            commitIndex.Add($"M 160000 {link.Sha} {resourcePath}");
+            composer.AddOrUpdate(resourcePath, link.Sha, new GitDotNet.FileMode(ObjectType.GitLink));
         }
-        else if (tree is not null && tree[resourcePath]?.TargetType == TreeEntryTargetType.GitLink)
+        else if (tree is not null && (await tree.GetFromPathAsync(resourcePath).ConfigureAwait(false))?.Mode.Type == ObjectType.GitLink)
         {
             modules.Remove(resourcePath);
-            commitIndex.Add($"D {resourcePath}");
+            composer.Remove(resourcePath);
         }
     }
 
-    private static void CreateOrUpdateResource(Resource resource, StreamWriter writer, ICollection<string> commitIndex)
+    private static async Task CreateOrUpdateResourceAsync(Resource resource, ITransformationComposer composer)
     {
-        var stream = resource.Embedded.GetContentStream();
-        AddBlob(resource.Path!, stream, writer, commitIndex);
+        var stream = await resource.Embedded.GetContentStreamAsync().ConfigureAwait(false);
+        composer.AddOrUpdate(resource.Path!.FilePath, stream);
     }
 
-    internal static void AddBlob(DataPath path, Stream stream, StreamWriter writer, ICollection<string> commitIndex)
+    internal static void AddBlob(DataPath path, byte[] data, ITransformationComposer composer)
     {
-        AddBlob(path.FilePath, stream, writer, commitIndex);
-    }
-
-    internal static void AddBlob(string path, Stream stream, StreamWriter writer, ICollection<string> commitIndex)
-    {
-        var mark = commitIndex.Count + 1;
-        writer.WriteLine($"blob");
-        writer.WriteLine($"mark :{mark}");
-        writer.WriteLine($"data {stream.Length}");
-        writer.Flush();
-        stream.CopyTo(writer.BaseStream);
-        writer.WriteLine();
-        commitIndex.Add($"M 100644 :{mark} {path}");
+        composer.AddOrUpdate(path.FilePath, data);
     }
 
     public ApplyUpdate Rename(TreeItem item, DataPath newPath)
     {
-        var newItem = ValidateRename(item, newPath, _serializer);
+        var newItem = ValidateRename(item, newPath, serializer);
 
         return (ApplyUpdate)Delegate.Combine(
-            Delete(item.ThrowIfNoPath(), _serializer),
+            Delete(item.ThrowIfNoPath(), serializer),
             CreateOrUpdate(newItem));
     }
 
@@ -156,67 +134,72 @@ internal class GitUpdateCommand : IGitUpdateCommand
     }
 
     ApplyUpdate IGitUpdateCommand.Delete(DataPath path) =>
-        Delete(path, _serializer);
+        Delete(path, serializer);
 
     public static ApplyUpdate Delete(DataPath path, INodeSerializer serializer) =>
-        (reference, modules, _, _, commitIndex) =>
+        async (reference, modules, _, composer) =>
         {
             // For nodes, delete whole folder containing node and nested entries
             // For resources, only deleted resource
             if (path.IsNode(serializer) && path.UseNodeFolders)
             {
-                DeleteNodeFolder(reference, commitIndex, path);
+                await DeleteNodeFolderAsync(reference, composer, path).ConfigureAwait(false);
             }
             else
             {
-                commitIndex.Add($"D {path.FilePath}");
-                DeletePropertyValuesStoredAsSeparateFolder(reference, commitIndex, path, serializer);
+                composer.Remove(path.FilePath);
+                await DeletePropertyValuesStoredAsSeparateFolderAsync(reference, composer, path, serializer).ConfigureAwait(false);
             }
 
             modules.RemoveRecursively(path, serializer);
         };
 
-    private static void DeleteNodeFolder(Tree? reference, IList<string> commitIndex, DataPath path)
+    private static async Task DeleteNodeFolderAsync(TreeEntry? reference, ITransformationComposer composer, DataPath path)
     {
-        var nested = reference?[path.FolderPath]?.Traverse(path.FolderPath);
+        if (reference == null)
+        {
+            return;
+        }
+        var nested = await reference.GetFromPathAsync(path.FolderPath).ConfigureAwait(false);
         if (nested is not null)
         {
-            foreach (var item in nested)
+            var tree = await nested.GetEntryAsync<TreeEntry>().ConfigureAwait(false);
+            await foreach (var (p, entry) in tree.GetAllBlobEntriesAsync(path.FolderPath).ConfigureAwait(false))
             {
-                if (item.Entry.TargetType is TreeEntryTargetType.Blob or
-                    TreeEntryTargetType.GitLink)
+                if (entry.Mode.Type is ObjectType.RegularFile or ObjectType.GitLink)
                 {
-                    commitIndex.Add($"D {item.Path}");
+                    composer.Remove(p);
                 }
             }
         }
         else
         {
-            commitIndex.Add($"D {path.FilePath}");
+            composer.Remove(path.FilePath);
         }
     }
 
-    private static void DeletePropertyValuesStoredAsSeparateFolder(Tree? reference, ICollection<string> commitIndex,
+    private static async Task DeletePropertyValuesStoredAsSeparateFolderAsync(TreeEntry? reference, GitDotNet.ITransformationComposer composer,
         DataPath path, INodeSerializer serializer, Predicate<(string PropertyName, string Extension)>? propertyNamePredicate = null)
     {
-        if (!path.IsNode(serializer))
+        if (!path.IsNode(serializer) || reference == null)
         {
             return;
         }
 
-        var parentFolder = reference?[path.FolderPath]?.Target.Peel<Tree>();
-        if (parentFolder is not null)
+        var parentFolderItem = await reference.GetFromPathAsync(path.FolderPath).ConfigureAwait(false);
+        if (parentFolderItem is not null)
         {
+            var parentFolder = await parentFolderItem.GetEntryAsync<TreeEntry>().ConfigureAwait(false);
             var nodeId = Regex.Escape(Path.GetFileNameWithoutExtension(path.FileName));
             var regex = new Regex($@"^{nodeId}\.(?<property>\w+)\.(?<extension>\w+)");
-            foreach (var fileName in from entry in parentFolder
-                     let match = regex.Match(entry.Name)
-                     where match.Success
-                     where propertyNamePredicate == null ||
-                           propertyNamePredicate((match.Result("${property}"), match.Result("${extension}")))
-                     select entry.Name)
+            foreach (var fileName in from entry in parentFolder.Children
+                                     let match = regex.Match(entry.Name)
+                                     where match.Success
+                                     where propertyNamePredicate == null ||
+                                           propertyNamePredicate((match.Result("${property}"), match.Result("${extension}")))
+                                     select entry.Name)
             {
-                commitIndex.Add($"D {path.FolderPath}/{fileName}");
+                composer.Remove($"{path.FolderPath}/{fileName}");
             }
         }
     }

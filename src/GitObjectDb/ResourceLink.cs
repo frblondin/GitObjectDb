@@ -1,5 +1,5 @@
+using GitDotNet;
 using System;
-using ObjectId = LibGit2Sharp.ObjectId;
 
 namespace GitObjectDb;
 
@@ -11,7 +11,7 @@ public sealed class ResourceLink
     /// <param name="sha">The remote commit to point to.</param>
     public ResourceLink(string repository, string sha)
     {
-        if (!ObjectId.TryParse(sha, out _))
+        if (!HashId.TryParse(sha, out _))
         {
             throw new ArgumentException("Sha resource link is not a valid object id.");
         }

@@ -1,4 +1,4 @@
-using LibGit2Sharp;
+using GitDotNet;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,14 +15,14 @@ public sealed class ChangeCollection : IList<Change>
 {
     private readonly List<Change> _changes;
 
-    internal ChangeCollection(Commit end)
+    internal ChangeCollection(CommitEntry end)
     {
-        _changes = new List<Change>();
+        _changes = [];
         End = end;
     }
 
     /// <summary>Gets the last commit of changes.</summary>
-    public Commit End { get; }
+    public CommitEntry End { get; }
 
     /// <summary>Gets the modified items.</summary>
     public IEnumerable<Change> Modified => _changes.Where(c => c.Status == ChangeStatus.Edit);

@@ -42,7 +42,7 @@ internal class NodeReferenceResolver : ReferenceResolver
         else
         {
             alreadyExists = false;
-            return RuntimeHelpers.GetHashCode(value).ToString();
+            return null!;
         }
     }
 

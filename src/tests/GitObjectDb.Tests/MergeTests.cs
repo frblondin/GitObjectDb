@@ -1,8 +1,10 @@
+using GitDotNet;
 using GitObjectDb.Comparison;
-using LibGit2Sharp;
+using GitObjectDb.Model;
 using Models.Software;
 using NUnit.Framework;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests;
 
@@ -12,15 +14,16 @@ public class MergeTests : BranchMergerFixture
                    \    ->  \   \
        newBranch:   C        C---x */
 
-    protected override void TwoDifferentPropertyEditsActAndAssert(IConnection sut, Table table, string newDescription, string newName, Signature signature, Commit b, Commit c)
+    protected override async Task TwoDifferentPropertyEditsActAndAssertAsync(IConnection sut, Table table, string newDescription, string newName, Signature signature, CommitEntry b, CommitEntry c)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
+        var merge = await sut.MergeAsync("newBranch", upstreamCommittish: "main");
 
         // Assert
-        var mergeCommit = merge.Commit(signature, signature);
-        var parents = mergeCommit.Parents.ToList();
-        var newTable = sut.Lookup<Table>("newBranch", table.Path);
+        var mergeCommit = await merge.CommitAsync(signature, signature);
+        var parents = await mergeCommit.GetParentsAsync();
+        var newBranchTip = await sut.Repository.GetCommittishAsync("newBranch");
+        var newTable = await sut.LookupAsync<Table>(newBranchTip, table.Path);
         Assert.Multiple(() =>
         {
             Assert.That(merge.Status, Is.EqualTo(MergeStatus.NonFastForward));
@@ -33,10 +36,10 @@ public class MergeTests : BranchMergerFixture
         });
     }
 
-    protected override void FastForwardActAndAssert(IConnection sut, Table table, string newDescription, Signature signature, Commit b)
+    protected override async Task FastForwardActAndAssertAsync(IConnection sut, Table table, string newDescription, Signature signature, CommitEntry b)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
+        var merge = await sut.MergeAsync("newBranch", upstreamCommittish: "main");
 
         // Assert
         Assert.Multiple(() =>
@@ -44,23 +47,24 @@ public class MergeTests : BranchMergerFixture
             Assert.That(merge.Status, Is.EqualTo(MergeStatus.FastForward));
             Assert.That(merge.Commits, Has.Count.Zero);
         });
-        var mergeCommit = merge.Commit(signature, signature);
+        var mergeCommit = await merge.CommitAsync(signature, signature);
         Assert.That(mergeCommit, Is.EqualTo(b));
 
-        var newTable = sut.Lookup<Table>("newBranch", table.Path);
+        var newBranchTip = await sut.Repository.GetCommittishAsync("newBranch");
+        var newTable = await sut.LookupAsync<Table>(newBranchTip, table.Path);
         Assert.That(newTable.Description, Is.EqualTo(newDescription));
     }
 
-    protected override void SamePropertyEditsActAndAssert(IConnection sut, Table table, string bValue, string cValue, Signature signature)
+    protected override async Task SamePropertyEditsActAndAssertAsync(IConnection sut, Table table, string bValue, string cValue, Signature signature)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
+        var merge = await sut.MergeAsync("newBranch", upstreamCommittish: "main");
 
         // Assert
         Assert.That(merge.Status, Is.EqualTo(MergeStatus.Conflicts));
         Assert.Multiple(() =>
         {
-            Assert.Throws<GitObjectDbException>(() => merge.Commit(signature, signature));
+            Assert.ThrowsAsync<GitObjectDbException>(async () => await merge.CommitAsync(signature, signature));
             Assert.That(merge.CurrentChanges, Has.Count.EqualTo(1));
             Assert.That(merge.CurrentChanges[0].Status, Is.EqualTo(ItemMergeStatus.EditConflict));
             Assert.That(merge.CurrentChanges[0].Conflicts, Has.Count.EqualTo(1));
@@ -80,24 +84,25 @@ public class MergeTests : BranchMergerFixture
         });
 
         // Act
-        merge.Commit(signature, signature);
+        await merge.CommitAsync(signature, signature);
 
         // Assert
-        var newTable = sut.Lookup<Table>("newBranch", table.Path);
+        var newBranchTip = await sut.Repository.GetCommittishAsync("newBranch");
+        var newTable = await sut.LookupAsync<Table>(newBranchTip, table.Path);
         Assert.That(newTable.Description, Is.EqualTo("resolved"));
     }
 
-    protected override void EditOnTheirParentDeletionActAndAssert(PerformAction actionTarget, IConnection sut, Table parentTable, Field field, Signature signature)
+    protected override async Task EditOnTheirParentDeletionActAndAssertAsync(PerformAction actionTarget, IConnection sut, Table parentTable, Field field, Signature signature)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
+        var merge = await sut.MergeAsync("newBranch", upstreamCommittish: "main");
 
         // Assert
         var conflict = merge.CurrentChanges.Single(c => c.Status == ItemMergeStatus.TreeConflict);
         Assert.Multiple(() =>
         {
             Assert.That(merge.Status, Is.EqualTo(MergeStatus.Conflicts));
-            Assert.Throws<GitObjectDbException>(() => merge.Commit(signature, signature));
+            Assert.ThrowsAsync<GitObjectDbException>(async () => await merge.CommitAsync(signature, signature));
             Assert.That(merge.CurrentChanges, Has.Exactly(1).Matches<MergeChange>(c => c.Status == ItemMergeStatus.TreeConflict));
             Assert.That(conflict.Path, Is.EqualTo(field.Path));
             Assert.That(((Node)(actionTarget == PerformAction.OnBranch ? conflict.Ours : conflict.Theirs)).Id, Is.EqualTo(field.Id));
@@ -106,16 +111,16 @@ public class MergeTests : BranchMergerFixture
 
         // Act
         merge.CurrentChanges.Remove(conflict);
-        merge.Commit(signature, signature);
+        await merge.CommitAsync(signature, signature);
 
         // Assert
         Assert.That(merge.Status, Is.EqualTo(actionTarget == PerformAction.OnBranch ? MergeStatus.NonFastForward : MergeStatus.FastForward));
     }
 
-    protected override void AddOnTheirParentDeletionActAndAssert(PerformAction actionTarget, IConnection sut, Signature signature)
+    protected override async Task AddOnTheirParentDeletionActAndAssertAsync(PerformAction actionTarget, IConnection sut, Signature signature)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
+        var merge = await sut.MergeAsync("newBranch", upstreamCommittish: "main");
 
         // Assert
         Assert.Multiple(() =>
@@ -125,28 +130,29 @@ public class MergeTests : BranchMergerFixture
                                               Has.Count.EqualTo(1) :
                                               Has.Count.GreaterThan(1));
             Assert.That(merge.CurrentChanges, Has.Exactly(1).Matches<MergeChange>(c => c.Status == ItemMergeStatus.TreeConflict));
-            Assert.Throws<GitObjectDbException>(() => merge.Commit(signature, signature));
+            Assert.ThrowsAsync<GitObjectDbException>(async () => await merge.CommitAsync(signature, signature));
         });
 
         // Act
         var conflict = merge.CurrentChanges.Single(c => c.Status == ItemMergeStatus.TreeConflict);
         merge.CurrentChanges.Remove(conflict);
-        merge.Commit(signature, signature);
+        await merge.CommitAsync(signature, signature);
 
         // Assert
         Assert.That(merge.Status, Is.EqualTo(
             actionTarget == PerformAction.OnMain ? MergeStatus.FastForward : MergeStatus.NonFastForward));
     }
 
-    protected override void DeleteChildNoConflictActAndAssert(PerformAction actionTarget, IConnection sut, Table table, string newDescription, Field field, Signature signature)
+    protected override async Task DeleteChildNoConflictActAndAssertAsync(PerformAction actionTarget, IConnection sut, Table table, string newDescription, Field field, Signature signature)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
-        merge.Commit(signature, signature);
+        var merge = await sut.MergeAsync("newBranch", upstreamCommittish: "main");
+        await merge.CommitAsync(signature, signature);
 
         // Assert
-        var newTable = sut.Lookup<Table>("newBranch", table.Path);
-        var missingField = sut.Lookup<Field>("newBranch", field.Path);
+        var newBranchTip = await sut.Repository.GetCommittishAsync("newBranch");
+        var newTable = await sut.LookupAsync<Table>(newBranchTip, table.Path);
+        var missingField = await sut.LookupAsync<Field>(newBranchTip, field.Path);
         Assert.Multiple(() =>
         {
             Assert.That(merge.Status, Is.EqualTo(MergeStatus.NonFastForward));
@@ -155,18 +161,19 @@ public class MergeTests : BranchMergerFixture
         });
     }
 
-    protected override void RenameAndEditActAndAssert(IConnection sut, Field field, string newDescription, Signature signature, DataPath newPath, Commit b, Commit c)
+    protected override async Task RenameAndEditActAndAssertAsync(IConnection sut, Field field, string newDescription, Signature signature, DataPath newPath, CommitEntry b, CommitEntry c)
     {
         // Act
-        var merge = sut.Merge("newBranch", upstreamCommittish: "main");
-        var mergeCommit = merge.Commit(signature, signature);
+        var merge = await sut.MergeAsync("newBranch", upstreamCommittish: "main");
+        var mergeCommit = await merge.CommitAsync(signature, signature);
 
         // Assert
-        var parents = mergeCommit.Parents.ToList();
-        var newTable = sut.Lookup<Field>("newBranch", newPath);
-        Assert.Multiple(() =>
+        var parents = await mergeCommit.GetParentsAsync();
+        var newBranchTip = await sut.Repository.GetCommittishAsync("newBranch");
+        var newTable = await sut.LookupAsync<Field>(newBranchTip, newPath);
+        await Assert.MultipleAsync(async () =>
         {
-            Assert.That(sut.Lookup<Field>("newBranch", field.Path), Is.Null);
+            Assert.That(await sut.LookupAsync<Field>(newBranchTip, field.Path), Is.Null);
             Assert.That(merge.Status, Is.EqualTo(MergeStatus.NonFastForward));
             Assert.That(merge.Commits, Has.Count.EqualTo(1));
             Assert.That(parents, Has.Count.EqualTo(2));

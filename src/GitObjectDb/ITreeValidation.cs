@@ -1,9 +1,10 @@
+using GitDotNet;
 using GitObjectDb.Model;
-using LibGit2Sharp;
+using System.Threading.Tasks;
 
 namespace GitObjectDb;
 
 internal interface ITreeValidation
 {
-    void Validate(Tree tree, IDataModel model, INodeSerializer serializer);
+    Task ValidateAsync(TreeEntry tree, IDataModel model, INodeSerializer serializer);
 }

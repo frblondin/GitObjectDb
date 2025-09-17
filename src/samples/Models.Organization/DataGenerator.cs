@@ -1,12 +1,13 @@
 using AutoFixture;
 using Bogus;
 using Bogus.DataSets;
+using GitDotNet;
 using GitObjectDb;
-using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Models.Organization;
 
@@ -28,46 +29,46 @@ public class DataGenerator
 
     public uint CountPerLevel { get; }
 
-    public void CreateInitData()
+    public async Task CreateInitDataAsync()
     {
         var random = new Random();
         var types = new List<OrganizationType>();
         var ids = new HashSet<UniqueId>();
-        var transformations = Connection.Update("main", CreateData);
+        var transformations = await Connection.UpdateAsync("main", CreateDataAsync);
         var signature = CreateSignature();
-        transformations.Commit(new("Initial commit", signature, signature));
+        await transformations.CommitAsync(new("Initial commit", signature, signature));
 
-        void CreateData(ITransformationComposer composer)
+        async Task CreateDataAsync(IChangeComposer composer)
         {
-            CreateOrganizationTypes(composer);
-            CreateOrganizationNodes(composer);
+            await CreateOrganizationTypesAsync(composer);
+            await CreateOrganizationNodesAsync(composer);
         }
 
-        void CreateOrganizationTypes(ITransformationComposer composer)
+        async Task CreateOrganizationTypesAsync(IChangeComposer composer)
         {
-            types.Add(composer.CreateOrUpdate(new OrganizationType
+            types.Add(await composer.CreateOrUpdateAsync(new OrganizationType
             {
                 Id = new UniqueId("site"),
                 Label = "Site",
             }));
-            types.Add(composer.CreateOrUpdate(new OrganizationType
+            types.Add(await composer.CreateOrUpdateAsync(new OrganizationType
             {
                 Id = new UniqueId("region"),
                 Label = "Region",
             }));
-            types.Add(composer.CreateOrUpdate(new OrganizationType
+            types.Add(await composer.CreateOrUpdateAsync(new OrganizationType
             {
                 Id = new UniqueId("zone"),
                 Label = "Zone",
             }));
         }
 
-        void CreateOrganizationNodes(ITransformationComposer composer, Organization? parentOrg = null, int level = 1)
+        async Task CreateOrganizationNodesAsync(IChangeComposer composer, Organization? parentOrg = null, int level = 1)
         {
-            Enumerable.Range(1, (int)CountPerLevel).ForEach(position =>
+            for (int position = 1; position <= CountPerLevel; position++)
             {
                 var (id, label) = GetUniqueValue(level);
-                var node = composer.CreateOrUpdate(new Organization
+                var node = await composer.CreateOrUpdateAsync(new Organization
                 {
                     Id = id,
                     Label = label,
@@ -75,9 +76,9 @@ public class DataGenerator
                 }, parent: parentOrg);
                 if (level < MaxDepth)
                 {
-                    CreateOrganizationNodes(composer, node, level + 1);
+                    await CreateOrganizationNodesAsync(composer, node, level + 1);
                 }
-            });
+            }
         }
 
         (UniqueId Id, string Label) GetUniqueValue(int level)
@@ -112,20 +113,21 @@ public class DataGenerator
         return new Signature(person.FullName, person.Email, DateTimeOffset.Now);
     }
 
-    public void UpdateRandomNodes(int nodeCount, Func<Organization, Organization> update, string commitMessage)
+    public async Task UpdateRandomNodesAsync(int nodeCount, Func<Organization, Organization> update, string commitMessage)
     {
-        var transformations = Connection.Update("main", UpdateData);
+        var tip = await Connection.Repository.GetCommittishAsync("main");
+        var transformations = await Connection.UpdateAsync("main", UpdateDataAsync);
         var signature = CreateSignature();
-        transformations.Commit(new(commitMessage, signature, signature));
+        await transformations.CommitAsync(new(commitMessage, signature, signature));
 
-        void UpdateData(ITransformationComposer composer)
+        async Task UpdateDataAsync(IChangeComposer composer)
         {
-            var nodes = Connection.GetNodes<Organization>("main", isRecursive: true).ToList();
+            var nodes = Connection.GetNodesAsync<Organization>(tip, isRecursive: true).ToEnumerable().ToList();
             var random = new Random();
             for (int i = 0; i < nodeCount; i++)
             {
                 var node = nodes[random.Next(nodes.Count)];
-                composer.CreateOrUpdate(update(node));
+                await composer.CreateOrUpdateAsync(update(node));
             }
         }
     }

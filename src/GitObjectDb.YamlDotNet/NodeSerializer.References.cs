@@ -6,17 +6,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.YamlDotNet;
 
 public partial class NodeSerializer : INodeSerializer
 {
-    private void ResolveReferences(NodeReferenceParser parser)
+    private async Task ResolveReferencesAsync(NodeReferenceParser parser)
     {
         while (parser.ReferencesToBeResolved.Count > 0)
         {
             var reference = parser.ReferencesToBeResolved[0];
-            reference.ResolveReference();
+            await reference.ResolveReferenceAsync();
             parser.ReferencesToBeResolved.RemoveAt(0);
         }
 

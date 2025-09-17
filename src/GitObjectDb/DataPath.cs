@@ -1,3 +1,4 @@
+using GitDotNet;
 using GitObjectDb.Model;
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -139,6 +140,12 @@ public sealed class DataPath : IEquatable<DataPath>, IComparable<DataPath>
         }
         return result!;
     }
+
+    /// <summary>Converts the specified string representation to its <see cref="DataPath" /> equivalent.</summary>
+    /// <param name="path">A string containing a sha to convert.</param>
+    /// <returns>The <see cref="DataPath" /> value equivalent to the path contained in <paramref name="path" />.</returns>
+    /// <exception cref="ArgumentException">Wrong path provided.</exception>
+    public static DataPath Parse(GitPath path) => Parse(path.ToString());
 
     /// <summary>
     /// Converts the specified string representation to its <see cref="DataPath" /> equivalent and

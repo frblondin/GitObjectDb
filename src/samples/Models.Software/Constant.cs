@@ -1,6 +1,8 @@
+using GitDotNet;
 using GitObjectDb;
 using GitObjectDb.Model;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Models.Software;
 
@@ -13,6 +15,6 @@ public record Constant : Node
 
 public static class IConnectionConstantExtensions
 {
-    public static IEnumerable<Constant> GetConstants(this IConnection connection, Table table, string committish = "main") =>
-        connection.GetNodes<Constant>(committish, table);
+    public static IEnumerable<Constant> GetConstants(this IConnection connection, CommitEntry commit, Table table) =>
+        connection.GetNodesAsync<Constant>(commit, table).ToEnumerable().OrderBy(c => c.Id);
 }

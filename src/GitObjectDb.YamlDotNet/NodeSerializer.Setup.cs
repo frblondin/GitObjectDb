@@ -57,6 +57,7 @@ public partial class NodeSerializer : INodeSerializer
         builder
             .IgnoreFields()
             .WithNamingConvention(namingConvention)
+            .WithTypeConverter(new HashIdConverter())
             .WithTypeConverter(new DataPathConverter())
             .WithTypeConverter(new UniqueIdConverter())
             .WithTagMapping(ReferenceTag, typeof(NodeReference));

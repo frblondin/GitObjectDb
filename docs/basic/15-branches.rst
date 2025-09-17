@@ -8,10 +8,6 @@ Direct update
 
 .. code-block:: csharp
 
-	connection
-		.Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
-		.Commit(new("Some message", signature, signature));
-	connection.Checkout("newBranch", "main~1");
-	connection
-		.Update("main", c => c.CreateOrUpdate(table with { Name = newName }))
-		.Commit(new("Another message", signature, signature));
+    connection.Repository.Branches.Add("newBranch", "main~1");
+	var updates = await connection.UpdateAsync("main", c => c.CreateOrUpdateAsync(table with { Name = newName }));
+	await updates.CommitAsync(new("Another message", signature, signature));

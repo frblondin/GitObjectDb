@@ -1,13 +1,15 @@
+using GitDotNet;
 using GitObjectDb.Comparison;
 using GitObjectDb.Injection;
 using GitObjectDb.Internal.Commands;
-using LibGit2Sharp;
+using GitObjectDb.Model;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Internal;
 
@@ -20,12 +22,12 @@ internal sealed class Merge : IMerge
     private readonly ICommitCommand _commitCommand;
     private readonly IConnectionInternal _connection;
 
-    [FactoryDelegateConstructor(typeof(Factories.MergeFactory))]
-    public Merge(IServiceProvider serviceProvider,
-                 IConnectionInternal connection,
-                 string branchName,
-                 string upstreamCommittish,
-                 ComparisonPolicy? policy = null)
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+    private Merge(IServiceProvider serviceProvider,
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+        IConnectionInternal connection,
+        string branchName,
+        ComparisonPolicy? policy = null)
     {
         _comparer = serviceProvider.GetRequiredService<IComparerInternal>();
         _mergeComparer = serviceProvider.GetRequiredService<IMergeComparer>();
@@ -33,57 +35,72 @@ internal sealed class Merge : IMerge
         _commitCommand = serviceProvider.GetRequiredService<ICommitCommand>();
         _connection = connection;
         Branch = connection.Repository.Branches[branchName] ?? throw new GitObjectDbNonExistingBranchException();
-        UpstreamCommit = connection.FindUpstreamCommit(upstreamCommittish, Branch);
         Policy = policy ?? connection.Model.DefaultComparisonPolicy;
-        (MergeBaseCommit, Commits, RequiresMergeCommit) = Initialize();
-
-        Start();
     }
 
     public Branch Branch { get; }
 
-    public Commit UpstreamCommit { get; private set; }
+    public CommitEntry UpstreamCommit { get; private set; }
 
     public ComparisonPolicy Policy { get; }
 
-    public Commit MergeBaseCommit { get; }
+    public CommitEntry MergeBaseCommit { get; private set; }
 
-    public bool RequiresMergeCommit { get; }
+    public bool RequiresMergeCommit { get; private set; }
 
-    public IImmutableList<Commit> Commits { get; }
+    public IImmutableList<CommitEntry> Commits { get; private set; }
 
     public IList<MergeChange> CurrentChanges { get; private set; } = new List<MergeChange>();
 
     public MergeStatus Status { get; private set; }
 
-    public Commit? MergeCommit { get; private set; }
+    public CommitEntry? MergeCommit { get; private set; }
 
-    private (Commit MergeBaseCommitId, IImmutableList<Commit> ReplayedCommits, bool RequiresMergeCommit) Initialize()
+    [FactoryDelegate(typeof(Factories.MergeFactory))]
+    public static async Task<IMerge> CreateAsync(IServiceProvider serviceProvider,
+        IConnectionInternal connection,
+        string branchName,
+        string upstreamCommittish,
+        ComparisonPolicy? policy = null)
     {
-        var mergeBaseCommit = _connection.Repository.ObjectDatabase.FindMergeBase(UpstreamCommit, Branch.Tip);
-        var replayedCommits = _connection.Repository.Commits.QueryBy(new CommitFilter
-        {
-            SortBy = CommitSortStrategies.Topological | CommitSortStrategies.Reverse,
-            ExcludeReachableFrom = mergeBaseCommit,
-            IncludeReachableFrom = Branch.Tip,
-        }).ToImmutableList();
-        return (mergeBaseCommit, replayedCommits, Branch.Tip.Id != mergeBaseCommit.Id);
+        var result = new Merge(serviceProvider, connection, branchName, policy);
+        await result.InitializeAsync(upstreamCommittish).ConfigureAwait(false);
+        return result;
     }
 
-    private void Start()
+    private async Task InitializeAsync(string upstreamCommittish)
     {
-        var branchChanges = _comparer.Compare(
+        UpstreamCommit = await _connection.FindUpstreamCommitAsync(upstreamCommittish, Branch).ConfigureAwait(false);
+        var branchTip = await Branch.GetTipAsync().ConfigureAwait(false);
+        MergeBaseCommit = await _connection.Repository.GetMergeBaseAsync(
+            UpstreamCommit.Id.ToString(), branchTip.Id.ToString()).ConfigureAwait(false) ??
+            throw new GitObjectDbException("No merge base found between the two commits.");
+        Commits = _connection.Repository.GetLogAsync(branchTip.Id.ToString(), LogOptions.Default with
+        {
+            SortBy = LogTraversal.FirstParentOnly | LogTraversal.Topological,
+            ExcludeReachableFrom = MergeBaseCommit.Id.ToString(),
+        })
+            .SelectAwait(async entry => await entry.GetCommitAsync().ConfigureAwait(false))
+            .ToEnumerable().ToImmutableList();
+        RequiresMergeCommit = branchTip.Id != MergeBaseCommit.Id;
+
+        await StartAsync().ConfigureAwait(false);
+    }
+
+    private async Task StartAsync()
+    {
+        var branchChanges = await _comparer.CompareAsync(
             _connection,
             MergeBaseCommit,
-            Branch.Tip,
-            Policy);
-        var upstreamChanges = _comparer.Compare(
+            await Branch.GetTipAsync().ConfigureAwait(false),
+            Policy).ConfigureAwait(false);
+        var upstreamChanges = await _comparer.CompareAsync(
             _connection,
             MergeBaseCommit,
             UpstreamCommit,
-            Policy);
+            Policy).ConfigureAwait(false);
 
-        CurrentChanges = _mergeComparer.Compare(branchChanges, upstreamChanges, Policy).ToList();
+        CurrentChanges = [.. _mergeComparer.Compare(branchChanges, upstreamChanges, Policy)];
         if (!CurrentChanges.Any())
         {
             Status = MergeStatus.UpToDate;
@@ -98,7 +115,7 @@ internal sealed class Merge : IMerge
         }
     }
 
-    public Commit Commit(Signature author, Signature committer)
+    public async Task<CommitEntry> CommitAsync(Signature author, Signature committer)
     {
         if (MergeCommit != null)
         {
@@ -111,30 +128,27 @@ internal sealed class Merge : IMerge
 
         // If last commit, update branch so it points to the new commit
         return RequiresMergeCommit && CurrentChanges.Any() ?
-               CommitMerge(author, committer) :
+               await CommitMergeAsync(author, committer).ConfigureAwait(false) :
                CommitFastForward();
     }
 
-    private Commit CommitMerge(Signature author, Signature committer)
+    private async Task<CommitEntry> CommitMergeAsync(Signature author, Signature committer)
     {
-        var message = $"Merge {UpstreamCommit.Sha} into {Branch.FriendlyName}";
-        MergeCommit = _commitCommand.Commit(
+        var message = $"Merge {UpstreamCommit.Id} into {Branch.FriendlyName}";
+        MergeCommit = await _commitCommand.CommitAsync(
             _connection,
             Branch.FriendlyName,
             CurrentChanges.Select(c => c.Transform(_gitUpdateFactory)),
             new CommitDescription(message, author, committer, mergeParent: UpstreamCommit),
-            Branch.Tip);
-        var logMessage = MergeCommit.BuildCommitLogMessage(false, isMergeCommit: true);
-        _connection.Repository.UpdateBranchTip(Branch.Reference, MergeCommit, logMessage);
+            await Branch.GetTipAsync().ConfigureAwait(false)).ConfigureAwait(false);
         Status = MergeStatus.NonFastForward;
         return MergeCommit;
     }
 
-    private Commit CommitFastForward()
+    private CommitEntry CommitFastForward()
     {
         MergeCommit = UpstreamCommit;
-        var logMessage = MergeCommit.BuildCommitLogMessage(false, false);
-        _connection.Repository.UpdateBranchTip(Branch.Reference, UpstreamCommit, logMessage);
+        Branch.UpdateRef(UpstreamCommit);
         Status = MergeStatus.FastForward;
         return UpstreamCommit;
     }

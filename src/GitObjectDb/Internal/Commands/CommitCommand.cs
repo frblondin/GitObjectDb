@@ -1,10 +1,9 @@
+using GitDotNet;
 using GitObjectDb.Tools;
-using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Internal.Commands;
 
@@ -19,54 +18,66 @@ internal class CommitCommand : ICommitCommand
         GitCliCommand.ThrowIfGitNotInstalled();
     }
 
-    public Commit Commit(TransformationComposer composer,
-                         CommitDescription description,
-                         Action<ITransformation>? beforeProcessing = null)
+    public async Task<CommitEntry> CommitAsync(ChangeComposer composer,
+        CommitDescription description,
+        Action<ITransformation>? beforeProcessing = null)
     {
-        var branch = composer.Connection.Repository.Branches[composer.BranchName];
-        var parents = RetrieveParentsOfTheCommitBeingCreated(
-            composer.Connection.Repository,
-            branch,
-            description.AmendPreviousCommit,
-            description.MergeParent).ToList();
-        return Commit(composer.Connection,
-                      info => ApplyTransformations(composer.Connection,
-                                                   composer.Transformations.Values,
-                                                   branch?.Tip,
-                                                   info.Writer,
-                                                   info.Index,
-                                                   beforeProcessing),
-                      composer.BranchName,
-                      parents,
-                      description);
+        var parents = composer.Connection.Repository.Branches.TryGet(composer.BranchName, out var branch) ?
+            await RetrieveParentsOfTheCommitBeingCreatedAsync(
+                composer.Connection.Repository,
+                branch,
+                description.AmendPreviousCommit,
+                description.MergeParent).ConfigureAwait(false) :
+            [];
+        return await CommitAsync(composer.Connection,
+            async info => await ApplyTransformationsAsync(composer.Connection,
+                composer.Transformations.Values,
+                branch != null ? await branch.GetTipAsync().ConfigureAwait(false) : null,
+                info,
+                beforeProcessing).ConfigureAwait(false),
+            composer.BranchName,
+            parents,
+            description);
     }
 
-    public Commit Commit(IConnection connection,
-                         string branchName,
-                         IEnumerable<Delegate> transformations,
-                         CommitDescription description,
-                         Commit predecessor,
-                         bool updateBranchTip = true)
+    public async Task<CommitEntry> CommitAsync(IConnection connection,
+        string branchName,
+        IEnumerable<ApplyUpdate> transformations,
+        CommitDescription description,
+        CommitEntry predecessor)
     {
-        var modules = new ModuleCommands(predecessor.Tree);
+        var tree = await predecessor.GetRootTreeAsync().ConfigureAwait(false);
+        var modules = await ModuleCommands.GetAsync(tree).ConfigureAwait(false);
         var parents = GetParents(description, predecessor);
-        return Commit(connection,
-                      info =>
-                      {
-                          foreach (var transformation in transformations)
-                          {
-                              var action = (ApplyUpdate)transformation;
-                              action.Invoke(predecessor.Tree, modules, connection.Serializer, info.Writer, info.Index);
-                          }
-                      },
-                      branchName,
-                      parents,
-                      description);
+        return await CommitAsync(connection,
+            async composer =>
+            {
+                foreach (var transformation in transformations)
+                {
+                    await transformation.Invoke(tree, modules, connection.Serializer, composer).ConfigureAwait(false);
+                }
+                return composer;
+            },
+            branchName,
+            parents,
+            description).ConfigureAwait(false);
     }
 
-    internal static List<Commit> GetParents(CommitDescription description, Commit predecessor)
+    public async Task<CommitEntry> CommitAsync(IConnection connection,
+        Func<ITransformationComposer, Task<ITransformationComposer>> transform,
+        string branchName,
+        List<CommitEntry> parents,
+        CommitDescription description)
     {
-        var parents = new List<Commit> { predecessor };
+        var commit = await connection.Repository.CommitAsync(branchName, transform,
+            connection.Repository.CreateCommit(description.Message, parents, description.Author, description.Committer),
+            new(UpdateBranch: false)).ConfigureAwait(false);
+        return await ValidateAndUpdateBranchTipAsync(connection, branchName, commit).ConfigureAwait(false);
+    }
+
+    internal static List<CommitEntry> GetParents(CommitDescription description, CommitEntry predecessor)
+    {
+        var parents = new List<CommitEntry> { predecessor };
         if (description.MergeParent is not null)
         {
             parents.Add(description.MergeParent);
@@ -75,161 +86,59 @@ internal class CommitCommand : ICommitCommand
         return parents;
     }
 
-    public Commit Commit(IConnection connection,
-                         Action<ImportFileArguments> transform,
-                         string branchName,
-                         List<Commit> parents,
-                         CommitDescription description)
+    private static async Task<ITransformationComposer> ApplyTransformationsAsync(IConnection connection,
+        IEnumerable<ITransformation> transformations,
+        CommitEntry? commit,
+        ITransformationComposer composer,
+        Action<ITransformation>? beforeProcessing = null)
     {
-        var importFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        var tempBranch = $"refs/fastimport/{UniqueId.CreateNew()}";
-        try
-        {
-            int commitMarkId;
-            using (var writer = new StreamWriter(File.OpenWrite(importFile)) { NewLine = "\n" })
-            {
-                var index = new List<string>();
-                transform((writer, index, tempBranch));
-
-                commitMarkId = index.Count + 1;
-                WriteFastInsertCommit(tempBranch, parents, writer, description, commitMarkId);
-                WriteFastInsertCommitIndex(writer, index);
-            }
-            return ValidateAndUpdateBranchTip(connection, branchName, description, importFile, parents, commitMarkId);
-        }
-        finally
-        {
-            connection.Repository.Branches.Remove(tempBranch);
-            connection.Repository.Refs.Remove(tempBranch);
-            TryDelete(importFile);
-        }
-    }
-
-    private static void ApplyTransformations(IConnection connection,
-                                             IEnumerable<ITransformation> transformations,
-                                             Commit? commit,
-                                             StreamWriter writer,
-                                             IList<string> commitIndex,
-                                             Action<ITransformation>? beforeProcessing = null)
-    {
-        var modules = new ModuleCommands(commit?.Tree);
+        var tree = commit != null ? await commit.GetRootTreeAsync().ConfigureAwait(false) : null;
+        var modules = await ModuleCommands.GetAsync(tree).ConfigureAwait(false);
         foreach (var transformation in transformations.OfType<ITransformationInternal>())
         {
             beforeProcessing?.Invoke(transformation);
-            transformation.Action.Invoke(commit?.Tree, modules, connection.Serializer, writer, commitIndex);
+            await transformation.Action.Invoke(tree, modules, connection.Serializer, composer).ConfigureAwait(false);
         }
 
         if (modules.HasAnyChange)
         {
-            using var stream = modules.CreateStream();
-            GitUpdateCommand.AddBlob(ModuleCommands.ModuleFile, stream, writer, commitIndex);
+            var stream = modules.CreateStream();
+            composer.AddOrUpdate(ModuleCommands.ModuleFile, stream);
         }
+        return composer;
     }
 
-    private static void WriteFastInsertCommit(string tempBranch,
-                                              List<Commit> parents,
-                                              TextWriter writer,
-                                              CommitDescription description,
-                                              int commitMarkId)
+    private async Task<CommitEntry> ValidateAndUpdateBranchTipAsync(IConnection connection, string branchName, CommitEntry commit)
     {
-        if (parents.Count == 0)
-        {
-            writer.WriteLine($"reset {tempBranch}");
-        }
-        writer.WriteLine($"commit {tempBranch}");
-        writer.WriteLine($"mark :{commitMarkId}");
-        WriteSignature(writer, "author", description.Author);
-        WriteSignature(writer, "committer", description.Committer);
-        writer.WriteLine($"data {Encoding.UTF8.GetByteCount(description.Message)}");
-        writer.WriteLine(description.Message);
-        WriteParentCommits(writer, parents);
-    }
-
-    private static void WriteSignature(TextWriter writer, string type, Signature signature)
-    {
-        writer.WriteLine($"{type} {signature.Name} <{signature.Email}> {signature.When.ToUnixTimeSeconds()} {signature.When.Offset.Minutes:+0000;-0000}");
-    }
-
-    private static void WriteParentCommits(TextWriter writer, List<Commit> parents)
-    {
-        if (parents.Count >= 1)
-        {
-            writer.WriteLine($"from {parents[0].Id}");
-            if (parents.Count >= 2)
-            {
-                writer.WriteLine($"merge {parents[1].Id}");
-            }
-        }
-    }
-
-    private static void WriteFastInsertCommitIndex(TextWriter writer, List<string> index)
-    {
-        foreach (var item in index)
-        {
-            writer.WriteLine(item);
-        }
-    }
-
-    private static Commit SendCommandThroughCli(IConnection connection, string importFile, int commitMarkId)
-    {
-        var markFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        try
-        {
-            using var stream = File.OpenRead(importFile);
-            GitCliCommand.Execute(connection.Repository.Info.Path,
-                                  @$"fast-import --export-marks=""{markFile}""",
-                                  stream);
-            var linePrefix = $":{commitMarkId} ";
-            var line = File.ReadLines(markFile)
-                .FirstOrDefault(l => l.StartsWith(linePrefix, StringComparison.Ordinal)) ??
-                throw new GitObjectDbException("Could not locate commit id in fast-import mark file.");
-            var commitId = line.Substring(linePrefix.Length).Trim();
-            return connection.Repository.Lookup(commitId).Peel<Commit>() ??
-                throw new GitObjectDbException($"Commit {commitId} could not be found in repository.");
-        }
-        finally
-        {
-            TryDelete(markFile);
-        }
-    }
-
-    private static void TryDelete(string path)
-    {
-        try
-        {
-            File.Delete(path);
-        }
-        catch
-        {
-            // Ignored
-        }
-    }
-
-    private Commit ValidateAndUpdateBranchTip(IConnection connection, string branchName, CommitDescription description, string importFile, List<Commit> parents, int commitMarkId)
-    {
-        var commit = SendCommandThroughCli(connection, importFile, commitMarkId);
-        if (parents.Count == 1 && commit.Tree == parents[0].Tree)
+        var tree = await commit.GetRootTreeAsync().ConfigureAwait(false);
+        var parents = await commit.GetParentsAsync().ConfigureAwait(false);
+        var parentTree = parents.Any() ? await parents[0].GetRootTreeAsync().ConfigureAwait(false) : null;
+        if (parents.Count == 1 && tree == parentTree)
         {
             // If no change, do not create an empty commit
             return parents[0];
         }
 
         var validation = _treeValidation.Invoke();
-        validation.Validate(commit.Tree, connection.Model, connection.Serializer);
+        await validation.ValidateAsync(tree, connection.Model, connection.Serializer).ConfigureAwait(false);
 
-        var logMessage = commit.BuildCommitLogMessage(description.AmendPreviousCommit,
-                                                      parents.Count > 1);
-        var reference = connection.Repository.Branches[branchName]?.Reference ??
-            connection.Repository.Refs.UpdateTarget("HEAD", $"refs/heads/{branchName}");
-        connection.Repository.UpdateBranchTip(reference, commit, logMessage);
+        if (connection.Repository.Branches.TryGet(branchName, out var branch))
+        {
+            branch.UpdateRef(commit);
+        }
+        else
+        {
+            connection.Repository.Branches.Add(branchName, commit);
+        }
 
         return commit;
     }
 
-    internal static List<Commit> RetrieveParentsOfTheCommitBeingCreated(IRepository repository,
-                                                                        Branch? branch,
-                                                                        bool amendPreviousCommit,
-                                                                        Commit? mergeParent = null)
+    internal static async Task<List<CommitEntry>> RetrieveParentsOfTheCommitBeingCreatedAsync(
+        IGitConnection repository,
+        Branch? branch,
+        bool amendPreviousCommit,
+        CommitEntry? mergeParent = null)
     {
         if (amendPreviousCommit)
         {
@@ -237,13 +146,14 @@ internal class CommitCommand : ICommitCommand
             {
                 throw new GitObjectDbNonExistingBranchException();
             }
-            return branch.Tip.Parents.ToList();
+            var tip = await branch.GetTipAsync().ConfigureAwait(false);
+            return [.. await tip.GetParentsAsync().ConfigureAwait(false)];
         }
 
-        var parents = new List<Commit>();
+        var parents = new List<CommitEntry>();
         if (branch?.Tip is not null)
         {
-            parents.Add(branch.Tip);
+            parents.Add(await branch.GetTipAsync().ConfigureAwait(false));
         }
 
         if (mergeParent != null)
@@ -257,18 +167,5 @@ internal class CommitCommand : ICommitCommand
         }
 
         return parents;
-    }
-
-    internal record struct ImportFileArguments(StreamWriter Writer, List<string> Index, string TempBranch)
-    {
-        public static implicit operator (StreamWriter Writer, List<string> Index, string TempBranch)(ImportFileArguments value)
-        {
-            return (value.Writer, value.Index, value.TempBranch);
-        }
-
-        public static implicit operator ImportFileArguments((StreamWriter Writer, List<string> Index, string TempBranch) value)
-        {
-            return new ImportFileArguments(value.Writer, value.Index, value.TempBranch);
-        }
     }
 }

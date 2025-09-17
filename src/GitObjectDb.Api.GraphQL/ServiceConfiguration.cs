@@ -40,7 +40,7 @@ public static class ServiceConfiguration
             type => compatibleType.IsAssignableFrom(type);
         foreach (var type in typeof(ServiceConfiguration).Assembly.GetTypes().Where(predicate))
         {
-            source.AddSingleton(type);
+            source.AddScoped(type);
         }
         return source;
     }

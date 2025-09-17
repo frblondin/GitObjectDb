@@ -1,6 +1,6 @@
+using GitDotNet;
 using GitObjectDb.Api.ProtoBuf;
 using GraphQL;
-using LibGit2Sharp;
 using Microsoft.Extensions.Caching.Memory;
 using Models.Organization.Converters;
 using NodaTime;
@@ -17,8 +17,9 @@ var repositoryType = args.Length > 0 ? args[0] : null;
 switch (repositoryType)
 {
     case "Organization":
-        builder.Services
+        await builder.Services
             .AddMemoryCache()
+            .AddGitDotNet()
             .AddGitObjectDb()
             .AddGitObjectDbYamlDotNet(CamelCaseNamingConvention.Instance,
                                       builder => AddConverters(builder),
@@ -39,11 +40,12 @@ switch (repositoryType)
                     options.SizeLimit = 1_000_000;
                     options.SlidingExpiration = null;
                 }))
-            .AddGitObjectDbConnection("Organization");
+            .AddGitObjectDbConnectionAsync("Organization");
         break;
     case "Software":
-        builder.Services
+        await builder.Services
             .AddMemoryCache()
+            .AddGitDotNet()
             .AddGitObjectDb()
             .AddGitObjectDbSystemTextJson()
             .AddSoftwareModel()
@@ -58,17 +60,16 @@ switch (repositoryType)
                     options.SizeLimit = 1_000_000;
                     options.SlidingExpiration = null;
                 }))
-            .AddGitObjectDbConnection("Software", connection =>
+            .AddGitObjectDbConnectionAsync("Software", async connection =>
             {
                 var software = new Models.Software.DataGenerator(connection);
                 var signature = new Signature("foo", "foo@acme.com", DateTimeOffset.Now);
-                software.CreateData("Initial commit", signature);
+                var commit = await software.CreateDataAsync("Initial commit", signature);
 
-                var application = software.Connection.GetApplications().First();
+                var application = software.Connection.GetApplications(commit).First();
                 signature = new Signature("foo", "foo@acme.com", DateTimeOffset.Now);
-                software.Connection
-                    .Update("main", c => c.CreateOrUpdate(application with { Description = "New description" }))
-                    .Commit(new("Update application", signature, signature));
+                var transformations = await software.Connection.UpdateAsync("main", c => c.CreateOrUpdateAsync(application with { Description = "New description" }));
+                await transformations.CommitAsync(new("Update application", signature, signature));
             });
         break;
     default:

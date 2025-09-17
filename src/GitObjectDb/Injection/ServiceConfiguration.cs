@@ -42,29 +42,30 @@ public static class ServiceConfiguration
 
     private static void ConfigureMain(IServiceCollection source)
     {
-        source.AddFactoryDelegate<ConnectionFactory, Connection>();
+        source.AddFactoryDelegate<ConnectionFactory, Connection>(ServiceLifetime.Scoped);
 #pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
         var internalFactories = typeof(Factories)
             .GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
             .Where(t => typeof(Delegate).IsAssignableFrom(t))
             .ToArray();
 #pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
-        source.AddFactoryDelegates(typeof(Connection).Assembly, internalFactories);
-        source.AddSingleton<Comparer>();
-        source.AddSingleton<IComparer>(s => s.GetRequiredService<Comparer>());
-        source.AddSingleton<IComparerInternal>(s => s.GetRequiredService<Comparer>());
-        source.AddSingleton<IMergeComparer, MergeComparer>();
-        source.AddSingleton<Func<ITreeValidation>>(() => new TreeValidation());
+        source.AddFactoryDelegates(typeof(Connection).Assembly, internalFactories, ServiceLifetime.Scoped);
+        source.AddScoped<Comparer>();
+        source.AddScoped<IComparer>(s => s.GetRequiredService<Comparer>());
+        source.AddScoped<IComparerInternal>(s => s.GetRequiredService<Comparer>());
+        source.AddScoped<IMergeComparer, MergeComparer>();
+        source.AddScoped<Func<ITreeValidation>>(s => () => new TreeValidation());
     }
 
     private static void ConfigureQueries(IServiceCollection source)
     {
-        source.AddServicesImplementing(typeof(QueryItems).Assembly, typeof(IQuery<,>), ServiceLifetime.Singleton);
+        source.AddServicesImplementing(typeof(QueryItems).Assembly, typeof(IAsyncQuery<,>), ServiceLifetime.Scoped);
+        source.AddServicesImplementing(typeof(QueryItems).Assembly, typeof(IAsyncEnumerableQuery<,>), ServiceLifetime.Scoped);
     }
 
     private static void ConfigureCommands(IServiceCollection source)
     {
-        source.AddSingleton<ICommitCommand, CommitCommand>();
-        source.AddSingleton<IGitUpdateCommand, GitUpdateCommand>();
+        source.AddScoped<ICommitCommand, CommitCommand>();
+        source.AddScoped<IGitUpdateCommand, GitUpdateCommand>();
     }
 }

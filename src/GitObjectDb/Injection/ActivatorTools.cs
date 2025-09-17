@@ -5,35 +5,55 @@ using System.Reflection;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
-/// <summary>
-/// Helper code for the various activator services.
-/// </summary>
 internal static class ActivatorTools
 {
-    /// <summary>
-    /// Finds the preferred constructor accessible in the <paramref name="instanceType"/>.
-    /// </summary>
-    /// <param name="instanceType">Type of the instance.</param>
-    /// <param name="argumentTypes">The argument types.</param>
-    /// <param name="parameterMap">The parameter map.</param>
-    /// <returns>The preferred constructor found using reflection.</returns>
-    internal static ConstructorInfo FindPreferredConstructor(Type instanceType, Type[] argumentTypes, out int?[] parameterMap)
+    internal static MethodBase FindPreferredMember(Type instanceType, Type[] argumentTypes, Type returnType, out int?[] parameterMap)
     {
-        foreach (var declaredConstructor in instanceType.GetTypeInfo().DeclaredConstructors)
+        return (MethodBase?)FindPreferredConstructor(instanceType, argumentTypes, out parameterMap) ??
+            FindPreferredStaticMethod(instanceType, argumentTypes, returnType, out parameterMap) ??
+            throw new InvalidOperationException($"A suitable constructor or static method for type '{instanceType.Name}' could not be located. " +
+                $"Ensure the type is concrete and services are registered for all parameters of a public constructor decorated " +
+                $"with {nameof(FactoryDelegateAttribute)}.");
+    }
+
+    private static ConstructorInfo? FindPreferredConstructor(Type instanceType, Type[] argumentTypes, out int?[] parameterMap)
+    {
+        foreach (var constructor in instanceType.GetTypeInfo().DeclaredConstructors)
         {
-            if (!declaredConstructor.IsStatic && declaredConstructor.IsDefined(typeof(FactoryDelegateConstructorAttribute), false))
+            if (!constructor.IsStatic && constructor.IsDefined(typeof(FactoryDelegateAttribute), false))
             {
-                if (!TryCreateParameterMap(declaredConstructor.GetParameters(), argumentTypes, out int?[] parameterMap2))
+                if (!TryCreateParameterMap(constructor.GetParameters(), argumentTypes, out int?[] parameterMap2))
                 {
-                    ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
+                    ThrowMarkedMemberDoesNotTakeAllProvidedArguments();
                 }
                 parameterMap = parameterMap2;
-                return declaredConstructor;
+                return constructor;
             }
         }
-        throw new InvalidOperationException($"A suitable constructor for type '{instanceType.Name}' could not be located. " +
-            $"Ensure the type is concrete and services are registered for all parameters of a public constructor decorated " +
-            $"with {nameof(FactoryDelegateConstructorAttribute)}.");
+        parameterMap = [];
+        return null;
+    }
+
+    private static MethodInfo? FindPreferredStaticMethod(Type instanceType, Type[] argumentTypes, Type returnType, out int?[] parameterMap)
+    {
+        foreach (var method in instanceType.GetTypeInfo().DeclaredMethods)
+        {
+            if (method.IsStatic && method.IsDefined(typeof(FactoryDelegateAttribute), false))
+            {
+                if (method.ReturnType != returnType)
+                {
+                    ThrowStaticMethodReturnsWrongType();
+                }
+                if (!TryCreateParameterMap(method.GetParameters(), argumentTypes, out int?[] parameterMap2))
+                {
+                    ThrowMarkedMemberDoesNotTakeAllProvidedArguments();
+                }
+                parameterMap = parameterMap2;
+                return method;
+            }
+        }
+        parameterMap = [];
+        return null;
     }
 
     private static bool TryCreateParameterMap(ParameterInfo[] constructorParameters, Type[] argumentTypes, out int?[] parameterMap)
@@ -61,11 +81,20 @@ internal static class ActivatorTools
     }
 
     [ExcludeFromCodeCoverage]
-    private static void ThrowMarkedCtorDoesNotTakeAllProvidedArguments()
+    private static void ThrowMarkedMemberDoesNotTakeAllProvidedArguments()
     {
         const string message =
-            $"Constructor marked with {nameof(FactoryDelegateConstructorAttribute)} does not " +
+            $"Member marked with {nameof(FactoryDelegateAttribute)} does not " +
             $"accept all given argument types.";
+        throw new InvalidOperationException(message);
+    }
+
+    [ExcludeFromCodeCoverage]
+    private static void ThrowStaticMethodReturnsWrongType()
+    {
+        const string message =
+            $"Method with {nameof(FactoryDelegateAttribute)} does not " +
+            $"return expected type.";
         throw new InvalidOperationException(message);
     }
 }

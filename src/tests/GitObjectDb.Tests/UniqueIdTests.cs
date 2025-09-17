@@ -1,5 +1,4 @@
 using AutoFixture;
-using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
 using System;
 
@@ -8,53 +7,100 @@ namespace GitObjectDb.Tests;
 public class UniqueIdTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
 #pragma warning disable NUnit2009 // The same value has been provided as both the actual and the expected argument
-    public void OperatorEquality(string sha) =>
+    public void OperatorEquality()
+    {
+        // Arrange
+        var fixture = new Fixture().Customize(new Customization());
+        var sha = fixture.Create<string>();
+
+        // Act, Assert
         Assert.That(new UniqueId(sha), Is.EqualTo(new UniqueId(sha)));
+    }
 #pragma warning restore NUnit2009 // The same value has been provided as both the actual and the expected argument
 
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
-    public void OperatorInequality(string sha1, string sha2) =>
+    public void OperatorInequality()
+    {
+        // Arrange
+        var fixture = new Fixture().Customize(new Customization());
+        var sha1 = fixture.Create<string>();
+        var sha2 = fixture.Create<string>();
+
+        // Act, Assert
         Assert.That(new UniqueId(sha1), Is.Not.EqualTo(new UniqueId(sha2)));
+    }
 
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
-    public void OperatorLowerThan(string sha1, string sha2) =>
+    public void OperatorLowerThan()
+    {
+        // Arrange
+        var fixture = new Fixture().Customize(new Customization());
+        var sha1 = fixture.Create<string>();
+        var sha2 = fixture.Create<string>();
+
+        // Act, Assert
         Assert.That(
             string.CompareOrdinal(sha1, sha2) < 0, Is.EqualTo(new UniqueId(sha1) < new UniqueId(sha2)));
+    }
 
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
-    public void OperatorLowerThanOrEqual(string sha1, string sha2) =>
+    public void OperatorLowerThanOrEqual()
+    {
+        // Arrange
+        var fixture = new Fixture().Customize(new Customization());
+        var sha1 = fixture.Create<string>();
+        var sha2 = fixture.Create<string>();
+
+        // Act, Assert
         Assert.That(
             string.CompareOrdinal(sha1, sha2) <= 0, Is.EqualTo(new UniqueId(sha1) <= new UniqueId(sha2)));
+    }
 
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
-    public void OperatorGreaterThan(string sha1, string sha2) =>
+    public void OperatorGreaterThan()
+    {
+        // Arrange
+        var fixture = new Fixture().Customize(new Customization());
+        var sha1 = fixture.Create<string>();
+        var sha2 = fixture.Create<string>();
+
+        // Act, Assert
         Assert.That(
             string.CompareOrdinal(sha1, sha2) > 0, Is.EqualTo(new UniqueId(sha1) > new UniqueId(sha2)));
+    }
 
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
-    public void OperatorGreaterThanOrEqual(string sha1, string sha2) =>
+    public void OperatorGreaterThanOrEqual()
+    {
+        // Arrange
+        var fixture = new Fixture().Customize(new Customization());
+        var sha1 = fixture.Create<string>();
+        var sha2 = fixture.Create<string>();
+
+        // Act, Assert
         Assert.That(
             string.CompareOrdinal(sha1, sha2) >= 0, Is.EqualTo(new UniqueId(sha1) >= new UniqueId(sha2)));
+    }
 
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
-    public void TryParseFailsWhenEmpty() =>
+    public void TryParseFailsWhenEmpty()
+    {
+        // Act, Assert
         Assert.That(
             UniqueId.TryParse(string.Empty, out var _),
             Is.False);
+    }
 
     [Test]
-    [AutoDataCustomizations(typeof(Customization))]
-    public void EqualsBoxed(string sha)
+    public void EqualsBoxed()
     {
+        // Arrange
+        var fixture = new Fixture().Customize(new Customization());
+        var sha = fixture.Create<string>();
         var boxed = (object)new UniqueId(sha);
+
+        // Act, Assert
         Assert.That(new UniqueId(sha), Is.EqualTo(boxed));
     }
 

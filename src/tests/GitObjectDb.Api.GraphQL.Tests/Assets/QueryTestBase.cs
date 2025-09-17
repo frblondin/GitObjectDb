@@ -54,6 +54,7 @@ public class QueryTestBase<TDocumentBuilder>
         ServiceProvider = new ServiceCollection()
             .AddOrganizationModel()
             .AddMemoryCache()
+            .AddGitDotNet()
             .AddGitObjectDb()
             .AddGitObjectDbSystemTextJson(o => o.ConfigureForNodaTime(Organization.TimeZoneProvider))
             .AddGitObjectDbGraphQLSchema(o =>

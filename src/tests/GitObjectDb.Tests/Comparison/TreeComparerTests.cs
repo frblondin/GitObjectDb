@@ -1,34 +1,40 @@
-using GitObjectDb.Comparison;
+using AutoFixture;
+using GitDotNet;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
-using GitObjectDb.Tests.Assets.Tools;
-using LibGit2Sharp;
 using Models.Software;
 using NUnit.Framework;
 using System.Linq;
+using System.Threading.Tasks;
+using Change = GitObjectDb.Comparison.Change;
 
 namespace GitObjectDb.Tests.Comparison;
 
 public class TreeComparerTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization))]
-    public void CompareFieldEdit(IConnection connection, Field field, string message, Signature signature)
+    public async Task CompareFieldEdit()
     {
         // Arrange
-        connection
-            .Update("main", c => c.CreateOrUpdate(
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var field = fixture.Create<Field>();
+        var message = fixture.Create<string>();
+        var signature = fixture.Create<Signature>();
+
+        var changes = await connection
+            .UpdateAsync("main", c => c.CreateOrUpdateAsync(
                 field with
                 {
                     SomeValue = new NestedA
                     {
                         B = new NestedB { IsVisible = !field.SomeValue.B.IsVisible },
                     },
-                }))
-            .Commit(new(message, signature, signature));
+                }));
+        await changes.CommitAsync(new(message, signature, signature));
 
         // Act
-        var comparison = connection.Compare("HEAD~1", connection.Repository.Head.Tip.Sha);
+        var comparison = await connection.CompareAsync("main~1", "main");
 
         // Assert
         Assert.That(comparison, Has.Count.EqualTo(1));

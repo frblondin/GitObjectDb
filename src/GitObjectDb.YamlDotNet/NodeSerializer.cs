@@ -1,14 +1,13 @@
+using GitDotNet;
 using GitObjectDb.Model;
 using GitObjectDb.YamlDotNet.Core;
-using LibGit2Sharp;
 using Microsoft.IO;
 using System;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
+using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 
 namespace GitObjectDb.YamlDotNet;
@@ -62,10 +61,10 @@ public partial class NodeSerializer : INodeSerializer
     }
 
     /// <inheritdoc/>
-    public Node Deserialize(Stream stream,
-                            ObjectId treeId,
-                            DataPath path,
-                            INodeSerializer.ItemLoader referenceResolver)
+    public async Task<Node> DeserializeAsync(Stream stream,
+        HashId treeId,
+        DataPath path,
+        INodeSerializer.ItemLoader referenceResolver)
     {
         using var reader = new StreamReader(stream);
         using var parser = new NodeReferenceParser(reader, referenceResolver);
@@ -77,7 +76,7 @@ public partial class NodeSerializer : INodeSerializer
 
         if (parser.IsRoot)
         {
-            ResolveReferences(parser);
+            await ResolveReferencesAsync(parser);
         }
 
         return result;

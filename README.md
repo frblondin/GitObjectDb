@@ -45,11 +45,10 @@ Here's a simple example:
     ```
 2. Manipulate objects as follows:
     ```csharp
-	var existingApplication = connection.Lookup<Application>("main", "applications", new UniqueId(id));
+	var existingApplication = await connection.LookupAsync<Application>("main", "applications", new UniqueId(id));
 	var newTable = new Table { ... };
-	connection
-	    .Update("main", c => c.CreateOrUpdate(newTable, parent: existingApplication))
-		.Commit(new("Added new table.", author, committer));
+	var updates = await connection.UpdateAsync("main", c => c.CreateOrUpdateAsync(newTable, parent: existingApplication));
+	await updates.CommitAsync(new("Added new table.", author, committer));
     ```
 
 # Features
@@ -84,19 +83,15 @@ new Resource(node, "Some/Folder", "File.txt", new Resource.Data("Value stored in
 ## Branching
 
 ```csharp
-connection
-    .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
-    .Commit(new("Some message", signature, signature));
-connection.Checkout("newBranch", "main~1");
-connection
-    .Update("main", c => c.CreateOrUpdate(table with { Name = newName }))
-    .Commit(new("Another message", signature, signature));
+connection.Branches.Add("newBranch", "main~1");
+var updates = await connection.UpdateAsync("main", c => c.CreateOrUpdateAsync(table with { Name = newName }));
+await updates..CommitAsync(new("Another message", signature, signature));
 ```
 
 ## Comparing commits
 
 ```csharp
-var comparison = connection.Compare("main~5", "main");
+var comparison = await connection.CompareAsync("main~5", "main");
 var nodeChanges = comparison.Modified.OfType<Change.NodeChange>();
 ```
 
@@ -116,7 +111,7 @@ public record Client : Node
 }
 // Nodes get loaded with their references (using a shared )
 var cache = new Dictionary<DataPath, ITreeItem>();
-var order = connection.GetNodes<Order>("main", referenceCache: cache).First();
+var order = (await connection.GetNodesAsync<Order>("main", referenceCache: cache)).First();
 Console.WriteLine(order.Client.Id);
 ```
 
@@ -127,15 +122,17 @@ Console.WriteLine(order.Client.Id);
 //             \    ->  \   \
 // newBranch:   C        C---x
 
-connection
-    .Update("main", c => c.CreateOrUpdate(table with { Description = newDescription }))
-    .Commit(new("B", signature, signature));
+var mainChanges = await connection.Update("main", c => c.CreateOrUpdateAsync(table with { Description = newDescription }));
+await mainChanges.CommitAsync(new("B", signature, signature));
 connection.Repository.Branches.Add("newBranch", "main~1");
-connection
-    .Update("newBranch", c => c.CreateOrUpdate(table with { Name = newName }))
-    .Commit(new("C", signature, signature));
+var newBranchChanges = await connection.UpdateAsync("newBranch", c => c.CreateOrUpdateAsync(table with { Name = newName }));
+await newBranchChanges.CommitAsync(new("C", signature, signature));
 
-sut.Merge(upstreamCommittish: "main");
+var merge = await sut.MergeAsync(branchName: "newBranch", upstreamCommittish: "main");
+if (merge.Status = MergeStatus.Conflicts)
+{
+    // ...
+}
 ```
 
 ## Node versioning management
@@ -200,9 +197,9 @@ See [documentation][Documentation].
 
 # Online resources
 
- - [LibGit2Sharp][LibGit2Sharp] (Requires NuGet 2.7+)
+ - [GitDotNet][GitDotNet] (Requires NuGet 2.7+)
 
- [LibGit2Sharp]: https://github.com/libgit2/libgit2sharp
+ [GitDotNet]: https://github.com/frblondin/GitDotNet
 
 # Quick contributing guide
 

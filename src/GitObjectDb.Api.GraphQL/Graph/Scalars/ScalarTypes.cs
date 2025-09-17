@@ -1,15 +1,15 @@
+using GitDotNet;
 using GitObjectDb.Api.GraphQL.Tools;
 using GraphQL;
 using GraphQL.DataLoader;
 using GraphQL.Types;
-using LibGit2Sharp;
 
 namespace GitObjectDb.Api.GraphQL.Graph.Scalars;
 internal static class ScalarTypes
 {
     internal static void Add(ISchema schema)
     {
-        schema.RegisterTypeMapping<ObjectId, ObjectIdGraphType>();
+        schema.RegisterTypeMapping<HashId, HashIdGraphType>();
         schema.RegisterTypeMapping<UniqueId, UniqueIdGraphType>();
         schema.RegisterTypeMapping<DataPath, DataPathGraphType>();
     }
@@ -32,7 +32,7 @@ internal static class ScalarTypes
     }
 
     private static bool IsGitObjectDbScalarType(this Type type) =>
-        type == typeof(ObjectId) ||
+        type == typeof(HashId) ||
         type == typeof(UniqueId) ||
         type == typeof(DataPath);
 

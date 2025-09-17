@@ -1,4 +1,4 @@
-using LibGit2Sharp;
+using GitDotNet;
 
 namespace GitObjectDb.Api.OData.Model;
 
@@ -8,11 +8,11 @@ public class NodeDto
     /// <summary>Initializes a new instance of the <see cref="NodeDto"/> class.</summary>
     /// <param name="node">The original <see cref="Node"/> instance that the data transfer object represents.</param>
     /// <param name="commitId">The commit id that the <paramref name="node"/> has been retrieved from.</param>
-    protected NodeDto(Node? node, ObjectId? commitId)
+    protected NodeDto(Node? node, HashId? commitId)
     {
         Node = node;
         Id = node?.Id.ToString() ?? UniqueId.CreateNew().ToString();
-        CommitId = commitId?.Sha;
+        CommitId = commitId?.ToString();
     }
 
     /// <summary>Gets the original <see cref="Node"/> instance that the data transfer object represents.</summary>

@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoFixture.NUnit3" />
+    <PackageReference Include="AutoFixture.NUnit4" />
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="NBomber" />
     <PackageReference Include="NBomber.Http" />

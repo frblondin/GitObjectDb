@@ -9,13 +9,17 @@ public class SoftwareBenchmarkCustomization : SoftwareCustomization
     public const int DefaultResourcePerTableCount = 5;
 
     public SoftwareBenchmarkCustomization()
-        : base(
-              DefaultApplicationCount,
-              DefaultTablePerApplicationCount,
-              DefaultFieldPerTableCount,
-              DefaultConstantPerTableCount,
-              DefaultResourcePerTableCount,
-              GitObjectDbFixture.SoftwareBenchmarkRepositoryPath)
+        : base(GitObjectDbFixture.SoftwareBenchmarkRepositoryPath)
     {
     }
+
+    public override int ApplicationCount => DefaultApplicationCount;
+
+    public override int TablePerApplicationCount => DefaultTablePerApplicationCount;
+
+    public override int FieldPerTableCount => DefaultFieldPerTableCount;
+
+    public override int ConstantPerTableCount => DefaultConstantPerTableCount;
+
+    public override int ResourcePerTableCount => DefaultResourcePerTableCount;
 }

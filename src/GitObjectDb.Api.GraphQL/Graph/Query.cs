@@ -1,18 +1,13 @@
 using Fasterflect;
+using GitDotNet;
 using GitObjectDb.Api.GraphQL.Graph.Objects;
 using GitObjectDb.Api.GraphQL.Graph.Scalars;
 using GitObjectDb.Api.GraphQL.Model;
 using GitObjectDb.Api.GraphQL.Queries;
 using GitObjectDb.Api.GraphQL.Tools;
 using GitObjectDb.Model;
-using GraphQL;
 using GraphQL.Builders;
-using GraphQL.Execution;
-using GraphQL.MicrosoftDI;
-using GraphQL.Resolvers;
 using GraphQL.Types;
-using LibGit2Sharp;
-using Microsoft.Extensions.DependencyInjection;
 using Namotion.Reflection;
 
 namespace GitObjectDb.Api.GraphQL.Graph;
@@ -117,13 +112,11 @@ public partial class Query : ObjectGraphType
             .FieldType);
 
     private void AddHistoryField() =>
-        Field<ListGraphType<CommitType>, IEnumerable<Commit>>("History")
+        Field<ListGraphType<CommitType>, IEnumerable<CommitEntry>>("History")
             .Description("Gets the history of changes in repository.")
             .Arguments(
-            [
                 NewArg<NonNullGraphType<StringGraphType>>(HistoryStartCommit, "Start committish of history lookup."),
-                NewArg<NonNullGraphType<StringGraphType>>(HistoryEndCommit, "End committish of history lookup."),
-            ])
+                NewArg<NonNullGraphType<StringGraphType>>(HistoryEndCommit, "End committish of history lookup."))
             .ResolveThroughDI().UsingResolver<HistoryResolver>();
 
     private static QueryArgument<TType> NewArg<TType>(string name, string description)

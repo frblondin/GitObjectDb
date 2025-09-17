@@ -8,24 +8,19 @@ namespace GitObjectDb.YamlDotNet;
 [ExcludeFromCodeCoverage]
 public static class TypeExtensions
 {
-    /// <summary>
-    /// Converts the compiled .Net type to its corresponding Nabsic name.
-    /// </summary>
-    /// <param name="type">the type.</param>
-    /// <returns>type name.</returns>
-    /// <exception cref="ArgumentNullException">type is null.</exception>
+    /// <summary>Gets the YAML name of the specified type.</summary>
+    /// <param name="type">The type to get the YAML name for.</param>
+    /// <returns>The YAML name of the type.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when the type is null.</exception>
     public static string GetYamlName(this Type type)
     {
-        if (type == null)
-        {
-            throw new ArgumentNullException("type");
-        }
+        ArgumentNullException.ThrowIfNull(type);
 
         if (type.AssemblyQualifiedName != null &&
             type.AssemblyQualifiedName.Contains("DynamicProxy") &&
             type.BaseType != null)
         {
-           return type.BaseType.GetYamlName();
+            return type.BaseType.GetYamlName();
         }
 
         var nonNullableType = Nullable.GetUnderlyingType(type);
@@ -46,7 +41,7 @@ public static class TypeExtensions
             string result = type.GetShortName();
             if (typeDefinition != type)
             {
-                result += "(" + string.Join(",", type.GetGenericArguments().Select(argType => GetYamlName(argType))) + ")";
+                result += $"({string.Join(",", type.GetGenericArguments().Select(GetYamlName))})";
             }
             else
             {
@@ -62,11 +57,9 @@ public static class TypeExtensions
         return type.GetShortName();
     }
 
-    /// <summary>
-    /// get the short name of the type.
-    /// </summary>
-    /// <param name="type">the type.</param>
-    /// <returns>short name of the type.</returns>
+    /// <summary>Gets the short name of the type.</summary>
+    /// <param name="type">The type.</param>
+    /// <returns>The short name of the type.</returns>
     private static string GetShortName(this Type type)
     {
         if (type == typeof(int))

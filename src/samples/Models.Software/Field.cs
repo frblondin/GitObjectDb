@@ -1,6 +1,8 @@
+using GitDotNet;
 using GitObjectDb;
 using GitObjectDb.Model;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Models.Software;
 
@@ -29,6 +31,6 @@ public record NestedB
 
 public static class IConnectionFieldExtensions
 {
-    public static IEnumerable<Field> GetFields(this IConnection connection, Table table, string committish = "main") =>
-        connection.GetNodes<Field>(committish, table);
+    public static IEnumerable<Field> GetFields(this IConnection connection, CommitEntry commit, Table table) =>
+        connection.GetNodesAsync<Field>(commit, table).ToEnumerable().OrderBy(f => f.Id);
 }

@@ -1,41 +1,33 @@
+using GitDotNet;
 using GitObjectDb.Internal.Queries;
 using KellermanSoftware.CompareNetObjects;
-using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Comparison;
 
-internal class Comparer : IComparer, IComparerInternal
+internal partial class Comparer(IAsyncQuery<LoadItem.Parameters, TreeItem?> nodeLoader, INodeSerializer serializer) : IComparer, IComparerInternal
 {
-    private readonly IQuery<LoadItem.Parameters, TreeItem?> _nodeLoader;
-    private readonly INodeSerializer _serializer;
+    public ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy) =>
+        CompareInternal(expectedObject, actualObject, policy);
 
-    public Comparer(IQuery<LoadItem.Parameters, TreeItem?> nodeLoader, INodeSerializer serializer)
+    public async Task<ChangeCollection> CompareAsync(IConnectionInternal connection,
+                                                     CommitEntry old,
+                                                     CommitEntry @new,
+                                                     ComparisonPolicy? policy = null)
     {
-        _nodeLoader = nodeLoader;
-        _serializer = serializer;
-    }
-
-    public ComparisonResult Compare(object? expectedObject, object? actualObject, ComparisonPolicy policy)
-    {
-        return CompareInternal(expectedObject, actualObject, policy);
-    }
-
-    public ChangeCollection Compare(IConnectionInternal connection,
-                                    Commit old,
-                                    Commit @new,
-                                    ComparisonPolicy? policy = null)
-    {
-        using var changes = connection.Repository.Diff.Compare<Patch>(old.Tree, @new.Tree);
+        var changes = await connection.Repository.CompareAsync(old, @new).ConfigureAwait(false);
         var avoidDuplicates = new HashSet<string>(StringComparer.Ordinal);
         var result = new ChangeCollection(@new);
         foreach (var change in changes)
         {
-            var transformedChange = Compare(connection, old.Tree, @new.Tree, change, avoidDuplicates, policy);
+            var oldTree = await old.GetRootTreeAsync().ConfigureAwait(false);
+            var newTree = await @new.GetRootTreeAsync().ConfigureAwait(false);
+            var transformedChange = await CompareAsync(connection, oldTree, newTree, change, avoidDuplicates, policy).ConfigureAwait(false);
             if (transformedChange is not null)
             {
                 result.Add(transformedChange);
@@ -44,15 +36,15 @@ internal class Comparer : IComparer, IComparerInternal
         return result;
     }
 
-    public Change? Compare(IQueryAccessor queryAccessor,
-                                        Tree oldTree,
-                                        Tree newTree,
-                                        PatchEntryChanges change,
-                                        ISet<string> avoidDuplicates,
-                                        ComparisonPolicy? policy)
+    public async Task<Change?> CompareAsync(IConnection queryAccessor,
+                                            TreeEntry oldTree,
+                                            TreeEntry newTree,
+                                            GitDotNet.Change change,
+                                            ISet<string> avoidDuplicates,
+                                            ComparisonPolicy? policy)
     {
         if (IsNodePropertyStoredAsFile(change.OldPath, out var oldNodePath) |
-            IsNodePropertyStoredAsFile(change.Path, out var newNodePath))
+            IsNodePropertyStoredAsFile(change.NewPath, out var newNodePath))
         {
             if (avoidDuplicates.Contains(oldNodePath!))
             {
@@ -61,54 +53,70 @@ internal class Comparer : IComparer, IComparerInternal
 
             avoidDuplicates.Add(oldNodePath!);
             avoidDuplicates.Add(newNodePath!);
-            return TurnExternalPropertyIntoNodeChange();
+            return await TurnExternalPropertyIntoNodeChangeAsync().ConfigureAwait(false);
         }
 
-        return change.Status switch
+        return change.Type switch
         {
-            ChangeKind.Modified => CreateChange(Load(oldTree, change.OldPath),
-                Load(newTree, change.Path),
+            ChangeType.Modified => CreateChange(
+                await LoadAsync(oldTree, change.OldPath!).ConfigureAwait(false),
+                await LoadAsync(newTree, change.NewPath!).ConfigureAwait(false),
                 ChangeStatus.Edit),
-            ChangeKind.Added => CreateChange(default, Load(newTree, change.Path), ChangeStatus.Add),
-            ChangeKind.Deleted => CreateChange(Load(oldTree, change.OldPath), default, ChangeStatus.Delete),
-            ChangeKind.Renamed => CreateChange(Load(oldTree, change.OldPath),
-                Load(newTree, change.Path),
+            ChangeType.Added => CreateChange(
+                default,
+                await LoadAsync(newTree, change.NewPath!).ConfigureAwait(false),
+                ChangeStatus.Add),
+            ChangeType.Removed => CreateChange(
+                await LoadAsync(oldTree, change.OldPath!).ConfigureAwait(false),
+                default,
+                ChangeStatus.Delete),
+            ChangeType.Renamed => CreateChange(
+                await LoadAsync(oldTree, change.OldPath!).ConfigureAwait(false),
+                await LoadAsync(newTree, change.NewPath!).ConfigureAwait(false),
                 ChangeStatus.Rename),
             _ => null,
         };
         Change? CreateChange(TreeItem? old, TreeItem? @new, ChangeStatus status) => Change.Create(
             change, old, @new, status, policy ?? queryAccessor.Model.DefaultComparisonPolicy);
-        TreeItem? Load(Tree tree, string path) => _nodeLoader.Execute(
+        Task<TreeItem?> LoadAsync(TreeEntry tree, GitPath path) => nodeLoader.ExecuteAsync(
             queryAccessor,
-            new(tree, Index: null, DataPath.Parse(path)));
+            new(tree, Index: null, DataPath.Parse(path.ToString())));
 
-        Change? TurnExternalPropertyIntoNodeChange()
+        async Task<Change?> TurnExternalPropertyIntoNodeChangeAsync()
         {
-            var oldNode = oldNodePath is not null ? Load(oldTree, oldNodePath) : null;
-            var newNode = newNodePath is not null ? Load(newTree, newNodePath) : null;
-            var status = change.Status switch
+            var oldNode = await LoadAsync(oldTree, (oldNodePath ?? newNodePath)!).ConfigureAwait(false);
+            var newNode = await LoadAsync(newTree, (newNodePath ?? oldNodePath)!).ConfigureAwait(false);
+            var status = change.Type switch
             {
-                _ when oldNodePath is null => ChangeStatus.Add,
-                _ when newNodePath is null => ChangeStatus.Delete,
-                ChangeKind.Renamed => ChangeStatus.Rename,
+                _ when oldNode is null => ChangeStatus.Add,
+                _ when newNode is null => ChangeStatus.Delete,
+                ChangeType.Renamed => ChangeStatus.Rename,
                 _ => ChangeStatus.Edit,
             };
             return CreateChange(oldNode, newNode, status);
         }
     }
 
-    private bool IsNodePropertyStoredAsFile(string path, out string? nodePath)
+    private bool IsNodePropertyStoredAsFile(GitPath? path, out string? nodePath)
     {
-        var match = Regex.Match(path, @"^(?<folder>.*)/(?<fileName>\w+)\.\w+\.\w+");
+        if (path is null)
+        {
+            nodePath = null;
+            return false;
+        }
+        var match = NodePropertyFileRegex().Match(path.ToString());
         if (match.Success)
         {
-            var fileName = $"{match.Result("${fileName}")}.{_serializer.FileExtension}";
+            var fileName = $"{match.Result("${fileName}")}.{serializer.FileExtension}";
             nodePath = $"{match.Result("${folder}")}/{fileName}";
-            return DataPath.TryParse(nodePath, out var parsed) && parsed.IsNode(_serializer);
+            return DataPath.TryParse(nodePath, out var parsed) && parsed.IsNode(serializer);
         }
         nodePath = null;
         return false;
     }
+
+    [GeneratedRegex(@"^(?<folder>.*)/(?<fileName>\w+)\.\w+\.\w+")]
+    private static partial Regex NodePropertyFileRegex();
 
     internal static ComparisonResult CompareInternal(object? expectedObject,
                                                      object? actualObject,

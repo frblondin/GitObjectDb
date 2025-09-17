@@ -1,5 +1,6 @@
+using GitDotNet;
 using KellermanSoftware.CompareNetObjects;
-using LibGit2Sharp;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Comparison;
 
@@ -22,8 +23,8 @@ internal interface IComparerInternal
     /// <param name="new">The end start of comparison.</param>
     /// <param name="policy">The merge policy to use.</param>
     /// <returns>Details about the comparison.</returns>
-    ChangeCollection Compare(IConnectionInternal connection,
-                             Commit old,
-                             Commit @new,
-                             ComparisonPolicy? policy = null);
+    Task<ChangeCollection> CompareAsync(IConnectionInternal connection,
+                                        CommitEntry old,
+                                        CommitEntry @new,
+                                        ComparisonPolicy? policy = null);
 }

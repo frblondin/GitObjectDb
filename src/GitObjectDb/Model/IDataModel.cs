@@ -1,5 +1,5 @@
+using GitDotNet;
 using GitObjectDb.Comparison;
-using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 
@@ -48,5 +48,5 @@ public interface IDataModel
     /// <param name="node">The node to update.</param>
     /// <param name="treeId">The id of the tree where the stream is originated from.</param>
     /// <param name="path">The new path value.</param>
-    void UpdateBaseProperties(Node node, ObjectId? treeId, DataPath? path);
+    void UpdateBaseProperties(Node node, HashId? treeId, DataPath? path);
 }

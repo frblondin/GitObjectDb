@@ -1,6 +1,6 @@
+using GitDotNet;
 using GitObjectDb.Model;
 using GitObjectDb.SystemTextJson.Converters;
-using LibGit2Sharp;
 using Microsoft.Extensions.Options;
 using Microsoft.IO;
 using System;
@@ -9,6 +9,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.SystemTextJson;
 
@@ -46,6 +47,7 @@ internal class NodeSerializer : INodeSerializer
         result.TypeInfoResolver = new NodeTypeInfoResolver(model);
 
         result.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+        result.Converters.Add(new HashIdConverter());
         result.Converters.Add(new UniqueIdConverter());
 
         return result;
@@ -65,10 +67,10 @@ internal class NodeSerializer : INodeSerializer
         JsonSerializer.Serialize(writer, node, Options);
     }
 
-    public Node Deserialize(Stream stream,
-                            ObjectId treeId,
-                            DataPath path,
-                            INodeSerializer.ItemLoader referenceResolver)
+    public async Task<Node> DeserializeAsync(Stream stream,
+        HashId treeId,
+        DataPath path,
+        INodeSerializer.ItemLoader referenceResolver)
     {
         var isRootContext = NodeReferenceHandler.CurrentContext.Value == null;
         var context =
@@ -101,7 +103,7 @@ internal class NodeSerializer : INodeSerializer
 
                 if (isRootContext)
                 {
-                    context.PostDeserializeationRefResolver.ResolveReferencesFromPaths(context, referenceResolver);
+                    await context.PostDeserializeationRefResolver.ResolveReferencesFromPathsAsync(context, referenceResolver);
                 }
 
                 return result;

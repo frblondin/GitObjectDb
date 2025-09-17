@@ -1,16 +1,16 @@
+using AutoFixture;
 using FakeItEasy;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
-using GitObjectDb.Tests.Assets.Tools;
 using Models.Software;
 using NUnit.Framework;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests;
 
-public class NodeTests : DisposeArguments
+public class NodeTests
 {
     [Test]
-    [AutoDataCustomizations]
     public void ToStringReturnsIdSha()
     {
         // Arrange
@@ -21,17 +21,23 @@ public class NodeTests : DisposeArguments
     }
 
     [Test]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) })]
-    public void LoadedNodesHaveTreeId(Table table)
+    public async Task LoadedNodesHaveTreeId()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        var table = fixture.Create<Table>();
+
         // Assert
         Assert.That(table.TreeId, Is.Not.Null);
     }
 
     [Test]
-    [InlineAutoDataCustomizations(new[] { typeof(DefaultServiceProviderCustomization), typeof(SoftwareCustomization) })]
-    public void CopyConstructorSkipsTreeId(Table table)
+    public async Task CopyConstructorSkipsTreeId()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareCustomization>();
+        var table = fixture.Create<Table>();
+
         // Act
         var copy = table with { };
 

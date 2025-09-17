@@ -31,7 +31,7 @@ public class MutationTests : QueryTestBase
         await AssertQuerySuccessAsync(query, expected);
 
         // Assert
-        Assert.That(Connection.Repository.Info.IsHeadUnborn, Is.True);
+        Assert.That(Connection.Repository.Branches.TryGet("main", out _), Is.False);
     }
 
     [Test]
@@ -61,7 +61,7 @@ public class MutationTests : QueryTestBase
         await AssertQuerySuccessAsync(query, expected);
 
         // Assert
-        Assert.That(Connection.Repository.Head.Commits.ToList(), Has.Exactly(1).Items);
+        Assert.That(await Connection.Repository.Branches["main"].GetTipAsync(), Is.Not.Null);
     }
 
     [Test]
@@ -98,8 +98,9 @@ public class MutationTests : QueryTestBase
         await AssertQuerySuccessAsync(query, expected);
 
         // Assert
-        var type = Connection.GetNodes<OrganizationType>("main").Single();
-        var organization = Connection.GetNodes<Organization>("main").Single();
+        var tip = await Connection.Repository.GetCommittishAsync("main");
+        var type = Connection.GetNodesAsync<OrganizationType>(tip).ToEnumerable().Single();
+        var organization = Connection.GetNodesAsync<Organization>(tip).ToEnumerable().Single();
         Assert.That(organization, Has.Property(nameof(Organization.Type)).SameAs(type));
     }
 
@@ -108,8 +109,9 @@ public class MutationTests : QueryTestBase
     {
         // Arrange
         var generator = new DataGenerator(Connection, 20, 5);
-        generator.CreateInitData();
-        var node = Connection.GetNodes<Organization>("main").First();
+        await generator.CreateInitDataAsync();
+        var tip = await Connection.Repository.GetCommittishAsync("main");
+        var node = Connection.GetNodesAsync<Organization>(tip).ToEnumerable().First();
 
         // Act
         var result = await AssertQuerySuccessAsync(@$"
@@ -127,7 +129,8 @@ public class MutationTests : QueryTestBase
         // Assert
         Assert.Multiple(() =>
         {
-            Assert.That(Connection.Repository.Head.Commits.ToList(), Has.Exactly(2).Items);
+            var commits = Connection.Repository.GetLogAsync("main").ToEnumerable().ToList();
+            Assert.That(commits, Has.Exactly(2).Items);
             Assert.That(writtenResult.GetFromPath<string>("data.deleteOrg"), Is.EqualTo(node.Path!.FilePath));
         });
     }

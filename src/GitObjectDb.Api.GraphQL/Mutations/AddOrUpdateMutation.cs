@@ -8,6 +8,7 @@ using GraphQL.Execution;
 using GraphQL.Resolvers;
 using GraphQLParser.AST;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Api.GraphQL.Mutations;
 
@@ -21,21 +22,22 @@ internal static class AddOrUpdateMutation
 internal class AddOrUpdate<TNode> : IFieldResolver
     where TNode : Node
 {
-    public ValueTask<object?> ResolveAsync(IResolveFieldContext context)
+    public async ValueTask<object?> ResolveAsync(IResolveFieldContext context)
     {
         var mutationContext = MutationContext.Current.Value = MutationContext.GetCurrent(context);
 
         try
         {
-            var node = GetNodeArgument(context, mutationContext);
+            var node = await GetNodeArgumentAsync(context, mutationContext);
             var serializer = mutationContext.QueryAccessor.Serializer;
             var parentPath = node.Path!.IsRootNode ? default : node.Path!.GetParentNode(serializer);
-            var result = mutationContext.Transformations.CreateOrUpdate(node, parentPath);
+            var transformations = await mutationContext.GetTransformationsAsync();
+            var result = await transformations.CreateOrUpdateAsync(node, parentPath);
 
             mutationContext.ModifiedNodesByPath[result.Path!] = result;
             mutationContext.ModifiedNodesById[result.Id!] = result;
 
-            return ValueTask.FromResult((object?)result.Path);
+            return result.Path;
         }
         catch
         {
@@ -48,19 +50,19 @@ internal class AddOrUpdate<TNode> : IFieldResolver
         }
     }
 
-    private static TNode GetNodeArgument(IResolveFieldContext context, MutationContext mutationContext)
+    private static async Task<TNode> GetNodeArgumentAsync(IResolveFieldContext context, MutationContext mutationContext)
     {
         var dto = context.GetArgument<NodeInputDto<TNode>>(Mutation.NodeArgument);
         var modifiedMembers = GetModifiedMembers(context);
-        var @new = ConvertDtoToNode(dto, mutationContext, modifiedMembers);
-        @new.Path = GetPath(@new, mutationContext.Connection.Model, context, mutationContext);
-        var existing = (TNode?)mutationContext.TryResolve(@new.Path);
+        var @new = await ConvertDtoToNodeAsync(dto, mutationContext, modifiedMembers);
+        @new.Path = await GetPathAsync(@new, mutationContext.Connection.Model, context, mutationContext);
+        var existing = await mutationContext.TryResolveAsync(@new.Path) as TNode;
         return Merge(existing, @new, modifiedMembers);
     }
 
-    private static TNode ConvertDtoToNode(NodeInputDto<TNode> dto,
-                                          MutationContext mutationContext,
-                                          IEnumerable<GraphQLObjectField> modifiedMembers)
+    private static async Task<TNode> ConvertDtoToNodeAsync(NodeInputDto<TNode> dto,
+        MutationContext mutationContext,
+        IEnumerable<GraphQLObjectField> modifiedMembers)
     {
         var dtoType = dto.GetType();
         var result = (TNode)Activator.CreateInstance(typeof(TNode))!;
@@ -70,36 +72,37 @@ internal class AddOrUpdate<TNode> : IFieldResolver
 
             if (property is not null && property.CanWrite)
             {
-                var value = GetDtoPropertyValue(dto, dtoType, property, mutationContext);
+                var value = await GetDtoPropertyValueAsync(dto, dtoType, property, mutationContext);
                 Reflect.Setter(property).Invoke(result, value);
             }
         }
         return result;
     }
 
-    private static object? GetDtoPropertyValue(NodeInputDto<TNode> dto,
-                                               Type dtoType,
-                                               PropertyInfo property,
-                                               MutationContext mutationContext)
+    private static async Task<object?> GetDtoPropertyValueAsync(NodeInputDto<TNode> dto,
+        Type dtoType,
+        PropertyInfo property,
+        MutationContext mutationContext)
     {
         var value = Reflect.Getter(dtoType, property.Name).Invoke(dto);
         if (property.PropertyType.IsAssignableTo(typeof(Node)))
         {
             value = value is DataPath path ?
-                mutationContext.TryResolve(path) :
+                await mutationContext.TryResolveAsync(path) :
                 null;
         }
-        if (property.PropertyType.IsEnumerable(t => t.IsAssignableTo(typeof(Node)), out var _))
+        if (property.PropertyType.IsEnumerable(t => t.IsAssignableTo(typeof(Node)), out var _) &&
+            value is IEnumerable<DataPath> paths)
         {
-            value = value is IEnumerable<DataPath> paths ?
-                paths.Select(p => mutationContext.TryResolve(p)).ToList() :
-                null;
+            var values = paths.Select(p => mutationContext.TryResolveAsync(p)).ToList();
+            await Task.WhenAll(values);
+            return values.Select(t => t.Result).ToList();
         }
 
         return value;
     }
 
-    private static DataPath GetPath(TNode node,
+    private static async Task<DataPath> GetPathAsync(TNode node,
                                     IDataModel model,
                                     IResolveFieldContext context,
                                     MutationContext mutationContext)
@@ -117,7 +120,7 @@ internal class AddOrUpdate<TNode> : IFieldResolver
         var parentId = context.GetArgument<UniqueId?>(Mutation.ParentIdArgument, default);
         if (parentId.HasValue)
         {
-            var parent = mutationContext.TryResolve(parentId.Value)?.Path ??
+            var parent = (await mutationContext.TryResolveAsync(parentId.Value))?.Path ??
                 throw new RequestError($"Parent {parentId} could not be found from its identifier.");
             return parent!.AddChild(node.Id, typeof(TNode), model, fileExtension);
         }

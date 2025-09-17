@@ -1,4 +1,3 @@
-using LibGit2Sharp;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -46,7 +45,7 @@ public abstract partial class Change
     [ExcludeFromCodeCoverage]
     public override string ToString() => Message;
 
-    internal static Change? Create(ContentChanges changes,
+    internal static Change? Create(GitDotNet.Change changes,
                                    TreeItem? old,
                                    TreeItem? @new,
                                    ChangeStatus status,

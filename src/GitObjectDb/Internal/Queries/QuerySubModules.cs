@@ -1,12 +1,13 @@
-using LibGit2Sharp;
+using GitDotNet;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Internal.Queries;
 
-internal class QuerySubModules : IQuery<QuerySubModules.Parameters, Commit>
+internal class QuerySubModules : IAsyncQuery<QuerySubModules.Parameters, CommitEntry>
 {
-    public Commit Execute(IQueryAccessor queryAccessor, Parameters parameters)
+    public async Task<CommitEntry> ExecuteAsync(IConnection queryAccessor, Parameters parameters)
     {
         var remoteResource = parameters.Node.RemoteResource ??
                              throw new GitObjectDbException("Can only query submodules for nodes using remote resources.");
@@ -16,8 +17,8 @@ internal class QuerySubModules : IQuery<QuerySubModules.Parameters, Commit>
         var repository = submoduleProvider.GetOrCreateSubmoduleRepository(parameters.Node.ThrowIfNoPath(),
                                                                           remoteResource.Repository);
 
-        return repository.Lookup<Commit>(remoteResource.Sha) ??
-               FetchRemote(repository, parameters).Lookup<Commit>(remoteResource.Sha) ??
+        return await repository.Objects.TryGetAsync<CommitEntry>(remoteResource.Sha).ConfigureAwait(false) ??
+               await FetchRemote(repository, parameters).Objects.TryGetAsync<CommitEntry>(remoteResource.Sha).ConfigureAwait(false) ??
                throw new GitObjectDbException($"GitLink commit {remoteResource.Sha} could not " +
                                               $"be found in remote repository {repository.Info.Path}.");
     }
@@ -27,14 +28,14 @@ internal class QuerySubModules : IQuery<QuerySubModules.Parameters, Commit>
     /// depending on the branches, we use multiple origins so we can fetch
     /// any commit from any remote repository.
     /// </summary>
-    private static Repository FetchRemote(Repository repository, Parameters parameters)
+    private static IGitConnection FetchRemote(IGitConnection repository, Parameters parameters)
     {
         var url = parameters.Node.RemoteResource!.Repository;
-        var matchingOrigin =
-            repository.Network.Remotes.FirstOrDefault(r =>
-                r.Url.Equals(url, StringComparison.OrdinalIgnoreCase)) ??
-            repository.Network.Remotes.Add(UniqueId.CreateNew().ToString(), url);
-        LibGit2Sharp.Commands.Fetch(repository, matchingOrigin.Name, Array.Empty<string>(), null, null);
+        var remote =
+            repository.Remotes.FirstOrDefault(r =>
+                r.Url?.Equals(url, StringComparison.OrdinalIgnoreCase) ?? false) ??
+            repository.Remotes.Add(UniqueId.CreateNew().ToString(), url);
+        remote.Fetch();
         return repository;
     }
 

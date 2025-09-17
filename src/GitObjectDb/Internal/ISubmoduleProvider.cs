@@ -1,7 +1,7 @@
-using LibGit2Sharp;
+using GitDotNet;
 
 namespace GitObjectDb.Internal;
 internal interface ISubmoduleProvider
 {
-    Repository GetOrCreateSubmoduleRepository(DataPath path, string url);
+    IGitConnection GetOrCreateSubmoduleRepository(DataPath path, string url);
 }

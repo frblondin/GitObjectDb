@@ -1,7 +1,7 @@
+using AutoFixture;
 using GitObjectDb.Comparison;
 using GitObjectDb.Model;
 using GitObjectDb.Tests.Assets;
-using GitObjectDb.Tests.Assets.Tools;
 using NUnit.Framework;
 using System.Collections.Immutable;
 
@@ -10,10 +10,15 @@ namespace GitObjectDb.Tests.Comparison;
 public class ComparerTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization))]
-    public void StoreAsSeparateFilePropertyChangesGetDetected(IComparer sut, UniqueId id, string oldValue, string newValue)
+    public void StoreAsSeparateFilePropertyChangesGetDetected()
     {
         // Arrange
+        var fixture = new Fixture().Customize(new DefaultServiceProviderCustomization());
+        var sut = fixture.Create<IComparer>();
+        var id = fixture.Create<UniqueId>();
+        var oldValue = fixture.Create<string>();
+        var newValue = fixture.Create<string>();
+
         var model = new ConventionBaseModelBuilder().RegisterType<SomeNode>().Build();
 
         // Act

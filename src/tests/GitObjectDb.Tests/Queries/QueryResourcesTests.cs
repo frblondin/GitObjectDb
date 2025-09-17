@@ -1,22 +1,27 @@
+using AutoFixture;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Data.Software;
-using GitObjectDb.Tests.Assets.Tools;
 using Models.Software;
 using NUnit.Framework;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.Tests.Queries;
 
-[Parallelizable(ParallelScope.Self | ParallelScope.Children)]
-public class QueryResourcesTests : DisposeArguments
+public class QueryResourcesTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
-    public void GetNodeResources(IConnection connection, Table table)
+    public async Task GetNodeResources()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareBenchmarkCustomization>();
+        var connection = fixture.Create<IConnection>();
+        var table = fixture.Create<Table>();
+
         // Act
-        var result = connection.GetResources("main", table).ToList();
+        var tip = await connection.Repository.GetCommittishAsync("main");
+        var result = connection.GetResourcesAsync(tip, table).ToEnumerable().ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(SoftwareBenchmarkCustomization.DefaultResourcePerTableCount));
@@ -24,13 +29,17 @@ public class QueryResourcesTests : DisposeArguments
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(SoftwareBenchmarkCustomization))]
-    public void ThrowsExceptionForUnattachedNode(IConnection connection)
+    public async Task ThrowsExceptionForUnattachedNode()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<SoftwareBenchmarkCustomization>();
+        var connection = fixture.Create<IConnection>();
+
         // Arrange
         var unattachedTable = new Table();
 
         // Act, Assert
-        Assert.Throws<ArgumentNullException>(() => connection.GetResources("main", unattachedTable));
+        var tip = await connection.Repository.GetCommittishAsync("main");
+        Assert.Throws<InvalidOperationException>(() => connection.GetResourcesAsync(tip, unattachedTable).ToEnumerable().ToList());
     }
 }

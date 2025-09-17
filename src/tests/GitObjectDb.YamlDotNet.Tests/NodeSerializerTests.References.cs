@@ -1,30 +1,37 @@
+using GitDotNet;
 using GitObjectDb.Tests.Assets;
 using GitObjectDb.Tests.Assets.Tools;
 using GitObjectDb.Tests.Customization;
-using LibGit2Sharp;
 using NUnit.Framework;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
+using AutoFixture;
 
 namespace GitObjectDb.YamlDotNet.Tests;
 
 public partial class NodeSerializerTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
-    public void ReferencesAreSupported(IConnection sut, string name, Signature signature)
+    public async Task ReferencesAreSupported()
     {
         // Arrange
+        var fixture = new Fixture().Customize(new DefaultYamlServiceProviderCustomization()).Customize(new ReferenceCustomization());
+        var sut = fixture.Create<IConnection>();
+        var name = fixture.Create<string>();
+        var signature = fixture.Create<Signature>();
+
         DataPath path = default;
-        sut.Update("main", c =>
+        var transformations = await sut.UpdateAsync("main", async c =>
         {
-            var node1 = c.CreateOrUpdate(new NodeWithReference { Name = name });
-            var node2 = c.CreateOrUpdate(new NodeWithReference { Reference = node1 });
+            var node1 = await c.CreateOrUpdateAsync(new NodeWithReference { Name = name });
+            var node2 = await c.CreateOrUpdateAsync(new NodeWithReference { Reference = node1 });
             path = node2.Path;
-        }).Commit(new("foo", signature, signature));
+        });
+        var tip = await transformations.CommitAsync(new("foo", signature, signature));
 
         // Act
-        var result = sut.Lookup<NodeWithReference>("main", path);
+        var result = await sut.LookupAsync<NodeWithReference>(tip, path);
 
         // Act, Assert
         Assert.Multiple(() =>
@@ -35,21 +42,26 @@ public partial class NodeSerializerTests
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
-    public void CircularReferencesAreSupported(IConnection sut, string name, Signature signature)
+    public async Task CircularReferencesAreSupported()
     {
         // Arrange
+        var fixture = new Fixture().Customize(new DefaultYamlServiceProviderCustomization()).Customize(new ReferenceCustomization());
+        var sut = fixture.Create<IConnection>();
+        var name = fixture.Create<string>();
+        var signature = fixture.Create<Signature>();
+
         DataPath path = default;
-        sut.Update("main", c =>
+        var transformations = await sut.UpdateAsync("main", async c =>
         {
-            var node1 = c.CreateOrUpdate(new NodeWithReference { Name = name });
-            var node2 = c.CreateOrUpdate(new NodeWithReference { Reference = node1 });
-            node1 = c.CreateOrUpdate(node1 with { Reference = node2 });
+            var node1 = await c.CreateOrUpdateAsync(new NodeWithReference { Name = name });
+            var node2 = await c.CreateOrUpdateAsync(new NodeWithReference { Reference = node1 });
+            node1 = await c.CreateOrUpdateAsync(node1 with { Reference = node2 });
             path = node2.Path;
-        }).Commit(new("foo", signature, signature));
+        });
+        var tip = await transformations.CommitAsync(new("foo", signature, signature));
 
         // Act
-        var result = sut.Lookup<NodeWithReference>("main", path);
+        var result = await sut.LookupAsync<NodeWithReference>(tip, path);
 
         // Act, Assert
         Assert.Multiple(() =>
@@ -61,21 +73,25 @@ public partial class NodeSerializerTests
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
-    public void CircularReferencesAndDeprecationAreSupported(IConnection sut, Signature signature)
+    public async Task CircularReferencesAndDeprecationAreSupported()
     {
         // Arrange
+        var fixture = new Fixture().Customize(new DefaultYamlServiceProviderCustomization()).Customize(new ReferenceCustomization());
+        var sut = fixture.Create<IConnection>();
+        var signature = fixture.Create<Signature>();
+
         DataPath path = default;
-        sut.Update("main", c =>
+        var transformations = await sut.UpdateAsync("main", async c =>
         {
-            var node1 = c.CreateOrUpdate(new NodeWithReference { Id = new("node1") });
-            var node2 = c.CreateOrUpdate(new NodeWithReference { Id = new("node2"), Reference = node1 });
-            node1 = c.CreateOrUpdate((NodeWithReferenceOld)node1 with { Reference = node2 });
+            var node1 = await c.CreateOrUpdateAsync(new NodeWithReference { Id = new("node1") });
+            var node2 = await c.CreateOrUpdateAsync(new NodeWithReference { Id = new("node2"), Reference = node1 });
+            node1 = await c.CreateOrUpdateAsync((NodeWithReferenceOld)node1 with { Reference = node2 });
             path = node1.Path;
-        }).Commit(new("foo", signature, signature));
+        });
+        var tip = await transformations.CommitAsync(new("foo", signature, signature));
 
         // Act
-        var result = sut.Lookup<NodeWithReference>("main", path);
+        var result = await sut.LookupAsync<NodeWithReference>(tip, path);
 
         // Act, Assert
         Assert.Multiple(() =>
@@ -86,24 +102,30 @@ public partial class NodeSerializerTests
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
-    public void MultipleReferencesAreSupported(IConnection sut, string name1, string name2, Signature signature)
+    public async Task MultipleReferencesAreSupported()
     {
         // Arrange
+        var fixture = new Fixture().Customize(new DefaultYamlServiceProviderCustomization()).Customize(new ReferenceCustomization());
+        var sut = fixture.Create<IConnection>();
+        var name1 = fixture.Create<string>();
+        var name2 = fixture.Create<string>();
+        var signature = fixture.Create<Signature>();
+
         DataPath path = default;
-        sut.Update("main", c =>
+        var transformations = await sut.UpdateAsync("main", async c =>
         {
-            var node1 = c.CreateOrUpdate(new NodeWithMultipleReferences { Name = name1 });
-            var node2 = c.CreateOrUpdate(new NodeWithMultipleReferences { Name = name2 });
-            var node3 = c.CreateOrUpdate(new NodeWithMultipleReferences
+            var node1 = await c.CreateOrUpdateAsync(new NodeWithMultipleReferences { Name = name1 });
+            var node2 = await c.CreateOrUpdateAsync(new NodeWithMultipleReferences { Name = name2 });
+            var node3 = await c.CreateOrUpdateAsync(new NodeWithMultipleReferences
             {
-                References = new[] { node1, node2 },
+                References = [node1, node2],
             });
             path = node3.Path;
-        }).Commit(new("foo", signature, signature));
+        });
+        var tip = await transformations.CommitAsync(new("foo", signature, signature));
 
         // Act
-        var result = sut.Lookup<NodeWithMultipleReferences>("main", path);
+        var result = await sut.LookupAsync<NodeWithMultipleReferences>(tip, path);
 
         // Act, Assert
         Assert.Multiple(() =>
@@ -114,21 +136,25 @@ public partial class NodeSerializerTests
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
-    public void CircularMultipleReferencesAndDeprecationAreSupported(IConnection sut, Signature signature)
+    public async Task CircularMultipleReferencesAndDeprecationAreSupported()
     {
         // Arrange
+        var fixture = new Fixture().Customize(new DefaultYamlServiceProviderCustomization()).Customize(new ReferenceCustomization());
+        var sut = fixture.Create<IConnection>();
+        var signature = fixture.Create<Signature>();
+
         DataPath path = default;
-        sut.Update("main", c =>
+        var transformations = await sut.UpdateAsync("main", async c =>
         {
-            var node1 = c.CreateOrUpdate(new NodeWithMultipleReferences { Id = new("node1") });
-            var node2 = c.CreateOrUpdate(new NodeWithMultipleReferences { Id = new("node2"), References = new[] { node1 } });
-            node1 = c.CreateOrUpdate((NodeWithMultipleReferencesOld)node1 with { References = new[] { node2 } });
+            var node1 = await c.CreateOrUpdateAsync(new NodeWithMultipleReferences { Id = new("node1") });
+            var node2 = await c.CreateOrUpdateAsync(new NodeWithMultipleReferences { Id = new("node2"), References = new[] { node1 } });
+            node1 = await c.CreateOrUpdateAsync((NodeWithMultipleReferencesOld)node1 with { References = new[] { node2 } });
             path = node1.Path;
-        }).Commit(new("foo", signature, signature));
+        });
+        var tip = await transformations.CommitAsync(new("foo", signature, signature));
 
         // Act
-        var result = sut.Lookup<NodeWithMultipleReferences>("main", path);
+        var result = await sut.LookupAsync<NodeWithMultipleReferences>(tip, path);
 
         // Act, Assert
         Assert.Multiple(() =>
@@ -139,45 +165,53 @@ public partial class NodeSerializerTests
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
-    public void NonExistingReferenceFails(IConnection sut, string name, Signature signature)
+    public async Task NonExistingReferenceFails()
     {
         // Arrange
+        var fixture = new Fixture().Customize(new DefaultYamlServiceProviderCustomization()).Customize(new ReferenceCustomization());
+        var sut = fixture.Create<IConnection>();
+        var name = fixture.Create<string>();
+        var signature = fixture.Create<Signature>();
+
         DataPath path = default;
         var path2 = new DataPath("a", "a.yml", true);
-        sut.Update("main", c =>
+        var transformations = await sut.UpdateAsync("main", async c =>
         {
-            var node2 = c.CreateOrUpdate(new NodeWithReference
+            var node2 = await c.CreateOrUpdateAsync(new NodeWithReference
             {
                 Reference = new NodeWithReference { Name = "other", Path = path2 },
                 Name = "test",
             });
             path = node2.Path;
-        }).Commit(new("foo", signature, signature));
+        });
+        var tip = await transformations.CommitAsync(new("foo", signature, signature));
 
         // Act
-        var aggregate = Assert.Throws<AggregateException>(() => sut.GetItems<TreeItem>("main").ToList());
-        Assert.That(aggregate.InnerExceptions, Has.Exactly(1).Items);
-        Assert.That(aggregate.InnerExceptions[0], Is.TypeOf<GitObjectDbException>());
+        Assert.Throws<GitObjectDbException>(() => sut.GetItemsAsync<TreeItem>(tip).ToEnumerable().ToList());
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultYamlServiceProviderCustomization), typeof(ReferenceCustomization))]
-    public void MultipleReferencesIsThreadSafe(IConnection sut, string name, Signature signature)
+    public async Task MultipleReferencesIsThreadSafe()
     {
         // Arrange
+        var fixture = new Fixture().Customize(new DefaultYamlServiceProviderCustomization()).Customize(new ReferenceCustomization());
+        var sut = fixture.Create<IConnection>();
+        var name = fixture.Create<string>();
+        var signature = fixture.Create<Signature>();
+
         const int NumberOfItems = 1_000;
-        sut.Update("main", c =>
+        var transformations = await sut.UpdateAsync("main", async c =>
         {
-            var nodeRef = c.CreateOrUpdate(new NodeWithReference { Name = "Ref" });
+            var nodeRef = await c.CreateOrUpdateAsync(new NodeWithReference { Name = "Ref" });
             for (var i = 0; i < NumberOfItems; i++)
             {
-                c.CreateOrUpdate(new NodeWithReference { Name = $"Item {i}", Reference = nodeRef });
+                await c.CreateOrUpdateAsync(new NodeWithReference { Name = $"Item {i}", Reference = nodeRef });
             }
-        }).Commit(new("foo", signature, signature));
+        });
+        var tip = await transformations.CommitAsync(new("foo", signature, signature));
 
         // Act
-        var actual = sut.GetItems<TreeItem>("main").ToList();
+        var actual = sut.GetItemsAsync<TreeItem>(tip).ToEnumerable().ToList();
 
         // Assert
         Assert.That(actual, Has.Count.EqualTo(NumberOfItems + 1));

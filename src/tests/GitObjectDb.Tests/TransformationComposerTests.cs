@@ -10,12 +10,15 @@ namespace GitObjectDb.Tests;
 internal class TransformationComposerTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(Customization))]
-    public void ThrowExceptionForUndefinedTypes(ITransformationComposer sut)
+    public void ThrowExceptionForUndefinedTypes()
     {
+        // Arrange
+        var fixture = new Fixture().Customize(new DefaultServiceProviderCustomization()).Customize(new Customization());
+        var sut = fixture.Create<IChangeComposer>();
+
         // Act, assert
         Assert.Throws<GitObjectDbException>(
-            () => sut.CreateOrUpdate(new UnregisteredNode()));
+            () => sut.CreateOrUpdateAsync(new UnregisteredNode()));
     }
 
     public record UnregisteredNode : Node
@@ -30,8 +33,8 @@ internal class TransformationComposerTests
             fixture.Inject(A.Fake<IConnectionInternal>(o =>
                 o.ConfigureFake(fake =>
                     A.CallTo(() => fake.Model).Returns(fixture.Create<IDataModel>()))));
-            fixture.Register<ITransformationComposer>(() =>
-                fixture.Create<Factories.TransformationComposerFactory>().Invoke(
+            fixture.Register<IChangeComposer>(() =>
+                fixture.Create<Factories.ChangeComposerFactory>().Invoke(
                     fixture.Create<IConnectionInternal>(),
                     fixture.Create<string>()));
         }

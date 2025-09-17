@@ -1,25 +1,29 @@
 using AutoFixture;
+using GitDotNet;
 using GitObjectDb.Model;
 using GitObjectDb.Tests;
 using GitObjectDb.Tests.Assets;
-using GitObjectDb.Tests.Assets.Tools;
-using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace GitObjectDb.SystemTextJson.Tests;
 
-[Parallelizable(ParallelScope.Self | ParallelScope.Children)]
-public class SearchItemsTests : DisposeArguments
+public class SearchItemsTests
 {
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(Customization))]
-    public void SearchStringPropertiesByDefault(IConnection connection, SomeNode node)
+    public async Task SearchStringPropertiesByDefault()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<Customization>();
+        var connection = fixture.Create<IConnection>();
+        var node = fixture.Create<SomeNode>();
+
         // Act
-        var result = connection.Search("main", pattern: node.SearchableByDefault).ToList();
+        var mainTip = await connection.Repository.GetCommittishAsync("main");
+        var result = connection.SearchAsync(mainTip, pattern: node.SearchableByDefault).ToEnumerable().ToList();
 
         // Assert
         Assert.That(result, Has.Exactly(1).Items);
@@ -27,56 +31,63 @@ public class SearchItemsTests : DisposeArguments
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(Customization))]
-    public void SearchExplicitlySearchableProperties(IConnection connection, SomeNode node)
+    public async Task SearchExplicitlySearchableProperties()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<Customization>();
+        var connection = fixture.Create<IConnection>();
+        var node = fixture.Create<SomeNode>();
+
         // Act
-        var result = connection.Search("main", pattern: node.SearchableExplicitely.ToString(), ignoreCase: true).ToList();
+        var mainTip = await connection.Repository.GetCommittishAsync("main");
+        var result = connection.SearchAsync(mainTip, pattern: node.SearchableExplicitely.ToString(), ignoreCase: true).ToEnumerable().ToList();
 
         // Assert
         Assert.That(result, Has.Some.Not.Null);
     }
 
     [Test]
-    [AutoDataCustomizations(typeof(DefaultServiceProviderCustomization), typeof(Customization))]
-    public void SkipExcludedProperties(IConnection connection, SomeNode node)
+    public async Task SkipExcludedProperties()
     {
+        // Arrange
+        var fixture = await new Fixture().Customize(new DefaultServiceProviderCustomization()).CustomizeAsync<Customization>();
+        var connection = fixture.Create<IConnection>();
+        var node = fixture.Create<SomeNode>();
+
         // Act
-        var result = connection.Search("main", pattern: node.NonSearchable).ToList();
+        var mainTip = await connection.Repository.GetCommittishAsync("main");
+        var result = connection.SearchAsync(mainTip, pattern: node.NonSearchable).ToEnumerable().ToList();
 
         // Assert
         Assert.That(result, Has.Exactly(0).Items);
     }
 
-    private class Customization : ICustomization
+    private class Customization : IAsyncCustomization
     {
-        public void Customize(IFixture fixture)
+        public async Task CustomizeAsync(IFixture fixture)
         {
             var model = new ConventionBaseModelBuilder().RegisterType<SomeNode>().Build();
             fixture.Do<IServiceCollection>(services => services.AddSingleton(model));
-            var connection = new Lazy<IConnection>(() =>
-            {
-                var serviceProvider = fixture.Create<IServiceProvider>();
-                return CreateConnection(fixture, serviceProvider, model);
-            });
+            var serviceProvider = fixture.Create<IServiceProvider>();
+            var connection = await CreateConnection(fixture, serviceProvider, model);
+            var mainTip = await connection.Repository.GetCommittishAsync("main");
 
-            fixture.Register(() => connection.Value);
-            fixture.Register(() => connection.Value);
-            fixture.Register(() => connection.Value.Repository);
+            fixture.Register(() => connection);
+            fixture.Register(() => connection.Repository);
 
-            fixture.LazyRegister(() => connection.Value.GetNodes<SomeNode>("main").Last());
+            fixture.LazyRegister(() => connection.GetNodesAsync<SomeNode>(mainTip).ToEnumerable().OrderBy(n => n.Id).Last());
         }
 
-        private static IConnection CreateConnection(IFixture fixture, IServiceProvider serviceProvider, IDataModel model)
+        private static async Task<IConnection> CreateConnection(IFixture fixture, IServiceProvider serviceProvider, IDataModel model)
         {
             var path = GitObjectDbFixture.GetAvailableFolderPath();
             var repositoryFactory = serviceProvider.GetRequiredService<ConnectionFactory>();
             var result = repositoryFactory(path, model);
-            var transformations = result.Update("main", c =>
+            var transformations = await result.UpdateAsync("main", async c =>
             {
                 for (int i = 0; i < 10; i++)
                 {
-                    c.CreateOrUpdate(new SomeNode
+                    await c.CreateOrUpdateAsync(new SomeNode
                     {
                         SearchableByDefault = fixture.Create<string>(),
                         SearchableExplicitely = StringComparison.OrdinalIgnoreCase,
@@ -84,7 +95,7 @@ public class SearchItemsTests : DisposeArguments
                     });
                 }
             });
-            transformations.Commit(new(fixture.Create<string>(),
+            await transformations.CommitAsync(new(fixture.Create<string>(),
                                        fixture.Create<Signature>(),
                                        fixture.Create<Signature>()));
             return result;
